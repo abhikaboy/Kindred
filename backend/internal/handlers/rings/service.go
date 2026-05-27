@@ -105,12 +105,13 @@ func (s *RingService) GetOrCreateToday(ctx context.Context, userID primitive.Obj
 
 // IncrementRing increments the specified ring's current count by 1, updates
 // closure flags, and recalculates the productivity score. It returns the
-// updated state and whether all rings just became closed on this increment.
-func (s *RingService) IncrementRing(ctx context.Context, userID primitive.ObjectID, timezone string, ringType RingType) (*RingState, bool, error) {
+// updated state and a RingDelta describing the increment so callers can drive
+// frontend feedback (haptics, animation, toast).
+func (s *RingService) IncrementRing(ctx context.Context, userID primitive.ObjectID, timezone string, ringType RingType) (*RingState, *RingDelta, error) {
 	// Ensure today's state exists first.
 	_, err := s.GetOrCreateToday(ctx, userID, timezone)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, err
 	}
 
 	today := todayInTimezone(timezone)
@@ -133,8 +134,21 @@ func (s *RingService) IncrementRing(ctx context.Context, userID primitive.Object
 	var state RingState
 	err = s.ringStates.FindOneAndUpdate(ctx, filter, incUpdate, opts).Decode(&state)
 	if err != nil {
-		return nil, false, fmt.Errorf("increment ring: %w", err)
+		return nil, nil, fmt.Errorf("increment ring: %w", err)
 	}
+
+	// Per-ring delta: previous = current - 1 since $inc added exactly 1.
+	var ringProgress RingProgress
+	switch ringType {
+	case RingPlan:
+		ringProgress = state.Plan
+	case RingDo:
+		ringProgress = state.Do
+	case RingShare:
+		ringProgress = state.Share
+	}
+	previous := ringProgress.Current - 1
+	justClosedThisRing := previous < ringProgress.Target && ringProgress.Current >= ringProgress.Target
 
 	// Recalculate closure flags.
 	planClosed := state.Plan.Current >= state.Plan.Target
@@ -157,15 +171,25 @@ func (s *RingService) IncrementRing(ctx context.Context, userID primitive.Object
 
 	err = s.ringStates.FindOneAndUpdate(ctx, filter, closureUpdate, opts).Decode(&state)
 	if err != nil {
-		return nil, false, fmt.Errorf("update closure flags: %w", err)
+		return nil, nil, fmt.Errorf("update closure flags: %w", err)
 	}
 
 	// Recalculate and cache the productivity score on the user document.
 	if err := s.recalculateScore(ctx, userID, timezone); err != nil {
-		return nil, false, err
+		return nil, nil, err
 	}
 
-	return &state, justClosedAll, nil
+	delta := &RingDelta{
+		Ring:          ringType,
+		Previous:      previous,
+		Current:       ringProgress.Current,
+		Target:        ringProgress.Target,
+		JustClosed:    justClosedThisRing,
+		AllClosed:     allClosed,
+		JustClosedAll: justClosedAll,
+	}
+
+	return &state, delta, nil
 }
 
 // CalculateScore computes the productivity score for a user based on recent

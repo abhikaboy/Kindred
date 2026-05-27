@@ -56,10 +56,8 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
 
     return (
         <>
-            <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
-                <View style={styles.iconContainer}>
-                    <Sparkle size={24} color={ThemedColor.primary} weight="fill" />
-                </View>
+            <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.85}>
+                <Sparkle size={20} color={ThemedColor.buttonText} weight="fill" style={styles.icon} />
                 <ThemedText type="defaultSemiBold" style={styles.text}>
                     Send Encouragement
                 </ThemedText>
@@ -92,26 +90,22 @@ export default function ProfileEncouragementCard({ userId, userHandle, userName 
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         card: {
+            width: "100%",
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: "transparent",
-            borderRadius: 12,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            borderWidth: 1,
-            borderColor: ThemedColor.tertiary,
-        },
-        iconContainer: {
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: ThemedColor.primary + "12",
             justifyContent: "center",
-            alignItems: "center",
-            marginRight: 12,
+            backgroundColor: ThemedColor.primary,
+            borderRadius: 12,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+        },
+        icon: {
+            marginRight: 10,
         },
         text: {
-            color: ThemedColor.text,
+            color: ThemedColor.buttonText,
             fontSize: 15,
+            fontFamily: "Outfit",
+            fontWeight: "500",
         },
     });

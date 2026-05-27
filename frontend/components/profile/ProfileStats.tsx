@@ -1,15 +1,17 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import FollowButton from "@/components/inputs/FollowButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Profile, RelationshipStatus } from "@/api/types";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 interface ProfileStatsProps {
     friendsCount: number;
-    profileUserId?: string; // ID of the profile being viewed
-    profile?: Profile; // Profile with relationship information
-    onRelationshipChange?: (newStatus: RelationshipStatus) => void; // Callback for relationship changes
+    profileUserId?: string;
+    profile?: Profile;
+    onRelationshipChange?: (newStatus: RelationshipStatus) => void;
 }
 
 export default function ProfileStats({
@@ -19,6 +21,20 @@ export default function ProfileStats({
     onRelationshipChange,
 }: ProfileStatsProps) {
     const ThemedColor = useThemeColor();
+    const router = useRouter();
+
+    const status = profile?.relationship?.status;
+    const canViewFriends = status === "connected" || status === "self";
+
+    const handleFriendsPress = async () => {
+        if (!profileUserId || !canViewFriends) return;
+        if (Platform.OS === "ios") {
+            try {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            } catch {}
+        }
+        router.push(`/friends/${profileUserId}`);
+    };
 
     return (
         <View style={styles.statsContainer}>
@@ -34,10 +50,13 @@ export default function ProfileStats({
                 }}>
                 {profile && <FollowButton profile={profile} onRelationshipChange={onRelationshipChange} />}
             </View>
-            <View
+            <TouchableOpacity
+                onPress={handleFriendsPress}
+                activeOpacity={canViewFriends ? 0.6 : 1}
+                disabled={!canViewFriends}
                 style={{
                     width: "48%",
-                    backgroundColor: "transparent",
+                    backgroundColor: canViewFriends ? ThemedColor.lightenedCard : "transparent",
                     borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
                     paddingVertical: 8,
@@ -48,7 +67,7 @@ export default function ProfileStats({
                 <ThemedText type="lightBody" style={{ width: "100%", textAlign: "center" }}>
                     {friendsCount} Friends
                 </ThemedText>
-            </View>
+            </TouchableOpacity>
         </View>
     );
 }

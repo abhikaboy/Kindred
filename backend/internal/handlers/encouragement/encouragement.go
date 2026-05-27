@@ -106,18 +106,26 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		return nil, huma.Error500InternalServerError("Unable to create encouragement. Please try again.", err)
 	}
 
-	// Fire-and-forget: increment Share ring for the sender
+	// Increment Share ring synchronously so the response carries the delta.
+	// NotifyAllRingsClosed is already async (2-minute delayed).
+	var ringDelta *rings.RingDelta
 	if h.service.RingService != nil {
-		go func() {
-			tz := auth.GetTimezoneOrDefault(ctx)
-			_, _, err := h.service.RingService.IncrementRing(context.Background(), senderID, tz, rings.RingShare)
-			if err != nil {
-				slog.Error("Failed to increment Share ring on encouragement sent", "user_id", senderID.Hex(), "error", err)
+		tz := auth.GetTimezoneOrDefault(ctx)
+		_, delta, err := h.service.RingService.IncrementRing(ctx, senderID, tz, rings.RingShare)
+		if err != nil {
+			slog.Error("Failed to increment Share ring on encouragement sent", "user_id", senderID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(senderID)
 			}
-		}()
+		}
 	}
 
-	return &CreateEncouragementOutput{Body: *encouragement}, nil
+	out := &CreateEncouragementOutput{}
+	out.Body.EncouragementDocument = *encouragement
+	out.Body.RingDelta = ringDelta
+	return out, nil
 }
 
 func (h *Handler) GetEncouragementsHuma(ctx context.Context, input *GetEncouragementsInput) (*GetEncouragementsOutput, error) {

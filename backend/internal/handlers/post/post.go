@@ -100,21 +100,26 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		return nil, huma.Error500InternalServerError("Unable to create post. Please try again.", err)
 	}
 
-	// Fire-and-forget: increment Share ring
+	// Increment Share ring synchronously so the response carries the delta.
+	// NotifyAllRingsClosed is already async (2-minute delayed).
+	var ringDelta *rings.RingDelta
 	if h.service.RingService != nil {
-		go func() {
-			tz := auth.GetTimezoneOrDefault(ctx)
-			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingShare)
-			if err != nil {
-				slog.Error("Failed to increment Share ring on post creation", "user_id", userObjID.Hex(), "error", err)
-			} else if justClosedAll {
+		tz := auth.GetTimezoneOrDefault(ctx)
+		_, delta, err := h.service.RingService.IncrementRing(ctx, userObjID, tz, rings.RingShare)
+		if err != nil {
+			slog.Error("Failed to increment Share ring on post creation", "user_id", userObjID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
-		}()
+		}
 	}
 
 	// Prepare response with user stats
-	response := &CreatePostOutput{Body: *createdPost.ToAPI()}
+	response := &CreatePostOutput{}
+	response.Body.PostDocumentAPI = *createdPost.ToAPI()
+	response.Body.RingDelta = ringDelta
 
 	// Include user stats if available
 	if userStats != nil {

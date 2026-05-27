@@ -224,6 +224,42 @@ func (h *Handler) GetFriendsHuma(ctx context.Context, input *GetFriendsInput) (*
 	return &GetFriendsOutput{Body: friends}, nil
 }
 
+func (h *Handler) GetFriendsByUserHuma(ctx context.Context, input *GetFriendsByUserInput) (*GetFriendsByUserOutput, error) {
+	requester_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	requesterOID, err := primitive.ObjectIDFromHex(requester_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	targetOID, err := primitive.ObjectIDFromHex(input.UserID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid target user ID format", err)
+	}
+
+	if requesterOID != targetOID {
+		relationship, err := h.service.GetRelationship(requesterOID, targetOID)
+		if err != nil {
+			slog.Error("Failed to check relationship", "requester", requesterOID.Hex(), "target", targetOID.Hex(), "error", err)
+			return nil, huma.Error500InternalServerError("Unable to verify access to this user's friends.", err)
+		}
+		if relationship != RelationshipFriends {
+			return nil, huma.Error403Forbidden("You must be connected with this user to view their friends.")
+		}
+	}
+
+	friends, err := h.service.GetFriends(targetOID)
+	if err != nil {
+		slog.Error("Failed to fetch friends list", "userId", targetOID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load this user's friends. Please try again.", err)
+	}
+
+	return &GetFriendsByUserOutput{Body: friends}, nil
+}
+
 // BlockUserHuma handles blocking a user
 func (h *Handler) BlockUserHuma(ctx context.Context, input *BlockUserInput) (*BlockUserOutput, error) {
 	// Extract user_id from context (blocker)

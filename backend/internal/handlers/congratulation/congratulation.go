@@ -86,20 +86,26 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		return nil, huma.Error500InternalServerError("Unable to create congratulation. Please try again.", err)
 	}
 
-	// Fire-and-forget: increment Share ring for the sender
+	// Increment Share ring synchronously so the response carries the delta.
+	// NotifyAllRingsClosed is already async (2-minute delayed).
+	var ringDelta *rings.RingDelta
 	if h.service.RingService != nil {
-		go func() {
-			tz := auth.GetTimezoneOrDefault(ctx)
-			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), senderID, tz, rings.RingShare)
-			if err != nil {
-				slog.Error("Failed to increment Share ring on congratulation sent", "user_id", senderID.Hex(), "error", err)
-			} else if justClosedAll {
+		tz := auth.GetTimezoneOrDefault(ctx)
+		_, delta, err := h.service.RingService.IncrementRing(ctx, senderID, tz, rings.RingShare)
+		if err != nil {
+			slog.Error("Failed to increment Share ring on congratulation sent", "user_id", senderID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(senderID)
 			}
-		}()
+		}
 	}
 
-	return &CreateCongratulationOutput{Body: *congratulation}, nil
+	out := &CreateCongratulationOutput{}
+	out.Body.CongratulationDocument = *congratulation
+	out.Body.RingDelta = ringDelta
+	return out, nil
 }
 
 func (h *Handler) SendBeakCongratulationHuma(ctx context.Context, input *SendBeakCongratulationInput) (*SendBeakCongratulationOutput, error) {

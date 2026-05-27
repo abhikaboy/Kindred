@@ -98,6 +98,19 @@ export const updateNotesAPI = async (categoryId: string, taskId: string, notes: 
 };
 
 /**
+ * Describes a single ring's increment so the UI can render feedback.
+ */
+export interface RingDelta {
+    ring: "plan" | "do" | "share";
+    previous: number;
+    current: number;
+    target: number;
+    just_closed: boolean;
+    all_closed: boolean;
+    just_closed_all: boolean;
+}
+
+/**
  * Result from marking a task as completed
  */
 export interface TaskCompletionResult {
@@ -105,6 +118,7 @@ export interface TaskCompletionResult {
     streakChanged: boolean;
     currentStreak: number;
     tasksComplete: number;
+    ringDelta?: RingDelta;
     nextFlexTask?: {
         task: {
             id: string;

@@ -14,7 +14,10 @@ type CreatePostInput struct {
 }
 
 type CreatePostOutput struct {
-	Body      types.PostDocumentAPI `json:"body"`
+	Body struct {
+		types.PostDocumentAPI
+		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Share ring increment triggered by this post so the client can render feedback"`
+	} `json:"body"`
 	UserStats struct {
 		PostsMade int `json:"posts_made"`
 		Points    int `json:"points"`
