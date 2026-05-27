@@ -326,8 +326,8 @@ func (s *Service) ListCalendarsForConnection(ctx context.Context, connectionID, 
 }
 
 // SetupWorkspacesForConnection creates workspaces and categories for selected calendars
-func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID, userID primitive.ObjectID, calendarIDs []string, mergeIntoOne bool, makePublic bool) error {
-	slog.Info("Setting up workspaces for connection", "connection_id", connectionID, "user_id", userID, "calendar_count", len(calendarIDs), "merge_into_one", mergeIntoOne)
+func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID, userID primitive.ObjectID, calendarIDs []string, pushEnabledCalendarIDs []string, mergeIntoOne bool, makePublic bool) error {
+	slog.Info("Setting up workspaces for connection", "connection_id", connectionID, "user_id", userID, "calendar_count", len(calendarIDs), "push_enabled_count", len(pushEnabledCalendarIDs), "merge_into_one", mergeIntoOne)
 
 	var connection CalendarConnection
 	err := s.connections.FindOne(ctx, bson.M{
@@ -363,6 +363,11 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		selectedSet[id] = true
 	}
 
+	pushEnabledSet := make(map[string]bool, len(pushEnabledCalendarIDs))
+	for _, id := range pushEnabledCalendarIDs {
+		pushEnabledSet[id] = true
+	}
+
 	now := time.Now()
 
 	for _, cal := range allCalendars {
@@ -388,7 +393,14 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		}).Decode(&existing)
 
 		if err == nil {
-			slog.Info("Category already exists, skipping", "calendar_id", cal.ID, "category_id", existing.ID)
+			// Update push_enabled on existing category if it differs.
+			_, updErr := s.categories.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{
+				"$set": bson.M{"push_enabled": pushEnabledSet[cal.ID]},
+			})
+			if updErr != nil {
+				slog.Warn("Failed to update push_enabled on existing category", "category_id", existing.ID, "error", updErr)
+			}
+			slog.Info("Category already exists, updated push flag", "calendar_id", cal.ID, "category_id", existing.ID, "push_enabled", pushEnabledSet[cal.ID])
 			continue
 		} else if err != mongo.ErrNoDocuments {
 			return fmt.Errorf("failed to check existing category for %s: %w", cal.Name, err)
@@ -402,6 +414,7 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 			"tasks":         []bson.M{},
 			"user":          userID,
 			"integration":   integrationKey,
+			"push_enabled":  pushEnabledSet[cal.ID],
 		}
 
 		_, err = s.categories.InsertOne(ctx, category)
