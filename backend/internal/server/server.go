@@ -201,6 +201,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		// Connection heartbeat (every 1h)
 		heartbeatJob := jobs.NewCalendarHeartbeatJob(calendarConns, collections["categories"], cfg)
 		heartbeatJob.StartCron(cronScheduler)
+
+		// Push notification worker (drains queued channel notifications)
+		pushWorker := jobs.NewCalendarPushWorker(calendarConns, collections["categories"], cfg)
+		pushWorker.StartCron(cronScheduler)
 	} else {
 		slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
 	}
