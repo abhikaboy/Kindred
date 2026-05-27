@@ -269,9 +269,7 @@ const WorkspaceContent = ({
                     />
                 </View>
             </ConditionalView>
-            {editing && (
-                <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            )}
+            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             {editingWorkspace && (
                 <EditWorkspace
                     editing={editingWorkspace}

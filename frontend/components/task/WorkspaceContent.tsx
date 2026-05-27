@@ -296,9 +296,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     return (
         <>
-            {editing && (
-                <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            )}
+            <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <EditWorkspace
                 editing={editingWorkspace}
                 setEditing={setEditingWorkspace}
