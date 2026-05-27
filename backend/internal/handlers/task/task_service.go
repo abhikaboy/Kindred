@@ -189,7 +189,31 @@ func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*T
 	// Cast the inserted ID to ObjectID
 	slog.LogAttrs(ctx, slog.LevelInfo, "Task inserted")
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), r.ID, categoryId, r.UserID)
+
 	return r, nil
+}
+
+// enqueuePushUpsertIfEnabled checks whether the task's category has push_enabled,
+// and if so, queues an upsert. Failures are logged but never block the task mutation.
+func (s *Service) enqueuePushUpsertIfEnabled(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) {
+	if s.PushEnqueuer == nil {
+		return
+	}
+	var cat struct {
+		PushEnabled bool `bson:"push_enabled"`
+	}
+	err := s.Tasks.FindOne(ctx, bson.M{"_id": categoryID}, options.FindOne().SetProjection(bson.M{"push_enabled": 1})).Decode(&cat)
+	if err != nil {
+		slog.Warn("Push hook: category lookup failed", "category_id", categoryID, "error", err)
+		return
+	}
+	if !cat.PushEnabled {
+		return
+	}
+	if err := s.PushEnqueuer.EnqueueUpsert(ctx, taskID, categoryID, userID); err != nil {
+		slog.Warn("Push hook: enqueue upsert failed", "task_id", taskID, "error", err)
+	}
 }
 
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.

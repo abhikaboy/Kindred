@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.Config) {
+func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.Config) *Service {
 	slog.Info("Registering calendar routes")
 
 	// Get or create calendar_connections collection
@@ -29,7 +29,7 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.C
 	categories := collections["categories"]
 	if categories == nil {
 		slog.Error("categories collection not found")
-		return
+		return nil
 	}
 
 	service := NewService(calendarConnections, categories, cfg)
@@ -57,4 +57,5 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, cfg config.C
 	RegisterWebhookOperation(api, handler)
 
 	slog.Info("Calendar routes registered successfully")
+	return service
 }

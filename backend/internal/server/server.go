@@ -141,7 +141,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
 	profile.Routes(api, collections, ringService)
-	task.Routes(api, collections, geminiService, ringService)
+	taskService := task.Routes(api, collections, geminiService, ringService)
 
 	// SSE streaming routes for NLP flows (raw Fiber, bypass Huma)
 	taskStreamHandler := task.NewStreamHandler(collections, geminiService, ringService)
@@ -182,7 +182,12 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	report.Routes(api, collections)
 
 	// Register calendar routes
-	calendar.Routes(api, collections, cfg)
+	calendarService := calendar.Routes(api, collections, cfg)
+
+	// Wire the calendar push outbox into the task service so task mutations enqueue pushes.
+	if calendarService != nil && taskService != nil {
+		taskService.PushEnqueuer = calendarService.PushOutbox()
+	}
 
 	// Register subscription webhook routes
 	subscription.Routes(api, collections, cfg)
