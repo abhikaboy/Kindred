@@ -297,6 +297,8 @@ func (s *Service) UpdatePartialTask(
 		return nil, err
 	}
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, primitive.NilObjectID)
+
 	return nil, err
 }
 
@@ -1252,6 +1254,8 @@ func (s *Service) UpdateTaskDeadline(id primitive.ObjectID, categoryID primitive
 		return handleMongoError(ctx, "update task deadline", err)
 	}
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryID, userID)
+
 	// Recalculate FOLLOW_UP reminder
 	return s.recalculateFollowUp(ctx, id, categoryID, update.Deadline)
 }
@@ -1283,8 +1287,13 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		bson.M{"$set": updateFields},
 		getTaskArrayFilterOptions(id),
 	)
+	if err != nil {
+		return handleMongoError(ctx, "update task start date/time", err)
+	}
 
-	return handleMongoError(ctx, "update task start date/time", err)
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryID, userID)
+
+	return nil
 }
 
 // UpdateTaskReminders updates the reminders field of a task
