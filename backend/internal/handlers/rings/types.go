@@ -56,6 +56,21 @@ type RingState struct {
 	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
+// RingDelta describes the result of a single ring increment so the caller can
+// surface feedback (haptics, animation, toast) to the user. Previous and
+// Current bracket the increment; JustClosed flips true on the increment that
+// crosses the ring's target; JustClosedAll flips true on the increment that
+// closes the final outstanding ring for the day.
+type RingDelta struct {
+	Ring          RingType `json:"ring"`
+	Previous      int      `json:"previous"`
+	Current       int      `json:"current"`
+	Target        int      `json:"target"`
+	JustClosed    bool     `json:"just_closed"`
+	AllClosed     bool     `json:"all_closed"`
+	JustClosedAll bool     `json:"just_closed_all"`
+}
+
 // RewardDrop defines a possible reward with its probability weight
 type RewardDrop struct {
 	CreditType string `json:"credit_type"`

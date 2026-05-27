@@ -1,6 +1,7 @@
 import client from "@/api/client";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import type { RingDelta } from "./types";
 
 // Extract the type definitions from the generated types
 type CongratulationDocument = components["schemas"]["CongratulationDocument"];
@@ -14,7 +15,7 @@ type CreateCongratulationParams = components["schemas"]["CreateCongratulationPar
  */
 export const createCongratulationAPI = async (
     congratulationData: CreateCongratulationParams
-): Promise<CongratulationDocument> => {
+): Promise<CongratulationDocument & { ringDelta?: RingDelta }> => {
     const { data, error } = await client.POST("/v1/user/congratulations", {
         params: withAuthHeaders(),
         body: congratulationData,
@@ -24,7 +25,7 @@ export const createCongratulationAPI = async (
         throw new Error(`Failed to create congratulation: ${JSON.stringify(error)}`);
     }
 
-    return data;
+    return data as unknown as CongratulationDocument & { ringDelta?: RingDelta };
 };
 
 /**

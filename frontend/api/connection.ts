@@ -71,6 +71,21 @@ export const getFriendsAPI = async (): Promise<any[]> => {
 };
 
 /**
+ * Get the friends of a specific user. Requires being connected with that user.
+ */
+export const getFriendsByUserAPI = async (userId: string): Promise<any[]> => {
+    const { data, error } = await client.GET("/v1/user/connections/friends/{userId}", {
+        params: withAuthHeaders({ path: { userId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get friends for user: ${JSON.stringify(error)}`);
+    }
+
+    return data as any;
+};
+
+/**
  * Create a connection request (follow a user)
  * @param connectionData - Connection data with receiver_id
  */

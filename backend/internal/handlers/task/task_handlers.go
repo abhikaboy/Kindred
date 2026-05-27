@@ -215,20 +215,26 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		return nil, huma.Error500InternalServerError("Unable to create task due to a database error. Please try again.", err)
 	}
 
-	// Fire-and-forget: increment Plan ring
+	// Increment Plan ring synchronously so the response carries the delta.
+	// NotifyAllRingsClosed is already async (2-minute delayed).
+	var ringDelta *rings.RingDelta
 	if h.service.RingService != nil {
-		go func() {
-			tz := auth.GetTimezoneOrDefault(ctx)
-			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingPlan)
-			if err != nil {
-				slog.Error("Failed to increment Plan ring on task creation", "user_id", userObjID.Hex(), "error", err)
-			} else if justClosedAll {
+		tz := auth.GetTimezoneOrDefault(ctx)
+		_, delta, err := h.service.RingService.IncrementRing(ctx, userObjID, tz, rings.RingPlan)
+		if err != nil {
+			slog.Error("Failed to increment Plan ring on task creation", "user_id", userObjID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
-		}()
+		}
 	}
 
-	return &CreateTaskOutput{Body: *doc}, nil
+	out := &CreateTaskOutput{}
+	out.Body.TaskDocument = *doc
+	out.Body.RingDelta = ringDelta
+	return out, nil
 }
 
 func (h *Handler) GetTasks(ctx context.Context, input *GetTasksInput) (*GetTasksOutput, error) {
@@ -435,17 +441,21 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 		return nil, huma.Error500InternalServerError("Task was completed but could not be removed. Please try again.", err)
 	}
 
-	// Fire-and-forget: increment Do ring
+	// Increment Do ring synchronously so the response can carry the delta for
+	// frontend feedback (haptics, animation). NotifyAllRingsClosed is already
+	// async (delayed by 2 minutes) and is dispatched after the response is built.
+	var ringDelta *rings.RingDelta
 	if h.service.RingService != nil {
-		go func() {
-			tz := auth.GetTimezoneOrDefault(ctx)
-			_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
-			if err != nil {
-				slog.Error("Failed to increment Do ring on task completion", "user_id", userObjID.Hex(), "error", err)
-			} else if justClosedAll {
+		tz := auth.GetTimezoneOrDefault(ctx)
+		_, delta, err := h.service.RingService.IncrementRing(ctx, userObjID, tz, rings.RingDo)
+		if err != nil {
+			slog.Error("Failed to increment Do ring on task completion", "user_id", userObjID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
-		}()
+		}
 	}
 
 	resp := &CompleteTaskOutput{}
@@ -453,6 +463,7 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 	resp.Body.StreakChanged = result.StreakChanged
 	resp.Body.CurrentStreak = result.CurrentStreak
 	resp.Body.TasksComplete = result.TasksComplete
+	resp.Body.RingDelta = ringDelta
 	if result.NextFlexTask != nil {
 		resp.Body.NextFlexTask = &NextFlexTaskDTO{
 			Task:       result.NextFlexTask.Task,
@@ -562,12 +573,12 @@ func (h *Handler) BulkCompleteTask(ctx context.Context, input *BulkCompleteTaskI
 		go func() {
 			tz := auth.GetTimezoneOrDefault(ctx)
 			for i := 0; i < result.Body.TotalCompleted; i++ {
-				_, justClosedAll, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
+				_, delta, err := h.service.RingService.IncrementRing(context.Background(), userObjID, tz, rings.RingDo)
 				if err != nil {
 					slog.Error("Failed to increment Do ring on bulk task completion", "user_id", userObjID.Hex(), "error", err)
 					break
 				}
-				if justClosedAll {
+				if delta.JustClosedAll {
 					h.service.RingService.NotifyAllRingsClosed(userObjID)
 					break // No need to increment further
 				}

@@ -490,6 +490,41 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/auth/refresh:
+        post:
+            tags:
+                - auth
+            summary: Refresh tokens
+            description: Exchange a valid refresh token for new access and refresh tokens
+            operationId: refresh-token
+            parameters:
+                - name: refresh_token
+                  in: header
+                  description: Refresh token to exchange for new tokens
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token to exchange for new tokens
+            responses:
+                "200":
+                    description: OK
+                    headers:
+                        access_token:
+                            schema:
+                                type: string
+                        refresh_token:
+                            schema:
+                                type: string
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RefreshTokenOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/auth/register:
         post:
             tags:
@@ -1440,15 +1475,34 @@ paths:
                     examples:
                         - 507f1f77bcf86cd799439011
                   example: 507f1f77bcf86cd799439011
+                - name: limit
+                  in: query
+                  description: 'Number of posts to return (default: 18)'
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 'Number of posts to return (default: 18)'
+                    format: int64
+                    default: 18
+                    minimum: 1
+                    maximum: 50
+                - name: offset
+                  in: query
+                  description: 'Number of posts to skip (default: 0)'
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 'Number of posts to skip (default: 0)'
+                    format: int64
+                    default: 0
+                    minimum: 0
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/PostDocument'
+                                $ref: '#/components/schemas/GetUserPostsOutputBody'
                 default:
                     description: Error
                     content:
@@ -2619,6 +2673,47 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/congratulations/beak:
+        post:
+            tags:
+                - congratulations
+            summary: Send a congratulation from beak
+            description: Send a system congratulation from the beak account with push notification. Used during onboarding tutorial.
+            operationId: send-beak-congratulation
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendBeakCongratulationParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SendBeakCongratulationResult'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/congratulations/mark-read:
         patch:
             tags:
@@ -3061,6 +3156,53 @@ paths:
                   schema:
                     type: string
                     description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/FriendReference'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/connections/friends/{userId}:
+        get:
+            tags:
+                - connections
+            summary: Get friends of a user
+            description: Get all friends of a given user. Requester must be connected with the target user.
+            operationId: get-friends-by-user
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: userId
+                  in: path
+                  description: User ID whose friends should be returned
+                  required: true
+                  schema:
+                    type: string
+                    description: User ID whose friends should be returned
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
             responses:
                 "200":
                     description: OK
@@ -4767,6 +4909,76 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/rings/history:
+        get:
+            tags:
+                - rings
+            summary: Get ring history
+            description: Returns ring state history for the specified number of days (default 7, max 30)
+            operationId: get-rings-history
+            parameters:
+                - name: days
+                  in: query
+                  description: Number of days of history to fetch
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Number of days of history to fetch
+                    format: int64
+                    default: 7
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetHistoryResponseBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/rings/reward:
+        post:
+            tags:
+                - rings
+            summary: Claim daily ring reward
+            description: Claims the daily reward when all three rings are closed
+            operationId: claim-ring-reward
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ClaimRewardResponseBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/rings/today:
+        get:
+            tags:
+                - rings
+            summary: Get today's ring state and score
+            description: Returns the current day's ring progress, productivity score, streak, and reward availability
+            operationId: get-rings-today
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTodayResponseBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/settings:
         get:
             tags:
@@ -5880,6 +6092,58 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/working/{category}/{id}:
+        post:
+            tags:
+                - tasks
+            summary: Start or stop working on a task
+            description: Set the working state of a task (tracks when user started working)
+            operationId: start-working
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: working
+                  in: query
+                  description: Set to 'true' to start working, 'false' to stop
+                  explode: false
+                  schema:
+                    type: string
+                    description: Set to 'true' to start working, 'false' to stop
+                    examples:
+                        - "true"
+                  example: "true"
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StartWorkingOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/timezone:
         post:
             tags:
@@ -6130,6 +6394,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/WaitlistDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/webhooks/revenuecat:
+        post:
+            tags:
+                - Subscription
+            summary: RevenueCat Webhook
+            description: Receives subscription lifecycle events from RevenueCat
+            operationId: revenuecat-webhook
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/WebhookEventBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionWebhookOutputBody'
                 default:
                     description: Error
                     content:
@@ -6829,10 +7119,17 @@ components:
                 created_at:
                     type: string
                     format: date-time
+                health_message:
+                    type: string
+                health_status:
+                    type: string
                 id:
                     type: string
                 is_primary:
                     type: boolean
+                last_heartbeat:
+                    type: string
+                    format: date-time
                 last_sync:
                     type: string
                     format: date-time
@@ -6867,6 +7164,8 @@ components:
                 - setup_complete
                 - make_public
                 - last_sync
+                - health_status
+                - last_heartbeat
                 - created_at
                 - updated_at
         CalendarEventDTO:
@@ -7028,29 +7327,25 @@ components:
                 - content
                 - completed
                 - order
-        CommentDocument:
+        ClaimRewardResponseBody:
             type: object
             additionalProperties: false
             properties:
-                content:
+                $schema:
                     type: string
-                id:
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ClaimRewardResponseBody.json
+                    readOnly: true
+                amount:
+                    type: integer
+                    format: int64
+                credit_type:
                     type: string
-                mentions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/MentionReference'
-                metadata:
-                    $ref: '#/components/schemas/CommentMetadata'
-                parentId:
-                    type: string
-                user:
-                    $ref: '#/components/schemas/UserExtendedReferenceInternal'
             required:
-                - id
-                - user
-                - content
-                - metadata
+                - credit_type
+                - amount
         CommentDocumentAPI:
             type: object
             additionalProperties: false
@@ -7129,6 +7424,9 @@ components:
                     type: string
                     examples:
                         - Task completed successfully
+                nextFlexTask:
+                    description: If this was a flex task and more instances remain, the next task instance
+                    $ref: '#/components/schemas/NextFlexTaskDTO'
                 streakChanged:
                     type: boolean
                     description: Indicates if the user's streak increased
@@ -7795,6 +8093,32 @@ components:
             required:
                 - email
                 - name
+        DashboardConfiguration:
+            type: object
+            additionalProperties: false
+            properties:
+                google_calendar:
+                    type: boolean
+                jump_back_in:
+                    type: boolean
+                kudos:
+                    type: boolean
+                recent_workspaces:
+                    type: boolean
+                recently_completed:
+                    type: boolean
+                stats:
+                    type: boolean
+                upcoming:
+                    type: boolean
+            required:
+                - stats
+                - jump_back_in
+                - kudos
+                - upcoming
+                - google_calendar
+                - recent_workspaces
+                - recently_completed
         DeleteAccountOutputBody:
             type: object
             additionalProperties: false
@@ -8054,36 +8378,12 @@ components:
             required:
                 - success
                 - message
-        DashboardConfiguration:
-            type: object
-            additionalProperties: false
-            properties:
-                stats:
-                    type: boolean
-                jump_back_in:
-                    type: boolean
-                kudos:
-                    type: boolean
-                upcoming:
-                    type: boolean
-                google_calendar:
-                    type: boolean
-                recent_workspaces:
-                    type: boolean
-                recently_completed:
-                    type: boolean
-            required:
-                - stats
-                - jump_back_in
-                - kudos
-                - upcoming
-                - google_calendar
-                - recent_workspaces
-                - recently_completed
         DisplaySettings:
             type: object
             additionalProperties: false
             properties:
+                content_filter:
+                    type: boolean
                 friend_activity_feed:
                     type: boolean
                 near_deadlines_widget:
@@ -8091,8 +8391,6 @@ components:
                 recent_workspaces:
                     type: boolean
                 show_task_details:
-                    type: boolean
-                content_filter:
                     type: boolean
             required:
                 - show_task_details
@@ -8373,14 +8671,35 @@ components:
                 post:
                     description: Post data (only present if type is 'post')
                     $ref: '#/components/schemas/PostDocumentAPI'
+                ringsClosed:
+                    description: Rings closed data (only present if type is 'rings_closed')
+                    $ref: '#/components/schemas/FeedRingsClosedData'
                 task:
                     description: Task data (only present if type is 'task')
                     $ref: '#/components/schemas/FeedTaskData'
                 type:
                     type: string
-                    description: 'Type of feed item: ''post'' or ''task'''
+                    description: 'Type of feed item: ''post'', ''task'', or ''rings_closed'''
             required:
                 - type
+        FeedRingsClosedData:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                id:
+                    type: string
+                timestamp:
+                    type: string
+                user:
+                    description: User who closed their rings
+                    $ref: '#/components/schemas/UserExtendedReference'
+            required:
+                - id
+                - timestamp
+                - content
+                - user
         FeedTaskData:
             type: object
             additionalProperties: false
@@ -8439,6 +8758,56 @@ components:
                     maxItems: 1000
             required:
                 - numbers
+        FlexDetails:
+            type: object
+            additionalProperties: false
+            properties:
+                period:
+                    type: string
+                target:
+                    type: integer
+                    format: int64
+            required:
+                - target
+                - period
+        FlexInstanceInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                instanceNumber:
+                    type: integer
+                    format: int64
+                period:
+                    type: string
+                target:
+                    type: integer
+                    format: int64
+            required:
+                - instanceNumber
+                - target
+                - period
+        FlexTemplateState:
+            type: object
+            additionalProperties: false
+            properties:
+                completedInPeriod:
+                    type: integer
+                    format: int64
+                cooldownUntil:
+                    type: string
+                    format: date-time
+                period:
+                    type: string
+                periodStart:
+                    type: string
+                    format: date-time
+                target:
+                    type: integer
+                    format: int64
+            required:
+                - target
+                - period
+                - completedInPeriod
         FriendReference:
             type: object
             additionalProperties: false
@@ -8732,6 +9101,31 @@ components:
                         $ref: '#/components/schemas/GroupDocumentAPI'
             required:
                 - groups
+        GetHistoryResponseBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetHistoryResponseBody.json
+                    readOnly: true
+                history:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RingState'
+                score:
+                    type: integer
+                    format: int64
+                streak:
+                    type: integer
+                    format: int64
+            required:
+                - history
+                - score
+                - streak
         GetNotificationsOutputBody:
             type: object
             additionalProperties: false
@@ -8860,6 +9254,32 @@ components:
             required:
                 - reports
                 - total
+        GetTodayResponseBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetTodayResponseBody.json
+                    readOnly: true
+                current_streak:
+                    type: integer
+                    format: int64
+                productivity_score:
+                    type: integer
+                    format: int64
+                reward_available:
+                    type: boolean
+                ring_state:
+                    $ref: '#/components/schemas/RingState'
+            required:
+                - ring_state
+                - productivity_score
+                - current_streak
+                - reward_available
         GetUserGroupsOutputBody:
             type: object
             additionalProperties: false
@@ -8877,6 +9297,37 @@ components:
                         $ref: '#/components/schemas/GroupDocumentAPI'
             required:
                 - groups
+        GetUserPostsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetUserPostsOutputBody.json
+                    readOnly: true
+                hasMore:
+                    type: boolean
+                    description: Whether there are more posts to fetch
+                nextOffset:
+                    type: integer
+                    description: Offset for the next page
+                    format: int64
+                posts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PostDocumentAPI'
+                total:
+                    type: integer
+                    description: Total number of posts available
+                    format: int64
+            required:
+                - posts
+                - total
+                - hasMore
+                - nextOffset
         GetUserTemplatesOutputBody:
             type: object
             additionalProperties: false
@@ -9099,6 +9550,8 @@ components:
                     readOnly: true
                 apple_id:
                     type: string
+                id_token:
+                    type: string
             required:
                 - apple_id
         LoginRequestGoogle:
@@ -9112,7 +9565,11 @@ components:
                     examples:
                         - https://example.com/schemas/LoginRequestGoogle.json
                     readOnly: true
+                email:
+                    type: string
                 google_id:
+                    type: string
+                id_token:
                     type: string
             required:
                 - google_id
@@ -9365,6 +9822,17 @@ components:
                 - name
                 - workspaceName
                 - tasks
+        NextFlexTaskDTO:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                task:
+                    $ref: '#/components/schemas/TaskDocument'
+            required:
+                - task
+                - categoryId
         NotificationDocument:
             type: object
             additionalProperties: false
@@ -9441,54 +9909,6 @@ components:
                     examples:
                         - https://example.com/schemas/OAuthCallbackOutputBody.json
                     readOnly: true
-        PostDocument:
-            type: object
-            additionalProperties: false
-            properties:
-                _id:
-                    type: string
-                blueprint:
-                    $ref: '#/components/schemas/EnhancedBlueprintReference'
-                caption:
-                    type: string
-                category:
-                    $ref: '#/components/schemas/CategoryExtendedReference'
-                comments:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CommentDocument'
-                dual:
-                    type: string
-                groups:
-                    type: array
-                    items:
-                        type: string
-                images:
-                    type: array
-                    items:
-                        type: string
-                metadata:
-                    $ref: '#/components/schemas/PostMetadata'
-                reactions:
-                    type: object
-                    additionalProperties:
-                        type: array
-                        items:
-                            type: string
-                size:
-                    $ref: '#/components/schemas/ImageSize'
-                task:
-                    $ref: '#/components/schemas/PostTaskExtendedReference'
-                user:
-                    $ref: '#/components/schemas/UserExtendedReferenceInternal'
-            required:
-                - _id
-                - user
-                - images
-                - caption
-                - reactions
-                - comments
-                - metadata
         PostDocumentAPI:
             type: object
             additionalProperties: false
@@ -9732,10 +10152,15 @@ components:
                 posts_made:
                     type: integer
                     format: int64
+                productivity_score:
+                    type: integer
+                    format: int64
                 profile_picture:
                     type: string
                 relationship:
                     $ref: '#/components/schemas/RelationshipInfo'
+                ring_state:
+                    $ref: '#/components/schemas/RingState'
                 streak:
                     type: integer
                     format: int64
@@ -9754,6 +10179,7 @@ components:
                 - tasks_complete
                 - streak
                 - points
+                - productivity_score
                 - posts_made
                 - friends
         QueryTasksNaturalLanguageInputBody:
@@ -9822,6 +10248,8 @@ components:
                 every:
                     type: integer
                     format: int64
+                flex:
+                    $ref: '#/components/schemas/FlexDetails'
                 months:
                     type: array
                     items:
@@ -9984,6 +10412,23 @@ components:
                 - displayName
                 - handle
                 - profilePicture
+        RefreshTokenOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RefreshTokenOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Tokens refreshed successfully
+            required:
+                - message
         RegisterRequest:
             type: object
             additionalProperties: false
@@ -10035,6 +10480,8 @@ components:
                     type: string
                 handle:
                     type: string
+                id_token:
+                    type: string
                 profile_picture:
                     type: string
             required:
@@ -10061,6 +10508,8 @@ components:
                 google_id:
                     type: string
                 handle:
+                    type: string
+                id_token:
                     type: string
                 profile_picture:
                     type: string
@@ -10318,6 +10767,120 @@ components:
                         - Template metrics reset successfully
             required:
                 - message
+        RevenueCatEvent:
+            type: object
+            additionalProperties: false
+            properties:
+                app_user_id:
+                    type: string
+                currency:
+                    type: string
+                entitlement_ids:
+                    type: array
+                    items:
+                        type: string
+                environment:
+                    type: string
+                expiration_at_ms:
+                    type: integer
+                    format: int64
+                id:
+                    type: string
+                is_family_share:
+                    type: boolean
+                original_app_user_id:
+                    type: string
+                original_transaction_id:
+                    type: string
+                period_type:
+                    type: string
+                price_in_purchased_currency:
+                    type: number
+                    format: double
+                product_id:
+                    type: string
+                purchased_at_ms:
+                    type: integer
+                    format: int64
+                store:
+                    type: string
+                type:
+                    type: string
+            required:
+                - type
+                - id
+                - app_user_id
+                - original_app_user_id
+                - product_id
+                - entitlement_ids
+                - period_type
+                - purchased_at_ms
+                - expiration_at_ms
+                - store
+                - environment
+                - is_family_share
+                - price_in_purchased_currency
+                - currency
+                - original_transaction_id
+        RingProgress:
+            type: object
+            additionalProperties: false
+            properties:
+                closed:
+                    type: boolean
+                current:
+                    type: integer
+                    format: int64
+                target:
+                    type: integer
+                    format: int64
+            required:
+                - current
+                - target
+                - closed
+        RingState:
+            type: object
+            additionalProperties: false
+            properties:
+                all_closed:
+                    type: boolean
+                created_at:
+                    type: string
+                    format: date-time
+                date:
+                    type: string
+                    format: date-time
+                do:
+                    $ref: '#/components/schemas/RingProgress'
+                id:
+                    type: string
+                plan:
+                    $ref: '#/components/schemas/RingProgress'
+                reward_amount:
+                    type: integer
+                    format: int64
+                reward_claimed:
+                    type: boolean
+                reward_type:
+                    type: string
+                share:
+                    $ref: '#/components/schemas/RingProgress'
+                updated_at:
+                    type: string
+                    format: date-time
+                user_id:
+                    type: string
+            required:
+                - id
+                - user_id
+                - date
+                - plan
+                - do
+                - share
+                - all_closed
+                - reward_claimed
+                - created_at
+                - updated_at
         SafeUser:
             type: object
             additionalProperties: false
@@ -10403,6 +10966,62 @@ components:
                 - kudosRewards
                 - subscription
                 - settings
+        SendBeakCongratulationParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SendBeakCongratulationParams.json
+                    readOnly: true
+                categoryName:
+                    type: string
+                    description: Category name
+                    examples:
+                        - My Tasks
+                grantCredits:
+                    type: boolean
+                    description: Whether to grant welcome credits to the user
+                message:
+                    type: string
+                    description: Congratulation message
+                    examples:
+                        - welcome! you just completed your first task!
+                taskName:
+                    type: string
+                    description: Task name
+                    examples:
+                        - Start my morning routine
+            required:
+                - message
+                - categoryName
+                - taskName
+        SendBeakCongratulationResult:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SendBeakCongratulationResult.json
+                    readOnly: true
+                creditsGranted:
+                    type: object
+                    description: Credits granted to the user by type
+                    additionalProperties:
+                        type: integer
+                        format: int64
+                message:
+                    type: string
+                    examples:
+                        - Congratulation sent successfully
+            required:
+                - message
         SendOTPOutputBody:
             type: object
             additionalProperties: false
@@ -10478,6 +11097,23 @@ components:
             required:
                 - success
                 - message
+        StartWorkingOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/StartWorkingOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Started working on task
+            required:
+                - message
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -10523,6 +11159,21 @@ components:
                 - tier
                 - status
                 - startDate
+        SubscriptionWebhookOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SubscriptionWebhookOutputBody.json
+                    readOnly: true
+                status:
+                    type: string
+            required:
+                - status
         SyncEventsOutputBody:
             type: object
             additionalProperties: false
@@ -10586,6 +11237,8 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                flexInfo:
+                    $ref: '#/components/schemas/FlexInstanceInfo'
                 id:
                     type: string
                 integration:
@@ -10635,6 +11288,9 @@ components:
                 value:
                     type: number
                     format: double
+                workingOnSince:
+                    type: string
+                    format: date-time
             required:
                 - id
                 - priority
@@ -10734,6 +11390,8 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                flexState:
+                    $ref: '#/components/schemas/FlexTemplateState'
                 highestStreak:
                     type: integer
                     format: int64
@@ -10836,6 +11494,8 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                flexState:
+                    $ref: '#/components/schemas/FlexTemplateState'
                 highestStreak:
                     type: integer
                     format: int64
@@ -11907,23 +12567,6 @@ components:
                 - display_name
                 - handle
                 - profile_picture
-        UserExtendedReferenceInternal:
-            type: object
-            additionalProperties: false
-            properties:
-                DisplayName:
-                    type: string
-                Handle:
-                    type: string
-                ID:
-                    type: string
-                ProfilePicture:
-                    type: string
-            required:
-                - ID
-                - DisplayName
-                - Handle
-                - ProfilePicture
         UserExtendedReferenceWithPhone:
             type: object
             additionalProperties: false
@@ -11987,12 +12630,12 @@ components:
                     examples:
                         - https://example.com/schemas/UserSettings.json
                     readOnly: true
+                dashboard_configuration:
+                    $ref: '#/components/schemas/DashboardConfiguration'
                 display:
                     $ref: '#/components/schemas/DisplaySettings'
                 notifications:
                     $ref: '#/components/schemas/NotificationSettings'
-                dashboard_configuration:
-                    $ref: '#/components/schemas/DashboardConfiguration'
             required:
                 - notifications
                 - display
@@ -12096,6 +12739,24 @@ components:
                 - resource_id
                 - expiration
                 - created_at
+        WebhookEventBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/WebhookEventBody.json
+                    readOnly: true
+                api_version:
+                    type: string
+                event:
+                    $ref: '#/components/schemas/RevenueCatEvent'
+            required:
+                - api_version
+                - event
         WebhookOutputBody:
             type: object
             additionalProperties: false

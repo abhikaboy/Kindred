@@ -284,6 +284,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh tokens
+         * @description Exchange a valid refresh token for new access and refresh tokens
+         */
+        post: operations["refresh-token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/register": {
         parameters: {
             query?: never;
@@ -1412,6 +1432,26 @@ export interface paths {
         patch: operations["update-congratulation"];
         trace?: never;
     };
+    "/v1/user/congratulations/beak": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a congratulation from beak
+         * @description Send a system congratulation from the beak account with push notification. Used during onboarding tutorial.
+         */
+        post: operations["send-beak-congratulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/congratulations/mark-read": {
         parameters: {
             query?: never;
@@ -1560,6 +1600,26 @@ export interface paths {
          * @description Get all friends of the authenticated user
          */
         get: operations["get-friends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/connections/friends/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get friends of a user
+         * @description Get all friends of a given user. Requester must be connected with the target user.
+         */
+        get: operations["get-friends-by-user"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2308,6 +2368,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/rings/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get ring history
+         * @description Returns ring state history for the specified number of days (default 7, max 30)
+         */
+        get: operations["get-rings-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/rings/reward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim daily ring reward
+         * @description Claims the daily reward when all three rings are closed
+         */
+        post: operations["claim-ring-reward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/rings/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get today's ring state and score
+         * @description Returns the current day's ring progress, productivity score, streak, and reward availability
+         */
+        get: operations["get-rings-today"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/settings": {
         parameters: {
             query?: never;
@@ -2844,6 +2964,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/working/{category}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start or stop working on a task
+         * @description Set the working state of a task (tracks when user started working)
+         */
+        post: operations["start-working"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/timezone": {
         parameters: {
             query?: never;
@@ -2962,6 +3102,26 @@ export interface paths {
          * @description Add a new email to the waitlist
          */
         post: operations["create-waitlist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/revenuecat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * RevenueCat Webhook
+         * @description Receives subscription lifecycle events from RevenueCat
+         */
+        post: operations["revenuecat-webhook"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3434,8 +3594,12 @@ export interface components {
         CalendarConnection: {
             /** Format: date-time */
             created_at: string;
+            health_message?: string;
+            health_status: string;
             id: string;
             is_primary: boolean;
+            /** Format: date-time */
+            last_heartbeat: string;
             /** Format: date-time */
             last_sync: string;
             make_public: boolean;
@@ -3511,13 +3675,16 @@ export interface components {
             /** Format: int64 */
             order: number;
         };
-        CommentDocument: {
-            content: string;
-            id: string;
-            mentions?: components["schemas"]["MentionReference"][];
-            metadata: components["schemas"]["CommentMetadata"];
-            parentId?: string;
-            user: components["schemas"]["UserExtendedReferenceInternal"];
+        ClaimRewardResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ClaimRewardResponseBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            amount: number;
+            credit_type: string;
         };
         CommentDocumentAPI: {
             content: string;
@@ -3559,6 +3726,8 @@ export interface components {
             currentStreak: number;
             /** @example Task completed successfully */
             message: string;
+            /** @description If this was a flex task and more instances remain, the next task instance */
+            nextFlexTask?: components["schemas"]["NextFlexTaskDTO"];
             /**
              * @description Indicates if the user's streak increased
              * @example true
@@ -4015,6 +4184,15 @@ export interface components {
              */
             name: string;
         };
+        DashboardConfiguration: {
+            google_calendar: boolean;
+            jump_back_in: boolean;
+            kudos: boolean;
+            recent_workspaces: boolean;
+            recently_completed: boolean;
+            stats: boolean;
+            upcoming: boolean;
+        };
         DeleteAccountOutputBody: {
             /**
              * Format: uri
@@ -4166,21 +4344,12 @@ export interface components {
             message: string;
             success: boolean;
         };
-        DashboardConfiguration: {
-            stats: boolean;
-            jump_back_in: boolean;
-            kudos: boolean;
-            upcoming: boolean;
-            google_calendar: boolean;
-            recent_workspaces: boolean;
-            recently_completed: boolean;
-        };
         DisplaySettings: {
+            content_filter: boolean;
             friend_activity_feed: boolean;
             near_deadlines_widget: boolean;
             recent_workspaces: boolean;
             show_task_details: boolean;
-            content_filter: boolean;
         };
         EditResultResponse: {
             /**
@@ -4370,10 +4539,19 @@ export interface components {
         FeedItem: {
             /** @description Post data (only present if type is 'post') */
             post?: components["schemas"]["PostDocumentAPI"];
+            /** @description Rings closed data (only present if type is 'rings_closed') */
+            ringsClosed?: components["schemas"]["FeedRingsClosedData"];
             /** @description Task data (only present if type is 'task') */
             task?: components["schemas"]["FeedTaskData"];
-            /** @description Type of feed item: 'post' or 'task' */
+            /** @description Type of feed item: 'post', 'task', or 'rings_closed' */
             type: string;
+        };
+        FeedRingsClosedData: {
+            content: string;
+            id: string;
+            timestamp: string;
+            /** @description User who closed their rings */
+            user: components["schemas"]["UserExtendedReference"];
         };
         FeedTaskData: {
             categoryId: string;
@@ -4399,6 +4577,29 @@ export interface components {
             readonly $schema?: string;
             /** @description List of phone numbers to search for */
             numbers: string[];
+        };
+        FlexDetails: {
+            period: string;
+            /** Format: int64 */
+            target: number;
+        };
+        FlexInstanceInfo: {
+            /** Format: int64 */
+            instanceNumber: number;
+            period: string;
+            /** Format: int64 */
+            target: number;
+        };
+        FlexTemplateState: {
+            /** Format: int64 */
+            completedInPeriod: number;
+            /** Format: date-time */
+            cooldownUntil?: string;
+            period: string;
+            /** Format: date-time */
+            periodStart?: string;
+            /** Format: int64 */
+            target: number;
         };
         FriendReference: {
             /**
@@ -4593,6 +4794,19 @@ export interface components {
             readonly $schema?: string;
             groups: components["schemas"]["GroupDocumentAPI"][];
         };
+        GetHistoryResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetHistoryResponseBody.json
+             */
+            readonly $schema?: string;
+            history: components["schemas"]["RingState"][];
+            /** Format: int64 */
+            score: number;
+            /** Format: int64 */
+            streak: number;
+        };
         GetNotificationsOutputBody: {
             /**
              * Format: uri
@@ -4663,6 +4877,20 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        GetTodayResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetTodayResponseBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            current_streak: number;
+            /** Format: int64 */
+            productivity_score: number;
+            reward_available: boolean;
+            ring_state: components["schemas"]["RingState"];
+        };
         GetUserGroupsOutputBody: {
             /**
              * Format: uri
@@ -4671,6 +4899,27 @@ export interface components {
              */
             readonly $schema?: string;
             groups: components["schemas"]["GroupDocumentAPI"][];
+        };
+        GetUserPostsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUserPostsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Whether there are more posts to fetch */
+            hasMore: boolean;
+            /**
+             * Format: int64
+             * @description Offset for the next page
+             */
+            nextOffset: number;
+            posts: components["schemas"]["PostDocumentAPI"][];
+            /**
+             * Format: int64
+             * @description Total number of posts available
+             */
+            total: number;
         };
         GetUserTemplatesOutputBody: {
             /**
@@ -4796,6 +5045,7 @@ export interface components {
              */
             readonly $schema?: string;
             apple_id: string;
+            id_token?: string;
         };
         LoginRequestGoogle: {
             /**
@@ -4804,7 +5054,9 @@ export interface components {
              * @example https://example.com/schemas/LoginRequestGoogle.json
              */
             readonly $schema?: string;
+            email?: string;
             google_id: string;
+            id_token?: string;
         };
         LoginRequestPhone: {
             /**
@@ -4941,6 +5193,10 @@ export interface components {
             tasks: components["schemas"]["CreateTaskParams"][];
             workspaceName: string;
         };
+        NextFlexTaskDTO: {
+            categoryId: string;
+            task: components["schemas"]["TaskDocument"];
+        };
         NotificationDocument: {
             content: string;
             id: string;
@@ -4972,23 +5228,6 @@ export interface components {
              * @example https://example.com/schemas/OAuthCallbackOutputBody.json
              */
             readonly $schema?: string;
-        };
-        PostDocument: {
-            _id: string;
-            blueprint?: components["schemas"]["EnhancedBlueprintReference"];
-            caption: string;
-            category?: components["schemas"]["CategoryExtendedReference"];
-            comments: components["schemas"]["CommentDocument"][];
-            dual?: string;
-            groups?: string[];
-            images: string[];
-            metadata: components["schemas"]["PostMetadata"];
-            reactions: {
-                [key: string]: string[];
-            };
-            size?: components["schemas"]["ImageSize"];
-            task?: components["schemas"]["PostTaskExtendedReference"];
-            user: components["schemas"]["UserExtendedReferenceInternal"];
         };
         PostDocumentAPI: {
             /**
@@ -5116,8 +5355,11 @@ export interface components {
             points: number;
             /** Format: int64 */
             posts_made: number;
+            /** Format: int64 */
+            productivity_score: number;
             profile_picture: string;
             relationship?: components["schemas"]["RelationshipInfo"];
+            ring_state?: components["schemas"]["RingState"];
             /** Format: int64 */
             streak: number;
             tasks?: components["schemas"]["TaskDocument"][];
@@ -5160,6 +5402,7 @@ export interface components {
             daysOfWeek?: number[];
             /** Format: int64 */
             every?: number;
+            flex?: components["schemas"]["FlexDetails"];
             months?: number[];
             reminders?: string[];
         };
@@ -5242,6 +5485,16 @@ export interface components {
             id: string;
             profilePicture: string;
         };
+        RefreshTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RefreshTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Tokens refreshed successfully */
+            message: string;
+        };
         RegisterRequest: {
             /**
              * Format: uri
@@ -5268,6 +5521,7 @@ export interface components {
             display_name: string;
             email: string;
             handle: string;
+            id_token?: string;
             profile_picture: string;
         };
         RegisterRequestGoogle: {
@@ -5281,6 +5535,7 @@ export interface components {
             email: string;
             google_id: string;
             handle: string;
+            id_token?: string;
             profile_picture: string;
         };
         RelationshipInfo: {
@@ -5421,6 +5676,51 @@ export interface components {
             /** @example Template metrics reset successfully */
             message: string;
         };
+        RevenueCatEvent: {
+            app_user_id: string;
+            currency: string;
+            entitlement_ids: string[];
+            environment: string;
+            /** Format: int64 */
+            expiration_at_ms: number;
+            id: string;
+            is_family_share: boolean;
+            original_app_user_id: string;
+            original_transaction_id: string;
+            period_type: string;
+            /** Format: double */
+            price_in_purchased_currency: number;
+            product_id: string;
+            /** Format: int64 */
+            purchased_at_ms: number;
+            store: string;
+            type: string;
+        };
+        RingProgress: {
+            closed: boolean;
+            /** Format: int64 */
+            current: number;
+            /** Format: int64 */
+            target: number;
+        };
+        RingState: {
+            all_closed: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            date: string;
+            do: components["schemas"]["RingProgress"];
+            id: string;
+            plan: components["schemas"]["RingProgress"];
+            /** Format: int64 */
+            reward_amount?: number;
+            reward_claimed: boolean;
+            reward_type?: string;
+            share: components["schemas"]["RingProgress"];
+            /** Format: date-time */
+            updated_at: string;
+            user_id: string;
+        };
         SafeUser: {
             /**
              * Format: uri
@@ -5456,6 +5756,45 @@ export interface components {
             terms_accepted_at?: string;
             terms_version?: string;
             timezone?: string;
+        };
+        SendBeakCongratulationParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SendBeakCongratulationParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Category name
+             * @example My Tasks
+             */
+            categoryName: string;
+            /** @description Whether to grant welcome credits to the user */
+            grantCredits?: boolean;
+            /**
+             * @description Congratulation message
+             * @example welcome! you just completed your first task!
+             */
+            message: string;
+            /**
+             * @description Task name
+             * @example Start my morning routine
+             */
+            taskName: string;
+        };
+        SendBeakCongratulationResult: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SendBeakCongratulationResult.json
+             */
+            readonly $schema?: string;
+            /** @description Credits granted to the user by type */
+            creditsGranted?: {
+                [key: string]: number;
+            };
+            /** @example Congratulation sent successfully */
+            message: string;
         };
         SendOTPOutputBody: {
             /**
@@ -5498,6 +5837,16 @@ export interface components {
             message: string;
             success: boolean;
         };
+        StartWorkingOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StartWorkingOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Started working on task */
+            message: string;
+        };
         SubscribeToBlueprintOutputBody: {
             /**
              * Format: uri
@@ -5521,6 +5870,15 @@ export interface components {
             status: string;
             subscriptionId?: string;
             tier: string;
+        };
+        SubscriptionWebhookOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SubscriptionWebhookOutputBody.json
+             */
+            readonly $schema?: string;
+            status: string;
         };
         SyncEventsOutputBody: {
             /**
@@ -5556,6 +5914,7 @@ export interface components {
             content: string;
             /** Format: date-time */
             deadline?: string;
+            flexInfo?: components["schemas"]["FlexInstanceInfo"];
             id: string;
             integration?: string;
             /** Format: date-time */
@@ -5583,6 +5942,8 @@ export interface components {
             userID?: string;
             /** Format: double */
             value: number;
+            /** Format: date-time */
+            workingOnSince?: string;
         };
         TaskQueryFilters: {
             /**
@@ -5647,6 +6008,7 @@ export interface components {
             content: string;
             /** Format: date-time */
             deadline?: string;
+            flexState?: components["schemas"]["FlexTemplateState"];
             /** Format: int64 */
             highestStreak: number;
             id: string;
@@ -5693,6 +6055,7 @@ export interface components {
             content: string;
             /** Format: date-time */
             deadline?: string;
+            flexState?: components["schemas"]["FlexTemplateState"];
             /** Format: int64 */
             highestStreak: number;
             id: string;
@@ -6386,12 +6749,6 @@ export interface components {
              */
             profile_picture: string;
         };
-        UserExtendedReferenceInternal: {
-            DisplayName: string;
-            Handle: string;
-            ID: string;
-            ProfilePicture: string;
-        };
         UserExtendedReferenceWithPhone: {
             /**
              * @description User ID
@@ -6432,9 +6789,9 @@ export interface components {
              * @example https://example.com/schemas/UserSettings.json
              */
             readonly $schema?: string;
+            dashboard_configuration: components["schemas"]["DashboardConfiguration"];
             display: components["schemas"]["DisplaySettings"];
             notifications: components["schemas"]["NotificationSettings"];
-            dashboard_configuration: components["schemas"]["DashboardConfiguration"];
         };
         VerifyOTPOutputBody: {
             /**
@@ -6495,6 +6852,16 @@ export interface components {
             /** Format: date-time */
             expiration: string;
             resource_id: string;
+        };
+        WebhookEventBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WebhookEventBody.json
+             */
+            readonly $schema?: string;
+            api_version: string;
+            event: components["schemas"]["RevenueCatEvent"];
         };
         WebhookOutputBody: {
             /**
@@ -7003,6 +7370,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LogoutOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "refresh-token": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Refresh token to exchange for new tokens */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshTokenOutputBody"];
                 };
             };
             /** @description Error */
@@ -8001,7 +8402,12 @@ export interface operations {
     };
     "get-user-posts": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of posts to return (default: 18) */
+                limit?: number;
+                /** @description Number of posts to skip (default: 0) */
+                offset?: number;
+            };
             header: {
                 Authorization: string;
             };
@@ -8019,7 +8425,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostDocument"][];
+                    "application/json": components["schemas"]["GetUserPostsOutputBody"];
                 };
             };
             /** @description Error */
@@ -9143,6 +9549,44 @@ export interface operations {
             };
         };
     };
+    "send-beak-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendBeakCongratulationParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendBeakCongratulationResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "mark-congratulations-read": {
         parameters: {
             query?: never;
@@ -9529,6 +9973,46 @@ export interface operations {
                 refresh_token: string;
             };
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendReference"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-friends-by-user": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /**
+                 * @description User ID whose friends should be returned
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                userId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -11168,6 +11652,96 @@ export interface operations {
             };
         };
     };
+    "get-rings-history": {
+        parameters: {
+            query?: {
+                /** @description Number of days of history to fetch */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetHistoryResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "claim-ring-reward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimRewardResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-rings-today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTodayResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-user-settings": {
         parameters: {
             query?: never;
@@ -12239,6 +12813,48 @@ export interface operations {
             };
         };
     };
+    "start-working": {
+        parameters: {
+            query?: {
+                /**
+                 * @description Set to 'true' to start working, 'false' to stop
+                 * @example true
+                 */
+                working?: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartWorkingOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "update-timezone": {
         parameters: {
             query?: never;
@@ -12473,6 +13089,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaitlistDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "revenuecat-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookEventBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionWebhookOutputBody"];
                 };
             };
             /** @description Error */

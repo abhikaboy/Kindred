@@ -1,6 +1,7 @@
 import client from "@/api/client";
 import { withAuthHeaders } from "./utils";
 import type { paths, components } from "./generated/types";
+import type { RingDelta } from "./types";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('PostAPI');
@@ -35,7 +36,11 @@ export const createPost = async (
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
     dual?: string
-): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
+): Promise<{
+    post: PostDocumentAPI;
+    userStats: { posts_made: number; points: number } | null;
+    ringDelta?: RingDelta;
+}> => {
     const { data, error } = await client.POST("/v1/user/posts", {
         params: withAuthHeaders({}),
         body: {
@@ -54,9 +59,11 @@ export const createPost = async (
         throw new Error(`Failed to create post: ${JSON.stringify(error)}`);
     }
 
+    const body = (data as any).body || data;
     return {
-        post: (data as any).body || data,
-        userStats: (data as any).user_stats || null
+        post: body,
+        userStats: (data as any).user_stats || null,
+        ringDelta: body?.ringDelta,
     };
 };
 

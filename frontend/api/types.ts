@@ -269,4 +269,19 @@ export interface RingRewardResponse {
     message: string;
 }
 
+/**
+ * Describes a single ring's increment so the UI can render feedback.
+ * Returned in the response body of any action that progresses a ring
+ * (task create/complete, post create, congratulation, encouragement).
+ */
+export interface RingDelta {
+    ring: "plan" | "do" | "share";
+    previous: number;
+    current: number;
+    target: number;
+    just_closed: boolean;
+    all_closed: boolean;
+    just_closed_all: boolean;
+}
+
 export { components };

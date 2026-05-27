@@ -20,7 +20,10 @@ type UpdateTemplateDocument = components["schemas"]["UpdateTemplateDocument"];
  * @param categoryId - The ID of the category to add the task to
  * @param task - The task data to create
  */
-export const createTaskAPI = async (categoryId: string, task: CreateTaskParams): Promise<TaskDocument> => {
+export const createTaskAPI = async (
+    categoryId: string,
+    task: CreateTaskParams
+): Promise<TaskDocument & { ringDelta?: RingDelta }> => {
     const { data, error } = await client.POST("/v1/user/tasks/{category}", {
         params: withAuthHeaders({
             path: { category: categoryId },
@@ -32,7 +35,7 @@ export const createTaskAPI = async (categoryId: string, task: CreateTaskParams):
         throw new Error(`Failed to create task: ${JSON.stringify(error)}`);
     }
 
-    return data;
+    return data as unknown as TaskDocument & { ringDelta?: RingDelta };
 };
 
 /**
@@ -97,6 +100,9 @@ export const updateNotesAPI = async (categoryId: string, taskId: string, notes: 
     }
 };
 
+export type { RingDelta } from "./types";
+import type { RingDelta } from "./types";
+
 /**
  * Result from marking a task as completed
  */
@@ -105,6 +111,7 @@ export interface TaskCompletionResult {
     streakChanged: boolean;
     currentStreak: number;
     tasksComplete: number;
+    ringDelta?: RingDelta;
     nextFlexTask?: {
         task: {
             id: string;

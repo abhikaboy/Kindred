@@ -88,13 +88,54 @@ func (s *RingServiceTestSuite) TestIncrementRing_DoRingOnce() {
 	ctx := context.Background()
 
 	// Increment Do ring once
-	state, justClosedAll, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingDo)
+	state, delta, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingDo)
 
 	s.NoError(err)
 	s.NotNil(state)
 	s.Equal(1, state.Do.Current)
 	s.False(state.Do.Closed) // Target is 3, so not closed yet
-	s.False(justClosedAll)
+	s.NotNil(delta)
+	s.Equal(RingDo, delta.Ring)
+	s.Equal(0, delta.Previous)
+	s.Equal(1, delta.Current)
+	s.Equal(DefaultDoTarget, delta.Target)
+	s.False(delta.JustClosed)
+	s.False(delta.AllClosed)
+	s.False(delta.JustClosedAll)
+}
+
+func (s *RingServiceTestSuite) TestIncrementRing_DeltaReportsJustClosedForSingleRing() {
+	user := s.GetUser(0)
+	ctx := context.Background()
+
+	// Share has target=1, so first increment closes it but does not close all rings.
+	_, delta, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+
+	s.NoError(err)
+	s.NotNil(delta)
+	s.Equal(RingShare, delta.Ring)
+	s.Equal(0, delta.Previous)
+	s.Equal(1, delta.Current)
+	s.Equal(DefaultShareTarget, delta.Target)
+	s.True(delta.JustClosed, "share ring should be flagged just_closed on first increment")
+	s.False(delta.AllClosed)
+	s.False(delta.JustClosedAll)
+}
+
+func (s *RingServiceTestSuite) TestIncrementRing_DeltaJustClosedOnlyOnCrossingIncrement() {
+	user := s.GetUser(0)
+	ctx := context.Background()
+
+	// Share target = 1. First increment closes; second must NOT report just_closed again.
+	_, firstDelta, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+	s.NoError(err)
+	s.True(firstDelta.JustClosed)
+
+	_, secondDelta, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+	s.NoError(err)
+	s.False(secondDelta.JustClosed, "subsequent increments past target must not re-report just_closed")
+	s.Equal(1, secondDelta.Previous)
+	s.Equal(2, secondDelta.Current)
 }
 
 // ========================================
@@ -107,30 +148,31 @@ func (s *RingServiceTestSuite) TestAllRingsClose() {
 
 	// Close Plan ring (target = 2)
 	var state *RingState
-	var justClosedAll bool
+	var delta *RingDelta
 	var err error
 
 	for i := 0; i < DefaultPlanTarget; i++ {
-		state, justClosedAll, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingPlan)
+		state, delta, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingPlan)
 		s.NoError(err)
 	}
 	s.True(state.Plan.Closed)
-	s.False(justClosedAll)
+	s.False(delta.JustClosedAll)
 
 	// Close Do ring (target = 3)
 	for i := 0; i < DefaultDoTarget; i++ {
-		state, justClosedAll, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingDo)
+		state, delta, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingDo)
 		s.NoError(err)
 	}
 	s.True(state.Do.Closed)
-	s.False(justClosedAll)
+	s.False(delta.JustClosedAll)
 
-	// Close Share ring (target = 1) — this should trigger justClosedAll
-	state, justClosedAll, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+	// Close Share ring (target = 1) — this should trigger JustClosedAll
+	state, delta, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
 	s.NoError(err)
 	s.True(state.Share.Closed)
 	s.True(state.AllClosed)
-	s.True(justClosedAll)
+	s.True(delta.JustClosedAll)
+	s.True(delta.AllClosed)
 }
 
 // ========================================

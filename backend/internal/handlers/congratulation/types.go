@@ -19,7 +19,10 @@ type CreateCongratulationInput struct {
 }
 
 type CreateCongratulationOutput struct {
-	Body CongratulationDocument `json:"body"`
+	Body struct {
+		CongratulationDocument
+		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Share ring increment triggered by this congratulation so the client can render feedback"`
+	} `json:"body"`
 }
 
 // Get Congratulations (all for authenticated user)

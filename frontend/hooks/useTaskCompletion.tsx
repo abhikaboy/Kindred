@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { markAsCompletedAPI, setWorkingAPI } from '@/api/task';
+import { markAsCompletedAPI, setWorkingAPI, type RingDelta } from '@/api/task';
 import { ActiveTaskActivityFactory } from '@/widgets/widgetUpdaters';
 import { useTasks } from '@/contexts/tasksContext';
 import { Task } from '@/api/types';
@@ -22,7 +22,7 @@ interface TaskCompletionData {
 }
 
 interface UseTaskCompletionOptions {
-    onSuccess?: () => void;
+    onSuccess?: (ringDelta?: RingDelta) => void;
     onError?: (error: any) => void;
 }
 
@@ -132,7 +132,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
             });
 
-            optionsRef.current?.onSuccess?.();
+            optionsRef.current?.onSuccess?.(res.ringDelta);
         } catch (error) {
             console.error("Error marking task as completed:", error);
             showToastable({

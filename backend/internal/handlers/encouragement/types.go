@@ -19,7 +19,10 @@ type CreateEncouragementInput struct {
 }
 
 type CreateEncouragementOutput struct {
-	Body EncouragementDocument `json:"body"`
+	Body struct {
+		EncouragementDocument
+		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Share ring increment triggered by this encouragement so the client can render feedback"`
+	} `json:"body"`
 }
 
 // Get Encouragements (all for authenticated user)

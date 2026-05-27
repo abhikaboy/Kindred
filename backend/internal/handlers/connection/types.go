@@ -139,6 +139,16 @@ type GetFriendsOutput struct {
 	Body []FriendReference `json:"body"`
 }
 
+type GetFriendsByUserInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	UserID        string `path:"userId" example:"507f1f77bcf86cd799439011" doc:"User ID whose friends should be returned"`
+}
+
+type GetFriendsByUserOutput struct {
+	Body []FriendReference `json:"body"`
+}
+
 /*
 Connection Service to be used by Connection Handler to interact with the
 Database layer of the application

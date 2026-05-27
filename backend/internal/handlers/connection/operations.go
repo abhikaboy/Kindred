@@ -229,6 +229,17 @@ func RegisterGetFriendsOperation(api huma.API, handler *Handler) {
 	}, handler.GetFriendsHuma)
 }
 
+func RegisterGetFriendsByUserOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-friends-by-user",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/connections/friends/{userId}",
+		Summary:     "Get friends of a user",
+		Description: "Get all friends of a given user. Requester must be connected with the target user.",
+		Tags:        []string{"connections"},
+	}, handler.GetFriendsByUserHuma)
+}
+
 func RegisterDeleteConnectionOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-connection",
@@ -290,6 +301,7 @@ func RegisterGetBlockedUsersOperation(api huma.API, handler *Handler) {
 // Register all connection operations
 func RegisterConnectionOperations(api huma.API, handler *Handler) {
 	RegisterGetFriendsOperation(api, handler)
+	RegisterGetFriendsByUserOperation(api, handler)
 	RegisterCreateConnectionOperation(api, handler)
 	RegisterGetConnectionsByReceiverOperation(api, handler)
 	RegisterGetConnectionsByRequesterOperation(api, handler)

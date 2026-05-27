@@ -3,6 +3,7 @@ package task
 import (
 	"net/http"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/danielgtaylor/huma/v2"
 )
 
@@ -36,7 +37,10 @@ type CreateTaskInput struct {
 }
 
 type CreateTaskOutput struct {
-	Body TaskDocument `json:"body"`
+	Body struct {
+		TaskDocument
+		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Plan ring increment triggered by this creation so the client can render feedback"`
+	} `json:"body"`
 }
 
 // Get Tasks (all)
@@ -90,6 +94,7 @@ type CompleteTaskOutput struct {
 		CurrentStreak int              `json:"currentStreak" example:"5" doc:"The user's current streak count"`
 		TasksComplete float64          `json:"tasksComplete" example:"42" doc:"Total tasks completed by user"`
 		NextFlexTask  *NextFlexTaskDTO `json:"nextFlexTask,omitempty" doc:"If this was a flex task and more instances remain, the next task instance"`
+		RingDelta     *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Do ring increment triggered by this completion so the client can render feedback"`
 	}
 }
 
