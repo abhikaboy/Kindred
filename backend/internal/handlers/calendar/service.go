@@ -20,8 +20,14 @@ type Service struct {
 	connections     *mongo.Collection
 	categories      *mongo.Collection
 	processedEvents *mongo.Collection
+	pushOutbox      *PushOutbox
 	providers       map[CalendarProvider]Provider
 	config          config.Config
+}
+
+// PushOutbox returns the push outbox helper (used by jobs and the task package).
+func (s *Service) PushOutbox() *PushOutbox {
+	return s.pushOutbox
 }
 
 // GetConnectionForUser fetches a calendar connection that belongs to the given user
@@ -45,11 +51,13 @@ func NewService(connections *mongo.Collection, categories *mongo.Collection, cfg
 
 	// Get processed events collection from the same database
 	processedEvents := connections.Database().Collection("calendar_processed_events")
+	pushOutboxCol := connections.Database().Collection("calendar_push_outbox")
 
 	return &Service{
 		connections:     connections,
 		categories:      categories,
 		processedEvents: processedEvents,
+		pushOutbox:      NewPushOutbox(pushOutboxCol),
 		providers:       providers,
 		config:          cfg,
 	}
