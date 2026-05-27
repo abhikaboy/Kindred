@@ -13,10 +13,12 @@ import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icons } from "@/constants/Icons";
 import { SvgUri } from "react-native-svg";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset } from "react-native-reanimated";
+import Animated, { interpolate, useAnimatedRef, useAnimatedStyle, useScrollViewOffset, type AnimatedRef } from "react-native-reanimated";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
@@ -37,6 +39,27 @@ import { components } from "@/api/generated/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { getBlueprintById } from "@/api/blueprint";
 import ProfileEncouragementCard from "@/components/cards/ProfileEncouragementCard";
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+function FloatingBackButton({ scrollRef }: { scrollRef: AnimatedRef<Animated.ScrollView> }) {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const offset = useScrollViewOffset(scrollRef);
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(offset.value, [0, 80], [1, 0], "clamp"),
+    }));
+    if (!router.canGoBack()) return null;
+    return (
+        <AnimatedTouchable
+            onPress={() => router.back()}
+            style={[styles.floatingBack, { top: insets.top + 8 }, animatedStyle]}
+            hitSlop={10}
+            accessibilityLabel="Go back">
+            <Ionicons name="chevron-back" size={24} color="white" />
+        </AnimatedTouchable>
+    );
+}
 
 export default function Profile() {
     const { id, blueprintId } = useLocalSearchParams();
@@ -149,22 +172,26 @@ export default function Profile() {
     // Handle account not found
     if (!profile || !profile.id) {
         return (
-            <Animated.ScrollView
-                ref={scrollRef}
-                scrollEventThrottle={16}
-                style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
-                <ParallaxBanner
-                    scrollRef={scrollRef}
-                    backgroundImage={Icons.luffy}
-                    backgroundColor={ThemedColor.background}
-                    headerHeight={HEADER_HEIGHT}
-                />
-                <ProfileHeader displayName="Account not found" handle="" />
-            </Animated.ScrollView>
+            <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+                <Animated.ScrollView
+                    ref={scrollRef}
+                    scrollEventThrottle={16}
+                    style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
+                    <ParallaxBanner
+                        scrollRef={scrollRef}
+                        backgroundImage={Icons.luffy}
+                        backgroundColor={ThemedColor.background}
+                        headerHeight={HEADER_HEIGHT}
+                    />
+                    <ProfileHeader displayName="Account not found" handle="" />
+                </Animated.ScrollView>
+                <FloatingBackButton scrollRef={scrollRef} />
+            </View>
         );
     }
 
     return (
+        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
@@ -260,6 +287,8 @@ export default function Profile() {
                 )}
             </View>
         </Animated.ScrollView>
+        <FloatingBackButton scrollRef={scrollRef} />
+        </View>
     );
 }
 
@@ -306,5 +335,16 @@ const styles = StyleSheet.create({
     },
     invertedImage: {
         tintColor: "#ffffff",
+    },
+    floatingBack: {
+        position: "absolute",
+        left: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: "rgba(0,0,0,0.2)",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10,
     },
 });
