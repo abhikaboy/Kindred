@@ -268,11 +268,11 @@ func (p *GoogleProvider) UpdateEvent(ctx context.Context, token *oauth2.Token, e
 	return result, nil
 }
 
-func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error {
+func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, calendarID string, eventID string) error {
 	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.DeleteEvent")
 	defer span.End()
 
-	slog.Info("Google: Deleting calendar event", "event_id", eventID)
+	slog.Info("Google: Deleting calendar event", "calendar_id", calendarID, "event_id", eventID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
@@ -283,15 +283,19 @@ func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, e
 		return err
 	}
 
-	err = calendarService.Events.Delete("primary", eventID).Do()
+	if calendarID == "" {
+		calendarID = "primary"
+	}
+
+	err = calendarService.Events.Delete(calendarID, eventID).Do()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		slog.Error("Google: Failed to delete event", "event_id", eventID, "error", err)
+		slog.Error("Google: Failed to delete event", "calendar_id", calendarID, "event_id", eventID, "error", err)
 		return err
 	}
 
-	slog.Info("Google: Event deleted successfully", "event_id", eventID)
+	slog.Info("Google: Event deleted successfully", "calendar_id", calendarID, "event_id", eventID)
 	return nil
 }
 

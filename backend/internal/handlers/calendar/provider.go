@@ -24,7 +24,7 @@ type Provider interface {
 	FetchEvents(ctx context.Context, token *oauth2.Token, timeMin, timeMax time.Time) ([]ProviderEvent, error)
 	CreateEvent(ctx context.Context, token *oauth2.Token, event ProviderEvent) (ProviderEvent, error)
 	UpdateEvent(ctx context.Context, token *oauth2.Token, eventID string, event ProviderEvent) (ProviderEvent, error)
-	DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error
+	DeleteEvent(ctx context.Context, token *oauth2.Token, calendarID string, eventID string) error
 
 	// Watch methods
 	WatchCalendar(ctx context.Context, token *oauth2.Token, calendarID string, channelID string, webhookURL string) (*WatchResponse, error)
