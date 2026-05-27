@@ -557,3 +557,26 @@ func TestConvertEventToTaskParams_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPushOriginEvent(t *testing.T) {
+	pushEv := ProviderEvent{
+		ExtendedProperties: map[string]string{
+			"kindred_origin":  "push",
+			"kindred_task_id": "abc",
+		},
+	}
+	pullEv := ProviderEvent{
+		ExtendedProperties: map[string]string{},
+	}
+	noPropsEv := ProviderEvent{}
+
+	if !IsPushOriginEvent(pushEv) {
+		t.Fatalf("expected push-origin event to be detected")
+	}
+	if IsPushOriginEvent(pullEv) {
+		t.Fatalf("expected pull-origin event to not be detected")
+	}
+	if IsPushOriginEvent(noPropsEv) {
+		t.Fatalf("expected event with no props to not be detected")
+	}
+}
