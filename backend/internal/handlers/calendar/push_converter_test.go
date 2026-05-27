@@ -111,3 +111,25 @@ func TestBuildProviderEventFromTask_NoDate(t *testing.T) {
 		t.Fatalf("expected error for undated task")
 	}
 }
+
+func TestParseCategoryIntegration(t *testing.T) {
+	connID := primitive.NewObjectID()
+	in := "gcal:" + connID.Hex() + ":primary"
+	gotConn, gotCal, ok := parseCategoryIntegration(in)
+	if !ok {
+		t.Fatalf("expected ok")
+	}
+	if gotConn != connID {
+		t.Fatalf("conn mismatch")
+	}
+	if gotCal != "primary" {
+		t.Fatalf("cal mismatch: %q", gotCal)
+	}
+
+	if _, _, ok := parseCategoryIntegration("notgcal:foo:bar"); ok {
+		t.Fatalf("expected !ok for non-gcal prefix")
+	}
+	if _, _, ok := parseCategoryIntegration("gcal:notahex:cal"); ok {
+		t.Fatalf("expected !ok for invalid connection id")
+	}
+}
