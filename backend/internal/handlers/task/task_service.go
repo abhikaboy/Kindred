@@ -216,6 +216,74 @@ func (s *Service) enqueuePushUpsertIfEnabled(ctx context.Context, taskID, catego
 	}
 }
 
+// snapshotPushTargetForDelete reads the task's pushed_event_id / pushed_calendar_id
+// (if any) along with the category's connection_id (parsed from `integration`) and
+// enqueues a delete. Called BEFORE the task is removed.
+func (s *Service) snapshotPushTargetForDelete(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) {
+	if s.PushEnqueuer == nil {
+		return
+	}
+	var cat struct {
+		Integration string `bson:"integration"`
+		PushEnabled bool   `bson:"push_enabled"`
+		Tasks       []struct {
+			ID               primitive.ObjectID `bson:"_id"`
+			PushedEventID    string             `bson:"pushed_event_id,omitempty"`
+			PushedCalendarID string             `bson:"pushed_calendar_id,omitempty"`
+		} `bson:"tasks"`
+	}
+	err := s.Tasks.FindOne(ctx, bson.M{
+		"_id":       categoryID,
+		"tasks._id": taskID,
+	}, options.FindOne().SetProjection(bson.M{
+		"integration":              1,
+		"push_enabled":             1,
+		"tasks._id":                1,
+		"tasks.pushed_event_id":    1,
+		"tasks.pushed_calendar_id": 1,
+	})).Decode(&cat)
+	if err != nil {
+		return
+	}
+	if !cat.PushEnabled {
+		return
+	}
+	var eventID, calendarID string
+	for _, t := range cat.Tasks {
+		if t.ID == taskID {
+			eventID = t.PushedEventID
+			calendarID = t.PushedCalendarID
+			break
+		}
+	}
+	if eventID == "" {
+		return
+	}
+	// Parse connectionID from integration "gcal:<connID>:<calID>".
+	const prefix = "gcal:"
+	if len(cat.Integration) <= len(prefix) || cat.Integration[:len(prefix)] != prefix {
+		return
+	}
+	rest := cat.Integration[len(prefix):]
+	colonIdx := -1
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == ':' {
+			colonIdx = i
+			break
+		}
+	}
+	if colonIdx <= 0 {
+		return
+	}
+	connID, err := primitive.ObjectIDFromHex(rest[:colonIdx])
+	if err != nil {
+		return
+	}
+	if err := s.PushEnqueuer.EnqueueDelete(ctx, taskID, categoryID, userID, connID, eventID, calendarID); err != nil {
+		slog.Warn("Push hook: enqueue delete failed", "task_id", taskID, "error", err)
+	}
+}
+
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.
 func (s *Service) UpdatePartialTask(
 	id primitive.ObjectID,
@@ -1019,6 +1087,7 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectID) error {
+	s.snapshotPushTargetForDelete(context.Background(), id, categoryId, primitive.NilObjectID)
 	ctx := context.Background()
 	result, err := s.Tasks.UpdateOne(
 		ctx, bson.M{
