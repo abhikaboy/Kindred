@@ -1,6 +1,7 @@
 import client from "@/api/client";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
+import type { RingDelta } from "./types";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import { createLogger } from "@/utils/logger";
@@ -19,7 +20,7 @@ type CreateEncouragementParams = components["schemas"]["CreateEncouragementParam
  */
 export const createEncouragementAPI = async (
     encouragementData: CreateEncouragementParams
-): Promise<EncouragementDocument> => {
+): Promise<EncouragementDocument & { ringDelta?: RingDelta }> => {
     const { data, error } = await client.POST("/v1/user/encouragements", {
         params: withAuthHeaders(),
         body: encouragementData,
@@ -29,7 +30,7 @@ export const createEncouragementAPI = async (
         throw new Error(`Failed to create encouragement: ${JSON.stringify(error)}`);
     }
 
-    return data;
+    return data as unknown as EncouragementDocument & { ringDelta?: RingDelta };
 };
 
 /**
