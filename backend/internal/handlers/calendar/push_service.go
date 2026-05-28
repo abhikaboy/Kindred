@@ -114,6 +114,10 @@ func (s *Service) processPushUpsert(ctx context.Context, row PushOutboxRow) erro
 
 	conn, err := s.connectionByID(ctx, connID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			slog.Info("Push upsert: connection gone, dropping row", "connection_id", connID, "task_id", row.TaskID)
+			return nil
+		}
 		return fmt.Errorf("load connection: %w", err)
 	}
 	provider, ok2 := s.providers[conn.Provider]
@@ -170,6 +174,10 @@ func (s *Service) deleteEventForTask(ctx context.Context, task *types.TaskDocume
 	}
 	conn, err := s.connectionByID(ctx, connID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			slog.Info("deleteEventForTask: connection gone, treating as success", "connection_id", connID, "task_id", task.ID)
+			return nil
+		}
 		return fmt.Errorf("load connection for delete: %w", err)
 	}
 	provider, ok := s.providers[conn.Provider]

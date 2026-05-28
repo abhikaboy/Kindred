@@ -15,10 +15,13 @@ type OAuthCallbackInput struct {
 	Error string `query:"error"`
 }
 
+// OAuthCallbackOutput returns a 302 redirect so the in-app browser navigates
+// to the kindred:// deep link and auto-dismisses. Previously this returned
+// JSON with a discarded HTML field; that left users staring at a {} body
+// until they manually closed the auth session.
 type OAuthCallbackOutput struct {
-	Body struct {
-		HTML string `json:"-"` // HTML response for redirect
-	} `contentType:"text/html"`
+	Status   int
+	Location string `header:"Location"`
 }
 
 type GetConnectionsInput struct{}

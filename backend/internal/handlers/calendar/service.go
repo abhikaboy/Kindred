@@ -523,6 +523,10 @@ func (s *Service) DisconnectProvider(ctx context.Context, userID, connectionID p
 		return fmt.Errorf("connection not found during deletion")
 	}
 
+	// Clean up downstream state so a future task in an orphaned category
+	// doesn't enqueue push rows that can never resolve.
+	s.cleanupAfterDisconnect(ctx, userID, connectionID)
+
 	slog.Info("Calendar disconnected successfully", "user_id", userID, "connection_id", connectionID)
 
 	// Track disconnection in PostHog
@@ -540,6 +544,61 @@ func (s *Service) DisconnectProvider(ctx context.Context, userID, connectionID p
 	}
 
 	return nil
+}
+
+// cleanupAfterDisconnect flips push_enabled=false on every category linked
+// to the disconnected connection and drops any pending push-outbox rows
+// destined for it. Failures are logged but not propagated: the connection
+// itself is already deleted and we don't want to surface a 500 to the user
+// over best-effort downstream cleanup. We intentionally keep the categories'
+// `integration` field intact so the UI can still surface that they were
+// once linked and so a future re-link could re-bind them.
+func (s *Service) cleanupAfterDisconnect(ctx context.Context, userID, connectionID primitive.ObjectID) {
+	integrationPrefix := fmt.Sprintf("^gcal:%s:", connectionID.Hex())
+
+	// Collect category IDs first so we can target outbox rows precisely.
+	categoryFilter := bson.M{
+		"user":        userID,
+		"integration": bson.M{"$regex": integrationPrefix},
+	}
+	cur, err := s.categories.Find(ctx, categoryFilter, options.Find().SetProjection(bson.M{"_id": 1}))
+	var categoryIDs []primitive.ObjectID
+	if err != nil {
+		slog.Warn("cleanupAfterDisconnect: failed to find orphaned categories", "connection_id", connectionID, "error", err)
+	} else {
+		var rows []struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+		if decodeErr := cur.All(ctx, &rows); decodeErr != nil {
+			slog.Warn("cleanupAfterDisconnect: failed to decode orphaned categories", "connection_id", connectionID, "error", decodeErr)
+		}
+		for _, r := range rows {
+			categoryIDs = append(categoryIDs, r.ID)
+		}
+	}
+
+	if len(categoryIDs) > 0 {
+		updRes, updErr := s.categories.UpdateMany(ctx, categoryFilter, bson.M{
+			"$set": bson.M{"push_enabled": false},
+		})
+		if updErr != nil {
+			slog.Warn("cleanupAfterDisconnect: failed to clear push_enabled on orphaned categories", "connection_id", connectionID, "error", updErr)
+		} else {
+			slog.Info("cleanupAfterDisconnect: cleared push_enabled on orphaned categories",
+				"connection_id", connectionID,
+				"matched", updRes.MatchedCount,
+				"modified", updRes.ModifiedCount)
+		}
+	}
+
+	if s.pushOutbox != nil {
+		dropped, dropErr := s.pushOutbox.DeletePendingForConnection(ctx, connectionID, categoryIDs)
+		if dropErr != nil {
+			slog.Warn("cleanupAfterDisconnect: failed to drop pending push-outbox rows", "connection_id", connectionID, "error", dropErr)
+		} else if dropped > 0 {
+			slog.Info("cleanupAfterDisconnect: dropped pending push-outbox rows", "connection_id", connectionID, "dropped", dropped)
+		}
+	}
 }
 
 // getValidToken gets a valid access token, refreshing if necessary

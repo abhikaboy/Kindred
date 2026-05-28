@@ -5435,14 +5435,6 @@ export interface components {
             near_deadlines: boolean;
             reactions: boolean;
         };
-        OAuthCallbackOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/OAuthCallbackOutputBody.json
-             */
-            readonly $schema?: string;
-        };
         PostDocumentAPI: {
             /**
              * Format: uri
@@ -8010,14 +8002,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
+                    Location?: string;
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["OAuthCallbackOutputBody"];
-                };
+                content?: never;
             };
             /** @description Error */
             default: {

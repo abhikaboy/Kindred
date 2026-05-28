@@ -177,6 +177,29 @@ func (o *PushOutbox) ClaimBatch(ctx context.Context, limit int) ([]PushOutboxRow
 	return rows, nil
 }
 
+// DeletePendingForConnection removes pending outbox rows tied to a disconnected
+// connection — both upserts (matched by category_id, since they look the
+// connection up via the category's integration field at process time) and
+// deletes (matched by their snapshotted target_connection_id). Without this,
+// rows queued before disconnect would retry against a missing connection for
+// hours of exponential backoff before flipping to failed_permanent.
+func (o *PushOutbox) DeletePendingForConnection(ctx context.Context, connectionID primitive.ObjectID, categoryIDs []primitive.ObjectID) (int64, error) {
+	or := []bson.M{
+		{"target_connection_id": connectionID},
+	}
+	if len(categoryIDs) > 0 {
+		or = append(or, bson.M{"category_id": bson.M{"$in": categoryIDs}})
+	}
+	res, err := o.col.DeleteMany(ctx, bson.M{
+		"status": pushStatusPending,
+		"$or":    or,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return res.DeletedCount, nil
+}
+
 // MarkSuccess deletes the row after a successful drain.
 func (o *PushOutbox) MarkSuccess(ctx context.Context, id primitive.ObjectID) error {
 	_, err := o.col.DeleteOne(ctx, bson.M{"_id": id})
