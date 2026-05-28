@@ -3088,6 +3088,26 @@ export interface paths {
         patch: operations["update-workspace"];
         trace?: never;
     };
+    "/v1/user/workspaces/{name}/push-enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set push-to-calendar for a workspace
+         * @description Flips push_enabled on every calendar-integrated category in the workspace.
+         */
+        patch: operations["set-workspace-push-enabled"];
+        trace?: never;
+    };
     "/v1/waitlist": {
         parameters: {
             query?: never;
@@ -3646,6 +3666,7 @@ export interface components {
             /** Format: date-time */
             lastEdited: string;
             name: string;
+            push_enabled?: boolean;
             tasks: components["schemas"]["TaskDocument"][];
             user: string;
             workspaceName: string;
@@ -3728,6 +3749,8 @@ export interface components {
             message: string;
             /** @description If this was a flex task and more instances remain, the next task instance */
             nextFlexTask?: components["schemas"]["NextFlexTaskDTO"];
+            /** @description Describes the Do ring increment triggered by this completion so the client can render feedback */
+            ringDelta?: components["schemas"]["RingDelta"];
             /**
              * @description Indicates if the user's streak increased
              * @example true
@@ -3969,6 +3992,59 @@ export interface components {
             name: string;
             workspaceName: string;
         };
+        CreateCongratulationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateCongratulationOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Category name
+             * @example Work
+             */
+            categoryName: string;
+            /**
+             * @description Unique identifier for the congratulation
+             * @example 507f1f77bcf86cd799439011
+             */
+            id: string;
+            /**
+             * @description Congratulation message
+             * @example Congratulations on completing your task!
+             */
+            message: string;
+            /**
+             * @description Whether the congratulation has been read
+             * @example false
+             */
+            read: boolean;
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
+            receiver: string;
+            /** @description Describes the Share ring increment triggered by this congratulation so the client can render feedback */
+            ringDelta?: components["schemas"]["RingDelta"];
+            /** @description Sender information */
+            sender: components["schemas"]["CongratulationSender"];
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
+            taskName: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
+             */
+            timestamp: string;
+            /**
+             * @description Type of congratulation (message or image)
+             * @example message
+             */
+            type: string;
+        };
         CreateCongratulationParams: {
             /**
              * Format: uri
@@ -4019,6 +4095,69 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver_id: string;
+        };
+        CreateEncouragementOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateEncouragementOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Category name
+             * @example Work
+             */
+            categoryName?: string;
+            /**
+             * @description Unique identifier for the encouragement
+             * @example 507f1f77bcf86cd799439011
+             */
+            id: string;
+            /**
+             * @description Encouragement message
+             * @example Great job on completing your task!
+             */
+            message: string;
+            /**
+             * @description Whether the encouragement has been read
+             * @example false
+             */
+            read: boolean;
+            /**
+             * @description Receiver user ID
+             * @example 507f1f77bcf86cd799439012
+             */
+            receiver: string;
+            /** @description Describes the Share ring increment triggered by this encouragement so the client can render feedback */
+            ringDelta?: components["schemas"]["RingDelta"];
+            /**
+             * @description Scope of encouragement (task or profile)
+             * @example task
+             */
+            scope: string;
+            /** @description Sender information */
+            sender: components["schemas"]["EncouragementSender"];
+            /**
+             * @description Task ID being encouraged
+             * @example 507f1f77bcf86cd799439013
+             */
+            taskId?: string;
+            /**
+             * @description Task name
+             * @example Complete project proposal
+             */
+            taskName?: string;
+            /**
+             * Format: date-time
+             * @description Creation timestamp
+             * @example 2023-01-01T00:00:00Z
+             */
+            timestamp: string;
+            /**
+             * @description Type of encouragement (message or image)
+             * @example message
+             */
+            type: string;
         };
         CreateEncouragementParams: {
             /**
@@ -4072,6 +4211,31 @@ export interface components {
             readonly $schema?: string;
             members?: string[];
             name: string;
+        };
+        CreatePostOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreatePostOutputBody.json
+             */
+            readonly $schema?: string;
+            _id: string;
+            blueprint?: components["schemas"]["EnhancedBlueprintReference"];
+            caption: string;
+            category?: components["schemas"]["CategoryExtendedReference"];
+            comments: components["schemas"]["CommentDocumentAPI"][];
+            dual?: string;
+            groups?: string[];
+            images: string[];
+            metadata: components["schemas"]["PostMetadata"];
+            reactions: {
+                [key: string]: string[];
+            };
+            /** @description Describes the Share ring increment triggered by this post so the client can render feedback */
+            ringDelta?: components["schemas"]["RingDelta"];
+            size?: components["schemas"]["ImageSize"];
+            task?: components["schemas"]["PostTaskExtendedReference"];
+            user: components["schemas"]["UserExtendedReference"];
         };
         CreatePostOutputUserStats: {
             /** Format: int64 */
@@ -4137,6 +4301,56 @@ export interface components {
              * @description Total number of tasks created
              */
             tasksCreated: number;
+        };
+        CreateTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTaskOutputBody.json
+             */
+            readonly $schema?: string;
+            active: boolean;
+            blueprintId?: string;
+            categoryID?: string;
+            checklist?: components["schemas"]["ChecklistItem"][];
+            content: string;
+            /** Format: date-time */
+            deadline?: string;
+            flexInfo?: components["schemas"]["FlexInstanceInfo"];
+            id: string;
+            integration?: string;
+            /** Format: date-time */
+            lastEdited: string;
+            notes?: string;
+            posted: boolean;
+            /** Format: int64 */
+            priority: number;
+            public: boolean;
+            pushed_calendar_id?: string;
+            pushed_event_etag?: string;
+            pushed_event_id?: string;
+            recurDetails?: components["schemas"]["RecurDetails"];
+            recurFrequency?: string;
+            recurType?: string;
+            recurring: boolean;
+            reminders?: components["schemas"]["Reminder"][];
+            /** @description Describes the Plan ring increment triggered by this creation so the client can render feedback */
+            ringDelta?: components["schemas"]["RingDelta"];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            startTime?: string;
+            templateID?: string;
+            /** Format: date-time */
+            timeCompleted?: string;
+            timeTaken?: string;
+            /** Format: date-time */
+            timestamp: string;
+            userID?: string;
+            /** Format: double */
+            value: number;
+            /** Format: date-time */
+            workingOnSince?: string;
         };
         CreateTaskParams: {
             /**
@@ -5696,6 +5910,18 @@ export interface components {
             store: string;
             type: string;
         };
+        RingDelta: {
+            all_closed: boolean;
+            /** Format: int64 */
+            current: number;
+            just_closed: boolean;
+            just_closed_all: boolean;
+            /** Format: int64 */
+            previous: number;
+            ring: string;
+            /** Format: int64 */
+            target: number;
+        };
         RingProgress: {
             closed: boolean;
             /** Format: int64 */
@@ -5816,6 +6042,30 @@ export interface components {
             readonly $schema?: string;
             phone_number: string;
         };
+        SetWorkspacePushEnabledInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetWorkspacePushEnabledInputBody.json
+             */
+            readonly $schema?: string;
+            push_enabled: boolean;
+        };
+        SetWorkspacePushEnabledOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetWorkspacePushEnabledOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Workspace push setting updated */
+            message: string;
+            /**
+             * Format: int64
+             * @example 2
+             */
+            modified: number;
+        };
         SetupWorkspacesInputBody: {
             /**
              * Format: uri
@@ -5826,6 +6076,8 @@ export interface components {
             calendar_ids: string[];
             make_public: boolean;
             merge_into_one: boolean;
+            /** @description Calendar IDs (subset of calendar_ids) that should also receive Kindred tasks pushed back to Google. Default empty (push disabled). */
+            push_enabled_calendar_ids?: string[];
         };
         SetupWorkspacesOutputBody: {
             /**
@@ -5924,6 +6176,9 @@ export interface components {
             /** Format: int64 */
             priority: number;
             public: boolean;
+            pushed_calendar_id?: string;
+            pushed_event_etag?: string;
+            pushed_event_id?: string;
             recurDetails?: components["schemas"]["RecurDetails"];
             recurFrequency?: string;
             recurType?: string;
@@ -9420,7 +9675,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CongratulationDocument"];
+                    "application/json": components["schemas"]["CreateCongratulationOutputBody"];
                 };
             };
             /** @description Error */
@@ -10198,7 +10453,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EncouragementDocument"];
+                    "application/json": components["schemas"]["CreateEncouragementOutputBody"];
                 };
             };
             /** @description Error */
@@ -10894,7 +11149,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostDocumentAPI"];
+                    "application/json": components["schemas"]["CreatePostOutputBody"];
                 };
             };
             /** @description Error */
@@ -11902,7 +12157,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TaskDocument"];
+                    "application/json": components["schemas"]["CreateTaskOutputBody"];
                 };
             };
             /** @description Error */
@@ -13056,6 +13311,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateWorkspaceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-workspace-push-enabled": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetWorkspacePushEnabledInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetWorkspacePushEnabledOutputBody"];
                 };
             };
             /** @description Error */

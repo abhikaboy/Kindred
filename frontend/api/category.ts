@@ -176,6 +176,27 @@ export const updateWorkspaceMeta = async (
 };
 
 /**
+ * Toggle push-to-calendar for all calendar-linked categories in a workspace.
+ * Non-calendar categories are not affected.
+ */
+export const setWorkspacePushEnabled = async (
+    workspaceName: string,
+    pushEnabled: boolean
+): Promise<void> => {
+    const { error } = await (client.PATCH as any)(
+        `/v1/user/workspaces/${encodeURIComponent(workspaceName)}/push-enabled`,
+        {
+            params: withAuthHeaders({}),
+            body: { push_enabled: pushEnabled },
+        }
+    );
+
+    if (error) {
+        throw new Error(`Failed to set workspace push: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
  * Setup default workspace with starter tasks
  * Creates the "🌺 Kindred Guide" workspace with onboarding tasks for new users
  */

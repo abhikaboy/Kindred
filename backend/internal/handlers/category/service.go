@@ -420,6 +420,41 @@ func (s *Service) GetCategoryNamesSummary(userID primitive.ObjectID) (string, er
 	return b.String(), nil
 }
 
+// SetWorkspacePushEnabled sets push_enabled on every calendar-integrated
+// category in the given workspace owned by the user. Categories without a
+// "gcal:" integration are not touched, since they have no destination calendar.
+func (s *Service) SetWorkspacePushEnabled(workspaceName string, user primitive.ObjectID, enabled bool) (int64, error) {
+	ctx := context.Background()
+
+	filter := bson.M{
+		"workspaceName": workspaceName,
+		"user":          user,
+		"integration":   bson.M{"$regex": "^gcal:"},
+	}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "push_enabled", Value: enabled},
+		{Key: "lastEdited", Value: xutils.NowUTC()},
+	}}}
+
+	result, err := s.Categories.UpdateMany(ctx, filter, update)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to set workspace push_enabled",
+			slog.String("workspace", workspaceName),
+			slog.String("userID", user.Hex()),
+			slog.Bool("enabled", enabled),
+			slog.String("error", err.Error()))
+		return 0, err
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Workspace push_enabled updated",
+		slog.String("workspace", workspaceName),
+		slog.Bool("enabled", enabled),
+		slog.Int64("matched", result.MatchedCount),
+		slog.Int64("modified", result.ModifiedCount))
+
+	return result.ModifiedCount, nil
+}
+
 // UpdateWorkspaceMeta updates only the provided icon/color fields on a workspace document
 func (s *Service) UpdateWorkspaceMeta(name string, user primitive.ObjectID, icon *string, color *string) error {
 	if s.Workspaces == nil {

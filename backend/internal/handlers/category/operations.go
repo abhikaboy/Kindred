@@ -238,6 +238,33 @@ func RegisterSetupDefaultWorkspaceOperation(api huma.API, handler *Handler) {
 	}, handler.SetupDefaultWorkspace)
 }
 
+// Set Workspace Push Enabled
+type SetWorkspacePushEnabledInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Name          string `path:"name"`
+	Body          struct {
+		PushEnabled bool `json:"push_enabled"`
+	}
+}
+
+type SetWorkspacePushEnabledOutput struct {
+	Body struct {
+		Message  string `json:"message" example:"Workspace push setting updated"`
+		Modified int64  `json:"modified" example:"2"`
+	}
+}
+
+func RegisterSetWorkspacePushEnabledOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "set-workspace-push-enabled",
+		Method:      http.MethodPatch,
+		Path:        "/v1/user/workspaces/{name}/push-enabled",
+		Summary:     "Set push-to-calendar for a workspace",
+		Description: "Flips push_enabled on every calendar-integrated category in the workspace.",
+		Tags:        []string{"categories", "workspaces", "calendar"},
+	}, handler.SetWorkspacePushEnabled)
+}
+
 func RegisterUpdateWorkspaceOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "update-workspace",
