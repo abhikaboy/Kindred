@@ -819,7 +819,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 	// Send notification to post owner (only if commenter is not the post owner)
 	if comment.User != nil && comment.User.ID != post.User.ID {
 		// Send push notification
-		err = s.sendCommentNotification(post.User.ID, comment.User.DisplayName, comment.Content)
+		err = s.sendCommentNotification(post.User.ID, post.ID, comment.User.DisplayName, comment.Content)
 		if err != nil {
 			// Log error but don't fail the operation since comment was already created
 			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
@@ -857,7 +857,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		}
 
 		// Send push notification
-		err = s.sendCommentNotification(mention.ID, comment.User.DisplayName, comment.Content)
+		err = s.sendCommentNotification(mention.ID, post.ID, comment.User.DisplayName, comment.Content)
 		if err != nil {
 			slog.Error("Failed to send mention push notification", "error", err, "mentioned_user_id", mention.ID)
 		}
@@ -965,7 +965,7 @@ func (s *Service) DeleteComment(postID primitive.ObjectID, commentID primitive.O
 }
 
 // sendCommentNotification sends a push notification when a comment is added to a post
-func (s *Service) sendCommentNotification(postOwnerID primitive.ObjectID, commenterName, commentText string) error {
+func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID, commenterName, commentText string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -986,15 +986,20 @@ func (s *Service) sendCommentNotification(postOwnerID primitive.ObjectID, commen
 
 	message := fmt.Sprintf("%s commented: \"%s\"", commenterName, commentText)
 
+	data := map[string]string{
+		"type":           "comment",
+		"commenter_name": commenterName,
+		"comment_text":   commentText,
+	}
+	if !postID.IsZero() {
+		data["post_id"] = postID.Hex()
+	}
+
 	notification := xutils.Notification{
 		Token:   postOwner.PushToken,
 		Title:   "New comment on your post",
 		Message: message,
-		Data: map[string]string{
-			"type":           "comment",
-			"commenter_name": commenterName,
-			"comment_text":   commentText,
-		},
+		Data:    data,
 	}
 
 	return xutils.SendNotification(notification)

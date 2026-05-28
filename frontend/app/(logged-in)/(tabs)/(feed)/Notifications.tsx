@@ -262,10 +262,20 @@ const Notifications = () => {
 
         switch (notification.type) {
             case "encouragement":
-                router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements");
+                // referenceId is the task ID (task-scope) or empty (profile-scope).
+                if (notification.referenceId) {
+                    router.push(`/(logged-in)/(tabs)/(task)/task/${notification.referenceId}` as any);
+                } else {
+                    router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements");
+                }
                 break;
             case "congratulation":
-                router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
+                // referenceId is the post the congratulation is on.
+                if (notification.referenceId) {
+                    router.push(`/(logged-in)/posting/${notification.referenceId}`);
+                } else {
+                    router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
+                }
                 break;
             case "friend_request":
             case "friend_request_accepted":

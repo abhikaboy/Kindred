@@ -182,20 +182,26 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
 
 	// Send push notification to receiver
-	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope)
+	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID)
 	if err != nil {
 		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
 	}
 
-	// Create notification in the database
+	// Create notification in the database.
+	// ReferenceID points to the entity the user should land on when they tap the notification:
+	//   - task scope → the task being encouraged
+	//   - profile scope → no entity, leave zero (frontend will fall back)
 	var notificationContent string
+	var referenceID primitive.ObjectID
 	if r.Scope == "profile" {
 		notificationContent = fmt.Sprintf("%s says: \"%s\"", r.Sender.Name, r.Message)
 	} else {
 		notificationContent = fmt.Sprintf("%s on \"%s\": \"%s\"", r.Sender.Name, r.TaskName, r.Message)
+		referenceID = r.TaskID
 	}
-	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, id)
+	_ = id // encouragement document ID; not used as referenceID — see comment above
+	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, referenceID)
 	if err != nil {
 		// Log error but don't fail the operation since encouragement was already created
 		slog.Error("Failed to create encouragement notification in database", "error", err, "receiver_id", r.Receiver)
@@ -339,7 +345,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 }
 
 // sendEncouragementNotification sends a push notification when an encouragement is created
-func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType, scope string) error {
+func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType, scope string, taskID primitive.ObjectID) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -363,6 +369,12 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 
 	// Handle profile-level encouragements
 	if scope == "profile" {
+		data := map[string]string{
+			"type":         "encouragement",
+			"scope":        "profile",
+			"sender_name":  senderName,
+			"message_text": encouragementText,
+		}
 		if encouragementType == "image" {
 			message = fmt.Sprintf("%s is rooting for you!", senderName)
 			notification = xutils.Notification{
@@ -370,12 +382,7 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				Title:    "You've got a fan!",
 				Message:  message,
 				ImageURL: encouragementText, // The message field contains the image URL for type="image"
-				Data: map[string]string{
-					"type":         "encouragement",
-					"scope":        "profile",
-					"sender_name":  senderName,
-					"message_text": encouragementText,
-				},
+				Data:     data,
 			}
 		} else {
 			message = fmt.Sprintf("%s says: \"%s\"", senderName, encouragementText)
@@ -383,16 +390,21 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				Token:   receiver.PushToken,
 				Title:   "You've got a fan!",
 				Message: message,
-				Data: map[string]string{
-					"type":         "encouragement",
-					"scope":        "profile",
-					"sender_name":  senderName,
-					"message_text": encouragementText,
-				},
+				Data:    data,
 			}
 		}
 	} else {
 		// Task-level encouragements
+		data := map[string]string{
+			"type":         "encouragement",
+			"scope":        "task",
+			"sender_name":  senderName,
+			"task_name":    taskName,
+			"message_text": encouragementText,
+		}
+		if !taskID.IsZero() {
+			data["task_id"] = taskID.Hex()
+		}
 		if encouragementType == "image" {
 			message = fmt.Sprintf("%s is cheering you on for \"%s\"!", senderName, taskName)
 			notification = xutils.Notification{
@@ -400,13 +412,7 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				Title:    "Someone believes in you!",
 				Message:  message,
 				ImageURL: encouragementText, // The message field contains the image URL for type="image"
-				Data: map[string]string{
-					"type":         "encouragement",
-					"scope":        "task",
-					"sender_name":  senderName,
-					"task_name":    taskName,
-					"message_text": encouragementText,
-				},
+				Data:     data,
 			}
 		} else {
 			message = fmt.Sprintf("%s on \"%s\": \"%s\"", senderName, taskName, encouragementText)
@@ -415,13 +421,7 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 				Title:   "Someone believes in you!",
 				Message: message,
 				// No ImageURL for text encouragements
-				Data: map[string]string{
-					"type":         "encouragement",
-					"scope":        "task",
-					"sender_name":  senderName,
-					"task_name":    taskName,
-					"message_text": encouragementText,
-				},
+				Data: data,
 			}
 		}
 	}

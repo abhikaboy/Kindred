@@ -37,6 +37,7 @@ import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/li
 import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
 import { useTasks } from '@/contexts/tasksContext';
+import { logger } from '@/utils/logger';
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -64,11 +65,15 @@ interface NotificationData {
     url?: string;
     // Social
     accepter_id?: string;
+    requester_id?: string;
     user_id?: string;
     // Task
     taskId?: string;
+    task_id?: string;
     categoryId?: string;
     taskName?: string;
+    // Post
+    post_id?: string;
     // Live Activity
     liveActivityType?: 'activeTask' | 'deadlineCountdown';
     workspaceName?: string;
@@ -86,10 +91,21 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
 
     switch (data.type) {
         case "encouragement":
+            // Task-scope encouragements deep-link to the task; profile-scope go to the kudos tab.
+            if (data.task_id) {
+                return `/(logged-in)/(tabs)/(task)/task/${data.task_id}`;
+            }
             return "/(logged-in)/(tabs)/(task)/kudos?tab=encouragements";
         case "congratulation":
+            // If the congratulation references a post, open it; otherwise show the kudos tab.
+            if (data.post_id) {
+                return `/(logged-in)/posting/${data.post_id}`;
+            }
             return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
         case "task_completion":
+            if (data.task_id) {
+                return `/(logged-in)/(tabs)/(task)/task/${data.task_id}`;
+            }
             return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
         case "friend_request":
             return "/(logged-in)/(tabs)/(activity)";
@@ -99,8 +115,14 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
             }
             return "/(logged-in)/(tabs)/(activity)";
         case "new_post":
+            if (data.post_id) {
+                return `/(logged-in)/posting/${data.post_id}`;
+            }
             return "/(logged-in)/(tabs)/(feed)/feed";
         case "comment":
+            if (data.post_id) {
+                return `/(logged-in)/posting/${data.post_id}`;
+            }
             return "/(logged-in)/(tabs)/(feed)/feed";
         case "rings_closed":
             if (data.user_id) {
@@ -112,6 +134,9 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
         case "ABSOLUTE":
         case "RELATIVE":
         case "FOLLOW_UP":
+            if (data.taskId) {
+                return `/(logged-in)/(tabs)/(task)/task/${data.taskId}`;
+            }
             return "/(logged-in)/(tabs)/(task)";
         default:
             return null;
@@ -339,6 +364,11 @@ const layout = ({ children }: { children: React.ReactNode }) => {
             const route = getNotificationRoute(data);
             if (route) {
                 router.navigate(route);
+            } else {
+                // No route for this notification type — log it so we catch new backend types that
+                // weren't wired up on the frontend. The user already saw the system notification banner,
+                // so this is mostly an engineering signal.
+                logger.warn("Push notification has no matching route", { type: data?.type, data });
             }
         });
 
