@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
@@ -9,6 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+// PushEnqueuer is satisfied by *calendar.PushOutbox; injected via a setter
+// so the task package doesn't depend on the calendar package directly.
+type PushEnqueuer interface {
+	EnqueueUpsert(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) error
+	EnqueueDelete(ctx context.Context, taskID, categoryID, userID, connectionID primitive.ObjectID, eventID, calendarID string) error
+}
 
 type CreateTaskParams struct {
 	Priority  int     `validate:"required,min=1,max=3" bson:"priority" json:"priority"`
@@ -140,6 +148,7 @@ type Service struct {
 	TemplateTasks       *mongo.Collection
 	EncouragementHelper EncouragementServiceInterface
 	RingService         *rings.RingService
+	PushEnqueuer        PushEnqueuer // optional; nil disables push hooks
 }
 
 // EncouragementServiceInterface defines the methods we need from the encouragement service

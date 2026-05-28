@@ -24,7 +24,7 @@ type Provider interface {
 	FetchEvents(ctx context.Context, token *oauth2.Token, timeMin, timeMax time.Time) ([]ProviderEvent, error)
 	CreateEvent(ctx context.Context, token *oauth2.Token, event ProviderEvent) (ProviderEvent, error)
 	UpdateEvent(ctx context.Context, token *oauth2.Token, eventID string, event ProviderEvent) (ProviderEvent, error)
-	DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error
+	DeleteEvent(ctx context.Context, token *oauth2.Token, calendarID string, eventID string) error
 
 	// Watch methods
 	WatchCalendar(ctx context.Context, token *oauth2.Token, calendarID string, channelID string, webhookURL string) (*WatchResponse, error)
@@ -60,6 +60,15 @@ type ProviderEvent struct {
 	IsAllDay     bool
 	Attendees    []string
 	Status       string // confirmed, tentative, cancelled
+
+	// ExtendedProperties carries provider-specific private metadata that
+	// round-trips through Create/Update/Fetch. Used for push-loop prevention
+	// (kindred_task_id, kindred_origin).
+	ExtendedProperties map[string]string
+
+	// Etag is the provider's opaque version identifier for this event, used
+	// later for drift detection. Populated by Create/Update/Fetch; ignored on input.
+	Etag string
 }
 
 // WatchResponse represents the response from creating a watch channel

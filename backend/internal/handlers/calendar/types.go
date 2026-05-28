@@ -82,9 +82,10 @@ type ListCalendarsOutput struct {
 type SetupWorkspacesInput struct {
 	ConnectionID string `path:"connectionId" required:"true"`
 	Body         struct {
-		CalendarIDs  []string `json:"calendar_ids"`
-		MergeIntoOne bool     `json:"merge_into_one"`
-		MakePublic   bool     `json:"make_public"`
+		CalendarIDs    []string `json:"calendar_ids"`
+		PushEnabledIDs []string `json:"push_enabled_calendar_ids,omitempty" doc:"Calendar IDs (subset of calendar_ids) that should also receive Kindred tasks pushed back to Google. Default empty (push disabled)."`
+		MergeIntoOne   bool     `json:"merge_into_one"`
+		MakePublic     bool     `json:"make_public"`
 	}
 }
 

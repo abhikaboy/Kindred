@@ -275,7 +275,7 @@ func (h *Handler) SetupWorkspaces(ctx context.Context, input *SetupWorkspacesInp
 		return nil, huma.Error400BadRequest("Invalid user ID format")
 	}
 
-	if err := h.service.SetupWorkspacesForConnection(ctx, connectionID, userObjID, input.Body.CalendarIDs, input.Body.MergeIntoOne, input.Body.MakePublic); err != nil {
+	if err := h.service.SetupWorkspacesForConnection(ctx, connectionID, userObjID, input.Body.CalendarIDs, input.Body.PushEnabledIDs, input.Body.MergeIntoOne, input.Body.MakePublic); err != nil {
 		slog.Error("Failed to set up calendar workspaces", "userId", userID, "connectionId", input.ConnectionID, "calendarIds", input.Body.CalendarIDs, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to set up calendar workspaces. Please try again.", err)
 	}

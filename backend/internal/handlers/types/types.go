@@ -70,6 +70,10 @@ type TaskDocument struct {
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 
+	PushedEventID    string `bson:"pushed_event_id,omitempty" json:"pushed_event_id,omitempty"`       // Google event ID for tasks pushed to a calendar
+	PushedCalendarID string `bson:"pushed_calendar_id,omitempty" json:"pushed_calendar_id,omitempty"` // Calendar the event lives on
+	PushedEventEtag  string `bson:"pushed_event_etag,omitempty" json:"pushed_event_etag,omitempty"`   // ETag at last write (for future drift detection)
+
 	FlexInfo *FlexInstanceInfo `bson:"flexInfo,omitempty" json:"flexInfo,omitempty"`
 
 	// Working state — set when user starts working, cleared on complete/stop

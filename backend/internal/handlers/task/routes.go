@@ -9,7 +9,7 @@ import (
 /*
 Router maps endpoints to handlers
 */
-func Routes(api huma.API, collections map[string]*mongo.Collection, geminiService any, ringService *rings.RingService) {
+func Routes(api huma.API, collections map[string]*mongo.Collection, geminiService any, ringService *rings.RingService) *Service {
 	service := newService(collections, ringService)
 	handler := Handler{
 		service:       service,
@@ -17,6 +17,7 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, geminiServic
 	}
 
 	RegisterTaskOperations(api, &handler)
+	return service
 }
 
 // RegisterTaskOperations registers all task operations with Huma

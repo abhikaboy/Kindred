@@ -189,7 +189,99 @@ func (s *Service) CreateTask(categoryId primitive.ObjectID, r *TaskDocument) (*T
 	// Cast the inserted ID to ObjectID
 	slog.LogAttrs(ctx, slog.LevelInfo, "Task inserted")
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), r.ID, categoryId, r.UserID)
+
 	return r, nil
+}
+
+// enqueuePushUpsertIfEnabled checks whether the task's category has push_enabled,
+// and if so, queues an upsert. Failures are logged but never block the task mutation.
+func (s *Service) enqueuePushUpsertIfEnabled(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) {
+	if s.PushEnqueuer == nil {
+		return
+	}
+	var cat struct {
+		PushEnabled bool `bson:"push_enabled"`
+	}
+	err := s.Tasks.FindOne(ctx, bson.M{"_id": categoryID}, options.FindOne().SetProjection(bson.M{"push_enabled": 1})).Decode(&cat)
+	if err != nil {
+		slog.Warn("Push hook: category lookup failed", "category_id", categoryID, "error", err)
+		return
+	}
+	if !cat.PushEnabled {
+		return
+	}
+	if err := s.PushEnqueuer.EnqueueUpsert(ctx, taskID, categoryID, userID); err != nil {
+		slog.Warn("Push hook: enqueue upsert failed", "task_id", taskID, "error", err)
+	}
+}
+
+// snapshotPushTargetForDelete reads the task's pushed_event_id / pushed_calendar_id
+// (if any) along with the category's connection_id (parsed from `integration`) and
+// enqueues a delete. Called BEFORE the task is removed.
+func (s *Service) snapshotPushTargetForDelete(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) {
+	if s.PushEnqueuer == nil {
+		return
+	}
+	var cat struct {
+		Integration string `bson:"integration"`
+		PushEnabled bool   `bson:"push_enabled"`
+		Tasks       []struct {
+			ID               primitive.ObjectID `bson:"_id"`
+			PushedEventID    string             `bson:"pushed_event_id,omitempty"`
+			PushedCalendarID string             `bson:"pushed_calendar_id,omitempty"`
+		} `bson:"tasks"`
+	}
+	err := s.Tasks.FindOne(ctx, bson.M{
+		"_id":       categoryID,
+		"tasks._id": taskID,
+	}, options.FindOne().SetProjection(bson.M{
+		"integration":              1,
+		"push_enabled":             1,
+		"tasks._id":                1,
+		"tasks.pushed_event_id":    1,
+		"tasks.pushed_calendar_id": 1,
+	})).Decode(&cat)
+	if err != nil {
+		return
+	}
+	if !cat.PushEnabled {
+		return
+	}
+	var eventID, calendarID string
+	for _, t := range cat.Tasks {
+		if t.ID == taskID {
+			eventID = t.PushedEventID
+			calendarID = t.PushedCalendarID
+			break
+		}
+	}
+	if eventID == "" {
+		return
+	}
+	// Parse connectionID from integration "gcal:<connID>:<calID>".
+	const prefix = "gcal:"
+	if len(cat.Integration) <= len(prefix) || cat.Integration[:len(prefix)] != prefix {
+		return
+	}
+	rest := cat.Integration[len(prefix):]
+	colonIdx := -1
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == ':' {
+			colonIdx = i
+			break
+		}
+	}
+	if colonIdx <= 0 {
+		return
+	}
+	connID, err := primitive.ObjectIDFromHex(rest[:colonIdx])
+	if err != nil {
+		return
+	}
+	if err := s.PushEnqueuer.EnqueueDelete(ctx, taskID, categoryID, userID, connID, eventID, calendarID); err != nil {
+		slog.Warn("Push hook: enqueue delete failed", "task_id", taskID, "error", err)
+	}
 }
 
 // UpdatePartialTask updates only specified fields of a Task document by ObjectID.
@@ -199,6 +291,14 @@ func (s *Service) UpdatePartialTask(
 	updated UpdateTaskDocument) (*TaskDocument, error) {
 
 	ctx := context.Background()
+
+	// Resolve the category owner up-front so the push hook can attribute the
+	// outbox row to the right user. Done before the `options` shadow below.
+	var ownerDoc struct {
+		User primitive.ObjectID `bson:"user"`
+	}
+	_ = s.Tasks.FindOne(ctx, bson.M{"_id": categoryId}, options.FindOne().SetProjection(bson.M{"user": 1})).Decode(&ownerDoc)
+	ownerUserID := ownerDoc.User
 
 	options := options.UpdateOptions{
 		ArrayFilters: &options.ArrayFilters{
@@ -272,6 +372,8 @@ func (s *Service) UpdatePartialTask(
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category", slog.String("error", err.Error()))
 		return nil, err
 	}
+
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, ownerUserID)
 
 	return nil, err
 }
@@ -463,6 +565,8 @@ func (s *Service) CompleteTask(
 		}()
 	}
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
+
 	return &TaskCompletionResult{
 		StreakChanged: streakChanged,
 		CurrentStreak: userAfter.Streak,
@@ -623,6 +727,10 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 			slog.Warn("Failed to move task to completed-tasks", "taskID", taskID.Hex(), "error", err)
 			continue
 		}
+
+		// Mirror the single-task CompleteTask push hook: enqueue an upsert
+		// after the task has been successfully marked completed.
+		s.enqueuePushUpsertIfEnabled(context.Background(), taskID, mapping.categoryID, userId)
 	}
 
 	// Create a set of failed task IDs for efficient lookup
@@ -882,6 +990,16 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 		return output, nil
 	}
 
+	// Snapshot push targets BEFORE the bulk $pull removes the tasks from
+	// their categories. Mirrors how the single-task DeleteTask calls
+	// snapshotPushTargetForDelete at the top of the function — once the
+	// tasks are pulled, pushed_event_id is unreachable.
+	for categoryID, taskIDsInCategory := range tasksByCategory {
+		for _, taskID := range taskIDsInCategory {
+			s.snapshotPushTargetForDelete(context.Background(), taskID, categoryID, userId)
+		}
+	}
+
 	// Bulk delete tasks from categories using $pull with $in
 	for categoryID, taskIDsInCategory := range tasksByCategory {
 		// Use $pullAll to remove multiple tasks at once
@@ -992,6 +1110,11 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()
+	var ownerDoc struct {
+		User primitive.ObjectID `bson:"user"`
+	}
+	_ = s.Tasks.FindOne(ctx, bson.M{"_id": categoryId}, options.FindOne().SetProjection(bson.M{"user": 1})).Decode(&ownerDoc)
+	s.snapshotPushTargetForDelete(context.Background(), id, categoryId, ownerDoc.User)
 	result, err := s.Tasks.UpdateOne(
 		ctx, bson.M{
 			"_id": categoryId,
@@ -1074,6 +1197,9 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 
 	resultDecoded := *result
 	fmt.Println(resultDecoded)
+
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
+
 	return err
 
 }
@@ -1228,6 +1354,8 @@ func (s *Service) UpdateTaskDeadline(id primitive.ObjectID, categoryID primitive
 		return handleMongoError(ctx, "update task deadline", err)
 	}
 
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryID, userID)
+
 	// Recalculate FOLLOW_UP reminder
 	return s.recalculateFollowUp(ctx, id, categoryID, update.Deadline)
 }
@@ -1259,8 +1387,13 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		bson.M{"$set": updateFields},
 		getTaskArrayFilterOptions(id),
 	)
+	if err != nil {
+		return handleMongoError(ctx, "update task start date/time", err)
+	}
 
-	return handleMongoError(ctx, "update task start date/time", err)
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryID, userID)
+
+	return nil
 }
 
 // UpdateTaskReminders updates the reminders field of a task

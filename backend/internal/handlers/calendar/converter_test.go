@@ -451,6 +451,23 @@ func TestConvertEventToTaskParams_TimeZones(t *testing.T) {
 	}
 }
 
+func TestProviderEvent_ExtendedPropertiesRoundtrip(t *testing.T) {
+	// A push-origin event should retain its extended properties through conversion.
+	pe := ProviderEvent{
+		ExtendedProperties: map[string]string{
+			"kindred_task_id": "task-123",
+			"kindred_origin":  "push",
+		},
+	}
+
+	if pe.ExtendedProperties["kindred_task_id"] != "task-123" {
+		t.Fatalf("expected task id, got %v", pe.ExtendedProperties)
+	}
+	if pe.ExtendedProperties["kindred_origin"] != "push" {
+		t.Fatalf("expected origin push, got %v", pe.ExtendedProperties)
+	}
+}
+
 func TestConvertEventToTaskParams_EdgeCases(t *testing.T) {
 	userID := primitive.NewObjectID()
 	categoryID := primitive.NewObjectID()
@@ -533,5 +550,28 @@ func TestConvertEventToTaskParams_EdgeCases(t *testing.T) {
 				t.Error("Expected default value 5.0")
 			}
 		})
+	}
+}
+
+func TestIsPushOriginEvent(t *testing.T) {
+	pushEv := ProviderEvent{
+		ExtendedProperties: map[string]string{
+			"kindred_origin":  "push",
+			"kindred_task_id": "abc",
+		},
+	}
+	pullEv := ProviderEvent{
+		ExtendedProperties: map[string]string{},
+	}
+	noPropsEv := ProviderEvent{}
+
+	if !IsPushOriginEvent(pushEv) {
+		t.Fatalf("expected push-origin event to be detected")
+	}
+	if IsPushOriginEvent(pullEv) {
+		t.Fatalf("expected pull-origin event to not be detected")
+	}
+	if IsPushOriginEvent(noPropsEv) {
+		t.Fatalf("expected event with no props to not be detected")
 	}
 }

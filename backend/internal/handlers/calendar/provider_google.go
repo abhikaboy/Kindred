@@ -2,6 +2,7 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -268,11 +270,11 @@ func (p *GoogleProvider) UpdateEvent(ctx context.Context, token *oauth2.Token, e
 	return result, nil
 }
 
-func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, eventID string) error {
+func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, calendarID string, eventID string) error {
 	ctx, span := otel.Tracer("kindred").Start(ctx, "calendar.DeleteEvent")
 	defer span.End()
 
-	slog.Info("Google: Deleting calendar event", "event_id", eventID)
+	slog.Info("Google: Deleting calendar event", "calendar_id", calendarID, "event_id", eventID)
 
 	client := p.config.Client(ctx, token)
 	calendarService, err := calendar.NewService(ctx, option.WithHTTPClient(client))
@@ -283,15 +285,28 @@ func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, e
 		return err
 	}
 
-	err = calendarService.Events.Delete("primary", eventID).Do()
+	if calendarID == "" {
+		calendarID = "primary"
+	}
+
+	err = calendarService.Events.Delete(calendarID, eventID).Do()
 	if err != nil {
+		// "Already gone" is success — common race when the user deletes the event in
+		// Google before Kindred's worker drains the row, or when an aggressive retry
+		// double-fires a delete. We logged it; we don't escalate.
+		var apiErr *googleapi.Error
+		if errors.As(err, &apiErr) && (apiErr.Code == 404 || apiErr.Code == 410) {
+			slog.Info("Google: event already gone, treating delete as success",
+				"calendar_id", calendarID, "event_id", eventID, "code", apiErr.Code)
+			return nil
+		}
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		slog.Error("Google: Failed to delete event", "event_id", eventID, "error", err)
+		slog.Error("Google: Failed to delete event", "calendar_id", calendarID, "event_id", eventID, "error", err)
 		return err
 	}
 
-	slog.Info("Google: Event deleted successfully", "event_id", eventID)
+	slog.Info("Google: Event deleted successfully", "calendar_id", calendarID, "event_id", eventID)
 	return nil
 }
 
@@ -306,6 +321,7 @@ func (p *GoogleProvider) convertGoogleEvent(googleEvent *calendar.Event, calenda
 		Description:  googleEvent.Description,
 		Location:     googleEvent.Location,
 		Status:       googleEvent.Status,
+		Etag:         googleEvent.Etag,
 	}
 
 	// Handle all-day events vs timed events
@@ -330,6 +346,14 @@ func (p *GoogleProvider) convertGoogleEvent(googleEvent *calendar.Event, calenda
 		event.Attendees = make([]string, 0, len(googleEvent.Attendees))
 		for _, attendee := range googleEvent.Attendees {
 			event.Attendees = append(event.Attendees, attendee.Email)
+		}
+	}
+
+	// Surface private extended properties so loop-prevention logic can read them.
+	if googleEvent.ExtendedProperties != nil && googleEvent.ExtendedProperties.Private != nil {
+		event.ExtendedProperties = make(map[string]string, len(googleEvent.ExtendedProperties.Private))
+		for k, v := range googleEvent.ExtendedProperties.Private {
+			event.ExtendedProperties[k] = v
 		}
 	}
 
@@ -368,6 +392,17 @@ func (p *GoogleProvider) convertToGoogleEvent(event ProviderEvent) *calendar.Eve
 			googleEvent.Attendees = append(googleEvent.Attendees, &calendar.EventAttendee{
 				Email: email,
 			})
+		}
+	}
+
+	// Forward private extended properties (e.g., kindred_task_id for loop prevention).
+	if len(event.ExtendedProperties) > 0 {
+		private := make(map[string]string, len(event.ExtendedProperties))
+		for k, v := range event.ExtendedProperties {
+			private[k] = v
+		}
+		googleEvent.ExtendedProperties = &calendar.EventExtendedProperties{
+			Private: private,
 		}
 	}
 
