@@ -210,6 +210,15 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		// Calendar push worker (drains the calendar_push_outbox, mirroring Kindred task changes to Google Calendar)
 		pushWorker := jobs.NewCalendarPushWorker(calendarConns, collections["categories"], cfg)
 		pushWorker.StartCron(cronScheduler)
+
+		// Push outbox lag sampler (every 1h) — emits calendar_push_outbox_lag_seconds
+		// so silent worker stalls surface in observability before users notice missing events.
+		pushOutbox := calendarConns.Database().Collection(jobs.PushOutboxCollectionName)
+		if lagJob, err := jobs.NewCalendarPushOutboxLagJob(pushOutbox); err != nil {
+			slog.Error("Failed to register calendar push outbox lag job", "error", err)
+		} else {
+			lagJob.StartCron(cronScheduler)
+		}
 	} else {
 		slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
 	}
