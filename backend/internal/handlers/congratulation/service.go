@@ -152,7 +152,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	slog.LogAttrs(ctx, slog.LevelInfo, "Congratulation inserted", slog.String("id", id.Hex()))
 
 	// Send push notification to receiver
-	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type)
+	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.PostID)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
@@ -175,7 +175,15 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		}
 	}
 
-	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, id, thumbnail)
+	// ReferenceID points to the post the congratulation is on (if any) so tapping the notification
+	// opens that post. Congratulations without a post (no current backend path produces this,
+	// but the field is optional) get a zero referenceID and the frontend will fall back.
+	var referenceID primitive.ObjectID
+	if r.PostID != nil && !r.PostID.IsZero() {
+		referenceID = *r.PostID
+	}
+	_ = id // congratulation document ID; not used as referenceID — see comment above
+	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeCongratulation, referenceID, thumbnail)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to create congratulation notification in database", "error", err, "receiver_id", r.Receiver)
@@ -318,8 +326,9 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 	}, nil
 }
 
-// sendCongratulationNotification sends a push notification when a congratulation is created
-func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string) error {
+// sendCongratulationNotification sends a push notification when a congratulation is created.
+// postID may be nil — congratulations created outside the post flow (e.g. beak onboarding) won't carry one.
+func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string, postID *primitive.ObjectID) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -338,6 +347,16 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 		return nil // Not an error, just no notification sent
 	}
 
+	data := map[string]string{
+		"type":         "congratulation",
+		"sender_name":  senderName,
+		"task_name":    taskName,
+		"message_text": congratulationText,
+	}
+	if postID != nil && !postID.IsZero() {
+		data["post_id"] = postID.Hex()
+	}
+
 	var message string
 	var notification xutils.Notification
 
@@ -349,12 +368,7 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 			Title:    "You're killing it!",
 			Message:  message,
 			ImageURL: congratulationText, // The message field contains the image URL for type="image"
-			Data: map[string]string{
-				"type":         "congratulation",
-				"sender_name":  senderName,
-				"task_name":    taskName,
-				"message_text": congratulationText,
-			},
+			Data:     data,
 		}
 	} else {
 		message = fmt.Sprintf("%s on \"%s\": \"%s\"", senderName, taskName, congratulationText)
@@ -363,12 +377,7 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 			Title:   "You're killing it!",
 			Message: message,
 			// No ImageURL for text congratulations
-			Data: map[string]string{
-				"type":         "congratulation",
-				"sender_name":  senderName,
-				"task_name":    taskName,
-				"message_text": congratulationText,
-			},
+			Data: data,
 		}
 	}
 
@@ -410,7 +419,7 @@ func (s *Service) SendBeakCongratulation(receiverID primitive.ObjectID, message,
 	}
 
 	// Send push notification
-	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message")
+	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message", nil)
 	if err != nil {
 		slog.Error("Failed to send beak congratulation notification", "error", err, "receiver_id", receiverID)
 	}

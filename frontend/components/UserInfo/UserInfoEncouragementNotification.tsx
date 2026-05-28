@@ -13,8 +13,10 @@ type Props = {
     taskName: string;
     icon: string;
     time: number;
-    referenceId: string; // Post ID to navigate to
-    type?: "encouragement" | "congratulation"; // Type of notification
+    // For encouragements this is the task ID; for congratulations this is the post ID.
+    // Empty string if the notification has no entity to deep-link to (e.g. profile-scope encouragement).
+    referenceId: string;
+    type?: "encouragement" | "congratulation";
 };
 
 const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time, referenceId, type = "encouragement" }: Props) => {
@@ -72,8 +74,18 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time,
     const timeLabel = getTimeLabel(time);
     
     const handleNotificationPress = () => {
-        // Navigate to the post that was encouraged
-        router.push(`/post/${referenceId}`);
+        // Congratulations reference a post; encouragements reference a task.
+        // Fall back to the kudos tab if no referenceId (e.g. profile-scope encouragement).
+        if (!referenceId) {
+            const tab = type === "congratulation" ? "congratulations" : "encouragements";
+            router.push(`/(logged-in)/(tabs)/(task)/kudos?tab=${tab}` as any);
+            return;
+        }
+        if (type === "congratulation") {
+            router.push(`/(logged-in)/posting/${referenceId}`);
+        } else {
+            router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}` as any);
+        }
     };
 
     // Animation for sparkle icon
