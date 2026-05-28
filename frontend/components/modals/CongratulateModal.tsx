@@ -21,6 +21,7 @@ import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRingUpdate } from "@/contexts/ringUpdateContext";
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -44,6 +45,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const { updateUser } = useAuth();
+    const { showRingUpdate } = useRingUpdate();
     const [congratulationMessage, setCongratulationMessage] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -223,7 +225,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             };
 
             // Make the API call
-            await createCongratulationAPI(congratulationData);
+            const congratulationResult = await createCongratulationAPI(congratulationData);
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
@@ -233,6 +235,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             });
 
             setIsUploading(false);
+            showRingUpdate(congratulationResult?.ringDelta);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Update user's congratulation count locally
