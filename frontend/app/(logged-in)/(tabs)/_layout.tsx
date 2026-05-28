@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Platform, Animated } from "react-native";
 import { usePathname } from "expo-router";
@@ -15,6 +15,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
+import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 
 // Import Phosphor icons
 import {
@@ -78,12 +79,19 @@ export const unstable_settings = {
 export default function TabLayout() {
     let ThemedColor = useThemeColor();
     const pathname = usePathname();
+    const segments = useSegments();
     const router = useRouter();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     const currentIndex = useTabIndex();
     const { capture } = useAnalytics();
+    const isOnFeedTab = segments?.some((segment) => segment === "(feed)");
+    const [scrollVisible, setScrollVisible] = useState(true);
+
+    useEffect(() => {
+        return feedScrollVisibilityEvents.subscribe(setScrollVisible);
+    }, []);
     const [modalVisible, setModalVisible] = useState(true);
     const toggleModal = () => {
         setModalVisible(!modalVisible);
@@ -126,7 +134,10 @@ export default function TabLayout() {
     ];
 
     const shouldHideTabBar =
-        hideTabBarScreens.some((screen) => pathname.startsWith(screen)) || isDrawerOpen || focusMode;
+        hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
+        isDrawerOpen ||
+        focusMode ||
+        (isOnFeedTab && !scrollVisible);
 
     const shouldHideFAB =
         shouldHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
