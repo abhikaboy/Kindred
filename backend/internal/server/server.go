@@ -207,7 +207,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		heartbeatJob := jobs.NewCalendarHeartbeatJob(calendarConns, collections["categories"], cfg)
 		heartbeatJob.StartCron(cronScheduler)
 
-		// Push notification worker (drains queued channel notifications)
+		// Calendar push worker (drains the calendar_push_outbox, mirroring Kindred task changes to Google Calendar)
 		pushWorker := jobs.NewCalendarPushWorker(calendarConns, collections["categories"], cfg)
 		pushWorker.StartCron(cronScheduler)
 	} else {
