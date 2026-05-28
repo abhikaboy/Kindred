@@ -172,6 +172,26 @@ var Indexes = []Index{
 			},
 		},
 	},
+	// Calendar push outbox indexes
+	// Defense-in-depth: guarantees at most one pending row per (task_id, op) at the
+	// storage layer, even if a caller bypasses the EnqueueUpsert helper. The partial
+	// filter on status="pending" still permits multiple historical succeeded/failed
+	// rows for the same (task_id, op) pair. See KIN-275.
+	{
+		Collection: "calendar_push_outbox",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "task_id", Value: 1},
+				{Key: "op", Value: 1},
+			},
+			Options: options.Index().
+				SetName("task_id_op_pending_unique").
+				SetUnique(true).
+				SetPartialFilterExpression(bson.D{
+					{Key: "status", Value: "pending"},
+				}),
+		},
+	},
 	// Calendar processed events indexes
 	{
 		Collection: "calendar_processed_events",
