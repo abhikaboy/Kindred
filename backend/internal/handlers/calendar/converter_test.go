@@ -468,6 +468,55 @@ func TestProviderEvent_ExtendedPropertiesRoundtrip(t *testing.T) {
 	}
 }
 
+func TestProviderEvent_ConversionRoundtrip_PreservesKindredOrigin(t *testing.T) {
+	// Loop-prevention contract: a push-originated event must keep
+	// kindred_origin=push (and kindred_task_id) after a full round-trip
+	// through convertToGoogleEvent -> *calendar.Event -> convertGoogleEvent.
+	// If either conversion drops the property, webhook ingestion will treat
+	// the push-originated event as a user edit and re-ingest it as a new
+	// task, breaking the loop-prevention check (see IsPushOriginEvent).
+	taskID := primitive.NewObjectID().Hex()
+
+	original := ProviderEvent{
+		ID:           "evt-roundtrip-1",
+		CalendarID:   "cal-roundtrip",
+		CalendarName: "Primary",
+		Summary:      "Pushed task",
+		StartTime:    time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
+		EndTime:      time.Date(2026, 6, 1, 11, 0, 0, 0, time.UTC),
+		IsAllDay:     false,
+		Status:       "confirmed",
+		ExtendedProperties: map[string]string{
+			"kindred_origin":  "push",
+			"kindred_task_id": taskID,
+		},
+	}
+
+	// convertToGoogleEvent and convertGoogleEvent are methods on
+	// *GoogleProvider but never dereference the receiver, so a nil
+	// receiver is sufficient for a hermetic test.
+	var p *GoogleProvider
+
+	googleEvent := p.convertToGoogleEvent(original)
+	roundtripped := p.convertGoogleEvent(googleEvent, original.CalendarID, original.CalendarName)
+
+	if roundtripped.ExtendedProperties == nil {
+		t.Fatalf("expected ExtendedProperties to survive round-trip, got nil")
+	}
+	if got := roundtripped.ExtendedProperties["kindred_origin"]; got != "push" {
+		t.Fatalf("expected kindred_origin=push after round-trip, got %q (props=%v)", got, roundtripped.ExtendedProperties)
+	}
+	if got := roundtripped.ExtendedProperties["kindred_task_id"]; got != taskID {
+		t.Fatalf("expected kindred_task_id=%q after round-trip, got %q (props=%v)", taskID, got, roundtripped.ExtendedProperties)
+	}
+
+	// Belt-and-suspenders: the production loop-prevention helper must
+	// still recognize the round-tripped event as push-originated.
+	if !IsPushOriginEvent(roundtripped) {
+		t.Fatalf("expected round-tripped event to be detected as push-origin, props=%v", roundtripped.ExtendedProperties)
+	}
+}
+
 func TestConvertEventToTaskParams_EdgeCases(t *testing.T) {
 	userID := primitive.NewObjectID()
 	categoryID := primitive.NewObjectID()
