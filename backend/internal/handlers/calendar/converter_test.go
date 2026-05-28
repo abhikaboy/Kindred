@@ -454,11 +454,6 @@ func TestConvertEventToTaskParams_TimeZones(t *testing.T) {
 func TestProviderEvent_ExtendedPropertiesRoundtrip(t *testing.T) {
 	// A push-origin event should retain its extended properties through conversion.
 	pe := ProviderEvent{
-		ID:         "evt-1",
-		CalendarID: "cal-1",
-		Summary:    "Test",
-		StartTime:  time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
-		EndTime:    time.Date(2026, 6, 1, 11, 0, 0, 0, time.UTC),
 		ExtendedProperties: map[string]string{
 			"kindred_task_id": "task-123",
 			"kindred_origin":  "push",
