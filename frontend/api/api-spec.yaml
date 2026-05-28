@@ -838,12 +838,12 @@ paths:
                   schema:
                     type: string
             responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
+                "204":
+                    description: No Content
+                    headers:
+                        Location:
                             schema:
-                                $ref: '#/components/schemas/OAuthCallbackOutputBody'
+                                type: string
                 default:
                     description: Error
                     content:
@@ -10246,17 +10246,6 @@ components:
                 - encouragements
                 - congratulations
                 - friend_requests
-        OAuthCallbackOutputBody:
-            type: object
-            additionalProperties: false
-            properties:
-                $schema:
-                    type: string
-                    description: A URL to the JSON Schema for this object.
-                    format: uri
-                    examples:
-                        - https://example.com/schemas/OAuthCallbackOutputBody.json
-                    readOnly: true
         PostDocumentAPI:
             type: object
             additionalProperties: false
