@@ -292,6 +292,14 @@ func (s *Service) UpdatePartialTask(
 
 	ctx := context.Background()
 
+	// Resolve the category owner up-front so the push hook can attribute the
+	// outbox row to the right user. Done before the `options` shadow below.
+	var ownerDoc struct {
+		User primitive.ObjectID `bson:"user"`
+	}
+	_ = s.Tasks.FindOne(ctx, bson.M{"_id": categoryId}, options.FindOne().SetProjection(bson.M{"user": 1})).Decode(&ownerDoc)
+	ownerUserID := ownerDoc.User
+
 	options := options.UpdateOptions{
 		ArrayFilters: &options.ArrayFilters{
 			Filters: bson.A{
@@ -365,7 +373,7 @@ func (s *Service) UpdatePartialTask(
 		return nil, err
 	}
 
-	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, primitive.NilObjectID)
+	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, ownerUserID)
 
 	return nil, err
 }
@@ -719,6 +727,10 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 			slog.Warn("Failed to move task to completed-tasks", "taskID", taskID.Hex(), "error", err)
 			continue
 		}
+
+		// Mirror the single-task CompleteTask push hook: enqueue an upsert
+		// after the task has been successfully marked completed.
+		s.enqueuePushUpsertIfEnabled(context.Background(), taskID, mapping.categoryID, userId)
 	}
 
 	// Create a set of failed task IDs for efficient lookup
@@ -978,6 +990,16 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 		return output, nil
 	}
 
+	// Snapshot push targets BEFORE the bulk $pull removes the tasks from
+	// their categories. Mirrors how the single-task DeleteTask calls
+	// snapshotPushTargetForDelete at the top of the function — once the
+	// tasks are pulled, pushed_event_id is unreachable.
+	for categoryID, taskIDsInCategory := range tasksByCategory {
+		for _, taskID := range taskIDsInCategory {
+			s.snapshotPushTargetForDelete(context.Background(), taskID, categoryID, userId)
+		}
+	}
+
 	// Bulk delete tasks from categories using $pull with $in
 	for categoryID, taskIDsInCategory := range tasksByCategory {
 		// Use $pullAll to remove multiple tasks at once
@@ -1087,8 +1109,12 @@ func (s *Service) IncrementTaskCompletedAndDelete(userId primitive.ObjectID, cat
 
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteTask(categoryId primitive.ObjectID, id primitive.ObjectID) error {
-	s.snapshotPushTargetForDelete(context.Background(), id, categoryId, primitive.NilObjectID)
 	ctx := context.Background()
+	var ownerDoc struct {
+		User primitive.ObjectID `bson:"user"`
+	}
+	_ = s.Tasks.FindOne(ctx, bson.M{"_id": categoryId}, options.FindOne().SetProjection(bson.M{"user": 1})).Decode(&ownerDoc)
+	s.snapshotPushTargetForDelete(context.Background(), id, categoryId, ownerDoc.User)
 	result, err := s.Tasks.UpdateOne(
 		ctx, bson.M{
 			"_id": categoryId,
