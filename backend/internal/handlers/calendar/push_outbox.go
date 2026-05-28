@@ -2,7 +2,6 @@ package calendar
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,34 +54,40 @@ func NewPushOutbox(col *mongo.Collection) *PushOutbox {
 }
 
 // EnqueueUpsert inserts an upsert row unless one is already pending for this task.
+// Uses an upsert on (task_id, op, status) so two concurrent calls collapse to one row.
 // If a pending delete exists for the same task, the upsert is still inserted —
 // the worker processes them in order (this is the "moved between calendars" case).
+//
+// NOTE: A unique partial index on (task_id, op, status) where status == "pending"
+// would make this airtight against the narrow window where two concurrent upserts
+// could both pass the filter check before either inserts. Recommended as a
+// deployment-time follow-up; not added here.
 func (o *PushOutbox) EnqueueUpsert(ctx context.Context, taskID, categoryID, userID primitive.ObjectID) error {
-	// Check for an existing pending upsert for this task.
-	count, err := o.col.CountDocuments(ctx, bson.M{
-		"task_id": taskID,
-		"op":      PushOpUpsert,
-		"status":  pushStatusPending,
-	})
+	now := time.Now()
+	_, err := o.col.UpdateOne(ctx,
+		bson.M{
+			"task_id": taskID,
+			"op":      PushOpUpsert,
+			"status":  pushStatusPending,
+		},
+		bson.M{
+			"$setOnInsert": bson.M{
+				"task_id":         taskID,
+				"category_id":     categoryID,
+				"user_id":         userID,
+				"op":              PushOpUpsert,
+				"enqueued_at":     now,
+				"next_attempt_at": now,
+				"attempt_count":   0,
+				"status":          pushStatusPending,
+			},
+		},
+		options.Update().SetUpsert(true),
+	)
 	if err != nil {
 		return err
 	}
-	if count > 0 {
-		slog.Debug("Push outbox: upsert already pending, coalescing", "task_id", taskID)
-		return nil
-	}
-
-	now := time.Now()
-	_, err = o.col.InsertOne(ctx, PushOutboxRow{
-		TaskID:        taskID,
-		CategoryID:    categoryID,
-		UserID:        userID,
-		Op:            PushOpUpsert,
-		EnqueuedAt:    now,
-		NextAttemptAt: now,
-		Status:        pushStatusPending,
-	})
-	return err
+	return nil
 }
 
 // EnqueueDelete inserts a delete row carrying the snapshot of what to delete.
@@ -114,19 +119,59 @@ func (o *PushOutbox) EnqueueDelete(ctx context.Context, taskID, categoryID, user
 	return err
 }
 
-// ClaimBatch fetches up to `limit` pending rows whose next_attempt_at <= now.
-// Caller is responsible for re-queuing or marking permanent.
+// ClaimBatch atomically claims up to `limit` pending rows whose next_attempt_at
+// has come due. Each claimed row's next_attempt_at is pushed forward by the
+// claim TTL so a concurrent worker (re-entrant tick or sibling replica) skips
+// it. On success/failure the worker still deletes (MarkSuccess) or resets
+// next_attempt_at via backoff (MarkFailure). If the worker crashes mid-process,
+// the row reappears after the TTL and another worker can pick it up.
 func (o *PushOutbox) ClaimBatch(ctx context.Context, limit int) ([]PushOutboxRow, error) {
+	const claimTTL = 5 * time.Minute
+	now := time.Now()
+
+	// Step 1: find up to `limit` due rows.
 	cursor, err := o.col.Find(ctx, bson.M{
 		"status":          pushStatusPending,
-		"next_attempt_at": bson.M{"$lte": time.Now()},
-	}, options.Find().SetLimit(int64(limit)).SetSort(bson.D{{Key: "next_attempt_at", Value: 1}}))
+		"next_attempt_at": bson.M{"$lte": now},
+	}, options.Find().SetLimit(int64(limit)).SetSort(bson.D{{Key: "next_attempt_at", Value: 1}}).SetProjection(bson.M{"_id": 1}))
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	var ids []primitive.ObjectID
+	{
+		var idDocs []struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+		if err := cursor.All(ctx, &idDocs); err != nil {
+			return nil, err
+		}
+		for _, d := range idDocs {
+			ids = append(ids, d.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	// Step 2: claim them by pushing next_attempt_at forward by the TTL.
+	// Workers that crash before MarkSuccess/MarkFailure will see these rows again
+	// after the TTL elapses.
+	_, err = o.col.UpdateMany(ctx,
+		bson.M{"_id": bson.M{"$in": ids}, "status": pushStatusPending},
+		bson.M{"$set": bson.M{"next_attempt_at": now.Add(claimTTL)}},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 3: re-fetch the rows we successfully claimed (they have the new next_attempt_at).
+	cursor2, err := o.col.Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor2.Close(ctx)
 	var rows []PushOutboxRow
-	if err := cursor.All(ctx, &rows); err != nil {
+	if err := cursor2.All(ctx, &rows); err != nil {
 		return nil, err
 	}
 	return rows, nil

@@ -65,6 +65,10 @@ type ProviderEvent struct {
 	// round-trips through Create/Update/Fetch. Used for push-loop prevention
 	// (kindred_task_id, kindred_origin).
 	ExtendedProperties map[string]string
+
+	// Etag is the provider's opaque version identifier for this event, used
+	// later for drift detection. Populated by Create/Update/Fetch; ignored on input.
+	Etag string
 }
 
 // WatchResponse represents the response from creating a watch channel
