@@ -29,7 +29,7 @@ export default function CalendarSetupBottomSheet({
     const { height: windowHeight } = useWindowDimensions();
     const [calendars, setCalendars] = useState<CalendarInfo[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [pushEnabledIds, setPushEnabledIds] = useState<string[]>([]);
+    const [pushEnabled, setPushEnabled] = useState(false);
     const [mergeIntoOne, setMergeIntoOne] = useState(false);
     const [makePublic, setMakePublic] = useState(false);
     const [fetching, setFetching] = useState(false);
@@ -54,17 +54,7 @@ export default function CalendarSetupBottomSheet({
     }, [visible, connectionId]);
 
     const toggleCalendar = (id: string) => {
-        setSelectedIds((prev) => {
-            const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-            if (!next.includes(id)) {
-                setPushEnabledIds((p) => p.filter((x) => x !== id));
-            }
-            return next;
-        });
-    };
-
-    const togglePushEnabled = (id: string) => {
-        setPushEnabledIds((prev) =>
+        setSelectedIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
     };
@@ -73,7 +63,14 @@ export default function CalendarSetupBottomSheet({
         if (selectedIds.length === 0 || creating) return;
         setCreating(true);
         try {
-            await setupCalendarWorkspaces(connectionId, selectedIds, pushEnabledIds, mergeIntoOne, makePublic);
+            const pushEnabledCalendarIds = pushEnabled ? selectedIds : [];
+            await setupCalendarWorkspaces(
+                connectionId,
+                selectedIds,
+                pushEnabledCalendarIds,
+                mergeIntoOne,
+                makePublic,
+            );
             onComplete();
         } catch (err) {
             console.error("Failed to set up workspaces:", err);
@@ -112,34 +109,16 @@ export default function CalendarSetupBottomSheet({
                             </ThemedText>
                         )}
                     </View>
-                    <View style={styles.calendarRowControls}>
-                        {isSelected && (
-                            <View
-                                style={styles.pushSwitchWrap}
-                                onStartShouldSetResponder={() => true}>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                    Push
-                                </ThemedText>
-                                <Switch
-                                    value={pushEnabledIds.includes(itemId)}
-                                    onValueChange={() => togglePushEnabled(itemId)}
-                                    trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
-                                    thumbColor="#ffffff"
-                                    ios_backgroundColor={ThemedColor.tertiary}
-                                />
-                            </View>
-                        )}
-                        <View
-                            style={[
-                                styles.checkbox,
-                                {
-                                    backgroundColor: isSelected ? ThemedColor.primary : "transparent",
-                                    borderColor: isSelected ? "transparent" : ThemedColor.text,
-                                    borderWidth: isSelected ? 0 : 1.5,
-                                },
-                            ]}>
-                            {isSelected && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
-                        </View>
+                    <View
+                        style={[
+                            styles.checkbox,
+                            {
+                                backgroundColor: isSelected ? ThemedColor.primary : "transparent",
+                                borderColor: isSelected ? "transparent" : ThemedColor.text,
+                                borderWidth: isSelected ? 0 : 1.5,
+                            },
+                        ]}>
+                        {isSelected && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -226,6 +205,23 @@ export default function CalendarSetupBottomSheet({
                                     ios_backgroundColor={ThemedColor.tertiary}
                                 />
                             </View>
+                            <View style={styles.toggleRow}>
+                                <View style={styles.toggleLabel}>
+                                    <ThemedText type="default">Push tasks to calendar</ThemedText>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {pushEnabled
+                                            ? "Two-way sync — tasks you create or edit in Kindred write back to Google Calendar"
+                                            : "One-way import only — Kindred won't change your calendar"}
+                                    </ThemedText>
+                                </View>
+                                <Switch
+                                    value={pushEnabled}
+                                    onValueChange={setPushEnabled}
+                                    trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
+                                    thumbColor="#ffffff"
+                                    ios_backgroundColor={ThemedColor.tertiary}
+                                />
+                            </View>
 
                             <View style={styles.buttonContainer}>
                                 <PrimaryButton
@@ -291,16 +287,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginLeft: 12,
-    },
-    calendarRowControls: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    pushSwitchWrap: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        marginRight: 4,
     },
     toggleRow: {
         flexDirection: "row",
