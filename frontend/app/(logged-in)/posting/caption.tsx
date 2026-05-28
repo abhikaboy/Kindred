@@ -15,6 +15,7 @@ import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { Ionicons } from "@expo/vector-icons";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
@@ -38,6 +39,7 @@ export default function Caption() {
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
+    const { showRingUpdate } = useRingUpdate();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
 
     // Compute display text based on state
@@ -146,6 +148,8 @@ export default function Caption() {
                     points: result.userStats.points
                 });
             }
+
+            showRingUpdate(result.ringDelta);
 
             capture(AnalyticsEvents.POST_CREATED, {
                 has_caption: !!data.caption?.trim(),
