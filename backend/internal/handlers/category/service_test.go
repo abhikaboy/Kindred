@@ -6,6 +6,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
 	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -454,6 +455,133 @@ func (s *CategoryServiceTestSuite) TestGetCategoryNamesSummary_NoCategories() {
 // ========================================
 // RenameWorkspace Tests
 // ========================================
+
+// ========================================
+// SetWorkspacePushEnabled Tests
+// ========================================
+
+func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_OnlyAffectsCalendarCategoriesInWorkspace() {
+	user := s.GetUser(0)
+
+	cal1 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Work calendar",
+		User:          user.ID,
+		WorkspaceName: "📅 Cal",
+		Integration:   "gcal:conn1:cal-a",
+		Tasks:         []types.TaskDocument{},
+	}
+	cal2 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Personal calendar",
+		User:          user.ID,
+		WorkspaceName: "📅 Cal",
+		Integration:   "gcal:conn1:cal-b",
+		Tasks:         []types.TaskDocument{},
+	}
+	plain := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Plain",
+		User:          user.ID,
+		WorkspaceName: "📅 Cal",
+		Tasks:         []types.TaskDocument{},
+	}
+	other := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Other workspace cal",
+		User:          user.ID,
+		WorkspaceName: "Other",
+		Integration:   "gcal:conn2:cal-x",
+		Tasks:         []types.TaskDocument{},
+	}
+
+	for _, c := range []*CategoryDocument{cal1, cal2, plain, other} {
+		_, err := s.service.CreateCategory(c)
+		s.NoError(err)
+	}
+
+	modified, err := s.service.SetWorkspacePushEnabled("📅 Cal", user.ID, true)
+	s.NoError(err)
+	s.Equal(int64(2), modified)
+
+	cases := []struct {
+		id          primitive.ObjectID
+		wantEnabled bool
+	}{
+		{cal1.ID, true},
+		{cal2.ID, true},
+		{plain.ID, false},
+		{other.ID, false},
+	}
+	for _, tc := range cases {
+		var got struct {
+			PushEnabled bool `bson:"push_enabled"`
+		}
+		err := s.Collections["categories"].FindOne(s.Ctx, bson.M{"_id": tc.id}).Decode(&got)
+		s.NoError(err)
+		s.Equal(tc.wantEnabled, got.PushEnabled, "category %s", tc.id.Hex())
+	}
+}
+
+func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_WrongUserNoOp() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	cal := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Work",
+		User:          user1.ID,
+		WorkspaceName: "WS",
+		Integration:   "gcal:conn1:cal-a",
+		Tasks:         []types.TaskDocument{},
+	}
+	_, err := s.service.CreateCategory(cal)
+	s.NoError(err)
+
+	modified, err := s.service.SetWorkspacePushEnabled("WS", user2.ID, true)
+	s.NoError(err)
+	s.Equal(int64(0), modified)
+}
+
+func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_DisablesAllInWorkspace() {
+	user := s.GetUser(0)
+
+	cal1 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Cal A",
+		User:          user.ID,
+		WorkspaceName: "WS",
+		Integration:   "gcal:conn1:cal-a",
+		PushEnabled:   true,
+		Tasks:         []types.TaskDocument{},
+	}
+	cal2 := &CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Cal B",
+		User:          user.ID,
+		WorkspaceName: "WS",
+		Integration:   "gcal:conn1:cal-b",
+		PushEnabled:   true,
+		Tasks:         []types.TaskDocument{},
+	}
+	for _, c := range []*CategoryDocument{cal1, cal2} {
+		_, err := s.service.CreateCategory(c)
+		s.NoError(err)
+	}
+
+	modified, err := s.service.SetWorkspacePushEnabled("WS", user.ID, false)
+	s.NoError(err)
+	s.Equal(int64(2), modified)
+
+	for _, id := range []primitive.ObjectID{cal1.ID, cal2.ID} {
+		var got struct {
+			PushEnabled bool `bson:"push_enabled"`
+		}
+		err := s.Collections["categories"].FindOne(s.Ctx, bson.M{"_id": id}).Decode(&got)
+		s.NoError(err)
+		s.False(got.PushEnabled, "category %s should be disabled", id.Hex())
+	}
+}
 
 func (s *CategoryServiceTestSuite) TestRenameWorkspace_Success() {
 	user := s.GetUser(0)

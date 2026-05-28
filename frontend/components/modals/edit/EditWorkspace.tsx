@@ -4,7 +4,7 @@ import BottomMenuModal from "../BottomMenuModal";
 import DeleteWorkspaceConfirmationModal from "../DeleteWorkspaceConfirmationModal";
 import EditWorkspaceModal from "./EditWorkspaceModal";
 import { useTasks } from "@/contexts/tasksContext";
-import { deleteWorkspace } from "@/api/category";
+import { deleteWorkspace, setWorkspacePushEnabled } from "@/api/category";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -44,7 +44,7 @@ type Props = {
 
 const EditWorkspace = (props: Props) => {
     const { editing, setEditing, id, actionRequest = null, onActionHandled, skipMenu = false } = props;
-    const { removeWorkspace, getWorkspace, restoreWorkspace, workspaces } = useTasks();
+    const { removeWorkspace, getWorkspace, restoreWorkspace, workspaces, setWorkSpaces } = useTasks();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showReorderModal, setShowReorderModal] = useState(false);
@@ -58,6 +58,16 @@ const EditWorkspace = (props: Props) => {
     // Get the categories for the current workspace
     const currentWorkspace = workspaces.find((ws) => ws.name === id);
     const workspaceCategories = currentWorkspace?.categories || [];
+
+    // Calendar-linked categories (those that have a gcal:* integration string).
+    // The "Push to Calendar" workspace toggle only surfaces when at least one exists,
+    // and the display state reflects whether all of them are currently push-enabled.
+    const calendarCategories = workspaceCategories.filter(
+        (c: any) => typeof c.integration === "string" && c.integration.startsWith("gcal:")
+    );
+    const hasCalendarCategories = calendarCategories.length > 0;
+    const pushOn =
+        hasCalendarCategories && calendarCategories.every((c: any) => Boolean(c.push_enabled));
 
     // Reference to the bottom sheet modals
     const editWorkspaceSheetRef = useRef<BottomSheetModal>(null);
@@ -197,6 +207,36 @@ const EditWorkspace = (props: Props) => {
             workspaceStateEvents.emit(id);
         } catch (error) {
             console.error("Error saving workspace visibility:", error);
+        }
+    };
+
+    const handlePushToggleClick = async () => {
+        if (!hasCalendarCategories) return;
+        const next = !pushOn;
+        try {
+            await setWorkspacePushEnabled(id, next);
+            const wsCopy = [...workspaces];
+            const idx = wsCopy.findIndex((w) => w.name === id);
+            if (idx !== -1) {
+                wsCopy[idx] = {
+                    ...wsCopy[idx],
+                    categories: wsCopy[idx].categories.map((c: any) =>
+                        typeof c.integration === "string" && c.integration.startsWith("gcal:")
+                            ? { ...c, push_enabled: next }
+                            : c
+                    ),
+                };
+                setWorkSpaces(wsCopy);
+            }
+        } catch (error) {
+            console.error("Error toggling workspace push:", error);
+            showToastable({
+                title: "Error",
+                status: "danger",
+                position: "top",
+                message: "Failed to update push setting",
+                renderContent: (props) => <DefaultToast {...props} />,
+            });
         }
     };
 
@@ -349,6 +389,16 @@ const EditWorkspace = (props: Props) => {
             icon: isPublic ? "eye" : "eye-off",
             callback: handleVisibilityClick,
         },
+        ...(hasCalendarCategories
+            ? [
+                  {
+                      label: `Push to Calendar • ${pushOn ? "On" : "Off"}`,
+                      icon: "upload-cloud",
+                      callback: handlePushToggleClick,
+                      labelHighlight: pushOn ? "On" : undefined,
+                  },
+              ]
+            : []),
         { label: "Delete", icon: "trash-2", callback: handleDeleteClick },
     ];
 

@@ -159,6 +159,7 @@ export async function getConnectionCalendars(connectionId: string): Promise<Cale
 export async function setupCalendarWorkspaces(
     connectionId: string,
     calendarIds: string[],
+    pushEnabledCalendarIds: string[],
     mergeIntoOne: boolean,
     makePublic: boolean
 ): Promise<{ success: boolean; message: string }> {
@@ -168,6 +169,7 @@ export async function setupCalendarWorkspaces(
         },
         body: {
             calendar_ids: calendarIds,
+            push_enabled_calendar_ids: pushEnabledCalendarIds,
             merge_into_one: mergeIntoOne,
             make_public: makePublic,
         },

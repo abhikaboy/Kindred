@@ -2533,7 +2533,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/CongratulationDocument'
+                                $ref: '#/components/schemas/CreateCongratulationOutputBody'
                 default:
                     description: Error
                     content:
@@ -3399,7 +3399,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/EncouragementDocument'
+                                $ref: '#/components/schemas/CreateEncouragementOutputBody'
                 default:
                     description: Error
                     content:
@@ -4153,7 +4153,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PostDocumentAPI'
+                                $ref: '#/components/schemas/CreatePostOutputBody'
                 default:
                     description: Error
                     content:
@@ -5154,7 +5154,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/TaskDocument'
+                                $ref: '#/components/schemas/CreateTaskOutputBody'
                 default:
                     description: Error
                     content:
@@ -6374,6 +6374,45 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/workspaces/{name}/push-enabled:
+        patch:
+            tags:
+                - categories
+                - workspaces
+                - calendar
+            summary: Set push-to-calendar for a workspace
+            description: Flips push_enabled on every calendar-integrated category in the workspace.
+            operationId: set-workspace-push-enabled
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetWorkspacePushEnabledInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SetWorkspacePushEnabledOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/waitlist:
         post:
             tags:
@@ -7252,6 +7291,8 @@ components:
                     format: date-time
                 name:
                     type: string
+                push_enabled:
+                    type: boolean
                 tasks:
                     type: array
                     items:
@@ -7427,6 +7468,9 @@ components:
                 nextFlexTask:
                     description: If this was a flex task and more instances remain, the next task instance
                     $ref: '#/components/schemas/NextFlexTaskDTO'
+                ringDelta:
+                    description: Describes the Do ring increment triggered by this completion so the client can render feedback
+                    $ref: '#/components/schemas/RingDelta'
                 streakChanged:
                     type: boolean
                     description: Indicates if the user's streak increased
@@ -7764,6 +7808,74 @@ components:
             required:
                 - name
                 - workspaceName
+        CreateCongratulationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateCongratulationOutputBody.json
+                    readOnly: true
+                categoryName:
+                    type: string
+                    description: Category name
+                    examples:
+                        - Work
+                id:
+                    type: string
+                    description: Unique identifier for the congratulation
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                message:
+                    type: string
+                    description: Congratulation message
+                    examples:
+                        - Congratulations on completing your task!
+                read:
+                    type: boolean
+                    description: Whether the congratulation has been read
+                    examples:
+                        - false
+                receiver:
+                    type: string
+                    description: Receiver user ID
+                    examples:
+                        - 507f1f77bcf86cd799439012
+                ringDelta:
+                    description: Describes the Share ring increment triggered by this congratulation so the client can render feedback
+                    $ref: '#/components/schemas/RingDelta'
+                sender:
+                    description: Sender information
+                    $ref: '#/components/schemas/CongratulationSender'
+                taskName:
+                    type: string
+                    description: Task name
+                    examples:
+                        - Complete project proposal
+                timestamp:
+                    type: string
+                    description: Creation timestamp
+                    format: date-time
+                    examples:
+                        - "2023-01-01T00:00:00Z"
+                type:
+                    type: string
+                    description: Type of congratulation (message or image)
+                    examples:
+                        - message
+            required:
+                - id
+                - sender
+                - receiver
+                - message
+                - timestamp
+                - categoryName
+                - taskName
+                - read
+                - type
         CreateCongratulationParams:
             type: object
             additionalProperties: false
@@ -7829,6 +7941,83 @@ components:
                         - 507f1f77bcf86cd799439012
             required:
                 - receiver_id
+        CreateEncouragementOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateEncouragementOutputBody.json
+                    readOnly: true
+                categoryName:
+                    type: string
+                    description: Category name
+                    examples:
+                        - Work
+                id:
+                    type: string
+                    description: Unique identifier for the encouragement
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                message:
+                    type: string
+                    description: Encouragement message
+                    examples:
+                        - Great job on completing your task!
+                read:
+                    type: boolean
+                    description: Whether the encouragement has been read
+                    examples:
+                        - false
+                receiver:
+                    type: string
+                    description: Receiver user ID
+                    examples:
+                        - 507f1f77bcf86cd799439012
+                ringDelta:
+                    description: Describes the Share ring increment triggered by this encouragement so the client can render feedback
+                    $ref: '#/components/schemas/RingDelta'
+                scope:
+                    type: string
+                    description: Scope of encouragement (task or profile)
+                    examples:
+                        - task
+                sender:
+                    description: Sender information
+                    $ref: '#/components/schemas/EncouragementSender'
+                taskId:
+                    type: string
+                    description: Task ID being encouraged
+                    examples:
+                        - 507f1f77bcf86cd799439013
+                taskName:
+                    type: string
+                    description: Task name
+                    examples:
+                        - Complete project proposal
+                timestamp:
+                    type: string
+                    description: Creation timestamp
+                    format: date-time
+                    examples:
+                        - "2023-01-01T00:00:00Z"
+                type:
+                    type: string
+                    description: Type of encouragement (message or image)
+                    examples:
+                        - message
+            required:
+                - id
+                - sender
+                - receiver
+                - message
+                - timestamp
+                - scope
+                - read
+                - type
         CreateEncouragementParams:
             type: object
             additionalProperties: false
@@ -7899,6 +8088,64 @@ components:
                     type: string
             required:
                 - name
+        CreatePostOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreatePostOutputBody.json
+                    readOnly: true
+                _id:
+                    type: string
+                blueprint:
+                    $ref: '#/components/schemas/EnhancedBlueprintReference'
+                caption:
+                    type: string
+                category:
+                    $ref: '#/components/schemas/CategoryExtendedReference'
+                comments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CommentDocumentAPI'
+                dual:
+                    type: string
+                groups:
+                    type: array
+                    items:
+                        type: string
+                images:
+                    type: array
+                    items:
+                        type: string
+                metadata:
+                    $ref: '#/components/schemas/PostMetadata'
+                reactions:
+                    type: object
+                    additionalProperties:
+                        type: array
+                        items:
+                            type: string
+                ringDelta:
+                    description: Describes the Share ring increment triggered by this post so the client can render feedback
+                    $ref: '#/components/schemas/RingDelta'
+                size:
+                    $ref: '#/components/schemas/ImageSize'
+                task:
+                    $ref: '#/components/schemas/PostTaskExtendedReference'
+                user:
+                    $ref: '#/components/schemas/UserExtendedReference'
+            required:
+                - _id
+                - user
+                - images
+                - caption
+                - reactions
+                - comments
+                - metadata
         CreatePostOutputUserStats:
             type: object
             additionalProperties: false
@@ -8013,6 +8260,107 @@ components:
                 - tasksCreated
                 - tasks
                 - message
+        CreateTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateTaskOutputBody.json
+                    readOnly: true
+                active:
+                    type: boolean
+                blueprintId:
+                    type: string
+                categoryID:
+                    type: string
+                checklist:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChecklistItem'
+                content:
+                    type: string
+                deadline:
+                    type: string
+                    format: date-time
+                flexInfo:
+                    $ref: '#/components/schemas/FlexInstanceInfo'
+                id:
+                    type: string
+                integration:
+                    type: string
+                lastEdited:
+                    type: string
+                    format: date-time
+                notes:
+                    type: string
+                posted:
+                    type: boolean
+                priority:
+                    type: integer
+                    format: int64
+                public:
+                    type: boolean
+                pushed_calendar_id:
+                    type: string
+                pushed_event_etag:
+                    type: string
+                pushed_event_id:
+                    type: string
+                recurDetails:
+                    $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurType:
+                    type: string
+                recurring:
+                    type: boolean
+                reminders:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Reminder'
+                ringDelta:
+                    description: Describes the Plan ring increment triggered by this creation so the client can render feedback
+                    $ref: '#/components/schemas/RingDelta'
+                startDate:
+                    type: string
+                    format: date-time
+                startTime:
+                    type: string
+                    format: date-time
+                templateID:
+                    type: string
+                timeCompleted:
+                    type: string
+                    format: date-time
+                timeTaken:
+                    type: string
+                timestamp:
+                    type: string
+                    format: date-time
+                userID:
+                    type: string
+                value:
+                    type: number
+                    format: double
+                workingOnSince:
+                    type: string
+                    format: date-time
+            required:
+                - id
+                - priority
+                - content
+                - value
+                - recurring
+                - public
+                - active
+                - timestamp
+                - lastEdited
+                - startDate
+                - posted
         CreateTaskParams:
             type: object
             additionalProperties: false
@@ -10822,6 +11170,35 @@ components:
                 - price_in_purchased_currency
                 - currency
                 - original_transaction_id
+        RingDelta:
+            type: object
+            additionalProperties: false
+            properties:
+                all_closed:
+                    type: boolean
+                current:
+                    type: integer
+                    format: int64
+                just_closed:
+                    type: boolean
+                just_closed_all:
+                    type: boolean
+                previous:
+                    type: integer
+                    format: int64
+                ring:
+                    type: string
+                target:
+                    type: integer
+                    format: int64
+            required:
+                - ring
+                - previous
+                - current
+                - target
+                - just_closed
+                - all_closed
+                - just_closed_all
         RingProgress:
             type: object
             additionalProperties: false
@@ -11056,6 +11433,44 @@ components:
                     type: string
             required:
                 - phone_number
+        SetWorkspacePushEnabledInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetWorkspacePushEnabledInputBody.json
+                    readOnly: true
+                push_enabled:
+                    type: boolean
+            required:
+                - push_enabled
+        SetWorkspacePushEnabledOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetWorkspacePushEnabledOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Workspace push setting updated
+                modified:
+                    type: integer
+                    format: int64
+                    examples:
+                        - 2
+            required:
+                - message
+                - modified
         SetupWorkspacesInputBody:
             type: object
             additionalProperties: false
@@ -11075,6 +11490,11 @@ components:
                     type: boolean
                 merge_into_one:
                     type: boolean
+                push_enabled_calendar_ids:
+                    type: array
+                    description: Calendar IDs (subset of calendar_ids) that should also receive Kindred tasks pushed back to Google. Default empty (push disabled).
+                    items:
+                        type: string
             required:
                 - calendar_ids
                 - merge_into_one
@@ -11255,6 +11675,12 @@ components:
                     format: int64
                 public:
                     type: boolean
+                pushed_calendar_id:
+                    type: string
+                pushed_event_etag:
+                    type: string
+                pushed_event_id:
+                    type: string
                 recurDetails:
                     $ref: '#/components/schemas/RecurDetails'
                 recurFrequency:

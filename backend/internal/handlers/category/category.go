@@ -265,6 +265,34 @@ func (h *Handler) UpdateWorkspace(ctx context.Context, input *UpdateWorkspaceInp
 	return resp, nil
 }
 
+func (h *Handler) SetWorkspacePushEnabled(ctx context.Context, input *SetWorkspacePushEnabledInput) (*SetWorkspacePushEnabledOutput, error) {
+	workspaceName, err := url.QueryUnescape(input.Name)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid workspace name encoding", err)
+	}
+
+	user_id_str, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	user_id, err := primitive.ObjectIDFromHex(user_id_str)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	modified, err := h.service.SetWorkspacePushEnabled(workspaceName, user_id, input.Body.PushEnabled)
+	if err != nil {
+		slog.Error("unable to set workspace push_enabled", "userId", user_id_str, "workspace", workspaceName, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update push setting. Please try again.", err)
+	}
+
+	resp := &SetWorkspacePushEnabledOutput{}
+	resp.Body.Message = "Workspace push setting updated"
+	resp.Body.Modified = modified
+	return resp, nil
+}
+
 func (h *Handler) SetupDefaultWorkspace(ctx context.Context, input *SetupDefaultWorkspaceInput) (*SetupDefaultWorkspaceOutput, error) {
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)
