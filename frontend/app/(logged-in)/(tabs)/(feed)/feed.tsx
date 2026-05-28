@@ -1,5 +1,7 @@
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 import PostCard from "@/components/cards/PostCard";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
@@ -346,6 +348,16 @@ export default function Feed() {
         fetchPosts(currentFeed.id);
     }, [currentFeed.id]);
 
+    // Restore tab bar / FAB visibility when leaving the feed tab so other
+    // screens don't inherit a hidden state from a mid-scroll navigation.
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                feedScrollVisibilityEvents.emit(true);
+            };
+        }, [])
+    );
+
     const handleFeedChange = useCallback((feed: { name: string; id: string }) => {
         setCurrentFeed(feed);
         capture(AnalyticsEvents.FEED_FILTER_CHANGED, {
@@ -388,9 +400,11 @@ export default function Feed() {
             if (isScrollingUp && !showAnimatedHeader) {
                 setShowAnimatedHeader(true);
                 animateHeader(true);
+                feedScrollVisibilityEvents.emit(true);
             } else if ((isScrollingDown || shouldHideHeader) && showAnimatedHeader) {
                 setShowAnimatedHeader(false);
                 animateHeader(false);
+                feedScrollVisibilityEvents.emit(false);
             }
 
             scrollY.setValue(currentScrollY);

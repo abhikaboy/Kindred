@@ -36,6 +36,29 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     const { openModal } = useCreateModal();
     const { capture } = useAnalytics();
 
+    // Visibility animation — matches the feed top bar and tab bar tempo
+    // (300ms parallel opacity + translate). The FAB lives at the right edge,
+    // so it slides off horizontally rather than down through the tab bar.
+    // 56 (FAB width) + 16 (right inset) + 16 (buffer) = 88.
+    const FAB_HIDE_X = 88;
+    const visibilityOpacity = useRef(new Animated.Value(visible ? 1 : 0)).current;
+    const visibilityTranslateX = useRef(new Animated.Value(visible ? 0 : FAB_HIDE_X)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(visibilityOpacity, {
+                toValue: visible ? 1 : 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(visibilityTranslateX, {
+                toValue: visible ? 0 : FAB_HIDE_X,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [visible, visibilityOpacity, visibilityTranslateX]);
+
     // State
     const [fabState, setFabState] = useState<FABState>("collapsed");
     const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false);
@@ -291,8 +314,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
         }
     };
 
-    if (!visible) return null;
-
     const bottomOffset = insets.bottom + TAB_BAR_HEIGHT;
 
     return (
@@ -311,12 +332,12 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
             )}
 
             <FABBackdrop
-                visible={fabState !== "collapsed"}
+                visible={visible && fabState !== "collapsed"}
                 opacity={animations.backdropOpacity}
                 onPress={handleBackdropPress}
             />
 
-            {fabState !== "collapsed" && (
+            {visible && fabState !== "collapsed" && (
                 <Animated.View
                     style={[
                         styles.menuContainer,
@@ -424,16 +445,26 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                 </Animated.View>
             )}
 
-            <FABButton
-                isOpen={fabState !== "collapsed"}
-                onPress={handleFABPress}
-                rotation={animations.rotation}
-                scale={animations.fabScale}
-                opacity={animations.fabOpacity}
-                bottomOffset={bottomOffset}
-                isKeyboardVisible={keyboardVisible}
-                isOnFeedTab={isOnFeedTab}
-            />
+            <Animated.View
+                pointerEvents={visible ? "box-none" : "none"}
+                style={[
+                    StyleSheet.absoluteFill,
+                    {
+                        opacity: visibilityOpacity,
+                        transform: [{ translateX: visibilityTranslateX }],
+                    },
+                ]}>
+                <FABButton
+                    isOpen={fabState !== "collapsed"}
+                    onPress={handleFABPress}
+                    rotation={animations.rotation}
+                    scale={animations.fabScale}
+                    opacity={animations.fabOpacity}
+                    bottomOffset={bottomOffset}
+                    isKeyboardVisible={keyboardVisible}
+                    isOnFeedTab={isOnFeedTab}
+                />
+            </Animated.View>
         </>
     );
 };
