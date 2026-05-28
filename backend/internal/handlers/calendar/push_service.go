@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 )
 
@@ -143,7 +144,7 @@ func (s *Service) processPushUpsert(ctx context.Context, row PushOutboxRow) erro
 			"$set": bson.M{
 				"tasks.$.pushed_event_id":    written.ID,
 				"tasks.$.pushed_calendar_id": written.CalendarID,
-				"tasks.$.pushed_event_etag":  written.ExtendedProperties["etag"],
+				"tasks.$.pushed_event_etag":  written.Etag,
 			},
 		},
 	)
@@ -218,23 +219,27 @@ func (s *Service) loadTaskWithCategory(ctx context.Context, taskID, categoryID p
 		PushEnabled bool                 `bson:"push_enabled"`
 		Tasks       []types.TaskDocument `bson:"tasks"`
 	}
+	projection := bson.M{
+		"_id":          1,
+		"integration":  1,
+		"push_enabled": 1,
+		"tasks":        bson.M{"$elemMatch": bson.M{"_id": taskID}},
+	}
 	err := s.categories.FindOne(ctx, bson.M{
 		"_id":       categoryID,
 		"tasks._id": taskID,
-	}).Decode(&doc)
+	}, options.FindOne().SetProjection(projection)).Decode(&doc)
 	if err != nil {
 		return nil, nil, err
 	}
-	for i := range doc.Tasks {
-		if doc.Tasks[i].ID == taskID {
-			return &doc.Tasks[i], &categoryRow{
-				ID:          doc.ID,
-				Integration: doc.Integration,
-				PushEnabled: doc.PushEnabled,
-			}, nil
-		}
+	if len(doc.Tasks) == 0 {
+		return nil, nil, mongo.ErrNoDocuments
 	}
-	return nil, nil, mongo.ErrNoDocuments
+	return &doc.Tasks[0], &categoryRow{
+		ID:          doc.ID,
+		Integration: doc.Integration,
+		PushEnabled: doc.PushEnabled,
+	}, nil
 }
 
 // parseCategoryIntegration extracts (connectionID, calendarID) from "gcal:<connID>:<calID>".

@@ -2,6 +2,7 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -289,6 +291,15 @@ func (p *GoogleProvider) DeleteEvent(ctx context.Context, token *oauth2.Token, c
 
 	err = calendarService.Events.Delete(calendarID, eventID).Do()
 	if err != nil {
+		// "Already gone" is success — common race when the user deletes the event in
+		// Google before Kindred's worker drains the row, or when an aggressive retry
+		// double-fires a delete. We logged it; we don't escalate.
+		var apiErr *googleapi.Error
+		if errors.As(err, &apiErr) && (apiErr.Code == 404 || apiErr.Code == 410) {
+			slog.Info("Google: event already gone, treating delete as success",
+				"calendar_id", calendarID, "event_id", eventID, "code", apiErr.Code)
+			return nil
+		}
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Google: Failed to delete event", "calendar_id", calendarID, "event_id", eventID, "error", err)
@@ -310,6 +321,7 @@ func (p *GoogleProvider) convertGoogleEvent(googleEvent *calendar.Event, calenda
 		Description:  googleEvent.Description,
 		Location:     googleEvent.Location,
 		Status:       googleEvent.Status,
+		Etag:         googleEvent.Etag,
 	}
 
 	// Handle all-day events vs timed events
