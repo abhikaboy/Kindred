@@ -13,6 +13,25 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// normalizeTags trims, lowercases, drops empties, and dedupes (preserving
+// first-seen order). Always returns a non-nil slice.
+func normalizeTags(tags []string) []string {
+	seen := make(map[string]struct{}, len(tags))
+	out := make([]string, 0, len(tags))
+	for _, t := range tags {
+		t = strings.ToLower(strings.TrimSpace(t))
+		if t == "" {
+			continue
+		}
+		if _, ok := seen[t]; ok {
+			continue
+		}
+		seen[t] = struct{}{}
+		out = append(out, t)
+	}
+	return out
+}
+
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection) *Service {
 	return &Service{

@@ -583,6 +583,25 @@ func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_DisablesAllInWork
 	}
 }
 
+func (s *CategoryServiceTestSuite) TestNormalizeTags() {
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"trims and lowercases", []string{"  Fitness "}, []string{"fitness"}},
+		{"drops empty and whitespace", []string{"work", "", "   "}, []string{"work"}},
+		{"dedupes after normalizing", []string{"Work", "work", "WORK"}, []string{"work"}},
+		{"preserves first-seen order", []string{"b", "a", "b"}, []string{"b", "a"}},
+		{"nil input returns empty slice", nil, []string{}},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			s.Equal(c.want, normalizeTags(c.in))
+		})
+	}
+}
+
 func (s *CategoryServiceTestSuite) TestRenameWorkspace_Success() {
 	user := s.GetUser(0)
 
