@@ -272,14 +272,9 @@ const HomeContent = ({
     }, [statsExpanded]);
 
     const homeScrollRef = useRef<any>(null);
-    const jumpBackInRef = useRef<View>(null);
     const kudosRef = useRef<View>(null);
     const menuRef = useRef<View>(null);
-    const homeLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
-
-    const registerHomeLayout = (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => {
-        homeLayoutsRef.current[key] = layout;
-    };
+    const kudosOffsetRef = useRef<number>(0);
 
     // Determine which view to show
     const isHome = selected === "";
@@ -356,9 +351,10 @@ const HomeContent = ({
                                 refreshing={refreshing}
                                 onRefresh={onRefresh}
                                 scrollRef={homeScrollRef}
-                                jumpBackInRef={jumpBackInRef}
                                 kudosRef={kudosRef}
-                                onSpotlightLayout={registerHomeLayout}
+                                onKudosLayout={(layout) => {
+                                    kudosOffsetRef.current = layout.y;
+                                }}
                                 onStatsExpandChange={setStatsExpanded}
                             />
                         </ThemedView>
