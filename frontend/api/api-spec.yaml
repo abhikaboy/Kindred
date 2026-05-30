@@ -6308,6 +6308,32 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tags:
+        get:
+            tags:
+                - categories
+            summary: Get user tags
+            description: Retrieve the distinct list of category tags for the authenticated user
+            operationId: get-user-tags
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUserTagsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/workspaces:
         get:
             tags:
@@ -7293,6 +7319,10 @@ components:
                     type: string
                 push_enabled:
                     type: boolean
+                tags:
+                    type: array
+                    items:
+                        type: string
                 tasks:
                     type: array
                     items:
@@ -9676,6 +9706,23 @@ components:
                 - total
                 - hasMore
                 - nextOffset
+        GetUserTagsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetUserTagsOutputBody.json
+                    readOnly: true
+                tags:
+                    type: array
+                    items:
+                        type: string
+            required:
+                - tags
         GetUserTemplatesOutputBody:
             type: object
             additionalProperties: false
@@ -12247,6 +12294,10 @@ components:
                     type: boolean
                 name:
                     type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
         UpdateCategoryOutputBody:
             type: object
             additionalProperties: false
