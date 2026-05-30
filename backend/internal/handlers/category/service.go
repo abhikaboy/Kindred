@@ -186,6 +186,23 @@ func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCat
 	return s.GetCategoryByID(id)
 }
 
+// GetUserTags returns the distinct, normalized list of tags across all of a
+// user's categories.
+func (s *Service) GetUserTags(user primitive.ObjectID) ([]string, error) {
+	ctx := context.Background()
+	values, err := s.Categories.Distinct(ctx, "tags", bson.M{"user": user})
+	if err != nil {
+		return nil, err
+	}
+	tags := make([]string, 0, len(values))
+	for _, v := range values {
+		if str, ok := v.(string); ok {
+			tags = append(tags, str)
+		}
+	}
+	return tags, nil
+}
+
 // DeleteCategory removes a Category document by ObjectID.
 func (s *Service) DeleteCategory(userId primitive.ObjectID, id primitive.ObjectID) error {
 	ctx := context.Background()

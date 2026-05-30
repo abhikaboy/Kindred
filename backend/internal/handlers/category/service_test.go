@@ -583,6 +583,29 @@ func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_DisablesAllInWork
 	}
 }
 
+func (s *CategoryServiceTestSuite) TestGetUserTags() {
+	user := s.GetUser(0)
+	other := s.GetUser(1)
+
+	_, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "A", User: user.ID, Tasks: []types.TaskDocument{}, Tags: []string{"fitness", "work"},
+	})
+	s.NoError(err)
+	_, err = s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "B", User: user.ID, Tasks: []types.TaskDocument{}, Tags: []string{"work", "errands"},
+	})
+	s.NoError(err)
+	_, err = s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "C", User: other.ID, Tasks: []types.TaskDocument{}, Tags: []string{"secret"},
+	})
+	s.NoError(err)
+
+	tags, err := s.service.GetUserTags(user.ID)
+
+	s.NoError(err)
+	s.ElementsMatch([]string{"fitness", "work", "errands"}, tags)
+}
+
 func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_SetsNormalizedTags() {
 	user := s.GetUser(0)
 	created, err := s.service.CreateCategory(&CategoryDocument{
