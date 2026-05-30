@@ -48,7 +48,15 @@ export const fetchUserWorkspaces = async (userId: string): Promise<Workspace[]> 
         const { request } = useRequest();
         const result = await request("GET", `/user/Categories/${userId}`);
         logger.debug("Workspaces fetched", { count: result?.length });
-        return result;
+        // Ensure every category carries a tags array (the hand-written Categories
+        // type requires it; the API may omit it for untagged categories).
+        return (result ?? []).map((ws: Workspace) => ({
+            ...ws,
+            categories: (ws.categories ?? []).map((c: Categories) => ({
+                ...c,
+                tags: c.tags ?? [],
+            })),
+        }));
     } catch (error) {
         // Log the error for debugiging
         logger.error("Failed to fetch workspaces", error);
