@@ -23,7 +23,6 @@ import { router } from "expo-router";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { DrawerProvider } from "@/contexts/drawerContext";
 import { FocusModeProvider } from "@/contexts/focusModeContext";
-import { SpotlightProvider } from "@/contexts/SpotlightContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -159,41 +158,39 @@ export default Sentry.wrap(function RootLayout() {
                 <AuthProvider>
                     <RevenueCatProvider>
                     <OnboardingProvider>
-                        <SpotlightProvider>
-                            <FocusModeProvider>
-                                <KudosProvider>
-                                    <TasksProvider>
-                                        <TaskCreationProvider>
-                                            <BlueprintCreationProvider>
-                                                <SelectedGroupProvider>
-                                                    <DrawerProvider>
-                                                        <GestureHandlerRootView style={{ flex: 1 }}>
-                                                            <PortalProvider>
-                                                                <BottomSheetModalProvider>
-                                                                    <AlertProvider>
-                                                                        <Toastable
-                                                                            statusMap={{
-                                                                                success: ThemedColor.success,
-                                                                                danger: ThemedColor.error,
-                                                                                warning: ThemedColor.warning,
-                                                                                info: ThemedColor.primary,
-                                                                            }}
-                                                                            offset={top}
-                                                                        />
-                                                                        <Slot />
-                                                                        <StatusBar style="light" />
-                                                                    </AlertProvider>
-                                                                </BottomSheetModalProvider>
-                                                            </PortalProvider>
-                                                        </GestureHandlerRootView>
-                                                    </DrawerProvider>
-                                                </SelectedGroupProvider>
-                                            </BlueprintCreationProvider>
-                                        </TaskCreationProvider>
-                                    </TasksProvider>
-                                </KudosProvider>
-                            </FocusModeProvider>
-                        </SpotlightProvider>
+                        <FocusModeProvider>
+                            <KudosProvider>
+                                <TasksProvider>
+                                    <TaskCreationProvider>
+                                        <BlueprintCreationProvider>
+                                            <SelectedGroupProvider>
+                                                <DrawerProvider>
+                                                    <GestureHandlerRootView style={{ flex: 1 }}>
+                                                        <PortalProvider>
+                                                            <BottomSheetModalProvider>
+                                                                <AlertProvider>
+                                                                    <Toastable
+                                                                        statusMap={{
+                                                                            success: ThemedColor.success,
+                                                                            danger: ThemedColor.error,
+                                                                            warning: ThemedColor.warning,
+                                                                            info: ThemedColor.primary,
+                                                                        }}
+                                                                        offset={top}
+                                                                    />
+                                                                    <Slot />
+                                                                    <StatusBar style="light" />
+                                                                </AlertProvider>
+                                                            </BottomSheetModalProvider>
+                                                        </PortalProvider>
+                                                    </GestureHandlerRootView>
+                                                </DrawerProvider>
+                                            </SelectedGroupProvider>
+                                        </BlueprintCreationProvider>
+                                    </TaskCreationProvider>
+                                </TasksProvider>
+                            </KudosProvider>
+                        </FocusModeProvider>
                     </OnboardingProvider>
                     </RevenueCatProvider>
                 </AuthProvider>
