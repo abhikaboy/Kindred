@@ -174,6 +174,15 @@ func (s *RingService) IncrementRing(ctx context.Context, userID primitive.Object
 		return nil, nil, fmt.Errorf("update closure flags: %w", err)
 	}
 
+	// First-ever all-closed: set the milestone timestamp on the user document.
+	// Guarded by $exists:false so it's only set once and is idempotent.
+	if justClosedAll && s.users != nil {
+		_, _ = s.users.UpdateOne(ctx,
+			bson.M{"_id": userID, "first_all_rings_closed_at": bson.M{"$exists": false}},
+			bson.M{"$set": bson.M{"first_all_rings_closed_at": now}},
+		)
+	}
+
 	// Recalculate and cache the productivity score on the user document.
 	if err := s.recalculateScore(ctx, userID, timezone); err != nil {
 		return nil, nil, err
