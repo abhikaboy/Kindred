@@ -479,6 +479,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                     id={category.id}
                                                     name={category.name}
                                                     tasks={filteredTasks}
+                                                    tags={category.tags}
                                                     onLongPress={(categoryId) => {
                                                         setEditing(true);
                                                         setFocusedCategory(categoryId);
