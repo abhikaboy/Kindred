@@ -197,6 +197,19 @@ export const setWorkspacePushEnabled = async (
 };
 
 /**
+ * Get all distinct tags used by the current user
+ */
+export const getUserTags = async (): Promise<string[]> => {
+    const { data, error } = await (client.GET as any)("/v1/user/tags", {
+        params: withAuthHeaders({}),
+    });
+    if (error) {
+        throw new Error(`Failed to get tags: ${JSON.stringify(error)}`);
+    }
+    return data?.tags ?? [];
+};
+
+/**
  * Setup default workspace with starter tasks
  * Creates the "🌺 Kindred Guide" workspace with onboarding tasks for new users
  */
