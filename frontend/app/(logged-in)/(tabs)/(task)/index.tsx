@@ -19,11 +19,6 @@ import { getCongratulationsAPI } from "@/api/congratulation";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
-import { SpotlightTourProvider, TourStep, useSpotlightTour } from "react-native-spotlight-tour";
-import { useSpotlight } from "@/contexts/SpotlightContext";
-import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION } from "@/constants/spotlightConfig";
-import { ensureVisible } from "@/utils/spotlightUtils";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
@@ -63,7 +58,6 @@ const Home = (props: Props) => {
     const insets = useSafeAreaInsets();
     const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
-    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     // Cache keys and duration
     const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
@@ -94,7 +88,7 @@ const Home = (props: Props) => {
                 const key = `${user._id}-quicksetup`;
                 const hasCompletedSetup = await AsyncStorage.getItem(key);
 
-                if (!hasCompletedSetup && spotlightState.taskSpotlight && selected === "") {
+                if (!hasCompletedSetup && selected === "") {
                     setShowWorkspaceSelection(true);
                 } else if (selected !== "") {
                     setShowWorkspaceSelection(false);
@@ -105,7 +99,7 @@ const Home = (props: Props) => {
         };
 
         checkQuickSetup();
-    }, [user?._id, spotlightState.taskSpotlight, selected]);
+    }, [user?._id, selected]);
 
     useEffect(() => {
         if (!user || !workspaces) return;
@@ -218,81 +212,28 @@ const Home = (props: Props) => {
 
     const drawerRef = useRef<DrawerLayout>(null);
 
-    // Tour steps for home screen
-    const tourSteps: TourStep[] = [
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Jump Back In 🚀"
-                    description="Quick access to your most important features! Start your day here with daily views, voice dumps, and more."
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Kudos 🤝"
-                    description="This is where encouragements and congratulations from your close friends live!"
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Menu"
-                    description="Tap here to access your workspaces, settings, and more!"
-                    onNext={() => {
-                        // Mark home spotlight as shown
-                        setSpotlightShown("homeSpotlight");
-
-                        // Open drawer
-                        drawerRef.current?.openDrawer();
-
-                        // Stop this tour - the drawer tour will start automatically
-                        stop();
-                    }}
-                    isLastStep
-                />
-            ),
-        },
-    ];
-
     return (
-        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
-            <HomeContent
-                drawerRef={drawerRef}
-                setIsDrawerOpen={setIsDrawerOpen}
-                creatingWorkspace={creatingWorkspace}
-                setCreatingWorkspace={setCreatingWorkspace}
-                showWorkspaceSelection={showWorkspaceSelection}
-                setShowWorkspaceSelection={setShowWorkspaceSelection}
-                user={user}
-                ThemedColor={ThemedColor}
-                insets={insets}
-                focusMode={focusMode}
-                toggleFocusMode={toggleFocusMode}
-                encouragementCount={encouragementCount}
-                congratulationCount={congratulationCount}
-                displayWorkspaces={displayWorkspaces}
-                fetchingWorkspaces={fetchingWorkspaces}
-                workspaces={workspaces}
-                setSelected={setSelected}
-                spotlightState={spotlightState}
-                spotlightLoading={spotlightLoading}
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-            />
-        </SpotlightTourProvider>
+        <HomeContent
+            drawerRef={drawerRef}
+            setIsDrawerOpen={setIsDrawerOpen}
+            creatingWorkspace={creatingWorkspace}
+            setCreatingWorkspace={setCreatingWorkspace}
+            showWorkspaceSelection={showWorkspaceSelection}
+            setShowWorkspaceSelection={setShowWorkspaceSelection}
+            user={user}
+            ThemedColor={ThemedColor}
+            insets={insets}
+            focusMode={focusMode}
+            toggleFocusMode={toggleFocusMode}
+            encouragementCount={encouragementCount}
+            congratulationCount={congratulationCount}
+            displayWorkspaces={displayWorkspaces}
+            fetchingWorkspaces={fetchingWorkspaces}
+            workspaces={workspaces}
+            setSelected={setSelected}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+        />
     );
 };
 
@@ -314,12 +255,9 @@ const HomeContent = ({
     fetchingWorkspaces,
     workspaces,
     setSelected,
-    spotlightState,
-    spotlightLoading,
     refreshing,
     onRefresh,
 }: any) => {
-    const { start } = useSpotlightTour();
     const { selected } = useTasks();
     const router = useRouter();
     const [statsExpanded, setStatsExpanded] = useState(false);
@@ -334,32 +272,14 @@ const HomeContent = ({
     }, [statsExpanded]);
 
     const homeScrollRef = useRef<any>(null);
-    const homeStep0Ref = useRef<View>(null);
-    const homeStep1Ref = useRef<View>(null);
-    const homeStep2Ref = useRef<View>(null);
+    const jumpBackInRef = useRef<View>(null);
+    const kudosRef = useRef<View>(null);
+    const menuRef = useRef<View>(null);
     const homeLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
 
     const registerHomeLayout = (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => {
         homeLayoutsRef.current[key] = layout;
     };
-
-    useEffect(() => {
-        if (!spotlightLoading && !spotlightState.homeSpotlight && selected === "") {
-            const timer = setTimeout(async () => {
-                const canStart = await ensureVisible(
-                    homeStep0Ref,
-                    homeScrollRef,
-                    homeLayoutsRef.current.home_step_0
-                );
-                if (canStart) {
-                    requestAnimationFrame(() => {
-                        start();
-                    });
-                }
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [start, spotlightLoading, spotlightState.homeSpotlight, selected]);
 
     // Determine which view to show
     const isHome = selected === "";
@@ -417,7 +337,7 @@ const HomeContent = ({
                                     userName={user?.display_name}
                                     onMenuPress={() => drawerRef.current?.openDrawer()}
                                     ThemedColor={ThemedColor}
-                                    menuRef={homeStep2Ref}
+                                    menuRef={menuRef}
                                 />
                             </Animated.View>
 
@@ -436,8 +356,8 @@ const HomeContent = ({
                                 refreshing={refreshing}
                                 onRefresh={onRefresh}
                                 scrollRef={homeScrollRef}
-                                jumpBackInRef={homeStep0Ref}
-                                kudosRef={homeStep1Ref}
+                                jumpBackInRef={jumpBackInRef}
+                                kudosRef={kudosRef}
                                 onSpotlightLayout={registerHomeLayout}
                                 onStatsExpandChange={setStatsExpanded}
                             />
