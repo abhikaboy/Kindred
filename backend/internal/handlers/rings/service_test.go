@@ -3,6 +3,7 @@ package rings_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	. "github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -173,6 +174,38 @@ func (s *RingServiceTestSuite) TestAllRingsClose() {
 	s.True(state.AllClosed)
 	s.True(delta.JustClosedAll)
 	s.True(delta.AllClosed)
+}
+
+func (s *RingServiceTestSuite) TestAllRingsClose_SetsFirstAllRingsClosedAtOnce() {
+	user := s.GetUser(0)
+	ctx := context.Background()
+
+	for i := 0; i < DefaultPlanTarget; i++ {
+		_, _, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingPlan)
+		s.NoError(err)
+	}
+	for i := 0; i < DefaultDoTarget; i++ {
+		_, _, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingDo)
+		s.NoError(err)
+	}
+	_, delta, err := s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+	s.NoError(err)
+	s.True(delta.JustClosedAll)
+
+	var refreshed types.User
+	err = s.users.FindOne(ctx, bson.M{"_id": user.ID}).Decode(&refreshed)
+	s.NoError(err)
+	s.NotNil(refreshed.FirstAllRingsClosedAt, "first_all_rings_closed_at should be set after closing all rings")
+	firstClose := *refreshed.FirstAllRingsClosedAt
+
+	time.Sleep(10 * time.Millisecond)
+	_, _, err = s.service.IncrementRing(ctx, user.ID, "UTC", RingShare)
+	s.NoError(err)
+
+	err = s.users.FindOne(ctx, bson.M{"_id": user.ID}).Decode(&refreshed)
+	s.NoError(err)
+	s.NotNil(refreshed.FirstAllRingsClosedAt)
+	s.Equal(firstClose, *refreshed.FirstAllRingsClosedAt, "first_all_rings_closed_at must not change on subsequent closures")
 }
 
 // ========================================
