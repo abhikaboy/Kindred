@@ -24,6 +24,7 @@ type UpdateCategoryDocument struct {
 	Name        string              `bson:"name,omitempty" json:"name,omitempty"`
 	IsBlueprint *bool               `bson:"isBlueprint,omitempty" json:"isBlueprint,omitempty"`
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+	Tags        *[]string           `bson:"tags,omitempty" json:"tags,omitempty"`
 }
 
 type WorkspaceResult struct {

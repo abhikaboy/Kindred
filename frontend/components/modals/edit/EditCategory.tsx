@@ -23,11 +23,12 @@ const EditCategory = (props: Props) => {
     const editCategorySheetRef = useRef<BottomSheetModal>(null);
 
     // Define snap points for the edit modal
-    const snapPoints = useMemo(() => ["30%"], []);
+    const snapPoints = useMemo(() => ["50%"], []);
 
     // Find the current category to get its name
     const currentCategory = categories.find(cat => cat.id === id);
     const currentName = currentCategory?.name || "";
+    const currentTags = currentCategory?.tags ?? [];
 
     // Helper function to find which workspace contains this category
     const findWorkspaceNameForCategory = (categoryId: string): string | null => {
@@ -112,6 +113,7 @@ const EditCategory = (props: Props) => {
                     <EditCategoryModal
                         categoryId={id}
                         currentName={currentName}
+                        currentTags={currentTags}
                         hide={() => {
                             setShowEditModal(false);
                             editCategorySheetRef.current?.dismiss();

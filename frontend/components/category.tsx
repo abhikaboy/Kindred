@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity } from "react-native";
+import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
 import { ThemedText } from "./ThemedText";
 import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
@@ -8,11 +8,14 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { AttachStep } from "react-native-spotlight-tour";
 import { Plus } from "phosphor-react-native";
+import { useRouter } from "expo-router";
+import TagChip from "@/components/TagChip";
 
 interface CategoryProps {
     id: string;
     name: string;
     tasks: Task[];
+    tags?: string[];
     onLongPress: (categoryId: string) => void;
     onPress: (categoryId: string) => void;
     viewOnly?: boolean;
@@ -24,6 +27,7 @@ export const Category: React.FC<CategoryProps> = ({
     id,
     name,
     tasks,
+    tags = [],
     onLongPress,
     onPress,
     viewOnly = false,
@@ -32,6 +36,7 @@ export const Category: React.FC<CategoryProps> = ({
 }) => {
     const { setCreateCategory } = useTasks();
     const ThemedColor = useThemeColor();
+    const router = useRouter();
 
     const categoryNameText = (
         <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
@@ -39,23 +44,40 @@ export const Category: React.FC<CategoryProps> = ({
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity
-                style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
-                onLongPress={() => onLongPress(id)}
-                disabled={viewOnly}
-                onPress={() => {
-                    onPress(id);
-                    setCreateCategory({ label: name, id: id, special: false });
-                }}>
-                {highlightCategoryHeader ? (
-                    <AttachStep index={2}>
-                        {categoryNameText}
-                    </AttachStep>
-                ) : (
-                    categoryNameText
-                )}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <TouchableOpacity
+                    style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}
+                    onLongPress={() => onLongPress(id)}
+                    disabled={viewOnly}
+                    onPress={() => {
+                        onPress(id);
+                        setCreateCategory({ label: name, id: id, special: false });
+                    }}>
+                    {highlightCategoryHeader ? (
+                        <AttachStep index={2}>
+                            {categoryNameText}
+                        </AttachStep>
+                    ) : (
+                        categoryNameText
+                    )}
+                    {tags.length > 0 && (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ gap: 6, alignItems: "center" }}
+                            style={{ flexShrink: 1 }}>
+                            {tags.map((tag) => (
+                                <TagChip
+                                    key={tag}
+                                    tag={tag}
+                                    onPress={(t) => router.push(`/tag/${encodeURIComponent(t)}`)}
+                                />
+                            ))}
+                        </ScrollView>
+                    )}
+                </TouchableOpacity>
                 {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
-            </TouchableOpacity>
+            </View>
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;
 

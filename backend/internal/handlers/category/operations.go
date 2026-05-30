@@ -265,6 +265,28 @@ func RegisterSetWorkspacePushEnabledOperation(api huma.API, handler *Handler) {
 	}, handler.SetWorkspacePushEnabled)
 }
 
+// Get User Tags
+type GetUserTagsInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetUserTagsOutput struct {
+	Body struct {
+		Tags []string `json:"tags"`
+	}
+}
+
+func RegisterGetUserTagsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-user-tags",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tags",
+		Summary:     "Get user tags",
+		Description: "Retrieve the distinct list of category tags for the authenticated user",
+		Tags:        []string{"categories"},
+	}, handler.GetUserTags)
+}
+
 func RegisterUpdateWorkspaceOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID: "update-workspace",
