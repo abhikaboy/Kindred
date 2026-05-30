@@ -30,6 +30,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     const encodedName = encodeURIComponent(taskName);
     const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
     const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
+    const dismissLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=dismiss`;
 
     return {
         banner: (
@@ -76,7 +77,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                 {/* Row 5: CTA Buttons */}
                 <HStack spacing={8}>
                     <Link
-                        destination={{completeLink}}
+                        destination={completeLink}
                         modifiers={[
                             font({ weight: 'semibold', size: 14 }),
                             foregroundStyle('#FFFFFF'),
@@ -87,13 +88,14 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Mark Complete
+                            Mark as Complete
                         </Text>
                     </Link>
                     <Link
-                        destination={taskLink}
+                        destination={dismissLink}
                         modifiers={[
                             font({ weight: 'medium', size: 14 }),
+                            foregroundStyle('#FFFFFF'),
                             padding({ horizontal: 16, vertical: 10 }),
                             background('#4C1D95'),
                             cornerRadius(12),
@@ -101,7 +103,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Open Task
+                            Dismiss
                         </Text>
                     </Link>
                 </HStack>
@@ -159,7 +161,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                 />
                 <HStack spacing={8}>
                     <Link
-                        destination={{completeLink}}
+                        destination={completeLink}
                         modifiers={[
                             font({ weight: 'semibold', size: 13 }),
                             foregroundStyle('#FFFFFF'),
@@ -174,9 +176,10 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         </Text>
                     </Link>
                     <Link
-                        destination={taskLink}
+                        destination={dismissLink}
                         modifiers={[
                             font({ weight: 'medium', size: 13 }),
+                            foregroundStyle('#FFFFFF'),
                             padding({ horizontal: 14, vertical: 8 }),
                             background('#4C1D95'),
                             cornerRadius(10),
@@ -184,7 +187,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
                         ]}
                     >
                         <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Open
+                            Dismiss
                         </Text>
                     </Link>
                 </HStack>

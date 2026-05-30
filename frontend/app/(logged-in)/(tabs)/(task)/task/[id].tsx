@@ -62,7 +62,7 @@ export const unstable_settings = {
 export default function Task() {
     // Removed activeTab state - no longer using PagerView
     // const [activeTab, setActiveTab] = useState(0);
-    const { name, id, categoryId } = useLocalSearchParams();
+    const { name, id, categoryId, action } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
     const { getTaskById, updateTask, removeFromCategory } = useTasks();
     const { loadTaskData } = useTaskCreation();
@@ -109,6 +109,22 @@ export default function Task() {
             router.back();
         },
     });
+
+    // Handle deep-link actions from Live Activity (e.g. action=complete, action=dismiss)
+    const handledActionRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!action || typeof action !== 'string') return;
+        const actionKey = `${id}:${action}`;
+        if (handledActionRef.current === actionKey) return;
+        handledActionRef.current = actionKey;
+
+        if (action === 'dismiss') {
+            endActivity(id as string).finally(() => router.back());
+        } else if (action === 'complete' && task) {
+            endActivity(id as string);
+            markTaskAsCompleted(task);
+        }
+    }, [action, id, task, markTaskAsCompleted]);
 
     // Function to refresh task data after edit
     const refreshTaskData = () => {
