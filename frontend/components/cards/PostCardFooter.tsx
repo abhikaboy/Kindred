@@ -89,33 +89,20 @@ const PostCardFooter = ({
                     </ThemedText>
                 ) : null}
 
-                <View style={styles.reactionsRow}>
-                    {readOnly ? (
-                        reactions.map((react, index) => (
-                            <View
+                {!readOnly && (
+                    <View style={styles.reactionsRow}>
+                        {reactions.map((react, index) => (
+                            <ReactPills
                                 key={`${react.emoji}-${index}`}
-                                style={[styles.reactionPill, { backgroundColor: ThemedColor.lightened }]}
-                            >
-                                <ThemedText style={styles.reactionPillText}>
-                                    {react.emoji} {react.count}
-                                </ThemedText>
-                            </View>
-                        ))
-                    ) : (
-                        <>
-                            {reactions.map((react, index) => (
-                                <ReactPills
-                                    key={`${react.emoji}-${index}`}
-                                    reaction={react}
-                                    postId={0}
-                                    isHighlighted={hasUserReacted?.(react.emoji) ?? false}
-                                    onPress={() => onReaction?.(react.emoji)}
-                                />
-                            ))}
-                            <ReactionAction onAddReaction={(emoji) => onReaction?.(emoji)} postId={0} />
-                        </>
-                    )}
-                </View>
+                                reaction={react}
+                                postId={0}
+                                isHighlighted={hasUserReacted?.(react.emoji) ?? false}
+                                onPress={() => onReaction?.(react.emoji)}
+                            />
+                        ))}
+                        <ReactionAction onAddReaction={(emoji) => onReaction?.(emoji)} postId={0} />
+                    </View>
+                )}
 
                 <TouchableOpacity
                     onPress={readOnly ? undefined : onOpenComments}
@@ -184,14 +171,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 8,
         flexWrap: "wrap",
-    },
-    reactionPill: {
-        borderRadius: 20,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    reactionPillText: {
-        fontSize: 14,
     },
     commentButton: {
         paddingTop: 4,

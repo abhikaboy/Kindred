@@ -256,18 +256,6 @@ export default function Caption() {
                             fontSize={16}
                             minHeight={120}
                         />
-                        <View
-                            style={{
-                                width: "100%",
-                                padding: 20,
-                                justifyContent: "space-between",
-                                backgroundColor: ThemedColor.lightened,
-                                borderRadius: 8,
-                                flexDirection: "row",
-                            }}>
-                            <ThemedText>Points Gained</ThemedText>
-                            <ThemedText>{taskInfo?.points || 1} points</ThemedText>
-                        </View>
                         <TouchableOpacity
                             style={{
                                 width: "100%",
@@ -276,13 +264,17 @@ export default function Caption() {
                                 backgroundColor: ThemedColor.lightened,
                                 borderRadius: 8,
                                 flexDirection: "row",
+                                alignItems: "center",
                             }}
                             onPress={() => {
                                 router.push("/(logged-in)/posting/groups");
                             }}
                             activeOpacity={0.7}>
                             <ThemedText>Who can see this post?</ThemedText>
-                            <ThemedText>{groupDisplayText}</ThemedText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <ThemedText style={{ color: ThemedColor.primary }}>{groupDisplayText}</ThemedText>
+                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
+                            </View>
                         </TouchableOpacity>
                         <PrimaryButton
                             title={isPosting ? "Posting..." : "Post"}
