@@ -583,6 +583,36 @@ func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_DisablesAllInWork
 	}
 }
 
+func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_SetsNormalizedTags() {
+	user := s.GetUser(0)
+	created, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "Health", User: user.ID, Tasks: []types.TaskDocument{},
+	})
+	s.NoError(err)
+
+	tags := []string{"  Fitness ", "fitness", "Gym"}
+	result, err := s.service.UpdatePartialCategory(created.ID, UpdateCategoryDocument{Tags: &tags}, user.ID)
+
+	s.NoError(err)
+	s.Equal([]string{"fitness", "gym"}, result.Tags)
+	s.Equal("Health", result.Name) // name preserved on a tags-only update
+}
+
+func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_NilTagsLeavesTagsUntouched() {
+	user := s.GetUser(0)
+	existing := []string{"work"}
+	created, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "Job", User: user.ID, Tasks: []types.TaskDocument{}, Tags: existing,
+	})
+	s.NoError(err)
+
+	result, err := s.service.UpdatePartialCategory(created.ID, UpdateCategoryDocument{Name: "Career"}, user.ID)
+
+	s.NoError(err)
+	s.Equal("Career", result.Name)
+	s.Equal([]string{"work"}, result.Tags) // untouched because Tags was nil
+}
+
 func (s *CategoryServiceTestSuite) TestNormalizeTags() {
 	cases := []struct {
 		name string

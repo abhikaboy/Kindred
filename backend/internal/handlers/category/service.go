@@ -152,44 +152,37 @@ func (s *Service) CreateCategory(r *CategoryDocument) (*CategoryDocument, error)
 	return r, nil
 }
 
-// UpdatePartialCategory updates only specified fields of a Category document by ObjectID.
+// UpdatePartialCategory updates only the provided fields of a Category by ObjectID.
 func (s *Service) UpdatePartialCategory(id primitive.ObjectID, updated UpdateCategoryDocument, user primitive.ObjectID) (*CategoryDocument, error) {
 	ctx := context.Background()
 
-	updateFields, err := xutils.ToDoc(updated)
-	if err != nil {
-		return nil, err
+	set := bson.D{{Key: "lastEdited", Value: xutils.NowUTC()}}
+	if updated.Name != "" {
+		set = append(set, bson.E{Key: "name", Value: updated.Name})
+	}
+	if updated.IsBlueprint != nil {
+		set = append(set, bson.E{Key: "isBlueprint", Value: *updated.IsBlueprint})
+	}
+	if updated.BlueprintID != nil {
+		set = append(set, bson.E{Key: "blueprintId", Value: *updated.BlueprintID})
+	}
+	if updated.Tags != nil {
+		set = append(set, bson.E{Key: "tags", Value: normalizeTags(*updated.Tags)})
 	}
 
-	fmt.Println(updateFields)
-
-	// Update with user ownership validation
 	filter := bson.M{"_id": id, "user": user}
-	update := bson.D{{Key: "$set", Value: bson.D{
-		{Key: "name", Value: updated.Name},
-		{Key: "lastEdited", Value: xutils.NowUTC()},
-	}}}
-
-	result, err := s.Categories.UpdateOne(ctx, filter, update)
+	result, err := s.Categories.UpdateOne(ctx, filter, bson.D{{Key: "$set", Value: set}})
 	if err != nil {
 		slog.LogAttrs(ctx, slog.LevelError, "Failed to update Category",
-			slog.String("categoryID", id.Hex()),
-			slog.String("error", err.Error()))
+			slog.String("categoryID", id.Hex()), slog.String("error", err.Error()))
 		return nil, err
 	}
-
 	if result.MatchedCount == 0 {
 		slog.LogAttrs(ctx, slog.LevelError, "Category not found or user doesn't own it",
-			slog.String("categoryID", id.Hex()),
-			slog.String("userID", user.Hex()))
+			slog.String("categoryID", id.Hex()), slog.String("userID", user.Hex()))
 		return nil, fmt.Errorf("category not found or access denied")
 	}
 
-	slog.LogAttrs(ctx, slog.LevelInfo, "Category updated successfully",
-		slog.String("categoryID", id.Hex()),
-		slog.String("newName", updated.Name))
-
-	// Fetch and return the updated category
 	return s.GetCategoryByID(id)
 }
 
