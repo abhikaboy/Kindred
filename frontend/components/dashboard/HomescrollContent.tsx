@@ -15,8 +15,8 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import WorkingOnRow from "./WorkingOnRow";
+import { OnboardingChecklist } from "./OnboardingChecklist";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { AttachStep } from "react-native-spotlight-tour";
 import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
@@ -43,10 +43,10 @@ interface HomeScrollContentProps {
     refreshing?: boolean;
     onRefresh?: () => void;
     scrollRef?: React.RefObject<ScrollView>;
-    jumpBackInRef?: React.RefObject<View>;
     kudosRef?: React.RefObject<View>;
-    onSpotlightLayout?: (key: "home_step_0" | "home_step_1", layout: { y: number; height: number }) => void;
+    onKudosLayout?: (layout: { y: number; height: number }) => void;
     onStatsExpandChange?: (expanded: boolean) => void;
+    kudosOffsetRef: React.MutableRefObject<number>;
 }
 
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
@@ -64,10 +64,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     refreshing = false,
     onRefresh,
     scrollRef,
-    jumpBackInRef,
     kudosRef,
-    onSpotlightLayout,
+    onKudosLayout,
     onStatsExpandChange,
+    kudosOffsetRef,
 }) => {
     const router = useRouter();
     const { showAlert } = useAlert();
@@ -306,16 +306,10 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         }
     };
 
-    const handleJumpLayout = (event: any) => {
-        if (!onSpotlightLayout) return;
-        const { y, height } = event.nativeEvent.layout;
-        onSpotlightLayout("home_step_0", { y, height });
-    };
-
     const handleKudosLayout = (event: any) => {
-        if (!onSpotlightLayout) return;
+        if (!onKudosLayout) return;
         const { y, height } = event.nativeEvent.layout;
-        onSpotlightLayout("home_step_1", { y, height });
+        onKudosLayout({ y, height });
     };
 
     return (
@@ -363,16 +357,15 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
                     <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
+                {scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
                 <WorkingOnRow />
 
                 <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}
                 <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
-                    <AttachStep index={0} fill>
-                        <View ref={jumpBackInRef} onLayout={handleJumpLayout} style={{ paddingRight: HORIZONTAL_PADDING }}>
-                            <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
-                        </View>
-                    </AttachStep>
+                    <View style={{ paddingRight: HORIZONTAL_PADDING }}>
+                        <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
+                    </View>
                     {dashboardConfig.jump_back_in && <DashboardCards drawerRef={drawerRef} />}
                 </View>
 
@@ -387,11 +380,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     {dashboardConfig.kudos && (
                         <>
                             <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
-                            <AttachStep index={1} style={{ width: "100%" }}>
-                                <View ref={kudosRef} onLayout={handleKudosLayout}>
-                                    <KudosCards />
-                                </View>
-                            </AttachStep>
+                            <View ref={kudosRef} onLayout={handleKudosLayout}>
+                                <KudosCards />
+                            </View>
                         </>
                     )}
                 </View>

@@ -110,7 +110,6 @@
     "react-native-safe-area-context": "~5.6.1",
     "react-native-screens": "~4.23.0",
     "react-native-simple-confetti": "^0.1.2",
-    "react-native-spotlight-tour": "^4.0.0",
     "react-native-star-rating-widget": "^1.9.2",
     "react-native-svg": "15.15.3",
     "react-native-svg-transformer": "^1.5.1",

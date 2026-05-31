@@ -6,7 +6,6 @@ import { Task } from "../api/types";
 import SwipableTaskCard from "./cards/SwipableTaskCard";
 import { useTasks } from "@/contexts/tasksContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { AttachStep } from "react-native-spotlight-tour";
 import { Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
 import TagChip from "@/components/TagChip";
@@ -53,13 +52,7 @@ export const Category: React.FC<CategoryProps> = ({
                         onPress(id);
                         setCreateCategory({ label: name, id: id, special: false });
                     }}>
-                    {highlightCategoryHeader ? (
-                        <AttachStep index={2}>
-                            {categoryNameText}
-                        </AttachStep>
-                    ) : (
-                        categoryNameText
-                    )}
+                    {categoryNameText}
                     {tags.length > 0 && (
                         <ScrollView
                             horizontal

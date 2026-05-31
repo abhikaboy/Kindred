@@ -12,7 +12,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
 import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays, format, isThisWeek } from "date-fns";
-import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Timer, Repeat } from "phosphor-react-native";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
@@ -383,16 +382,14 @@ const TaskCard = ({
                 <View style={styles.row}>
                     <View style={styles.contentContainer}>
                         {highlightContent ? (
-                            <AttachStep index={1}>
-                                <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
-                                    {content}
-                                    {dateDisplay && (
-                                        <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
-                                            {" "}{dateDisplay.text}
-                                        </ThemedText>
-                                    )}
-                                </ThemedText>
-                            </AttachStep>
+                            <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                                {content}
+                                {dateDisplay && (
+                                    <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                        {" "}{dateDisplay.text}
+                                    </ThemedText>
+                                )}
+                            </ThemedText>
                         ) : (
                             <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
                                 {content}

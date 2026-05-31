@@ -250,48 +250,50 @@ type User struct {
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	PushToken      string               `bson:"push_token" json:"push_token"`
 
-	DisplayName       string       `bson:"display_name" json:"display_name"`
-	Handle            string       `bson:"handle" json:"handle"`
-	ProfilePicture    string       `bson:"profile_picture" json:"profile_picture"`
-	Encouragements    int          `bson:"encouragements" json:"encouragements"`   // Available balance to send
-	Congratulations   int          `bson:"congratulations" json:"congratulations"` // Available balance to send
-	Streak            int          `bson:"streak" json:"streak"`
-	StreakEligible    bool         `bson:"streakEligible" json:"streakEligible"`
-	Points            int          `bson:"points" json:"points"`
-	ProductivityScore int          `bson:"productivity_score" json:"productivity_score"`
-	LastRewardDate    *time.Time   `bson:"last_reward_date,omitempty" json:"last_reward_date,omitempty"`
-	PostsMade         int          `bson:"posts_made" json:"posts_made"`
-	Credits           UserCredits  `bson:"credits" json:"credits"`
-	KudosRewards      KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
-	Subscription      Subscription `bson:"subscription" json:"subscription"`
-	Timezone          string       `bson:"timezone,omitempty" json:"timezone,omitempty"`
-	Settings          UserSettings `bson:"settings" json:"settings"`
-	TermsAcceptedAt   *time.Time   `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
-	TermsVersion      string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
+	DisplayName           string       `bson:"display_name" json:"display_name"`
+	Handle                string       `bson:"handle" json:"handle"`
+	ProfilePicture        string       `bson:"profile_picture" json:"profile_picture"`
+	Encouragements        int          `bson:"encouragements" json:"encouragements"`   // Available balance to send
+	Congratulations       int          `bson:"congratulations" json:"congratulations"` // Available balance to send
+	Streak                int          `bson:"streak" json:"streak"`
+	StreakEligible        bool         `bson:"streakEligible" json:"streakEligible"`
+	Points                int          `bson:"points" json:"points"`
+	ProductivityScore     int          `bson:"productivity_score" json:"productivity_score"`
+	LastRewardDate        *time.Time   `bson:"last_reward_date,omitempty" json:"last_reward_date,omitempty"`
+	PostsMade             int          `bson:"posts_made" json:"posts_made"`
+	Credits               UserCredits  `bson:"credits" json:"credits"`
+	KudosRewards          KudosRewards `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
+	Subscription          Subscription `bson:"subscription" json:"subscription"`
+	Timezone              string       `bson:"timezone,omitempty" json:"timezone,omitempty"`
+	Settings              UserSettings `bson:"settings" json:"settings"`
+	TermsAcceptedAt       *time.Time   `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
+	TermsVersion          string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
+	FirstAllRingsClosedAt *time.Time   `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
 }
 
 type SafeUser struct {
-	ID              primitive.ObjectID   `bson:"_id" json:"_id"`
-	DisplayName     string               `bson:"display_name" json:"display_name"`
-	Handle          string               `bson:"handle" json:"handle"`
-	ProfilePicture  string               `bson:"profile_picture" json:"profile_picture"`
-	Categories      []CategoryDocument   `bson:"categories" json:"categories"`
-	Friends         []primitive.ObjectID `bson:"friends" json:"friends"`
-	TasksComplete   float64              `bson:"tasks_complete" json:"tasks_complete"`
-	RecentActivity  []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
-	Encouragements  int                  `bson:"encouragements" json:"encouragements"`   // Available balance to send
-	Congratulations int                  `bson:"congratulations" json:"congratulations"` // Available balance to send
-	Streak          int                  `bson:"streak" json:"streak"`
-	StreakEligible  bool                 `bson:"streakEligible" json:"streakEligible"`
-	Points          int                  `bson:"points" json:"points"`
-	PostsMade       int                  `bson:"posts_made" json:"posts_made"`
-	Credits         UserCredits          `bson:"credits" json:"credits"`
-	KudosRewards    KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
-	Subscription    Subscription         `bson:"subscription" json:"subscription"`
-	Timezone        string               `bson:"timezone,omitempty" json:"timezone,omitempty"`
-	Settings        UserSettings         `bson:"settings" json:"settings"`
-	TermsAcceptedAt *time.Time           `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
-	TermsVersion    string               `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
+	ID                    primitive.ObjectID   `bson:"_id" json:"_id"`
+	DisplayName           string               `bson:"display_name" json:"display_name"`
+	Handle                string               `bson:"handle" json:"handle"`
+	ProfilePicture        string               `bson:"profile_picture" json:"profile_picture"`
+	Categories            []CategoryDocument   `bson:"categories" json:"categories"`
+	Friends               []primitive.ObjectID `bson:"friends" json:"friends"`
+	TasksComplete         float64              `bson:"tasks_complete" json:"tasks_complete"`
+	RecentActivity        []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
+	Encouragements        int                  `bson:"encouragements" json:"encouragements"`   // Available balance to send
+	Congratulations       int                  `bson:"congratulations" json:"congratulations"` // Available balance to send
+	Streak                int                  `bson:"streak" json:"streak"`
+	StreakEligible        bool                 `bson:"streakEligible" json:"streakEligible"`
+	Points                int                  `bson:"points" json:"points"`
+	PostsMade             int                  `bson:"posts_made" json:"posts_made"`
+	Credits               UserCredits          `bson:"credits" json:"credits"`
+	KudosRewards          KudosRewards         `bson:"kudosRewards" json:"kudosRewards"` // Number sent (for rewards system)
+	Subscription          Subscription         `bson:"subscription" json:"subscription"`
+	Timezone              string               `bson:"timezone,omitempty" json:"timezone,omitempty"`
+	Settings              UserSettings         `bson:"settings" json:"settings"`
+	TermsAcceptedAt       *time.Time           `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
+	TermsVersion          string               `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
+	FirstAllRingsClosedAt *time.Time           `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
 }
 
 // UserSettings contains all user preference settings

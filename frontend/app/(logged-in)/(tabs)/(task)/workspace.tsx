@@ -19,10 +19,6 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditWorkspace from "@/components/modals/edit/EditWorkspace";
 import { useDrawer } from "@/contexts/drawerContext";
-import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
-import { useSpotlight } from "@/contexts/SpotlightContext";
-import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION, ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import { usePathname } from "expo-router";
@@ -42,7 +38,6 @@ const Workspace = (props: Props) => {
     const { getStateDescription, state: workspaceState } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
-    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
@@ -79,87 +74,40 @@ const Workspace = (props: Props) => {
         setIsHeaderSticky(scrollY > stickyThreshold);
     };
 
-    // Tour steps for workspace
-    const tourSteps: TourStep[] = [
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Workspace Settings ⚙️"
-                    description="Tap the icon next to the workspace title to edit workspace settings, reorder categories, or delete the workspace."
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Tasks ✅"
-                    description="This is a task! The colored bar on the left shows its priority. Tap on any task to view or edit its details."
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Categories 📂"
-                    description="To make new tasks, click on a category name. Categories help you organize tasks by type or project!"
-                    onNext={() => {
-                        setSpotlightShown("workspaceSpotlight");
-                        stop();
-                    }}
-                    isLastStep
-                />
-            ),
-        },
-    ];
-
     const currentWorkspace = selected ? getWorkspace(selected) : null;
     const workspaceIcon = currentWorkspace?.icon ?? undefined;
     const workspaceColor = currentWorkspace?.color ?? undefined;
 
     return (
-        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
-            <WorkspaceContent
-                drawerRef={drawerRef}
-                scrollViewRef={scrollViewRef}
-                ThemedColor={ThemedColor}
-                categories={categories}
-                selected={selected}
-                showConfetti={showConfetti}
-                insets={insets}
-                openModal={openModal}
-                editing={editing}
-                setEditing={setEditing}
-                editingWorkspace={editingWorkspace}
-                setEditingWorkspace={setEditingWorkspace}
-                focusedCategory={focusedCategory}
-                setFocusedCategory={setFocusedCategory}
-                isHeaderSticky={isHeaderSticky}
-                noCategories={noCategories}
-                setIsDrawerOpen={setIsDrawerOpen}
-                handleScroll={handleScroll}
-                spotlightState={spotlightState}
-                spotlightLoading={spotlightLoading}
-                applyFilters={applyFilters}
-                workspaceStateDescription={getStateDescription()}
-                workspaceState={workspaceState}
-                workspaceIcon={workspaceIcon}
-                workspaceColor={workspaceColor}
-                reopenWorkspaceSettings={reopenWorkspaceSettings}
-                requestWorkspaceAction={requestWorkspaceAction}
-                workspaceAction={workspaceAction}
-                setWorkspaceAction={setWorkspaceAction}
-            />
-        </SpotlightTourProvider>
+        <WorkspaceContent
+            drawerRef={drawerRef}
+            scrollViewRef={scrollViewRef}
+            ThemedColor={ThemedColor}
+            categories={categories}
+            selected={selected}
+            showConfetti={showConfetti}
+            insets={insets}
+            openModal={openModal}
+            editing={editing}
+            setEditing={setEditing}
+            editingWorkspace={editingWorkspace}
+            setEditingWorkspace={setEditingWorkspace}
+            focusedCategory={focusedCategory}
+            setFocusedCategory={setFocusedCategory}
+            isHeaderSticky={isHeaderSticky}
+            noCategories={noCategories}
+            setIsDrawerOpen={setIsDrawerOpen}
+            handleScroll={handleScroll}
+            applyFilters={applyFilters}
+            workspaceStateDescription={getStateDescription()}
+            workspaceState={workspaceState}
+            workspaceIcon={workspaceIcon}
+            workspaceColor={workspaceColor}
+            reopenWorkspaceSettings={reopenWorkspaceSettings}
+            requestWorkspaceAction={requestWorkspaceAction}
+            workspaceAction={workspaceAction}
+            setWorkspaceAction={setWorkspaceAction}
+        />
     );
 };
 
@@ -182,8 +130,6 @@ const WorkspaceContent = ({
     noCategories,
     setIsDrawerOpen,
     handleScroll,
-    spotlightState,
-    spotlightLoading,
     applyFilters,
     workspaceStateDescription,
     workspaceState,
@@ -194,9 +140,7 @@ const WorkspaceContent = ({
     workspaceAction,
     setWorkspaceAction,
 }: any) => {
-    const { start } = useSpotlightTour();
     const pathname = usePathname();
-    const hasTriggeredRef = useRef(false);
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
     const { getWorkspace } = useTasks();
@@ -208,32 +152,9 @@ const WorkspaceContent = ({
         ? ((PhosphorIcons as any)[resolvedIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
         : undefined;
 
-    // Extract primitive values to avoid reference changes
-    const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
-    const menuSpotlightShown = spotlightState.menuSpotlight;
-
     useEffect(() => {
-        hasTriggeredRef.current = false;
         setIsCreatingCategory(false);
     }, [selected]);
-
-    useEffect(() => {
-        if (hasTriggeredRef.current) return;
-
-        const shouldTrigger = selected === ONBOARDING_WORKSPACE &&
-            !workspaceSpotlightShown &&
-            menuSpotlightShown;
-
-        if (!spotlightLoading && shouldTrigger) {
-            hasTriggeredRef.current = true;
-
-            setTimeout(() => {
-                requestAnimationFrame(() => {
-                    start();
-                });
-            }, 1200);
-        }
-    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start, spotlightLoading]);
 
     return (
         <DrawerLayout
@@ -363,20 +284,18 @@ const WorkspaceContent = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0} style={{ flex: 1 }}>
-                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                                            {WorkspaceIconComponent ? (
-                                                <WorkspaceIconComponent size={28} color={resolvedColor ?? ThemedColor.primary} weight="regular" />
-                                            ) : (
-                                                <Feather name="grid" size={28} color={ThemedColor.caption} />
-                                            )}
-                                            <View style={{ flex: 1 }}>
-                                                <SlidingText type="title" style={styles.title}>
-                                                    {selected || "Good Morning! ☀"}
-                                                </SlidingText>
-                                            </View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                                        {WorkspaceIconComponent ? (
+                                            <WorkspaceIconComponent size={28} color={resolvedColor ?? ThemedColor.primary} weight="regular" />
+                                        ) : (
+                                            <Feather name="grid" size={28} color={ThemedColor.caption} />
+                                        )}
+                                        <View style={{ flex: 1 }}>
+                                            <SlidingText type="title" style={styles.title}>
+                                                {selected || "Good Morning! ☀"}
+                                            </SlidingText>
                                         </View>
-                                    </AttachStep>
+                                    </View>
                                     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
                                         <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                             <Ionicons
