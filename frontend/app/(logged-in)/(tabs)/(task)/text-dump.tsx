@@ -75,7 +75,7 @@ const TextDump = (props: Props) => {
 
             // Navigate to preview screen with the task data
             router.push({
-                pathname: "/(logged-in)/(tabs)/(task)/preview" as any,
+                pathname: "/(logged-in)/(tabs)/(task)/preview",
                 params: {
                     tasks: JSON.stringify(result.tasks),
                     newCategories: JSON.stringify(result.newCategories || []),

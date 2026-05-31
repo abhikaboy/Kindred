@@ -40,6 +40,7 @@ func (h *Handler) CreateCategory(ctx context.Context, input *CreateCategoryInput
 		WorkspaceName: input.Body.WorkspaceName,
 		User:          user_id_obj,
 		Tasks:         make([]task.TaskDocument, 0),
+		Tags:          normalizeTags(input.Body.Tags),
 		LastEdited:    xutils.NowUTC(),
 	}
 

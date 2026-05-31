@@ -21,7 +21,7 @@ type Props = {
 
 const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time, referenceId, type = "encouragement" }: Props) => {
     const ThemedColor = useThemeColor();
-    
+
     const getTimeLabel = (timestamp: number) => {
         const currentTime = Date.now();
         const notificationDate = new Date(timestamp);
@@ -72,19 +72,19 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time,
     };
 
     const timeLabel = getTimeLabel(time);
-    
+
     const handleNotificationPress = () => {
         // Congratulations reference a post; encouragements reference a task.
         // Fall back to the kudos tab if no referenceId (e.g. profile-scope encouragement).
         if (!referenceId) {
             const tab = type === "congratulation" ? "congratulations" : "encouragements";
-            router.push(`/(logged-in)/(tabs)/(task)/kudos?tab=${tab}` as any);
+            router.push(`/(logged-in)/(tabs)/(task)/kudos?tab=${tab}`);
             return;
         }
         if (type === "congratulation") {
             router.push(`/(logged-in)/posting/${referenceId}`);
         } else {
-            router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}` as any);
+            router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}`);
         }
     };
 
@@ -135,8 +135,8 @@ const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time,
                         <ThemedText>
                             <ThemedText type="smallerDefault" style={{ fontWeight: "500" }}>{name}</ThemedText>
                             <ThemedText type="smallerDefault">
-                                {type === "congratulation" 
-                                    ? ` congratulated you on completing ${taskName}` 
+                                {type === "congratulation"
+                                    ? ` congratulated you on completing ${taskName}`
                                     : ` sent you an encouragement for ${taskName}`}
                             </ThemedText>
                         </ThemedText>

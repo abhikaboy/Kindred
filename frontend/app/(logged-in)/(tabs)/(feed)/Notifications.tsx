@@ -264,7 +264,7 @@ const Notifications = () => {
             case "encouragement":
                 // referenceId is the task ID (task-scope) or empty (profile-scope).
                 if (notification.referenceId) {
-                    router.push(`/(logged-in)/(tabs)/(task)/task/${notification.referenceId}` as any);
+                    router.push(`/(logged-in)/(tabs)/(task)/task/${notification.referenceId}`);
                 } else {
                     router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements");
                 }

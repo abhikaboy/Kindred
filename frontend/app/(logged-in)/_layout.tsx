@@ -2,7 +2,7 @@
 
 import BackButton from "@/components/BackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { Redirect, Slot, Stack, router, usePathname } from "expo-router";
+import { Redirect, Slot, Stack, router, usePathname, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 
 import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
@@ -172,7 +172,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const { fetchKudosData } = useKudos();
     const { identify, capture } = useAnalytics();
     const [isLoading, setIsLoading] = useState(true);
-    const [redirectPath, setRedirectPath] = useState<string | null>(null);
+    const [redirectPath, setRedirectPath] = useState<Href | null>(null);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
@@ -402,7 +402,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     // If no user after loading, redirect based on onboarding status
     if (!user) {
         if (redirectPath) {
-            return <Redirect href={redirectPath as any} />;
+            return <Redirect href={redirectPath} />;
         }
         // Still determining redirect path (shouldn't happen, but fallback)
         return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;

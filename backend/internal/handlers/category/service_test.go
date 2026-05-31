@@ -195,6 +195,19 @@ func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_WrongUser() {
 	s.Nil(result)
 }
 
+func (s *CategoryServiceTestSuite) TestCreateCategory_PersistsTags() {
+	user := s.GetUser(0)
+	created, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "Tagged", User: user.ID, Tasks: []types.TaskDocument{}, Tags: []string{"fitness", "work"},
+	})
+	s.NoError(err)
+
+	fetched, err := s.service.GetCategoryByID(created.ID)
+
+	s.NoError(err)
+	s.ElementsMatch([]string{"fitness", "work"}, fetched.Tags)
+}
+
 // ========================================
 // DeleteCategory Tests
 // ========================================

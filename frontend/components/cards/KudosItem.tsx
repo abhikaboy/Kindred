@@ -75,7 +75,7 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
     }, [visible]);
 
     const handleAvatarPress = () => {
-        router.push(`/account/${kudos.sender.id}` as any);
+        router.push(`/account/${kudos.sender.id}`);
     };
 
     return (

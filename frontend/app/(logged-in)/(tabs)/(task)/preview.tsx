@@ -25,11 +25,11 @@ interface GroupedCategory {
 }
 
 // Preview task item that looks like a real task but isn't swipable
-const PreviewTaskItem = ({ 
-    task, 
-    categoryId 
-}: { 
-    task: Task; 
+const PreviewTaskItem = ({
+    task,
+    categoryId
+}: {
+    task: Task;
     categoryId: string;
 }) => {
     return (
@@ -58,7 +58,7 @@ const PreviewCategorySection = ({
     isNew?: boolean;
 }) => {
     const ThemedColor = useThemeColor();
-    
+
     return (
         <View style={styles.categorySection}>
             {/* Workspace label if provided */}
@@ -76,7 +76,7 @@ const PreviewCategorySection = ({
                     )}
                 </View>
             )}
-            
+
             {/* Category header */}
             <View style={styles.categoryHeader}>
                 <ThemedText type="subtitle" style={styles.categoryTitle}>
@@ -90,14 +90,14 @@ const PreviewCategorySection = ({
                     </View>
                 )}
             </View>
-            
+
             {/* Tasks list */}
             <View style={styles.tasksList}>
                 {tasks.map((task, index) => (
-                    <PreviewTaskItem 
-                        key={index} 
-                        task={task} 
-                        categoryId={`preview-${index}`} 
+                    <PreviewTaskItem
+                        key={index}
+                        task={task}
+                        categoryId={`preview-${index}`}
                     />
                 ))}
             </View>
@@ -143,7 +143,7 @@ const Preview = (props: Props) => {
     // Build a map of categoryId to category info from workspaces and new categories
     const categoryMap = useMemo(() => {
         const map = new Map<string, { name: string; workspace: string; isNew: boolean }>();
-        
+
         // Add existing categories from workspaces
         workspaces.forEach(workspace => {
             workspace.categories.forEach(category => {
@@ -154,7 +154,7 @@ const Preview = (props: Props) => {
                 });
             });
         });
-        
+
         // Add newly created categories from API response
         newCategoriesData.forEach(category => {
             map.set(category.id, {
@@ -163,18 +163,18 @@ const Preview = (props: Props) => {
                 isNew: true, // Newly created categories
             });
         });
-        
+
         return map;
     }, [workspaces, newCategoriesData]);
 
     // Group tasks by category
     const groupedCategories = useMemo(() => {
         const groups = new Map<string, GroupedCategory>();
-        
+
         tasksData.forEach((taskDoc) => {
             const categoryId = taskDoc.categoryID;
             if (!categoryId) return;
-            
+
             // Convert TaskDocument to Task format
             const task: Task = {
                 id: taskDoc.id,
@@ -193,10 +193,10 @@ const Preview = (props: Props) => {
                 userID: taskDoc.userID,
                 categoryID: taskDoc.categoryID,
             };
-            
+
             if (!groups.has(categoryId)) {
                 const categoryInfo = categoryMap.get(categoryId);
-                
+
                 groups.set(categoryId, {
                     categoryId,
                     categoryName: categoryInfo?.name || "Unknown Category",
@@ -205,10 +205,10 @@ const Preview = (props: Props) => {
                     isNew: categoryInfo?.isNew || false, // Use isNew from categoryMap
                 });
             }
-            
+
             groups.get(categoryId)!.tasks.push(task);
         });
-        
+
         return Array.from(groups.values());
     }, [tasksData, categoryMap]);
 
@@ -220,7 +220,7 @@ const Preview = (props: Props) => {
             categoryName: "Homework",
             isNew: true,
             tasks: [
-                { 
+                {
                     id: "preview-1",
                     content: "Complete math assignment chapter 5",
                     value: 10,
@@ -232,7 +232,7 @@ const Preview = (props: Props) => {
                     timestamp: new Date().toISOString(),
                     lastEdited: new Date().toISOString(),
                 },
-                { 
+                {
                     id: "preview-2",
                     content: "Write essay for English class",
                     value: 8,
@@ -251,7 +251,7 @@ const Preview = (props: Props) => {
             categoryName: "Fitness",
             isNew: true,
             tasks: [
-                { 
+                {
                     id: "preview-3",
                     content: "Go to the gym at 7 AM",
                     value: 5,
@@ -263,7 +263,7 @@ const Preview = (props: Props) => {
                     timestamp: new Date().toISOString(),
                     lastEdited: new Date().toISOString(),
                 },
-                { 
+                {
                     id: "preview-4",
                     content: "Prepare protein shake",
                     value: 3,
@@ -283,7 +283,7 @@ const Preview = (props: Props) => {
             categoryName: "Development",
             isNew: false,
             tasks: [
-                { 
+                {
                     id: "preview-5",
                     content: "Review pull requests",
                     value: 12,
@@ -338,17 +338,17 @@ const Preview = (props: Props) => {
             <View
                 style={[
                     styles.bottomButtonContainer,
-                    { 
+                    {
                         backgroundColor: ThemedColor.background,
                         borderTopColor: ThemedColor.tertiary + '40',
                     },
                 ]}>
-                <PrimaryButton 
-                    title="Create Tasks" 
+                <PrimaryButton
+                    title="Create Tasks"
                     onPress={() => {
                         // Navigate to tasks index page
-                        router.push("/(logged-in)/(tabs)/(task)" as any);
-                    }} 
+                        router.push("/(logged-in)/(tabs)/(task)");
+                    }}
                 />
             </View>
         </ThemedView>

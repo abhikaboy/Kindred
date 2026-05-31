@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/inputs/ThemedInput";
@@ -8,8 +8,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
-import { getUserTags, updateCategory } from "@/api/category";
-import TagChip from "@/components/TagChip";
+import { updateCategory } from "@/api/category";
+import TagEditor, { type TagEditorHandle } from "@/components/TagEditor";
 
 type Props = {
     hide: () => void;
@@ -24,29 +24,7 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
     const { renameCategory, updateCategoryTags } = useTasks();
 
     const [tags, setTags] = useState<string[]>(currentTags ?? []);
-    const [tagInput, setTagInput] = useState("");
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-
-    useEffect(() => {
-        getUserTags()
-            .then(setSuggestions)
-            .catch(() => setSuggestions([]));
-    }, []);
-
-    const normalize = (t: string) => t.trim().toLowerCase();
-    const addTag = (raw: string) => {
-        const t = normalize(raw);
-        if (t.length === 0 || tags.includes(t)) {
-            setTagInput("");
-            return;
-        }
-        setTags([...tags, t]);
-        setTagInput("");
-    };
-    const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
-    const filteredSuggestions = suggestions
-        .filter((s) => s.includes(normalize(tagInput)) && !tags.includes(s))
-        .slice(0, 5);
+    const tagEditorRef = useRef<TagEditorHandle>(null);
 
     const handleEditCategory = async () => {
         if (name.length == 0) {
@@ -54,8 +32,12 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
             return;
         }
 
+        // Flush any tag still sitting in the input so it isn't silently dropped
+        // when the user taps the primary CTA instead of "Add".
+        const effectiveTags = tagEditorRef.current?.flush() ?? tags;
+
         const nameChanged = name !== currentName && name.length > 0;
-        const tagsChanged = JSON.stringify(tags) !== JSON.stringify(currentTags ?? []);
+        const tagsChanged = JSON.stringify(effectiveTags) !== JSON.stringify(currentTags ?? []);
 
         if (!nameChanged && !tagsChanged) {
             // No change, just close the modal
@@ -68,8 +50,8 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                 await renameCategory(categoryId, name);
             }
             if (tagsChanged) {
-                await updateCategory(categoryId, { tags } as any);
-                updateCategoryTags(categoryId, tags);
+                await updateCategory(categoryId, { tags: effectiveTags } as any);
+                updateCategoryTags(categoryId, effectiveTags);
             }
 
             // Show success toast
@@ -113,7 +95,7 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                     Edit Category
                 </ThemedText>
             </View>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 16 }}>
                 <ThemedInput
                     autofocus
                     useBottomSheetInput={true}
@@ -127,37 +109,7 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                     value={name}
                     setValue={setName}
                 />
-                <View style={{ gap: 8, marginTop: 8 }}>
-                    <ThemedText type="caption">Tags</ThemedText>
-                    {tags.length > 0 && (
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                            {tags.map((t) => (
-                                <TouchableOpacity
-                                    key={t}
-                                    onPress={() => removeTag(t)}
-                                    accessibilityLabel={`Remove ${t}`}>
-                                    <TagChip tag={`${t}  ×`} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
-                    <ThemedInput
-                        useBottomSheetInput={true}
-                        placeHolder="Add a tag"
-                        onSubmit={() => addTag(tagInput)}
-                        value={tagInput}
-                        setValue={setTagInput}
-                    />
-                    {filteredSuggestions.length > 0 && (
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                            {filteredSuggestions.map((s) => (
-                                <TouchableOpacity key={s} onPress={() => addTag(s)}>
-                                    <TagChip tag={s} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
-                </View>
+                <TagEditor ref={tagEditorRef} tags={tags} onChange={setTags} />
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
                         title="Update Category"

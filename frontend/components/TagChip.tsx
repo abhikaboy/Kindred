@@ -30,7 +30,7 @@ export default function TagChip({ tag, onPress }: TagChipProps) {
 
 const styles = StyleSheet.create({
     chip: {
-        paddingHorizontal: 10,
+        paddingHorizontal: 16,
         paddingVertical: 4,
         borderRadius: 999,
     },
