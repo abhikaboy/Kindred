@@ -2,7 +2,6 @@ import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { FireIcon, ListIcon } from "phosphor-react-native";
-import { AttachStep } from "react-native-spotlight-tour";
 
 interface WelcomeHeaderProps {
     userName?: string;
@@ -25,13 +24,11 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, onMenuPr
 
     return (
         <>
-            <AttachStep index={2}>
-                <View ref={menuRef}>
-                    <TouchableOpacity onPress={onMenuPress}>
-                        <ListIcon size={24} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                </View>
-            </AttachStep>
+            <View ref={menuRef}>
+                <TouchableOpacity onPress={onMenuPress}>
+                    <ListIcon size={24} color={ThemedColor.caption} />
+                </TouchableOpacity>
+            </View>
 
             <View style={styles.headerContainer}>
                 <View style={styles.headerRow}>

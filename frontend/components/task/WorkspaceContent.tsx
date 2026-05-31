@@ -16,11 +16,6 @@ import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/modals/CreateModal";
-import { SpotlightTourProvider, TourStep, useSpotlightTour, AttachStep } from "react-native-spotlight-tour";
-import { useSpotlight } from "@/contexts/SpotlightContext";
-import { TourStepCard } from "@/components/spotlight/TourStepCard";
-import { SPOTLIGHT_MOTION, ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
-import { ensureVisible } from "@/utils/spotlightUtils";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -43,71 +38,13 @@ interface WorkspaceContentProps {
  * Extracted content component with/ drawer wrapper
  */
 export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceName }) => {
-    const { spotlightState, setSpotlightShown, skipAllSpotlights, isLoading: spotlightLoading } = useSpotlight();
-
-    // Tour steps for workspace
-    const tourSteps: TourStep[] = [
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Workspace Settings ⚙️"
-                    description="Tap the icon next to the workspace title to edit workspace settings, reorder categories, or delete the workspace."
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Tasks ✅"
-                    description="This is a task! The colored bar on the left shows its priority. Tap on any task to view or edit its details."
-                    onNext={next}
-                    onSkip={() => {
-                        skipAllSpotlights();
-                        stop();
-                    }}
-                />
-            ),
-        },
-        {
-            render: ({ next, stop }) => (
-                <TourStepCard
-                    title="Categories 📂"
-                    description="To make new tasks, click on a category name. Categories help you organize tasks by type or project!"
-                    onNext={() => {
-                        setSpotlightShown("workspaceSpotlight");
-                        stop();
-                    }}
-                    isLastStep
-                />
-            ),
-        },
-    ];
-
-    return (
-        <SpotlightTourProvider steps={tourSteps} motion={SPOTLIGHT_MOTION}>
-            <WorkspaceContentBody
-                workspaceName={workspaceName}
-                spotlightState={spotlightState}
-                spotlightLoading={spotlightLoading}
-            />
-        </SpotlightTourProvider>
-    );
+    return <WorkspaceContentBody workspaceName={workspaceName} />;
 };
 
-type WorkspaceContentBodyProps = WorkspaceContentProps & {
-    spotlightState: any;
-    spotlightLoading: boolean;
-};
+type WorkspaceContentBodyProps = WorkspaceContentProps;
 
 const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     workspaceName,
-    spotlightState,
-    spotlightLoading,
 }) => {
     const ThemedColor = useThemeColor();
     const { workspaces, categories: globalCategories, selected: globalSelected, getWorkspace } = useTasks();
@@ -170,43 +107,11 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     };
 
     const scrollViewRef = useRef<ScrollView>(null);
-    const workspaceStep0Ref = useRef<View>(null);
-    const workspaceLayoutRef = useRef<{ y: number; height: number } | null>(null);
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
 
-    const { start } = useSpotlightTour();
-    const hasTriggeredRef = useRef(false);
-    const workspaceSpotlightShown = spotlightState.workspaceSpotlight;
-    const menuSpotlightShown = spotlightState.menuSpotlight;
-
     useEffect(() => {
-        hasTriggeredRef.current = false;
         setIsCreatingCategory(false);
     }, [selected]);
-
-    useEffect(() => {
-        if (hasTriggeredRef.current) return;
-
-        const shouldTrigger =
-            selected === ONBOARDING_WORKSPACE && !workspaceSpotlightShown && menuSpotlightShown;
-
-        if (!spotlightLoading && shouldTrigger && !hasTriggeredRef.current) {
-            hasTriggeredRef.current = true;
-            // Increased delay to ensure drawer is fully closed and workspace is mounted
-            setTimeout(async () => {
-                const canStart = await ensureVisible(
-                    workspaceStep0Ref,
-                    scrollViewRef,
-                    workspaceLayoutRef.current || undefined
-                );
-                if (canStart) {
-                    requestAnimationFrame(() => {
-                        start();
-                    });
-                }
-            }, 1200);
-        }
-    }, [workspaceSpotlightShown, menuSpotlightShown, selected, start, spotlightLoading]);
 
     const upcomingCategory = categories.find((c) => c.id.startsWith("upcoming-"));
     const visibleCategories = categories
@@ -325,18 +230,15 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <AttachStep index={0} style={{ flex: 1, alignItems: "flex-start" }}>
-                                        <TouchableOpacity
-                                            ref={workspaceStep0Ref}
-                                            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-                                            onLongPress={reopenWorkspaceSettings}
-                                            activeOpacity={1}
-                                        >
-                                            <ThemedText type="title" style={styles.title}>
-                                                {selected || "Good Morning! ☀"}
-                                            </ThemedText>
-                                        </TouchableOpacity>
-                                    </AttachStep>
+                                    <TouchableOpacity
+                                        style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, alignSelf: "flex-start" }}
+                                        onLongPress={reopenWorkspaceSettings}
+                                        activeOpacity={1}
+                                    >
+                                        <ThemedText type="title" style={styles.title}>
+                                            {selected || "Good Morning! ☀"}
+                                        </ThemedText>
+                                    </TouchableOpacity>
                                 </View>
                                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                                     <ThemedText type="lightBody" style={{ color: ThemedColor.caption, flex: 1 }}>

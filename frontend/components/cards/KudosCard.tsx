@@ -2,7 +2,6 @@ import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
-import { AttachStep } from "react-native-spotlight-tour";
 import { Sparkle, Confetti } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { KUDOS_CONSTANTS } from "@/constants/kudos";
