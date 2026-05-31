@@ -108,6 +108,18 @@ var Indexes = []Index{
 			Keys: bson.D{{Key: "receiver", Value: 1}},
 		},
 	},
+	// For You exposure tracking — one document per (user_id, card_type). The
+	// unique compound index lets the service upsert exposure counts atomically.
+	{
+		Collection: "for_you_exposures",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "user_id", Value: 1},
+				{Key: "card_type", Value: 1},
+			},
+			Options: options.Index().SetName("user_card_unique").SetUnique(true),
+		},
+	},
 	// Calendar connections indexes
 	{
 		Collection: "calendar_connections",

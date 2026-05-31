@@ -2,12 +2,12 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import type { ForYouCtaAction, ForYouSection as ForYouSectionModel } from "@/api/forYou";
+import type { ForYouCardType, ForYouCtaAction, ForYouSection as ForYouSectionModel } from "@/api/forYou";
 import ForYouCard from "./ForYouCard";
 
 type Props = {
     section: ForYouSectionModel;
-    onAction?: (action: ForYouCtaAction) => void;
+    onAction?: (action: ForYouCtaAction, cardType: ForYouCardType) => void;
 };
 
 export default function ForYouSection({ section, onAction }: Props) {
@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     },
     heading: {
         marginBottom: 12,
-        fontSize: 16,
     },
     cardList: {
         gap: 10,

@@ -18,8 +18,6 @@ export default function ForYouCta({ cta, onAction }: Props) {
             onAction(cta.action);
             return;
         }
-        // Default behavior — Phase 1 only navigation is fully wired;
-        // other action types fall through to console + deeplink navigation handled by the card.
         if (cta.action.type === "navigate") {
             router.push(cta.action.href as never);
         } else {
@@ -36,13 +34,11 @@ export default function ForYouCta({ cta, onAction }: Props) {
         <TouchableOpacity
             onPress={handlePress}
             activeOpacity={0.8}
-            style={[
-                styles.button,
-                isPrimary ? styles.buttonPrimary : styles.buttonSecondary,
-                { backgroundColor: bg, borderColor },
-            ]}
+            style={[styles.button, { backgroundColor: bg, borderColor }]}
             accessibilityRole="button">
-            <ThemedText style={[styles.label, { color: textColor }]}>{cta.label}</ThemedText>
+            <ThemedText type="defaultSemiBold" style={{ color: textColor, fontSize: 14 }}>
+                {cta.label}
+            </ThemedText>
         </TouchableOpacity>
     );
 }
@@ -74,13 +70,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         alignItems: "center",
         justifyContent: "center",
-    },
-    buttonPrimary: {},
-    buttonSecondary: {},
-    label: {
-        fontFamily: "Outfit",
-        fontWeight: "500",
-        fontSize: 14,
     },
     row: {
         flexDirection: "row",

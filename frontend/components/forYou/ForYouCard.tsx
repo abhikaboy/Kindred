@@ -4,12 +4,12 @@ import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import type { ForYouCard as ForYouCardModel, ForYouCtaAction, ForYouIconKind } from "@/api/forYou";
+import type { ForYouCard as ForYouCardModel, ForYouCardType, ForYouCtaAction, ForYouIconKind } from "@/api/forYou";
 import { ForYouCtaRow } from "./ForYouCta";
 
 type Props = {
     card: ForYouCardModel;
-    onAction?: (action: ForYouCtaAction) => void;
+    onAction?: (action: ForYouCtaAction, cardType: ForYouCardType) => void;
 };
 
 const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
@@ -25,8 +25,16 @@ export default function ForYouCard({ card, onAction }: Props) {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
+    const dispatchAction = (action: ForYouCtaAction) => {
+        if (onAction) {
+            onAction(action, card.type);
+        } else if (action.type === "navigate" && action.href) {
+            router.push(action.href as never);
+        }
+    };
+
     const handleCardPress = () => {
-        router.push(card.deepLink as never);
+        dispatchAction({ type: "navigate", href: card.deepLink });
     };
 
     const iconName = ICON_FOR_KIND[card.iconKind];
@@ -43,21 +51,20 @@ export default function ForYouCard({ card, onAction }: Props) {
                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
                     <Ionicons name={iconName} size={18} color={ThemedColor.primary} />
                 </View>
-                <ThemedText style={styles.compactTitle} numberOfLines={1}>
+                <ThemedText type="defaultSemiBold" style={styles.compactTitle} numberOfLines={1}>
                     {card.title}
                 </ThemedText>
                 {inlineCta ? (
                     <TouchableOpacity
                         onPress={(e) => {
                             e.stopPropagation();
-                            if (onAction) onAction(inlineCta.action);
-                            else if (inlineCta.action.type === "navigate") {
-                                router.push(inlineCta.action.href as never);
-                            }
+                            dispatchAction(inlineCta.action);
                         }}
                         style={[styles.compactCta, { backgroundColor: ThemedColor.primary }]}
                         accessibilityRole="button">
-                        <ThemedText style={styles.compactCtaLabel}>{inlineCta.label}</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={styles.compactCtaLabel}>
+                            {inlineCta.label}
+                        </ThemedText>
                     </TouchableOpacity>
                 ) : null}
                 <Ionicons name="chevron-forward" size={18} color={ThemedColor.caption} />
@@ -65,7 +72,6 @@ export default function ForYouCard({ card, onAction }: Props) {
         );
     }
 
-    // Full layout
     return (
         <TouchableOpacity
             onPress={handleCardPress}
@@ -78,15 +84,11 @@ export default function ForYouCard({ card, onAction }: Props) {
                     <Ionicons name={iconName} size={20} color={ThemedColor.primary} />
                 </View>
                 <View style={styles.fullTextBlock}>
-                    <ThemedText style={styles.fullTitle}>{card.title}</ThemedText>
-                    {card.body ? (
-                        <ThemedText style={[styles.fullBody, { color: ThemedColor.caption }]}>
-                            {card.body}
-                        </ThemedText>
-                    ) : null}
+                    <ThemedText type="defaultSemiBold">{card.title}</ThemedText>
+                    {card.body ? <ThemedText type="caption">{card.body}</ThemedText> : null}
                 </View>
             </View>
-            <ForYouCtaRow ctas={card.ctas} onAction={onAction} />
+            <ForYouCtaRow ctas={card.ctas} onAction={dispatchAction} />
         </TouchableOpacity>
     );
 }
@@ -111,9 +113,6 @@ const stylesheet = (ThemedColor: any) =>
         },
         compactTitle: {
             flex: 1,
-            fontSize: 14,
-            fontFamily: "Outfit",
-            fontWeight: "500",
         },
         compactCta: {
             paddingHorizontal: 12,
@@ -122,9 +121,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         compactCtaLabel: {
             color: "#fff",
-            fontSize: 12,
-            fontFamily: "Outfit",
-            fontWeight: "500",
+            fontSize: 13,
         },
         fullContainer: {
             padding: 16,
@@ -141,15 +138,5 @@ const stylesheet = (ThemedColor: any) =>
         fullTextBlock: {
             flex: 1,
             gap: 4,
-        },
-        fullTitle: {
-            fontSize: 16,
-            fontFamily: "Outfit",
-            fontWeight: "600",
-        },
-        fullBody: {
-            fontSize: 14,
-            fontFamily: "Outfit",
-            lineHeight: 19,
         },
     });

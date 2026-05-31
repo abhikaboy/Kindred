@@ -318,7 +318,7 @@ const Notifications = () => {
     const [activeTab, setActiveTab] = useState(ACTIVITY_TAB_INDEX);
     const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
     const followRequestsRef = useRef<{ refresh: () => Promise<void> }>(null);
-    const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou } = useForYou();
+    const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction } = useForYou();
     const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
     const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
 
@@ -555,6 +555,7 @@ const Notifications = () => {
                     loading={forYouLoading}
                     error={forYouError}
                     refresh={refreshForYou}
+                    onInteraction={recordForYouInteraction}
                 />
                 <View style={{ flex: 1 }}>{activityTabContent}</View>
                 <TabPlaceholder label="Requests — coming soon" ThemedColor={ThemedColor} />

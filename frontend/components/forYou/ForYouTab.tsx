@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import type { ForYouCtaAction, ForYouFeed } from "@/api/forYou";
+import type { ForYouCardType, ForYouCtaAction, ForYouFeed } from "@/api/forYou";
 import { router } from "expo-router";
 import ForYouSection from "./ForYouSection";
 
@@ -12,9 +12,10 @@ type Props = {
     loading: boolean;
     error: string | null;
     refresh: () => Promise<void>;
+    onInteraction?: (cardType: ForYouCardType) => void;
 };
 
-export default function ForYouTab({ horizontalPadding, feed, loading, error, refresh }: Props) {
+export default function ForYouTab({ horizontalPadding, feed, loading, error, refresh, onInteraction }: Props) {
     const ThemedColor = useThemeColor();
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -24,23 +25,27 @@ export default function ForYouTab({ horizontalPadding, feed, loading, error, ref
         setRefreshing(false);
     }, [refresh]);
 
-    const handleAction = useCallback((action: ForYouCtaAction) => {
-        // Phase 1: only `navigate` is wired end-to-end. Other action types
-        // log and fall back to a sensible navigation target so the user lands somewhere.
-        // Phase 3 will wire send_kudos / send_encouragement / react inline.
-        switch (action.type) {
-            case "navigate":
-                router.push(action.href as never);
-                return;
-            case "send_kudos":
-            case "send_encouragement":
-                router.push("/(logged-in)/(tabs)/(task)/kudos" as never);
-                return;
-            case "react":
-                router.push(`/(logged-in)/posting/${action.postId}` as never);
-                return;
-        }
-    }, []);
+    const handleAction = useCallback(
+        (action: ForYouCtaAction, cardType: ForYouCardType) => {
+            onInteraction?.(cardType);
+            // Phase 2 only fully wires `navigate`. Other action types fall through to a
+            // sensible navigation target so the user lands somewhere; inline CTA execution
+            // (send kudos / react) lands in Phase 3.
+            switch (action.type) {
+                case "navigate":
+                    if (action.href) router.push(action.href as never);
+                    return;
+                case "send_kudos":
+                case "send_encouragement":
+                    router.push("/(logged-in)/(tabs)/(task)/kudos" as never);
+                    return;
+                case "react":
+                    if (action.postId) router.push(`/(logged-in)/posting/${action.postId}` as never);
+                    return;
+            }
+        },
+        [onInteraction],
+    );
 
     if (loading && !feed) {
         return (
