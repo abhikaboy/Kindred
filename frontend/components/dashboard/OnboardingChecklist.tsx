@@ -1,7 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { showToastable } from 'react-native-toastable';
 import { ThemedText } from '@/components/ThemedText';
+import DefaultToast from '@/components/ui/DefaultToast';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateModal } from '@/contexts/createModalContext';
@@ -11,6 +14,7 @@ import {
     computeVisibleItems,
     shouldShowCard,
     type ChecklistUser,
+    type CompletionMap,
     type ItemKey,
 } from '@/utils/onboardingChecklist';
 
@@ -20,6 +24,16 @@ const LABELS: Record<ItemKey, string> = {
     friend: 'Add a friend',
     rings: 'Close all 3 rings in a day',
 };
+
+const TOAST_COPY: Record<ItemKey, string> = {
+    task: 'Nice — first task done. Keep going.',
+    kudos: 'First kudos sent. Spread the love.',
+    friend: "Friend added. You're not alone in this.",
+    rings: "All three rings closed. That's the move.",
+};
+
+const dismissKey = (userId: string) => `${userId}-onboarding-checklist-dismissed`;
+const snapshotKey = (userId: string) => `${userId}-onboarding-checklist-snapshot`;
 
 interface OnboardingChecklistProps {
     scrollRef: React.RefObject<ScrollView>;
@@ -31,7 +45,24 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
     const { openModal } = useCreateModal();
-    const [dismissed, setDismissed] = useState(false);
+    const [dismissed, setDismissed] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (!user?._id) return;
+        let cancelled = false;
+        AsyncStorage.getItem(dismissKey(user._id)).then((v) => {
+            if (!cancelled) setDismissed(v === 'true');
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?._id]);
+
+    const handleDismiss = useCallback(() => {
+        if (!user?._id) return;
+        AsyncStorage.setItem(dismissKey(user._id), 'true').catch(() => {});
+        setDismissed(true);
+    }, [user?._id]);
 
     const completion = useMemo(() => {
         if (!user) return null;
@@ -61,7 +92,46 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
         [openModal, router, scrollRef, kudosOffsetRef]
     );
 
-    if (!completion || !shouldShowCard(completion, dismissed)) return null;
+    const snapshotLoadedRef = useRef(false);
+    const lastSnapshotRef = useRef<CompletionMap | null>(null);
+
+    useEffect(() => {
+        if (!user?._id || !completion) return;
+
+        if (!snapshotLoadedRef.current) {
+            snapshotLoadedRef.current = true;
+            AsyncStorage.getItem(snapshotKey(user._id)).then((raw) => {
+                if (raw) {
+                    try {
+                        lastSnapshotRef.current = JSON.parse(raw) as CompletionMap;
+                    } catch {}
+                }
+                lastSnapshotRef.current = lastSnapshotRef.current ?? completion;
+                AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(completion)).catch(() => {});
+            });
+            return;
+        }
+
+        const prev = lastSnapshotRef.current;
+        if (!prev) return;
+
+        (['task', 'kudos', 'friend', 'rings'] as ItemKey[]).forEach((key) => {
+            if (!prev[key] && completion[key]) {
+                showToastable({
+                    title: 'Onboarding',
+                    message: TOAST_COPY[key],
+                    status: 'success',
+                    duration: 3500,
+                    renderContent: (props) => <DefaultToast {...props} />,
+                });
+            }
+        });
+
+        lastSnapshotRef.current = completion;
+        AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(completion)).catch(() => {});
+    }, [completion, user?._id]);
+
+    if (!completion || dismissed === null || !shouldShowCard(completion, dismissed)) return null;
 
     return (
         <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
@@ -111,7 +181,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
                 ))}
 
                 <TouchableOpacity
-                    onPress={() => setDismissed(true)}
+                    onPress={handleDismiss}
                     style={{ alignSelf: 'flex-end', paddingVertical: 6, marginTop: 4 }}>
                     <ThemedText type="caption" style={{ fontSize: 12 }}>
                         Dismiss
