@@ -352,6 +352,7 @@ const HomeContent = ({
                                 onRefresh={onRefresh}
                                 scrollRef={homeScrollRef}
                                 kudosRef={kudosRef}
+                                kudosOffsetRef={kudosOffsetRef}
                                 onKudosLayout={(layout) => {
                                     kudosOffsetRef.current = layout.y;
                                 }}

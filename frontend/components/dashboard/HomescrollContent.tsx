@@ -15,6 +15,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import WorkingOnRow from "./WorkingOnRow";
+import { OnboardingChecklist } from "./OnboardingChecklist";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -45,6 +46,7 @@ interface HomeScrollContentProps {
     kudosRef?: React.RefObject<View>;
     onKudosLayout?: (layout: { y: number; height: number }) => void;
     onStatsExpandChange?: (expanded: boolean) => void;
+    kudosOffsetRef: React.MutableRefObject<number>;
 }
 
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
@@ -65,6 +67,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     kudosRef,
     onKudosLayout,
     onStatsExpandChange,
+    kudosOffsetRef,
 }) => {
     const router = useRouter();
     const { showAlert } = useAlert();
@@ -354,6 +357,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
                     <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
+                {scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
                 <WorkingOnRow />
 
                 <Animated.View style={{ opacity: dimAnim }}>
