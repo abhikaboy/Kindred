@@ -7,10 +7,11 @@ import (
 )
 
 type CreateCategoryParams struct {
-	Name          string  `bson:"name" json:"name"`
-	WorkspaceName string  `bson:"workspaceName" json:"workspaceName"`
-	Icon          *string `bson:"icon,omitempty" json:"icon,omitempty"`
-	Color         *string `bson:"color,omitempty" json:"color,omitempty"`
+	Name          string   `bson:"name" json:"name"`
+	WorkspaceName string   `bson:"workspaceName" json:"workspaceName"`
+	Icon          *string  `bson:"icon,omitempty" json:"icon,omitempty"`
+	Color         *string  `bson:"color,omitempty" json:"color,omitempty"`
+	Tags          []string `bson:"tags,omitempty" json:"tags,omitempty"`
 }
 
 type UpdateWorkspaceParams struct {

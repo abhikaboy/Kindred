@@ -7833,6 +7833,10 @@ components:
                     type: string
                 name:
                     type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
                 workspaceName:
                     type: string
             required:

@@ -4011,6 +4011,7 @@ export interface components {
             color?: string;
             icon?: string;
             name: string;
+            tags?: string[];
             workspaceName: string;
         };
         CreateCongratulationOutputBody: {
