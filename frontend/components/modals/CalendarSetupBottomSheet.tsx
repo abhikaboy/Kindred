@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, TouchableOpacity, Switch, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
@@ -34,6 +34,21 @@ export default function CalendarSetupBottomSheet({
     const [makePublic, setMakePublic] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [creating, setCreating] = useState(false);
+
+    // Tracks whether the user successfully completed setup in this open. When
+    // false on dismiss, we treat the dismiss as a cancel and disconnect the
+    // pending connection; when true, the dismiss is the success path and we
+    // leave the connection alone. Without this, DefaultModal's onChange(-1)
+    // callback would route every modal close through handleCancel —
+    // including the close-on-success path — silently disconnecting the
+    // calendar the user just finished setting up.
+    const completedRef = useRef(false);
+
+    useEffect(() => {
+        if (visible) {
+            completedRef.current = false;
+        }
+    }, [visible]);
 
     useEffect(() => {
         if (visible && connectionId) {
@@ -71,6 +86,10 @@ export default function CalendarSetupBottomSheet({
                 mergeIntoOne,
                 makePublic,
             );
+            // Mark completion BEFORE onComplete triggers the parent to close
+            // the modal — otherwise handleDismiss would race and treat the
+            // success-path close as a cancel.
+            completedRef.current = true;
             onComplete();
         } catch (err) {
             console.error("Failed to set up workspaces:", err);
@@ -79,14 +98,22 @@ export default function CalendarSetupBottomSheet({
         }
     };
 
-    const handleCancel = async () => {
-        setVisible(false);
+    // Routes both explicit cancels (Cancel button) and implicit dismisses
+    // (backdrop tap, swipe-down, parent flipping `visible`). Only the no-
+    // completion case is treated as a user-cancel that drops the connection.
+    const handleDismiss = async (open: boolean) => {
+        setVisible(open);
+        if (open || completedRef.current) return;
         try {
             await disconnectCalendar(connectionId);
         } catch (err) {
             console.error("Failed to remove pending calendar connection:", err);
         }
         onCancel();
+    };
+
+    const handleCancelPress = () => {
+        setVisible(false);
     };
 
     const renderCalendarItem = ({ item }: { item: CalendarInfo }) => {
@@ -131,7 +158,7 @@ export default function CalendarSetupBottomSheet({
     return (
         <DefaultModal
             visible={visible}
-            setVisible={handleCancel}
+            setVisible={handleDismiss}
             snapPoints={["90%"]}
             enableContentPanningGesture={false}
         >
@@ -226,7 +253,7 @@ export default function CalendarSetupBottomSheet({
                             <View style={styles.buttonContainer}>
                                 <PrimaryButton
                                     title="Cancel"
-                                    onPress={handleCancel}
+                                    onPress={handleCancelPress}
                                     secondary
                                     style={styles.button}
                                 />

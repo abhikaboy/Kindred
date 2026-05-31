@@ -15,6 +15,7 @@ import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { Ionicons } from "@expo/vector-icons";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
@@ -38,6 +39,7 @@ export default function Caption() {
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
+    const { showRingUpdate } = useRingUpdate();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
 
     // Compute display text based on state
@@ -147,6 +149,8 @@ export default function Caption() {
                 });
             }
 
+            showRingUpdate(result.ringDelta);
+
             capture(AnalyticsEvents.POST_CREATED, {
                 has_caption: !!data.caption?.trim(),
             });
@@ -252,18 +256,6 @@ export default function Caption() {
                             fontSize={16}
                             minHeight={120}
                         />
-                        <View
-                            style={{
-                                width: "100%",
-                                padding: 20,
-                                justifyContent: "space-between",
-                                backgroundColor: ThemedColor.lightened,
-                                borderRadius: 8,
-                                flexDirection: "row",
-                            }}>
-                            <ThemedText>Points Gained</ThemedText>
-                            <ThemedText>{taskInfo?.points || 1} points</ThemedText>
-                        </View>
                         <TouchableOpacity
                             style={{
                                 width: "100%",
@@ -272,13 +264,17 @@ export default function Caption() {
                                 backgroundColor: ThemedColor.lightened,
                                 borderRadius: 8,
                                 flexDirection: "row",
+                                alignItems: "center",
                             }}
                             onPress={() => {
                                 router.push("/(logged-in)/posting/groups");
                             }}
                             activeOpacity={0.7}>
                             <ThemedText>Who can see this post?</ThemedText>
-                            <ThemedText>{groupDisplayText}</ThemedText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <ThemedText style={{ color: ThemedColor.primary }}>{groupDisplayText}</ThemedText>
+                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
+                            </View>
                         </TouchableOpacity>
                         <PrimaryButton
                             title={isPosting ? "Posting..." : "Post"}

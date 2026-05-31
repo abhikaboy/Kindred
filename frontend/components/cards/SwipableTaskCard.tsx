@@ -22,6 +22,7 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import DeadlineBottomSheetModal from "../modals/DeadlineBottomSheetModal";
 import ReminderBottomSheetModal from "../modals/ReminderBottomSheetModal";
 
@@ -46,6 +47,7 @@ const SwipableTaskCard = ({
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
+    const { showRingUpdate } = useRingUpdate();
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -89,6 +91,15 @@ const SwipableTaskCard = ({
             });
             // Only update UI state after successful API call
             removeFromCategory(categoryId, taskId);
+            // For public tasks we pop a "tap to post" toast at the top for ~5.5s.
+            // The do ring lives in the same top region, so wait for the toast
+            // to clear before animating it.
+            const ringDelta = res.ringDelta;
+            if (ringDelta?.ring === "do" && task.public) {
+                setTimeout(() => showRingUpdate(ringDelta), 5600);
+            } else {
+                showRingUpdate(ringDelta);
+            }
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_COMPLETED, {
                 source: "swipe",

@@ -293,6 +293,27 @@ func (h *Handler) SetWorkspacePushEnabled(ctx context.Context, input *SetWorkspa
 	return resp, nil
 }
 
+func (h *Handler) GetUserTags(ctx context.Context, input *GetUserTagsInput) (*GetUserTagsOutput, error) {
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format for UserId", err)
+	}
+
+	tags, err := h.service.GetUserTags(userID)
+	if err != nil {
+		slog.Error("unable to get user tags", "userId", userIDStr, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get tags. Please try again.", err)
+	}
+
+	resp := &GetUserTagsOutput{}
+	resp.Body.Tags = tags
+	return resp, nil
+}
+
 func (h *Handler) SetupDefaultWorkspace(ctx context.Context, input *SetupDefaultWorkspaceInput) (*SetupDefaultWorkspaceOutput, error) {
 	// Extract user_id from context (set by auth middleware)
 	user_id, err := auth.RequireAuth(ctx)

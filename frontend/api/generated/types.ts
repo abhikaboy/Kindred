@@ -3048,6 +3048,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user tags
+         * @description Retrieve the distinct list of category tags for the authenticated user
+         */
+        get: operations["get-user-tags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/workspaces": {
         parameters: {
             query?: never;
@@ -3667,6 +3687,7 @@ export interface components {
             lastEdited: string;
             name: string;
             push_enabled?: boolean;
+            tags?: string[];
             tasks: components["schemas"]["TaskDocument"][];
             user: string;
             workspaceName: string;
@@ -5135,6 +5156,15 @@ export interface components {
              */
             total: number;
         };
+        GetUserTagsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUserTagsOutputBody.json
+             */
+            readonly $schema?: string;
+            tags: string[];
+        };
         GetUserTemplatesOutputBody: {
             /**
              * Format: uri
@@ -5434,14 +5464,6 @@ export interface components {
             friend_requests: boolean;
             near_deadlines: boolean;
             reactions: boolean;
-        };
-        OAuthCallbackOutputBody: {
-            /**
-             * Format: uri
-             * @description A URL to the JSON Schema for this object.
-             * @example https://example.com/schemas/OAuthCallbackOutputBody.json
-             */
-            readonly $schema?: string;
         };
         PostDocumentAPI: {
             /**
@@ -6521,6 +6543,7 @@ export interface components {
             blueprintId?: string;
             isBlueprint?: boolean;
             name?: string;
+            tags?: string[];
         };
         UpdateCategoryOutputBody: {
             /**
@@ -8012,14 +8035,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description No Content */
+            204: {
                 headers: {
+                    Location?: string;
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["OAuthCallbackOutputBody"];
-                };
+                content?: never;
             };
             /** @description Error */
             default: {
@@ -13245,6 +13267,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeleteWaitlistOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-tags": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUserTagsOutputBody"];
                 };
             };
             /** @description Error */

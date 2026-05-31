@@ -25,6 +25,7 @@ type CategoryDocument struct {
 	BlueprintID   *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration   string              `bson:"integration,omitempty" json:"integration,omitempty"` // Format: "gcal:{connection_id}:{calendar_id}"
 	PushEnabled   bool                `bson:"push_enabled,omitempty" json:"push_enabled,omitempty"`
+	Tags          []string            `bson:"tags,omitempty" json:"tags,omitempty"`
 }
 
 type WorkspaceDocument struct {

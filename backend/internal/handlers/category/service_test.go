@@ -583,6 +583,78 @@ func (s *CategoryServiceTestSuite) TestSetWorkspacePushEnabled_DisablesAllInWork
 	}
 }
 
+func (s *CategoryServiceTestSuite) TestGetUserTags() {
+	user := s.GetUser(0)
+	other := s.GetUser(1)
+
+	_, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "A", User: user.ID, Tasks: []types.TaskDocument{}, Tags: []string{"fitness", "work"},
+	})
+	s.NoError(err)
+	_, err = s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "B", User: user.ID, Tasks: []types.TaskDocument{}, Tags: []string{"work", "errands"},
+	})
+	s.NoError(err)
+	_, err = s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "C", User: other.ID, Tasks: []types.TaskDocument{}, Tags: []string{"secret"},
+	})
+	s.NoError(err)
+
+	tags, err := s.service.GetUserTags(user.ID)
+
+	s.NoError(err)
+	s.ElementsMatch([]string{"fitness", "work", "errands"}, tags)
+}
+
+func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_SetsNormalizedTags() {
+	user := s.GetUser(0)
+	created, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "Health", User: user.ID, Tasks: []types.TaskDocument{},
+	})
+	s.NoError(err)
+
+	tags := []string{"  Fitness ", "fitness", "Gym"}
+	result, err := s.service.UpdatePartialCategory(created.ID, UpdateCategoryDocument{Tags: &tags}, user.ID)
+
+	s.NoError(err)
+	s.Equal([]string{"fitness", "gym"}, result.Tags)
+	s.Equal("Health", result.Name) // name preserved on a tags-only update
+}
+
+func (s *CategoryServiceTestSuite) TestUpdatePartialCategory_NilTagsLeavesTagsUntouched() {
+	user := s.GetUser(0)
+	existing := []string{"work"}
+	created, err := s.service.CreateCategory(&CategoryDocument{
+		ID: primitive.NewObjectID(), Name: "Job", User: user.ID, Tasks: []types.TaskDocument{}, Tags: existing,
+	})
+	s.NoError(err)
+
+	result, err := s.service.UpdatePartialCategory(created.ID, UpdateCategoryDocument{Name: "Career"}, user.ID)
+
+	s.NoError(err)
+	s.Equal("Career", result.Name)
+	s.Equal([]string{"work"}, result.Tags) // untouched because Tags was nil
+}
+
+func (s *CategoryServiceTestSuite) TestNormalizeTags() {
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"trims and lowercases", []string{"  Fitness "}, []string{"fitness"}},
+		{"drops empty and whitespace", []string{"work", "", "   "}, []string{"work"}},
+		{"dedupes after normalizing", []string{"Work", "work", "WORK"}, []string{"work"}},
+		{"preserves first-seen order", []string{"b", "a", "b"}, []string{"b", "a"}},
+		{"nil input returns empty slice", nil, []string{}},
+	}
+	for _, c := range cases {
+		s.Run(c.name, func() {
+			s.Equal(c.want, normalizeTags(c.in))
+		})
+	}
+}
+
 func (s *CategoryServiceTestSuite) TestRenameWorkspace_Success() {
 	user := s.GetUser(0)
 

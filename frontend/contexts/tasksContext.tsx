@@ -40,6 +40,8 @@ type TaskContextType = {
     restoreWorkspace: (workspace: Workspace) => void;
     renameWorkspace: (oldName: string, newName: string) => Promise<void>;
     renameCategory: (categoryId: string, newName: string) => Promise<void>;
+    getCategoriesByTag: (tag: string) => { workspaceName: string; category: Categories }[];
+    updateCategoryTags: (categoryId: string, tags: string[]) => void;
     updateWorkspaceIconColor: (name: string, icon?: string | null, color?: string | null) => Promise<void>;
     fetchingWorkspaces: boolean;
 
@@ -297,7 +299,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const addToWorkspace = useCallback((name: string, category: Categories) => {
         setRawWorkspaces(prev => prev.map(workspace => {
             if (workspace.name === name) {
-                return { ...workspace, categories: [...workspace.categories, { ...category, tasks: category.tasks ?? [] }] };
+                return { ...workspace, categories: [...workspace.categories, { ...category, tasks: category.tasks ?? [], tags: category.tags ?? [] }] };
             }
             return workspace;
         }));
@@ -426,6 +428,31 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             throw error;
         }
     }, [invalidateWorkspacesCache, fetchWorkspaces]);
+
+    const getCategoriesByTag = useCallback(
+        (tag: string) => {
+            const target = tag.trim().toLowerCase();
+            const matches: { workspaceName: string; category: Categories }[] = [];
+            for (const ws of rawWorkspaces) {
+                for (const category of ws.categories) {
+                    if ((category.tags ?? []).includes(target)) {
+                        matches.push({ workspaceName: ws.name, category });
+                    }
+                }
+            }
+            return matches;
+        },
+        [rawWorkspaces]
+    );
+
+    const updateCategoryTags = useCallback((categoryId: string, tags: string[]) => {
+        setRawWorkspaces((prev) =>
+            prev.map((ws) => ({
+                ...ws,
+                categories: ws.categories.map((c) => (c.id === categoryId ? { ...c, tags } : c)),
+            }))
+        );
+    }, []);
 
     const handleSetSelected = useCallback((workspaceName: string) => {
         setSelected(workspaceName);
@@ -562,6 +589,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         restoreWorkspace,
         renameWorkspace,
         renameCategory,
+        getCategoriesByTag,
+        updateCategoryTags,
         updateWorkspaceIconColor,
         setCreateCategory,
         selectedCategory,
@@ -587,7 +616,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         workspaces, getWorkspace, fetchWorkspaces, selected, handleSetSelected,
         categories, addToCategory, updateTask, addToWorkspace, addWorkspace,
         removeFromCategory, removeFromWorkspace, removeWorkspace, restoreWorkspace,
-        renameWorkspace, renameCategory, updateWorkspaceIconColor, setCreateCategory,
+        renameWorkspace, renameCategory, getCategoriesByTag, updateCategoryTags, updateWorkspaceIconColor, setCreateCategory,
         selectedCategory, showConfetti, task, getTaskById, doesWorkspaceExist,
         unnestedTasks, startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks,
         futureTasks, fetchingWorkspaces, windowTasks, recentWorkspaces,

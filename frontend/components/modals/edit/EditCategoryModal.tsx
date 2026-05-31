@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/inputs/ThemedInput";
@@ -8,17 +8,45 @@ import Feather from "@expo/vector-icons/Feather";
 import { useTasks } from "@/contexts/tasksContext";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { getUserTags, updateCategory } from "@/api/category";
+import TagChip from "@/components/TagChip";
 
 type Props = {
     hide: () => void;
     categoryId: string;
     currentName: string;
+    currentTags?: string[];
 };
 
-const EditCategoryModal = ({ hide, categoryId, currentName }: Props) => {
+const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props) => {
     let ThemedColor = useThemeColor();
     const [name, setName] = useState(currentName);
-    const { renameCategory } = useTasks();
+    const { renameCategory, updateCategoryTags } = useTasks();
+
+    const [tags, setTags] = useState<string[]>(currentTags ?? []);
+    const [tagInput, setTagInput] = useState("");
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+
+    useEffect(() => {
+        getUserTags()
+            .then(setSuggestions)
+            .catch(() => setSuggestions([]));
+    }, []);
+
+    const normalize = (t: string) => t.trim().toLowerCase();
+    const addTag = (raw: string) => {
+        const t = normalize(raw);
+        if (t.length === 0 || tags.includes(t)) {
+            setTagInput("");
+            return;
+        }
+        setTags([...tags, t]);
+        setTagInput("");
+    };
+    const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
+    const filteredSuggestions = suggestions
+        .filter((s) => s.includes(normalize(tagInput)) && !tags.includes(s))
+        .slice(0, 5);
 
     const handleEditCategory = async () => {
         if (name.length == 0) {
@@ -26,40 +54,52 @@ const EditCategoryModal = ({ hide, categoryId, currentName }: Props) => {
             return;
         }
 
-        if (name === currentName) {
+        const nameChanged = name !== currentName && name.length > 0;
+        const tagsChanged = JSON.stringify(tags) !== JSON.stringify(currentTags ?? []);
+
+        if (!nameChanged && !tagsChanged) {
             // No change, just close the modal
             hide();
             return;
         }
 
         try {
-            await renameCategory(categoryId, name);
-            
+            if (nameChanged) {
+                await renameCategory(categoryId, name);
+            }
+            if (tagsChanged) {
+                await updateCategory(categoryId, { tags } as any);
+                updateCategoryTags(categoryId, tags);
+            }
+
             // Show success toast
             showToastable({
-                title: "Category renamed!",
+                title: "Category updated!",
                 status: "success",
                 position: "top",
                 swipeDirection: "up",
                 duration: 2500,
-                message: `Category renamed from "${currentName}" to "${name}"`,
+                message: nameChanged
+                    ? `Category renamed from "${currentName}" to "${name}"`
+                    : "Category tags updated",
                 renderContent: (props) => <DefaultToast {...props} />,
             });
-            
+
             hide();
         } catch (err) {
             console.log(err);
-            
+
             // Show error toast
             showToastable({
                 title: "Error",
                 status: "danger",
                 position: "top",
-                message: "Failed to rename category. Please try again.",
+                message: "Failed to update category. Please try again.",
                 renderContent: (props) => <DefaultToast {...props} />,
             });
-            
+
             setName(currentName); // Reset to original name on error
+            setTags(currentTags ?? []);
         }
     };
 
@@ -87,6 +127,37 @@ const EditCategoryModal = ({ hide, categoryId, currentName }: Props) => {
                     value={name}
                     setValue={setName}
                 />
+                <View style={{ gap: 8, marginTop: 8 }}>
+                    <ThemedText type="caption">Tags</ThemedText>
+                    {tags.length > 0 && (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {tags.map((t) => (
+                                <TouchableOpacity
+                                    key={t}
+                                    onPress={() => removeTag(t)}
+                                    accessibilityLabel={`Remove ${t}`}>
+                                    <TagChip tag={`${t}  ×`} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                    <ThemedInput
+                        useBottomSheetInput={true}
+                        placeHolder="Add a tag"
+                        onSubmit={() => addTag(tagInput)}
+                        value={tagInput}
+                        setValue={setTagInput}
+                    />
+                    {filteredSuggestions.length > 0 && (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {filteredSuggestions.map((s) => (
+                                <TouchableOpacity key={s} onPress={() => addTag(s)}>
+                                    <TagChip tag={s} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
                         title="Update Category"

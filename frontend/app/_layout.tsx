@@ -36,6 +36,8 @@ import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
 import { RevenueCatProvider } from "@/hooks/useRevenueCat";
 import { AnalyticsProvider } from "@/hooks/useAnalytics";
+import { RingUpdateProvider } from "@/contexts/ringUpdateContext";
+import { RingUpdateOverlay } from "@/components/ui/RingUpdateOverlay";
 
 try {
     const previousHandler = ErrorUtils.getGlobalHandler();
@@ -153,6 +155,7 @@ export default Sentry.wrap(function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <RingUpdateProvider>
             <AnalyticsProvider>
             <AnimatePresence>
                 <AuthProvider>
@@ -179,6 +182,7 @@ export default Sentry.wrap(function RootLayout() {
                                                                         offset={top}
                                                                     />
                                                                     <Slot />
+                                                                    <RingUpdateOverlay />
                                                                     <StatusBar style="light" />
                                                                 </AlertProvider>
                                                             </BottomSheetModalProvider>
@@ -196,6 +200,7 @@ export default Sentry.wrap(function RootLayout() {
                 </AuthProvider>
             </AnimatePresence>
             </AnalyticsProvider>
+            </RingUpdateProvider>
         </QueryClientProvider>
     );
 });

@@ -453,7 +453,11 @@ export const createPostToBackend = async (
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
     dual?: string
-): Promise<{ post: PostDocumentAPI; userStats: { posts_made: number; points: number } | null }> => {
+): Promise<{
+    post: PostDocumentAPI;
+    userStats: { posts_made: number; points: number } | null;
+    ringDelta?: RingDelta;
+}> => {
     try {
         const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual);
         return result;

@@ -13,6 +13,7 @@ import { updateStreakWidget } from '@/widgets/updateStreakWidget';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsEvents } from '@/utils/analytics';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRingUpdate } from '@/contexts/ringUpdateContext';
 
 interface TaskCompletionData {
     id: string;
@@ -36,6 +37,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const { user } = useAuth();
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
+    const { showRingUpdate } = useRingUpdate();
     const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const markTaskAsCompleted = useCallback(async (
@@ -59,6 +61,15 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             });
 
             removeFromCategory(categoryId, taskId);
+            // The do ring is fed by task completion, which also pops a "tap to post"
+            // toast at the top of the screen for ~5s. Wait for it to clear before
+            // animating the ring so the two top-of-screen layers don't fight.
+            const ringDelta = res.ringDelta;
+            if (ringDelta?.ring === "do") {
+                setTimeout(() => showRingUpdate(ringDelta), 5100);
+            } else {
+                showRingUpdate(ringDelta);
+            }
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_COMPLETED, {
                 source: "detail_page",
@@ -148,7 +159,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             isCompletingRef.current = false;
             setIsCompleting(false);
         }
-    }, [removeFromCategory, addToCategory, setShowConfetti, categories, user, capture]);
+    }, [removeFromCategory, addToCategory, setShowConfetti, categories, user, capture, showRingUpdate, queryClient]);
 
     return {
         markTaskAsCompleted,
