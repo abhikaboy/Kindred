@@ -25,7 +25,7 @@ export default function PostDetail() {
             router.back();
         } else {
             // No navigation stack, go to feed
-            router.replace("/(logged-in)/(tabs)/(feed)/" as any);
+            router.replace("/(logged-in)/(tabs)/(feed)/feed");
         }
     };
 

@@ -16,7 +16,7 @@ import {
     Archive,
 } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
-import { router, usePathname } from "expo-router";
+import { router, usePathname, type Href } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import {
     House,
@@ -109,21 +109,21 @@ const DrawerContent = ({
     };
 
     // Helper function to handle smooth navigation
-    const handleNavigate = useCallback((route: any, workspaceName?: string) => {
+    const handleNavigate = useCallback((route: Href, workspaceName?: string) => {
         close();
         requestAnimationFrame(() => {
             if (workspaceName !== undefined) {
                 setSelected(workspaceName);
             }
-            router.navigate(route as any);
+            router.navigate(route);
         });
     }, [close, setSelected]);
 
     // Helper for router.push instead of navigate
-    const handlePush = useCallback((route: any) => {
+    const handlePush = useCallback((route: Href) => {
         close();
         requestAnimationFrame(() => {
-            router.push(route as any);
+            router.push(route);
         });
     }, [close]);
 

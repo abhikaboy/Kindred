@@ -85,7 +85,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
                     router.push('/(logged-in)/(tabs)/(search)/search');
                     break;
                 case 'rings':
-                    router.push('/(logged-in)/(tabs)/(feed,search,profile)/profile' as any);
+                    router.push('/(logged-in)/(tabs)/(profile)/profile');
                     break;
             }
         },

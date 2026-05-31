@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { RingState } from "@/api/types";
 
 type RingKey = "plan" | "do" | "share";
@@ -24,7 +24,7 @@ const RING_GUIDANCE: Record<RingKey, string> = {
 
 interface CTA {
     label: string;
-    route: string;
+    route: Href;
 }
 
 const RING_CTAS: Record<RingKey, CTA[]> = {
@@ -165,7 +165,7 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
                     <TouchableOpacity
                         key={cta.label}
                         style={styles.ctaButton}
-                        onPress={() => router.push(cta.route as any)}
+                        onPress={() => router.push(cta.route)}
                         activeOpacity={0.7}
                     >
                         <ThemedText style={styles.ctaText}>{cta.label}</ThemedText>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOptionalAuth } from '@/hooks/useAuth';
 import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
@@ -16,7 +16,7 @@ export default function Index() {
     const auth = useOptionalAuth();
     const user = auth?.user ?? null;
     const [isChecking, setIsChecking] = useState(true);
-    const [nextRoute, setNextRoute] = useState<string | null>(null);
+    const [nextRoute, setNextRoute] = useState<Href | null>(null);
     const [canTransition, setCanTransition] = useState(false);
 
     useEffect(() => {
@@ -52,7 +52,7 @@ export default function Index() {
     // Navigate once both route is determined and animation is complete
     useEffect(() => {
         if (nextRoute && canTransition) {
-            router.replace(nextRoute as any);
+            router.replace(nextRoute);
         }
     }, [nextRoute, canTransition]);
 

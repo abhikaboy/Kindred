@@ -89,7 +89,7 @@ const CalendarOnboarding = () => {
                 if (completed) {
                     showToast("Calendar connected!", "success");
                     capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
-                    router.replace("/(logged-in)/(tabs)/(task)" as any);
+                    router.replace("/(logged-in)/(tabs)/(task)");
                     return;
                 }
             }
@@ -106,12 +106,12 @@ const CalendarOnboarding = () => {
         setPendingConnectionId(null);
         showToast("Calendar connected!", "success");
         capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
-        router.replace("/(logged-in)/(tabs)/(task)" as any);
+        router.replace("/(logged-in)/(tabs)/(task)");
     };
 
     const handleSkip = () => {
         capture(AnalyticsEvents.ONBOARDING_COMPLETED, {});
-        router.replace("/(logged-in)/(tabs)/(task)" as any);
+        router.replace("/(logged-in)/(tabs)/(task)");
     };
 
     return (
