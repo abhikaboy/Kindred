@@ -19,7 +19,6 @@ import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
 import { Bell, Flag, Trash } from "phosphor-react-native";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
-import { AttachStep } from "react-native-spotlight-tour";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
@@ -187,13 +186,7 @@ const SwipableTaskCard = ({
         );
         return (
             <>
-                {highlightContent ? (
-                    <AttachStep index={1} style={{ width: "100%", flex: 1 }}>
-                        {phantomCard}
-                    </AttachStep>
-                ) : (
-                    phantomCard
-                )}
+                {phantomCard}
                 {alertElement}
             </>
         );
@@ -241,13 +234,7 @@ const SwipableTaskCard = ({
                         )}
                     </View>
                 )}>
-                {highlightContent ? (
-                    <AttachStep index={1} style={{ width: "100%", flex: 1 }}>
-                        {taskCard}
-                    </AttachStep>
-                ) : (
-                    taskCard
-                )}
+                {taskCard}
             </ReanimatedSwipeable>
 
             {showDeadlineModal && (
