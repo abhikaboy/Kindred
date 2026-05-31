@@ -54,8 +54,13 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
             return;
         }
 
+        // Flush any tag still sitting in the input so it isn't silently dropped
+        // when the user taps the primary CTA instead of "Add".
+        const pending = normalize(tagInput);
+        const effectiveTags = pending.length > 0 && !tags.includes(pending) ? [...tags, pending] : tags;
+
         const nameChanged = name !== currentName && name.length > 0;
-        const tagsChanged = JSON.stringify(tags) !== JSON.stringify(currentTags ?? []);
+        const tagsChanged = JSON.stringify(effectiveTags) !== JSON.stringify(currentTags ?? []);
 
         if (!nameChanged && !tagsChanged) {
             // No change, just close the modal
@@ -68,8 +73,8 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                 await renameCategory(categoryId, name);
             }
             if (tagsChanged) {
-                await updateCategory(categoryId, { tags } as any);
-                updateCategoryTags(categoryId, tags);
+                await updateCategory(categoryId, { tags: effectiveTags } as any);
+                updateCategoryTags(categoryId, effectiveTags);
             }
 
             // Show success toast
@@ -113,7 +118,7 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                     Edit Category
                 </ThemedText>
             </View>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 16 }}>
                 <ThemedInput
                     autofocus
                     useBottomSheetInput={true}
@@ -127,10 +132,10 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                     value={name}
                     setValue={setName}
                 />
-                <View style={{ gap: 8, marginTop: 8 }}>
+                <View style={{ gap: 12 }}>
                     <ThemedText type="caption">Tags</ThemedText>
                     {tags.length > 0 && (
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                             {tags.map((t) => (
                                 <TouchableOpacity
                                     key={t}
@@ -141,20 +146,36 @@ const EditCategoryModal = ({ hide, categoryId, currentName, currentTags }: Props
                             ))}
                         </View>
                     )}
-                    <ThemedInput
-                        useBottomSheetInput={true}
-                        placeHolder="Add a tag"
-                        onSubmit={() => addTag(tagInput)}
-                        value={tagInput}
-                        setValue={setTagInput}
-                    />
+                    <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                        <View style={{ flex: 1 }}>
+                            <ThemedInput
+                                useBottomSheetInput={true}
+                                placeHolder="Add a tag"
+                                onSubmit={() => addTag(tagInput)}
+                                value={tagInput}
+                                setValue={setTagInput}
+                            />
+                        </View>
+                        <PrimaryButton
+                            title="Add"
+                            secondary
+                            disabled={normalize(tagInput).length === 0}
+                            onPress={() => addTag(tagInput)}
+                            style={{ width: 88 }}
+                        />
+                    </View>
                     {filteredSuggestions.length > 0 && (
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                            {filteredSuggestions.map((s) => (
-                                <TouchableOpacity key={s} onPress={() => addTag(s)}>
-                                    <TagChip tag={s} />
-                                </TouchableOpacity>
-                            ))}
+                        <View style={{ gap: 12 }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                Suggestions · tap to add
+                            </ThemedText>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                                {filteredSuggestions.map((s) => (
+                                    <TouchableOpacity key={s} onPress={() => addTag(s)}>
+                                        <TagChip tag={s} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
                     )}
                 </View>
