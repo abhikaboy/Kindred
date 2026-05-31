@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, SectionList, TouchableOpacity, ActivityIndicator, Animated, InteractionManager, RefreshControl } from "react-native";
+import { Dimensions, StyleSheet, View, SectionList, TouchableOpacity, ActivityIndicator, Animated, InteractionManager, RefreshControl, ScrollView } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -15,10 +15,16 @@ import { FollowRequestsSection } from "@/components/profile/FollowRequestsSectio
 import { useFocusEffect } from "@react-navigation/native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
+import ForYouTab from "@/components/forYou/ForYouTab";
+import { useForYou } from "@/hooks/useForYou";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
 const ONE_MONTH = 30 * ONE_DAY;
+
+const NOTIFICATION_TABS = ["For You", "Activity", "Requests"];
+const ACTIVITY_TAB_INDEX = 1;
 
 type ProcessedNotification = {
     id: string;
@@ -34,6 +40,79 @@ type ProcessedNotification = {
     referenceId: string; // Post ID or Task ID that the notification references
     thumbnail?: string; // Optional thumbnail for friend notifications
 };
+
+type ActivityFilter = "all" | "encouragements" | "comments" | "social";
+
+const FILTER_CHIPS: { id: ActivityFilter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "encouragements", label: "Encouragements" },
+    { id: "comments", label: "Comments" },
+    { id: "social", label: "Social" },
+];
+
+const filterByActivityType = (
+    notifications: ProcessedNotification[],
+    filter: ActivityFilter,
+): ProcessedNotification[] => {
+    switch (filter) {
+        case "all":
+            return notifications;
+        case "encouragements":
+            return notifications.filter((n) => n.type === "encouragement" || n.type === "congratulation");
+        case "comments":
+            return notifications.filter((n) => n.type === "comment");
+        case "social":
+            return notifications.filter((n) => n.type === "friend_request" || n.type === "friend_request_accepted");
+    }
+};
+
+const NotificationFilterChips = ({
+    active,
+    onChange,
+    ThemedColor,
+}: {
+    active: ActivityFilter;
+    onChange: (id: ActivityFilter) => void;
+    ThemedColor: any;
+}) => {
+    return (
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={chipStyles.row}>
+            {FILTER_CHIPS.map((chip) => {
+                const isActive = active === chip.id;
+                return (
+                    <TouchableOpacity
+                        key={chip.id}
+                        onPress={() => onChange(chip.id)}
+                        activeOpacity={0.7}
+                        style={[
+                            chipStyles.chip,
+                            {
+                                backgroundColor: isActive ? ThemedColor.primary : "transparent",
+                                borderColor: isActive ? ThemedColor.primary : ThemedColor.tertiary,
+                            },
+                        ]}>
+                        <ThemedText
+                            style={[
+                                chipStyles.chipText,
+                                { color: isActive ? "#fff" : ThemedColor.text },
+                            ]}>
+                            {chip.label}
+                        </ThemedText>
+                    </TouchableOpacity>
+                );
+            })}
+        </ScrollView>
+    );
+};
+
+const TabPlaceholder = ({ label, ThemedColor }: { label: string; ThemedColor: any }) => (
+    <View style={placeholderStyles.container}>
+        <ThemedText style={{ color: ThemedColor.caption }}>{label}</ThemedText>
+    </View>
+);
 
 // Skeleton Component
 const NotificationsSkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
@@ -236,7 +315,12 @@ const Notifications = () => {
     const { capture } = useAnalytics();
     const [ready, setReady] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState(ACTIVITY_TAB_INDEX);
+    const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
     const followRequestsRef = useRef<{ refresh: () => Promise<void> }>(null);
+    const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou } = useForYou();
+    const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
+    const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -351,7 +435,8 @@ const Notifications = () => {
     };
 
     // Convert raw notifications to processed notifications
-    const notifications = rawNotifications.map(processNotification).filter((n): n is ProcessedNotification => n !== null);
+    const allNotifications = rawNotifications.map(processNotification).filter((n): n is ProcessedNotification => n !== null);
+    const notifications = filterByActivityType(allNotifications, activeChip);
 
     // Helper function to filter notifications by time period
     const filterByTimePeriod = (
@@ -374,63 +459,106 @@ const Notifications = () => {
         { title: "Older", data: olderNotifications },
     ].filter((s) => s.data.length > 0);
 
+    const activityHeader = (
+        <>
+            <NotificationFilterChips active={activeChip} onChange={setActiveChip} ThemedColor={ThemedColor} />
+            {activeChip === "all" && (
+                <FollowRequestsSection ref={followRequestsRef} styles={styles} maxVisible={4} />
+            )}
+        </>
+    );
+
+    const activityTabContent = !ready || loading ? (
+        <View style={styles.scrollViewContent}>
+            <NotificationsSkeleton ThemedColor={ThemedColor} />
+        </View>
+    ) : error ? (
+        <View style={[styles.scrollViewContent, styles.section]}>
+            <ThemedText style={{ textAlign: "center", color: "red" }}>{error}</ThemedText>
+            <TouchableOpacity
+                onPress={() => refreshNotifications()}
+                style={{ marginTop: 16, alignItems: "center" }}>
+                <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
+            </TouchableOpacity>
+        </View>
+    ) : allNotifications.length === 0 ? (
+        <View style={[styles.scrollViewContent, styles.section]}>
+            <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
+        </View>
+    ) : (
+        <SectionList
+            sections={sections}
+            keyExtractor={(item, index) => `${item.type}-${item.id}-${index}`}
+            renderItem={({ item, index }) => (
+                <NotificationItem
+                    notification={item}
+                    index={index}
+                    styles={styles}
+                    onNotificationPress={handleNotificationPress}
+                />
+            )}
+            renderSectionHeader={({ section: { title } }) => (
+                <View style={styles.sectionHeader}>
+                    <ThemedText type="defaultSemiBold">{title}</ThemedText>
+                </View>
+            )}
+            ListHeaderComponent={activityHeader}
+            ListEmptyComponent={
+                <View style={styles.emptyFilterState}>
+                    <ThemedText style={{ color: ThemedColor.caption, textAlign: "center" }}>
+                        No notifications match this filter
+                    </ThemedText>
+                </View>
+            }
+            contentContainerStyle={styles.scrollViewContent}
+            stickySectionHeadersEnabled={false}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={ThemedColor.text}
+                />
+            }
+        />
+    );
+
     return (
         <ThemedView style={styles.container}>
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.headerSide}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <ThemedText type="subtitle">Notifications</ThemedText>
+                <ThemedText type="subtitle" style={styles.headerTitle}>Notifications</ThemedText>
+                <TouchableOpacity
+                    onPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
+                    style={[styles.headerSide, styles.headerSideRight]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Notification settings">
+                    <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
+                </TouchableOpacity>
             </View>
-            {!ready || loading ? (
-                <View style={styles.scrollViewContent}>
-                    <NotificationsSkeleton ThemedColor={ThemedColor} />
-                </View>
-            ) : error ? (
-                <View style={[styles.scrollViewContent, styles.section]}>
-                    <ThemedText style={{ textAlign: "center", color: "red" }}>{error}</ThemedText>
-                    <TouchableOpacity
-                        onPress={() => refreshNotifications()}
-                        style={{ marginTop: 16, alignItems: "center" }}>
-                        <ThemedText style={{ color: ThemedColor.text }}>Tap to retry</ThemedText>
-                    </TouchableOpacity>
-                </View>
-            ) : notifications.length === 0 ? (
-                <View style={[styles.scrollViewContent, styles.section]}>
-                    <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
-                </View>
-            ) : (
-                <SectionList
-                    sections={sections}
-                    keyExtractor={(item, index) => `${item.type}-${item.id}-${index}`}
-                    renderItem={({ item, index }) => (
-                        <NotificationItem
-                            notification={item}
-                            index={index}
-                            styles={styles}
-                            onNotificationPress={handleNotificationPress}
-                        />
-                    )}
-                    renderSectionHeader={({ section: { title } }) => (
-                        <View style={styles.sectionHeader}>
-                            <ThemedText type="defaultSemiBold">{title}</ThemedText>
-                        </View>
-                    )}
-                    ListHeaderComponent={<FollowRequestsSection ref={followRequestsRef} styles={styles} maxVisible={4} />}
-                    contentContainerStyle={styles.scrollViewContent}
-                    stickySectionHeadersEnabled={false}
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={5}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor={ThemedColor.text}
-                        />
-                    }
+            <View style={styles.tabsWrapper}>
+                <AnimatedTabs
+                    tabs={NOTIFICATION_TABS}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    badges={tabBadges}
                 />
-            )}
+            </View>
+            <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab} flex lazy>
+                <ForYouTab
+                    horizontalPadding={Dimensions.get("window").width * 0.05}
+                    feed={forYouFeed}
+                    loading={forYouLoading}
+                    error={forYouError}
+                    refresh={refreshForYou}
+                />
+                <View style={{ flex: 1 }}>{activityTabContent}</View>
+                <TabPlaceholder label="Requests — coming soon" ThemedColor={ThemedColor} />
+            </AnimatedTabContent>
         </ThemedView>
     );
 };
@@ -446,10 +574,25 @@ const stylesheet = (ThemedColor: any) => {
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: PADDING_HORIZTONAL,
-            paddingVertical: 32,
+            paddingVertical: 20,
+        },
+        headerSide: {
+            width: 32,
+            justifyContent: "center",
+        },
+        headerSideRight: {
+            alignItems: "flex-end",
+        },
+        headerTitle: {
+            flex: 1,
+            textAlign: "center",
+        },
+        tabsWrapper: {
+            paddingHorizontal: PADDING_HORIZTONAL,
         },
         scrollViewContent: {
             paddingHorizontal: PADDING_HORIZTONAL,
+            paddingTop: 16,
         },
         section: {
             marginBottom: 16,
@@ -461,8 +604,38 @@ const stylesheet = (ThemedColor: any) => {
             marginBottom: 4,
             marginTop: 12,
         },
+        emptyFilterState: {
+            paddingVertical: 32,
+        },
     });
 };
+
+const chipStyles = StyleSheet.create({
+    row: {
+        flexDirection: "row",
+        gap: 8,
+        paddingVertical: 4,
+    },
+    chip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+    },
+    chipText: {
+        fontSize: 14,
+        fontFamily: "Outfit",
+    },
+});
+
+const placeholderStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 24,
+    },
+});
 
 // Skeleton Styles
 const skeletonStyles = StyleSheet.create({

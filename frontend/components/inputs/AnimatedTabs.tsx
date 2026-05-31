@@ -20,9 +20,11 @@ type AnimatedTabBarProps = {
     tabs: string[];
     activeTab: number;
     setActiveTab: (index: number) => void;
+    /** When provided, shows a small dot next to the tab label at indices where badges[i] is true. */
+    badges?: boolean[];
 };
 
-export default function AnimatedTabs({ tabs, activeTab, setActiveTab }: AnimatedTabBarProps) {
+export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: AnimatedTabBarProps) {
     const ThemedColor = useThemeColor();
     const indicatorX = useSharedValue(0);
     const indicatorWidth = useSharedValue(0);
@@ -64,16 +66,21 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab }: Animated
                     style={styles.tab}
                     onLayout={(e) => handleTabLayout(index, e)}
                     onPress={() => setActiveTab(index)}>
-                    <ThemedText
-                        style={[
-                            styles.tabText,
-                            {
-                                color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
-                                fontWeight: activeTab === index ? "600" : "500",
-                            },
-                        ]}>
-                        {tab}
-                    </ThemedText>
+                    <View style={styles.tabLabelRow}>
+                        <ThemedText
+                            style={[
+                                styles.tabText,
+                                {
+                                    color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
+                                    fontWeight: activeTab === index ? "600" : "500",
+                                },
+                            ]}>
+                            {tab}
+                        </ThemedText>
+                        {badges?.[index] ? (
+                            <View style={[styles.badgeDot, { backgroundColor: ThemedColor.primary }]} />
+                        ) : null}
+                    </View>
                 </Pressable>
             ))}
             <Animated.View
@@ -200,10 +207,20 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         alignItems: "center",
     },
+    tabLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+    },
     tabText: {
         fontSize: 16,
         fontFamily: "Outfit",
         textAlign: "center",
+    },
+    badgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
     indicator: {
         position: "absolute",
