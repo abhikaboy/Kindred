@@ -373,18 +373,24 @@ const Notifications = () => {
         }
     };
 
-    // Mark all notifications as read when the page is focused (only once per mount)
+    // Mark all notifications as read when the page is focused. Runs at most once
+    // per focus, only if there's something unread, and never re-fires on render
+    // (markAllAsRead is intentionally not in the deps — its identity changed
+    // every render in an earlier revision and triggered a request-spam loop).
+    const hasUnread = rawNotifications.some((n) => !n.read);
+    const markAllAsReadRef = useRef(markAllAsRead);
+    markAllAsReadRef.current = markAllAsRead;
     useFocusEffect(
         React.useCallback(() => {
-            if (!loading && rawNotifications.length > 0 && !hasMarkedAsRead.current) {
+            if (!loading && hasUnread && !hasMarkedAsRead.current) {
                 hasMarkedAsRead.current = true;
-                markAllAsRead();
+                markAllAsReadRef.current();
             }
 
             return () => {
                 hasMarkedAsRead.current = false;
             };
-        }, [loading, rawNotifications.length, markAllAsRead])
+        }, [loading, hasUnread])
     );
 
     const now = Date.now();
