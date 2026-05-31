@@ -154,7 +154,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
 
                 <View
                     style={{
-                        height: 4,
+                        height: 8,
                         backgroundColor: ThemedColor.tertiary,
                         borderRadius: 100,
                         marginTop: 10,
