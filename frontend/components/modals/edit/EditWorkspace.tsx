@@ -17,6 +17,8 @@ import { ThemedText } from "@/components/ThemedText";
 import DefaultCard from "@/components/cards/DefaultCard";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { SortContent, FilterContent } from "@/components/ListControls";
+import { sortCategories, SortOption, SortDirection } from "@/utils/categorySort";
 import { isToday, isThisWeek, isFuture, isPast, startOfWeek, endOfWeek } from "date-fns";
 import {
     ChartBar,
@@ -248,6 +250,28 @@ const EditWorkspace = (props: Props) => {
             workspaceStateEvents.emit(id);
         } catch (error) {
             console.error("Error saving workspace grouping:", error);
+        }
+    };
+
+    // Workspace-specific application of a sort: reorder this workspace's
+    // categories in global state and invalidate the cache (the tag view, by
+    // contrast, derives its order without mutating global state).
+    const applyWorkspaceSort = async (option: SortOption, direction: SortDirection) => {
+        const workspacesCopy = workspaces.slice();
+        const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === id);
+        if (workspaceIndex !== -1) {
+            workspacesCopy[workspaceIndex] = {
+                ...workspacesCopy[workspaceIndex],
+                categories: sortCategories(workspacesCopy[workspaceIndex].categories, option, direction),
+            };
+            setWorkSpaces(workspacesCopy);
+            try {
+                await AsyncStorage.removeItem(
+                    `workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || "default"}`
+                );
+            } catch (error) {
+                console.error("Error invalidating workspaces cache:", error);
+            }
         }
     };
 
@@ -487,6 +511,8 @@ const EditWorkspace = (props: Props) => {
                 enablePanDownToClose={true}>
                 <BottomSheetView style={{ paddingHorizontal: 20, paddingBottom: 20, flex: 1 }}>
                     <SortContent
+                        storageKey={id}
+                        onApplySort={applyWorkspaceSort}
                         onApply={() => {
                             setShowSortModal(false);
                             sortSheetRef.current?.dismiss();
@@ -507,7 +533,7 @@ const EditWorkspace = (props: Props) => {
                 enablePanDownToClose={true}>
                 <BottomSheetView style={{ paddingHorizontal: 20, paddingBottom: 20, flex: 1 }}>
                     <FilterContent
-                        workspaceName={id}
+                        storageKey={id}
                         onApply={() => {
                             setShowFilterModal(false);
                             filterSheetRef.current?.dismiss();
@@ -623,470 +649,5 @@ const ReorderContent = ({ categories, onSave }: { categories: any[]; onSave: () 
     );
 };
 
-// Sort Content Component
-type SortOption = "task-count" | "alphabetical" | "due-date" | "start-date" | "priority";
-type SortDirection = "ascending" | "descending";
-
-const SortContent = ({ onApply }: { onApply: () => void }) => {
-    const ThemedColor = useThemeColor();
-    const { setWorkSpaces, workspaces, selected, fetchWorkspaces } = useTasks();
-    const [selectedSort, setSelectedSort] = useState<SortOption>("task-count");
-    const [sortDirection, setSortDirection] = useState<SortDirection>("descending");
-
-    const handleSort = async () => {
-        const workspacesCopy = workspaces.slice();
-        const workspaceIndex = workspacesCopy.findIndex((ws) => ws.name === selected);
-
-        if (workspaceIndex !== -1) {
-            const categories = [...workspacesCopy[workspaceIndex].categories];
-            const isAscending = sortDirection === "ascending";
-
-            let sortedCategories;
-            switch (selectedSort) {
-                case "task-count":
-                    sortedCategories = categories.sort((a, b) =>
-                        isAscending ? a.tasks.length - b.tasks.length : b.tasks.length - a.tasks.length
-                    );
-                    break;
-                case "alphabetical":
-                    sortedCategories = categories.sort((a, b) =>
-                        isAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-                    );
-                    break;
-                case "due-date":
-                    // Sort by earliest due date in category (tasks with deadlines)
-                    sortedCategories = categories.sort((a, b) => {
-                        const aEarliestDeadline =
-                            a.tasks
-                                .filter((t) => t.deadline)
-                                .map((t) => new Date(t.deadline).getTime())
-                                .sort((x, y) => x - y)[0] || Infinity;
-                        const bEarliestDeadline =
-                            b.tasks
-                                .filter((t) => t.deadline)
-                                .map((t) => new Date(t.deadline).getTime())
-                                .sort((x, y) => x - y)[0] || Infinity;
-                        return isAscending
-                            ? aEarliestDeadline - bEarliestDeadline
-                            : bEarliestDeadline - aEarliestDeadline;
-                    });
-                    break;
-                case "start-date":
-                    // Sort by earliest start date in category
-                    sortedCategories = categories.sort((a, b) => {
-                        const aEarliestStart =
-                            a.tasks
-                                .filter((t) => t.startDate)
-                                .map((t) => new Date(t.startDate).getTime())
-                                .sort((x, y) => x - y)[0] || Infinity;
-                        const bEarliestStart =
-                            b.tasks
-                                .filter((t) => t.startDate)
-                                .map((t) => new Date(t.startDate).getTime())
-                                .sort((x, y) => x - y)[0] || Infinity;
-                        return isAscending ? aEarliestStart - bEarliestStart : bEarliestStart - aEarliestStart;
-                    });
-                    break;
-                case "priority":
-                    // Sort by highest priority in category (high=3, medium=2, low=1, none=0)
-                    sortedCategories = categories.sort((a, b) => {
-                        const priorityMap: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
-                        const aHighestPriority = Math.max(...a.tasks.map((t) => priorityMap[t.priority] || 0), 0);
-                        const bHighestPriority = Math.max(...b.tasks.map((t) => priorityMap[t.priority] || 0), 0);
-                        return isAscending ? aHighestPriority - bHighestPriority : bHighestPriority - aHighestPriority;
-                    });
-                    break;
-                default:
-                    sortedCategories = categories;
-            }
-
-            workspacesCopy[workspaceIndex].categories = sortedCategories;
-            setWorkSpaces(workspacesCopy);
-
-            // ✅ CRITICAL FIX: Invalidate cache after sorting
-            try {
-                await AsyncStorage.removeItem(`workspaces_cache_${workspacesCopy[0]?.categories[0]?.tasks[0]?.userID || 'default'}`);
-                console.log("Workspaces cache invalidated after sort");
-            } catch (error) {
-                console.error("Error invalidating workspaces cache:", error);
-            }
-        }
-
-        // Save sort option and direction to AsyncStorage
-        try {
-            await Promise.all([
-                AsyncStorage.setItem(`workspace-sort-${selected}`, selectedSort),
-                AsyncStorage.setItem(`workspace-sort-direction-${selected}`, sortDirection),
-            ]);
-            workspaceStateEvents.emit(selected);
-        } catch (error) {
-            console.error("Error saving sort option:", error);
-        }
-
-        onApply();
-    };
-
-    const handleSortOptionPress = async (option: SortOption) => {
-        if (selectedSort === option) {
-            if (sortDirection === "descending") {
-                setSortDirection("ascending");
-                await AsyncStorage.setItem(`workspace-sort-direction-${selected}`, "ascending");
-                workspaceStateEvents.emit(selected);
-            } else if (sortDirection === "ascending") {
-                setSelectedSort("task-count" as SortOption);
-                setSortDirection("descending");
-                try {
-                    await AsyncStorage.removeItem(`workspace-sort-${selected}`);
-                    await AsyncStorage.removeItem(`workspace-sort-direction-${selected}`);
-                    workspaceStateEvents.emit(selected);
-                } catch (error) {
-                    console.error("Error clearing sort:", error);
-                }
-            }
-        } else {
-            setSelectedSort(option);
-            setSortDirection("descending");
-            try {
-                await AsyncStorage.setItem(`workspace-sort-${selected}`, option);
-                await AsyncStorage.setItem(`workspace-sort-direction-${selected}`, "descending");
-                workspaceStateEvents.emit(selected);
-            } catch (error) {
-                console.error("Error saving sort:", error);
-            }
-        }
-    };
-
-    const SortOptionRow = ({
-        option,
-        label,
-        IconComponent,
-    }: {
-        option: SortOption;
-        label: string;
-        IconComponent: React.ComponentType<any>;
-    }) => {
-        const isSelected = selectedSort === option;
-        const textColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-        const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-
-        const DirectionIcon = sortDirection === "ascending" ? ArrowUp : ArrowDown;
-
-        return (
-            <TouchableOpacity onPress={() => handleSortOptionPress(option)}>
-                <View style={styles.sortOptionRow}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                        <IconComponent color={iconColor} size={24} weight="regular" />
-                        <ThemedText type="default" style={{ color: textColor, fontSize: 16 }}>
-                            {label}
-                        </ThemedText>
-                    </View>
-                    {isSelected && <DirectionIcon color={iconColor} size={20} weight="bold" />}
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
-    return (
-        <>
-            <ThemedText type="subtitle" style={{ marginBottom: 24 }}>
-                Sort By
-            </ThemedText>
-            <View style={{ flex: 1, gap: 20 }}>
-                {/* Sort Options */}
-                <View style={{ gap: 8 }}>
-                    <SortOptionRow
-                        option="task-count"
-                        label="Task Count"
-                        IconComponent={(props) => <Hash {...props} />}
-                    />
-                    <SortOptionRow
-                        option="alphabetical"
-                        label="Alphabetical"
-                        IconComponent={(props) => <SortAscending {...props} />}
-                    />
-                    <SortOptionRow
-                        option="due-date"
-                        label="Due Date"
-                        IconComponent={(props) => <CalendarCheck {...props} />}
-                    />
-                    <SortOptionRow
-                        option="start-date"
-                        label="Start Date"
-                        IconComponent={(props) => <CalendarBlank {...props} />}
-                    />
-                    <SortOptionRow
-                        option="priority"
-                        label="Priority"
-                        IconComponent={(props) => <ChartBar {...props} />}
-                    />
-                </View>
-
-                <PrimaryButton title="Apply Sort" onPress={handleSort} />
-            </View>
-        </>
-    );
-};
-
-// Filter Content Component
-type FilterState = {
-    priorities: { low: boolean; medium: boolean; high: boolean };
-    deadlines: { overdue: boolean; today: boolean; thisWeek: boolean; future: boolean; none: boolean };
-};
-
-const FilterContent = ({ workspaceName, onApply }: { workspaceName: string; onApply: () => void }) => {
-    const ThemedColor = useThemeColor();
-    const [filters, setFilters] = useState<FilterState>({
-        priorities: { low: false, medium: false, high: false },
-        deadlines: { overdue: false, today: false, thisWeek: false, future: false, none: false },
-    });
-
-    // Load saved filters from AsyncStorage on mount
-    React.useEffect(() => {
-        const loadFilters = async () => {
-            try {
-                const saved = await AsyncStorage.getItem(`workspace-filters-${workspaceName}`);
-                if (saved) {
-                    setFilters(JSON.parse(saved));
-                }
-            } catch (error) {
-                console.error("Error loading filters:", error);
-            }
-        };
-        loadFilters();
-    }, [workspaceName]);
-
-    const handleApply = async () => {
-        try {
-            await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(filters));
-            workspaceStateEvents.emit(workspaceName);
-
-            showToastable({
-                title: "Filters Applied",
-                status: "success",
-                position: "top",
-                duration: 2000,
-                message: "Task filters have been applied to this workspace",
-                renderContent: (props) => <DefaultToast {...props} />,
-            });
-
-            onApply();
-        } catch (error) {
-            console.error("Error saving filters:", error);
-            showToastable({
-                title: "Error",
-                status: "danger",
-                position: "top",
-                message: "Failed to apply filters",
-                renderContent: (props) => <DefaultToast {...props} />,
-            });
-        }
-    };
-
-    const handleClearFilters = async () => {
-        const clearedFilters = {
-            priorities: { low: false, medium: false, high: false },
-            deadlines: { overdue: false, today: false, thisWeek: false, future: false, none: false },
-        };
-        setFilters(clearedFilters);
-
-        try {
-            await AsyncStorage.removeItem(`workspace-filters-${workspaceName}`);
-            workspaceStateEvents.emit(workspaceName);
-            showToastable({
-                title: "Filters Cleared",
-                status: "info",
-                position: "top",
-                duration: 2000,
-                message: "All filters have been removed",
-                renderContent: (props) => <DefaultToast {...props} />,
-            });
-        } catch (error) {
-            console.error("Error clearing filters:", error);
-        }
-    };
-
-    const toggleFilter = async (category: keyof FilterState, option: string) => {
-        const newFilters = {
-            ...filters,
-            [category]: {
-                ...filters[category],
-                [option]: !filters[category][option],
-            },
-        };
-
-        setFilters(newFilters);
-
-        try {
-            await AsyncStorage.setItem(`workspace-filters-${workspaceName}`, JSON.stringify(newFilters));
-            workspaceStateEvents.emit(workspaceName);
-        } catch (error) {
-            console.error("Error saving filters:", error);
-        }
-    };
-
-    const FilterCard = ({
-        label,
-        isSelected,
-        onPress,
-        IconComponent,
-    }: {
-        label: string;
-        isSelected: boolean;
-        onPress: () => void;
-        IconComponent: React.ComponentType<any>;
-    }) => {
-        const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-
-        return (
-            <TouchableOpacity onPress={onPress} style={styles.filterCardWrapper}>
-                <View
-                    style={[
-                        styles.filterCard,
-                        {
-                            backgroundColor: ThemedColor.lightenedCard,
-                            borderWidth: isSelected ? 2 : 0,
-                            borderColor: isSelected ? ThemedColor.primary : "transparent",
-                        },
-                    ]}>
-                    <View style={styles.filterIconContainer}>
-                        <IconComponent color={iconColor} />
-                    </View>
-                    <ThemedText
-                        type="default"
-                        style={{
-                            fontSize: 15,
-                            textAlign: "center",
-                            color: iconColor,
-                        }}>
-                        {label}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
-    const hasActiveFilters =
-        Object.values(filters.priorities).some((v) => v) || Object.values(filters.deadlines).some((v) => v);
-
-    const activeFilterCount =
-        Object.values(filters.priorities).filter((v) => v).length +
-        Object.values(filters.deadlines).filter((v) => v).length;
-
-    return (
-        <>
-            <ThemedText type="subtitle" style={{ marginBottom: 16 }}>
-                Filters
-            </ThemedText>
-            <View style={{ flex: 1, gap: 24 }}>
-                {/* Priority Level */}
-                <View style={{ gap: 12 }}>
-                    <ThemedText type="default" style={{ fontSize: 16 }}>
-                        Priority Level
-                    </ThemedText>
-                    <View style={styles.filterGrid}>
-                        <FilterCard
-                            label="Low"
-                            isSelected={filters.priorities.low}
-                            onPress={() => toggleFilter("priorities", "low")}
-                            IconComponent={(props) => <ChartBarHorizontal size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="Medium"
-                            isSelected={filters.priorities.medium}
-                            onPress={() => toggleFilter("priorities", "medium")}
-                            IconComponent={(props) => <ChartBar size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="High"
-                            isSelected={filters.priorities.high}
-                            onPress={() => toggleFilter("priorities", "high")}
-                            IconComponent={(props) => <ChartBar size={28} weight="fill" {...props} />}
-                        />
-                    </View>
-                </View>
-
-                {/* Deadline */}
-                <View style={{ gap: 12 }}>
-                    <ThemedText type="default" style={{ fontSize: 16 }}>
-                        Deadline
-                    </ThemedText>
-                    <View style={styles.filterGrid}>
-                        <FilterCard
-                            label="Overdue"
-                            isSelected={filters.deadlines.overdue}
-                            onPress={() => toggleFilter("deadlines", "overdue")}
-                            IconComponent={(props) => <WarningCircle size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="Today"
-                            isSelected={filters.deadlines.today}
-                            onPress={() => toggleFilter("deadlines", "today")}
-                            IconComponent={(props) => <CalendarCheck size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="This Week"
-                            isSelected={filters.deadlines.thisWeek}
-                            onPress={() => toggleFilter("deadlines", "thisWeek")}
-                            IconComponent={(props) => <CalendarBlank size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="Future"
-                            isSelected={filters.deadlines.future}
-                            onPress={() => toggleFilter("deadlines", "future")}
-                            IconComponent={(props) => <ArrowRight size={28} weight="regular" {...props} />}
-                        />
-                        <FilterCard
-                            label="No Deadline"
-                            isSelected={filters.deadlines.none}
-                            onPress={() => toggleFilter("deadlines", "none")}
-                            IconComponent={(props) => <Minus size={28} weight="bold" {...props} />}
-                        />
-                    </View>
-                </View>
-
-                {/* Action Buttons */}
-                {hasActiveFilters && (
-                    <View style={{ marginTop: "auto", paddingBottom: 8 }}>
-                        <TouchableOpacity onPress={handleClearFilters}>
-                            <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
-                                Clear All Filters
-                            </ThemedText>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </View>
-        </>
-    );
-};
 
 export default EditWorkspace;
-
-const styles = StyleSheet.create({
-    sortOptionRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingVertical: 12,
-    },
-    filterGrid: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: 12,
-    },
-    filterCardWrapper: {
-        width: "31%",
-        minWidth: 100,
-    },
-    filterCard: {
-        padding: 16,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        minHeight: 100,
-        position: "relative",
-    },
-    filterIconContainer: {
-        marginBottom: 4,
-    },
-});
