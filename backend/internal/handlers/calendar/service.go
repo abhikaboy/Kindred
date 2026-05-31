@@ -376,11 +376,27 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		pushEnabledSet[id] = true
 	}
 
+	// Only owner/writer roles can have events inserted/updated/deleted.
+	// Without this gate, push to a reader/freeBusyReader calendar would 403
+	// with "You need to have writer access to this calendar" on every drain.
+	writableSet := make(map[string]bool, len(allCalendars))
+	for _, cal := range allCalendars {
+		if cal.AccessRole == "owner" || cal.AccessRole == "writer" {
+			writableSet[cal.ID] = true
+		}
+	}
+
 	now := time.Now()
 
 	for _, cal := range allCalendars {
 		if !selectedSet[cal.ID] {
 			continue
+		}
+
+		pushAllowed := pushEnabledSet[cal.ID] && writableSet[cal.ID]
+		if pushEnabledSet[cal.ID] && !writableSet[cal.ID] {
+			slog.Warn("Refusing push for non-writable calendar",
+				"calendar_id", cal.ID, "calendar_name", cal.Name, "access_role", cal.AccessRole)
 		}
 
 		// Determine workspace name
@@ -403,12 +419,12 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		if err == nil {
 			// Update push_enabled on existing category if it differs.
 			_, updErr := s.categories.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{
-				"$set": bson.M{"push_enabled": pushEnabledSet[cal.ID]},
+				"$set": bson.M{"push_enabled": pushAllowed},
 			})
 			if updErr != nil {
 				slog.Warn("Failed to update push_enabled on existing category", "category_id", existing.ID, "error", updErr)
 			}
-			slog.Info("Category already exists, updated push flag", "calendar_id", cal.ID, "category_id", existing.ID, "push_enabled", pushEnabledSet[cal.ID])
+			slog.Info("Category already exists, updated push flag", "calendar_id", cal.ID, "category_id", existing.ID, "push_enabled", pushAllowed)
 			continue
 		} else if err != mongo.ErrNoDocuments {
 			return fmt.Errorf("failed to check existing category for %s: %w", cal.Name, err)
@@ -422,7 +438,7 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 			"tasks":         []bson.M{},
 			"user":          userID,
 			"integration":   integrationKey,
-			"push_enabled":  pushEnabledSet[cal.ID],
+			"push_enabled":  pushAllowed,
 		}
 
 		_, err = s.categories.InsertOne(ctx, category)

@@ -12,7 +12,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/api/googleapi"
 )
+
+// isCalendarWriteForbidden reports whether the error is Google's per-calendar
+// ACL rejection ("You need to have writer access to this calendar"). This is
+// distinct from a scope failure and isn't recoverable by retry — the token's
+// user lacks writer ACL on the target calendar.
+func isCalendarWriteForbidden(err error) bool {
+	var apiErr *googleapi.Error
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	if apiErr.Code != 403 {
+		return false
+	}
+	for _, e := range apiErr.Errors {
+		if e.Reason == "requiredAccessLevel" {
+			return true
+		}
+	}
+	return false
+}
 
 // ProcessPushRow handles one outbox row end-to-end. Returns nil on success,
 // an error otherwise; the worker translates that into a backoff via MarkFailure.
@@ -133,11 +154,17 @@ func (s *Service) processPushUpsert(ctx context.Context, row PushOutboxRow) erro
 	if task.PushedEventID == "" {
 		written, err = provider.CreateEvent(ctx, token, ev)
 		if err != nil {
+			if isCalendarWriteForbidden(err) {
+				return s.disablePushForUnwritableCategory(ctx, row.CategoryID, calendarID, err)
+			}
 			return fmt.Errorf("provider create: %w", err)
 		}
 	} else {
 		written, err = provider.UpdateEvent(ctx, token, task.PushedEventID, ev)
 		if err != nil {
+			if isCalendarWriteForbidden(err) {
+				return s.disablePushForUnwritableCategory(ctx, row.CategoryID, calendarID, err)
+			}
 			return fmt.Errorf("provider update: %w", err)
 		}
 	}
@@ -248,6 +275,24 @@ func (s *Service) loadTaskWithCategory(ctx context.Context, taskID, categoryID p
 		Integration: doc.Integration,
 		PushEnabled: doc.PushEnabled,
 	}, nil
+}
+
+// disablePushForUnwritableCategory flips push_enabled=false on a category whose
+// underlying calendar rejected our write with a per-calendar ACL 403. Returning
+// nil tells the worker to drop the row instead of retrying — the token's user
+// has reader-level access (or none), and no amount of backoff will help. A
+// successful re-grant requires the user to re-run setup.
+func (s *Service) disablePushForUnwritableCategory(ctx context.Context, categoryID primitive.ObjectID, calendarID string, cause error) error {
+	slog.Warn("Push: calendar rejected write (no writer ACL), disabling push on category",
+		"category_id", categoryID, "calendar_id", calendarID, "error", cause)
+	_, updErr := s.categories.UpdateOne(ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$set": bson.M{"push_enabled": false}},
+	)
+	if updErr != nil {
+		slog.Warn("Push: failed to disable push on category after 403", "category_id", categoryID, "error", updErr)
+	}
+	return nil
 }
 
 // parseCategoryIntegration extracts (connectionID, calendarID) from "gcal:<connID>:<calID>".
