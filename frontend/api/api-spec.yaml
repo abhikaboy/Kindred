@@ -11285,6 +11285,9 @@ components:
                 encouragements:
                     type: integer
                     format: int64
+                first_all_rings_closed_at:
+                    type: string
+                    format: date-time
                 friends:
                     type: array
                     items:

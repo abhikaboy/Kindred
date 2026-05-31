@@ -5962,6 +5962,8 @@ export interface components {
             display_name: string;
             /** Format: int64 */
             encouragements: number;
+            /** Format: date-time */
+            first_all_rings_closed_at?: string;
             friends: string[];
             handle: string;
             kudosRewards: components["schemas"]["KudosRewards"];
