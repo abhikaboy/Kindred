@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -140,6 +141,24 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
+		}
+	}
+
+	// Fan out tag notifications.
+	var thumbnail string
+	if len(createdPost.Images) > 0 {
+		thumbnail = createdPost.Images[0]
+	}
+	for _, tagged := range createdPost.TaggedUsers {
+		if tagged.ID == userObjID {
+			continue
+		}
+		content := fmt.Sprintf("%s tagged you in a post", createdPost.User.DisplayName)
+		if err := h.service.NotificationService.CreateNotification(userObjID, tagged.ID, content, notifications.NotificationTypePostTag, createdPost.ID, thumbnail); err != nil {
+			slog.Error("Failed to create tag notification", "tagged_user_id", tagged.ID, "err", err)
+		}
+		if err := h.service.sendTagPushNotification(tagged.ID, createdPost.ID, createdPost.User.DisplayName); err != nil {
+			slog.Error("Failed to send tag push notification", "tagged_user_id", tagged.ID, "err", err)
 		}
 	}
 

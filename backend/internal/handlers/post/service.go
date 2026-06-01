@@ -1007,6 +1007,43 @@ func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID
 	return xutils.SendNotification(notification)
 }
 
+// sendTagPushNotification sends a push notification when a user is tagged in a post.
+func (s *Service) sendTagPushNotification(taggedUserID, postID primitive.ObjectID, taggerName string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	var taggedUser types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": taggedUserID}).Decode(&taggedUser)
+	if err != nil {
+		return fmt.Errorf("failed to get tagged user: %w", err)
+	}
+
+	if taggedUser.PushToken == "" {
+		slog.Warn("Tagged user has no push token", "tagged_user_id", taggedUserID)
+		return nil
+	}
+
+	data := map[string]string{
+		"type":        "post_tag",
+		"tagger_name": taggerName,
+	}
+	if !postID.IsZero() {
+		data["post_id"] = postID.Hex()
+	}
+
+	notification := xutils.Notification{
+		Token:   taggedUser.PushToken,
+		Title:   "You were tagged in a post",
+		Message: fmt.Sprintf("%s tagged you in a post", taggerName),
+		Data:    data,
+	}
+
+	return xutils.SendNotification(notification)
+}
+
 // CheckRelationship checks the relationship between two users
 // Returns true if they are friends or if it's the same user
 func (s *Service) CheckRelationship(viewerID, profileUserID primitive.ObjectID) (bool, error) {
