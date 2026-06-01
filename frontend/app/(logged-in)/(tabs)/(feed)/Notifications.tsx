@@ -515,11 +515,18 @@ const Notifications = () => {
                     onNotificationPress={handleNotificationPress}
                 />
             )}
-            renderSectionHeader={({ section: { title } }) => (
-                <View style={styles.sectionHeader}>
-                    <ThemedText type="defaultSemiBold">{title}</ThemedText>
-                </View>
-            )}
+            renderSectionHeader={({ section: { title, data } }) => {
+                // Defensive: never render a bucket header above an empty bucket.
+                // The `.filter((s) => s.data.length > 0)` above should make this
+                // unreachable, but RN has occasionally rendered empty headers
+                // during chip-filter transitions.
+                if (!data || data.length === 0) return null;
+                return (
+                    <View style={styles.sectionHeader}>
+                        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+                    </View>
+                );
+            }}
             ListHeaderComponent={activityHeader}
             ListEmptyComponent={
                 <View style={styles.emptyFilterState}>
