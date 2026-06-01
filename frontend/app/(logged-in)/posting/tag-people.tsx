@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, FlatList, TouchableOpacity, TextInput } from "react-native";
+import { View, FlatList, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
@@ -8,6 +8,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useFriendsForMention, MentionCandidate } from "@/hooks/useFriendsForMention";
 import { usePostComposer } from "@/contexts/PostComposerContext";
 import { Ionicons } from "@expo/vector-icons";
+import ThemedInput from "@/components/inputs/ThemedInput";
 import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
 
 export default function TagPeople() {
@@ -46,19 +47,13 @@ export default function TagPeople() {
                     <ThemedText style={{ color: ThemedColor.primary }}>Done</ThemedText>
                 </TouchableOpacity>
             </View>
-            <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Search friends"
-                placeholderTextColor={ThemedColor.caption}
-                style={{
-                    marginHorizontal: 16,
-                    padding: 12,
-                    borderRadius: 8,
-                    backgroundColor: ThemedColor.lightened,
-                    color: ThemedColor.text,
-                }}
-            />
+            <View style={{ marginHorizontal: 16 }}>
+                <ThemedInput
+                    value={query}
+                    setValue={setQuery}
+                    placeHolder="Search friends"
+                />
+            </View>
             <FlatList
                 data={matches}
                 keyExtractor={(item) => item.id}

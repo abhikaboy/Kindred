@@ -1,23 +1,22 @@
 import React from "react";
-import { View, FlatList, TouchableOpacity, Image } from "react-native";
+import { View, FlatList, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useFriendsForMention, MentionCandidate } from "@/hooks/useFriendsForMention";
 
 type Props = {
-    query: string | null; // null = hidden
+    query: string | null;
     onPick: (candidate: MentionCandidate) => void;
     maxRows?: number;
 };
 
-const ROW_HEIGHT = 56;
+const ROW_HEIGHT = 44;
 
 const MentionAutocomplete = ({ query, onPick, maxRows = 5 }: Props) => {
     const ThemedColor = useThemeColor();
     const { filter, loading } = useFriendsForMention();
 
-    if (query === null) return null;
-    if (loading) return null;
+    if (query === null || loading) return null;
 
     const matches = filter(query);
     if (matches.length === 0) return null;
@@ -25,52 +24,83 @@ const MentionAutocomplete = ({ query, onPick, maxRows = 5 }: Props) => {
     return (
         <View
             style={{
-                backgroundColor: ThemedColor.lightened,
+                backgroundColor: ThemedColor.background,
                 borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.lightened,
+                marginTop: 4,
                 maxHeight: ROW_HEIGHT * maxRows,
-                marginHorizontal: 16,
-                marginBottom: 8,
                 overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 4,
             }}>
             <FlatList
                 data={matches}
                 keyExtractor={(item) => item.id}
                 keyboardShouldPersistTaps="always"
                 renderItem={({ item }) => (
-                    <TouchableOpacity
-                        onPress={() => onPick(item)}
-                        activeOpacity={0.7}
-                        style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            paddingHorizontal: 16,
-                            height: ROW_HEIGHT,
-                            gap: 12,
-                        }}>
-                        {item.profile_picture ? (
-                            <Image
-                                source={{ uri: item.profile_picture }}
-                                style={{ width: 36, height: 36, borderRadius: 18 }}
-                            />
-                        ) : (
-                            <View
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 18,
-                                    backgroundColor: ThemedColor.background,
-                                }}
-                            />
-                        )}
-                        <View style={{ flex: 1 }}>
-                            <ThemedText type="defaultSemiBold">{item.display_name}</ThemedText>
-                            <ThemedText type="caption">@{item.handle}</ThemedText>
-                        </View>
-                    </TouchableOpacity>
+                    <MentionRow item={item} query={query} onPick={onPick} primary={ThemedColor.primary} />
                 )}
             />
         </View>
     );
 };
+
+type RowProps = {
+    item: MentionCandidate;
+    query: string;
+    onPick: (c: MentionCandidate) => void;
+    primary: string;
+};
+
+function MentionRow({ item, query, onPick, primary }: RowProps) {
+    const q = query.toLowerCase();
+    const handleLower = item.handle.toLowerCase();
+    const nameLower = item.display_name.toLowerCase();
+    const handleMatch = q && handleLower.startsWith(q) ? item.handle.slice(0, q.length) : null;
+    const nameMatchIdx = q ? nameLower.indexOf(q) : -1;
+
+    return (
+        <TouchableOpacity
+            onPress={() => onPick(item)}
+            activeOpacity={0.6}
+            style={{
+                paddingHorizontal: 16,
+                height: ROW_HEIGHT,
+                justifyContent: "center",
+            }}>
+            <ThemedText type="default">
+                {nameMatchIdx >= 0 ? (
+                    <>
+                        <ThemedText type="default">{item.display_name.slice(0, nameMatchIdx)}</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={{ color: primary }}>
+                            {item.display_name.slice(nameMatchIdx, nameMatchIdx + q.length)}
+                        </ThemedText>
+                        <ThemedText type="default">{item.display_name.slice(nameMatchIdx + q.length)}</ThemedText>
+                    </>
+                ) : (
+                    <ThemedText type="default">{item.display_name}</ThemedText>
+                )}
+                {"  "}
+                <ThemedText type="caption">
+                    @
+                    {handleMatch ? (
+                        <>
+                            <ThemedText type="defaultSemiBold" style={{ color: primary }}>
+                                {handleMatch}
+                            </ThemedText>
+                            <ThemedText type="caption">{item.handle.slice(q.length)}</ThemedText>
+                        </>
+                    ) : (
+                        item.handle
+                    )}
+                </ThemedText>
+            </ThemedText>
+        </TouchableOpacity>
+    );
+}
 
 export default MentionAutocomplete;
