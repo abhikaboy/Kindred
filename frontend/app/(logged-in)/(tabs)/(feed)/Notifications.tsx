@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoFriendNotification from "@/components/UserInfo/UserInfoFriendNotification";
+import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -28,7 +29,7 @@ const ACTIVITY_TAB_INDEX = 1;
 
 type ProcessedNotification = {
     id: string;
-    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted";
+    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed";
     name: string;
     userId: string;
     time: number;
@@ -276,6 +277,14 @@ const NotificationItem = ({
                     referenceId={notification.referenceId}
                     thumbnail={notification.thumbnail}
                 />
+            ) : notification.type === "rings_closed" ? (
+                <UserInfoRingsClosedNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    content={notification.content}
+                    icon={notification.icon}
+                    time={notification.time}
+                />
             ) : null}
         </TouchableOpacity>
     );
@@ -414,6 +423,7 @@ const Notifications = () => {
         "congratulation",
         "friend_request",
         "friend_request_accepted",
+        "rings_closed",
     ]);
 
     const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
@@ -651,7 +661,7 @@ const stylesheet = (ThemedColor: any) => {
             height: 16,
         },
         sectionHeader: {
-            marginBottom: 8,
+            marginBottom: 12,
             marginTop: 8,
         },
         emptyFilterState: {
