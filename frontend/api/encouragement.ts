@@ -139,6 +139,17 @@ export const updateEncouragementAPI = async (id: string, message: string): Promi
 };
 
 /**
+ * Get encouragements received by the current user that are scoped to a specific task.
+ * Filters the full encouragements list client-side since the backend endpoint doesn't
+ * support task-scoped queries from the frontend.
+ * @param taskId - The task ID to filter by
+ */
+export const getEncouragementsByTask = async (taskId: string): Promise<EncouragementDocument[]> => {
+    const all = await getEncouragementsAPI();
+    return all.filter((e) => e.taskId === taskId);
+};
+
+/**
  * Delete an encouragement message
  * API: Makes DELETE request to remove the encouragement
  * Frontend: Used to delete encouragement messages

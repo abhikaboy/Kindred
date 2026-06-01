@@ -57,6 +57,7 @@ const Comment = ({
 
     const [commentText, setCommentText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [pickerMentions, setPickerMentions] = useState<{ id: string; handle: string }[]>([]);
     const [replyingTo, setReplyingTo] = useState<{
         id: string;
         name: string;
@@ -197,13 +198,19 @@ const Comment = ({
             const parentId = replyingTo?.id;
             let finalCommentText = commentText.trim();
 
-            // Build mentions array
-            const mentions = [];
+            // Build mentions array: union reply-driven + picker-driven, deduped by id
+            const mentionMap = new Map<string, { id: string; handle: string }>();
+
+            // Add picker-derived mentions first
+            for (const m of pickerMentions) {
+                mentionMap.set(m.id, m);
+            }
+
             if (replyingTo) {
                 // Find the user being replied to from localComments
                 const parentComment = localComments.find(c => c.id === replyingTo.immediateParent);
                 if (parentComment) {
-                    mentions.push({
+                    mentionMap.set(parentComment.user._id, {
                         id: parentComment.user._id,
                         handle: parentComment.user.handle,
                     });
@@ -215,9 +222,12 @@ const Comment = ({
                 }
             }
 
+            const mentions = Array.from(mentionMap.values());
+
             const newComment = await addComment(postId, finalCommentText, parentId, mentions);
             setCommentText("");
             setReplyingTo(null);
+            setPickerMentions([]);
 
             setLocalComments((prev) => [...prev, newComment]);
 
@@ -408,6 +418,7 @@ const Comment = ({
                         onChangeText={setCommentText}
                         onSubmit={handleSubmitComment}
                         value={commentText}
+                        onMentionsChange={setPickerMentions}
                     />
                     <SendButton onSend={handleSubmitComment} />
                 </View>

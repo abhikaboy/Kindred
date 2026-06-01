@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { View, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
-import LongTextInput from "@/components/inputs/LongTextInput";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import MentionTextInput from "@/components/inputs/MentionTextInput";
+import TaggedUsersChips, { TaggedUser } from "@/components/inputs/TaggedUsersChips";
 import { createPostToBackend } from "@/api/post";
 import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
 import { ObjectId } from "bson";
@@ -20,6 +21,10 @@ import { Ionicons } from "@expo/vector-icons";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
+import { usePostComposer } from "@/contexts/PostComposerContext";
+import { getEncouragementsByTask } from "@/api/encouragement";
+import type { MentionCandidate } from "@/hooks/useFriendsForMention";
+import type { Href } from "expo-router";
 
 export default function Caption() {
     const insets = useSafeAreaInsets();
@@ -41,9 +46,36 @@ export default function Caption() {
     const { capture } = useAnalytics();
     const { showRingUpdate } = useRingUpdate();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
+    const { taggedUsers, setTaggedUsers } = usePostComposer();
 
     // Compute display text based on state
     const groupDisplayText = selectedGroupId === null ? "All Friends" : (selectedGroupName || "Selected Group");
+
+    // Auto-fill encouragers when posting about a task
+    useEffect(() => {
+        if (!taskInfo?.id) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const encs = await getEncouragementsByTask(taskInfo.id);
+                if (cancelled) return;
+                const prefilled: TaggedUser[] = encs.map((e) => ({
+                    id: e.sender?.id,
+                    handle: (e.sender as any)?.handle ?? "",
+                    display_name: e.sender?.name,
+                })).filter((u) => u.id);
+                const seen = new Set<string>();
+                setTaggedUsers(prefilled.filter((u) => {
+                    if (seen.has(u.id)) return false;
+                    seen.add(u.id);
+                    return true;
+                }));
+            } catch (e) {
+                console.warn("failed to fetch encouragements for auto-tag", e);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [taskInfo?.id]);
 
     const hasActualPhotos = photos.length > 0;
     const handleCaptionChange = (text: string) => {
@@ -138,7 +170,8 @@ export default function Caption() {
                 taskInfo?.public ?? false,
                 uploadResult.sizeInfo,
                 selectedGroups,
-                uploadResult.dualUrl
+                uploadResult.dualUrl,
+                taggedUsers.map((u) => ({ id: u.id, handle: u.handle })),
             );
 
             // Update user stats locally if available
@@ -249,13 +282,49 @@ export default function Caption() {
 
                     {/* Caption and options */}
                     <View style={{ padding: 16, gap: 12 }}>
-                        <LongTextInput
+                        <MentionTextInput
                             placeholder="Enter a caption"
                             value={data.caption}
                             setValue={handleCaptionChange}
                             fontSize={16}
                             minHeight={120}
+                            onMentionPicked={(c: MentionCandidate) => {
+                                setTaggedUsers((prev) => {
+                                    if (prev.find((p) => p.id === c.id)) return prev;
+                                    return [...prev, { id: c.id, handle: c.handle, display_name: c.display_name }];
+                                });
+                            }}
                         />
+                        <TaggedUsersChips
+                            users={taggedUsers}
+                            onRemove={(id) => setTaggedUsers((prev) => prev.filter((p) => p.id !== id))}
+                        />
+                        <TouchableOpacity
+                            style={{
+                                width: "100%",
+                                padding: 20,
+                                justifyContent: "space-between",
+                                backgroundColor: ThemedColor.lightened,
+                                borderRadius: 8,
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}
+                            onPress={() => {
+                                router.push("/(logged-in)/posting/tag-people" as Href);
+                            }}
+                            activeOpacity={0.7}>
+                            <ThemedText>Tag people</ThemedText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <ThemedText style={{ color: ThemedColor.primary }}>
+                                    {taggedUsers.length === 0
+                                        ? "None"
+                                        : taggedUsers.length === 1
+                                            ? `@${taggedUsers[0].handle}`
+                                            : `${taggedUsers.length} tagged`}
+                                </ThemedText>
+                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
+                            </View>
+                        </TouchableOpacity>
                         <TouchableOpacity
                             style={{
                                 width: "100%",

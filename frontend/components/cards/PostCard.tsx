@@ -46,6 +46,7 @@ type Props = {
     username: string;
     userId: string;
     caption: string;
+    taggedUsers?: Array<{ id: string; handle: string }>;
     time: number;
     priority?: string;
     points?: number;
@@ -70,6 +71,7 @@ const PostCard = React.memo(({
     username,
     userId,
     caption,
+    taggedUsers = [],
     time,
     priority,
     points,
@@ -609,6 +611,7 @@ const PostCard = React.memo(({
                     )}
                     <PostCardFooter
                         caption={caption}
+                        taggedUsers={taggedUsers}
                         category={category}
                         taskName={taskName}
                         reactions={localReactions}

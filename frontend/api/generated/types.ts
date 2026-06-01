@@ -1780,6 +1780,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/for-you": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the For You feed
+         * @description Returns the curated For You feed for the authenticated user, organized into Catch up and Suggested for you sections.
+         */
+        get: operations["get-for-you"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/for-you/interactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a For You CTA interaction
+         * @description Increments the interaction counter for a card type, counting toward the threshold that switches the card to compact display mode.
+         */
+        post: operations["record-for-you-interaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/groups": {
         parameters: {
             query?: never;
@@ -2472,6 +2512,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user tags
+         * @description Retrieve the distinct list of category tags for the authenticated user
+         */
+        get: operations["get-user-tags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/": {
         parameters: {
             query?: never;
@@ -3043,26 +3103,6 @@ export interface paths {
          * @description Remove a waitlist entry by its ID
          */
         delete: operations["delete-waitlist"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/user/tags": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get user tags
-         * @description Retrieve the distinct list of category tags for the authenticated user
-         */
-        get: operations["get-user-tags"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4256,6 +4296,7 @@ export interface components {
             /** @description Describes the Share ring increment triggered by this post so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
             size?: components["schemas"]["ImageSize"];
+            taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
         };
@@ -4280,6 +4321,7 @@ export interface components {
             images: string[];
             isPublic: boolean;
             size?: components["schemas"]["ImageSize"];
+            taggedUsers?: components["schemas"]["MentionInput"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
         };
         CreateTaskNaturalLanguageInputBody: {
@@ -4836,6 +4878,77 @@ export interface components {
             periodStart?: string;
             /** Format: int64 */
             target: number;
+        };
+        ForYouCard: {
+            /** @description Present iff displayMode == full */
+            body?: string;
+            ctas: components["schemas"]["ForYouCta"][];
+            /** @description Tap-target for the entire card */
+            deepLink: string;
+            displayMode: string;
+            iconKind: string;
+            id: string;
+            /** Format: int64 */
+            priority: number;
+            subject?: components["schemas"]["ForYouSubject"];
+            title: string;
+            type: string;
+        };
+        ForYouCta: {
+            action: components["schemas"]["ForYouCtaAction"];
+            /**
+             * @description primary | secondary
+             * @example primary
+             */
+            kind: string;
+            /** @example Send one back */
+            label: string;
+        };
+        ForYouCtaAction: {
+            /** @example /(logged-in)/(tabs)/(task)/kudos */
+            href?: string;
+            postId?: string;
+            reaction?: string;
+            referenceId?: string;
+            targetUserId?: string;
+            taskId?: string;
+            /**
+             * @description navigate | send_kudos | send_encouragement | react
+             * @example navigate
+             */
+            type: string;
+        };
+        ForYouFeed: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ForYouFeed.json
+             */
+            readonly $schema?: string;
+            sections: components["schemas"]["ForYouSection"][];
+            /**
+             * Format: int64
+             * @description Number of catch_up cards driving the tab dot
+             */
+            unreadCount: number;
+        };
+        ForYouSection: {
+            cards: components["schemas"]["ForYouCard"][];
+            /**
+             * @description catch_up | suggested
+             * @example catch_up
+             */
+            id: string;
+            /** @example Catch up */
+            title: string;
+        };
+        ForYouSubject: {
+            /** @example https://example.com/avatar.jpg */
+            avatarUrl?: string;
+            /** @example Sarah */
+            displayName: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            userId: string;
         };
         FriendReference: {
             /**
@@ -5486,6 +5599,7 @@ export interface components {
                 [key: string]: string[];
             };
             size?: components["schemas"]["ImageSize"];
+            taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
         };
@@ -5632,6 +5746,29 @@ export interface components {
             query: components["schemas"]["TaskQueryFilters"];
             /** @description Matching tasks */
             tasks: components["schemas"]["TaskDocument"][];
+        };
+        RecordInteractionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RecordInteractionOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Interaction recorded */
+            message: string;
+        };
+        RecordInteractionParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RecordInteractionParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Card type the user interacted with
+             * @example kudos_received
+             */
+            cardType: string;
         };
         RecurDetails: {
             behavior?: string;
@@ -6704,6 +6841,7 @@ export interface components {
             caption?: string;
             isPublic?: boolean;
             size?: components["schemas"]["ImageSize"];
+            taggedUsers?: components["schemas"]["MentionInput"][];
         };
         UpdateProfileDocument: {
             /**
@@ -10681,6 +10819,78 @@ export interface operations {
             };
         };
     };
+    "get-for-you": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token */
+                Authorization: string;
+                /** @description Refresh token */
+                refresh_token: string;
+                /** @description IANA timezone, e.g. America/New_York */
+                "X-Timezone"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForYouFeed"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "record-for-you-interaction": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordInteractionParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordInteractionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-groups": {
         parameters: {
             query?: never;
@@ -12121,6 +12331,37 @@ export interface operations {
             };
         };
     };
+    "get-user-tags": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUserTagsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-tasks-by-user": {
         parameters: {
             query?: {
@@ -13268,37 +13509,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeleteWaitlistOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "get-user-tags": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetUserTagsOutputBody"];
                 };
             };
             /** @description Error */

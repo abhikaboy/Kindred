@@ -30,7 +30,7 @@ const ACTIVITY_TAB_INDEX = 1;
 
 type ProcessedNotification = {
     id: string;
-    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed";
+    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed" | "post_tag";
     name: string;
     handle: string;
     userId: string;
@@ -381,6 +381,7 @@ const Notifications = () => {
                 // Already on the notifications page which shows friend requests
                 break;
             case "comment":
+            case "post_tag":
                 if (notification.referenceId) {
                     router.push(`/(logged-in)/posting/${notification.referenceId}`);
                 }
@@ -430,6 +431,7 @@ const Notifications = () => {
         "friend_request",
         "friend_request_accepted",
         "rings_closed",
+        "post_tag",
     ]);
 
     const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
@@ -473,7 +475,8 @@ const Notifications = () => {
                     | "encouragement"
                     | "congratulation"
                     | "friend_request"
-                    | "friend_request_accepted",
+                    | "friend_request_accepted"
+                    | "post_tag",
                 name: notification.user.display_name,
                 handle: notification.user.handle ?? "",
                 userId: notification.user.id,

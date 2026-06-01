@@ -322,7 +322,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_Caption() {
 
 	// Update caption
 	newCaption := "Updated caption"
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Caption: &newCaption,
 	})
 	s.NoError(err)
@@ -348,7 +348,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_IsPublic() {
 
 	// Update to public
 	isPublic := true
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		IsPublic: &isPublic,
 	})
 	s.NoError(err)
@@ -372,7 +372,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_Size() {
 
 	// Update size
 	newSize := types.ImageSize{Width: 1920, Height: 1080}
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Size: &newSize,
 	})
 	s.NoError(err)
@@ -399,7 +399,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_MultipleFields() {
 	// Update multiple fields
 	newCaption := "Updated"
 	isPublic := true
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Caption:  &newCaption,
 		IsPublic: &isPublic,
 	})
@@ -1466,4 +1466,207 @@ func (s *PostServiceTestSuite) TestToggleReaction_PostNotFound() {
 
 	// Should return error
 	s.Error(err)
+}
+
+// ========================================
+// resolveTaggedUsers Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_FiltersNonFriends() {
+	author := s.GetUser(0)
+	friend := s.GetUser(1)
+	stranger := s.GetUser(2)
+
+	// Seed a "friends" connection between author and friend (sorted users array).
+	sortedIDs := []primitive.ObjectID{author.ID, friend.ID}
+	if author.ID.Hex() > friend.ID.Hex() {
+		sortedIDs = []primitive.ObjectID{friend.ID, author.ID}
+	}
+	_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+		"users":  sortedIDs,
+		"status": "friends",
+	})
+	s.Require().NoError(err)
+
+	// Candidate set includes friend and stranger; only friend should survive.
+	candidates := []primitive.ObjectID{friend.ID, stranger.ID}
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Len(result, 1)
+	s.Equal(friend.ID, result[0].ID)
+	s.Equal(friend.Handle, result[0].Handle) // canonical handle from users collection
+}
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_DedupesAndPreservesOrder() {
+	author := s.GetUser(0)
+	f1 := s.GetUser(1)
+	f2 := s.GetUser(2)
+
+	for _, friendID := range []primitive.ObjectID{f1.ID, f2.ID} {
+		sortedIDs := []primitive.ObjectID{author.ID, friendID}
+		if author.ID.Hex() > friendID.Hex() {
+			sortedIDs = []primitive.ObjectID{friendID, author.ID}
+		}
+		_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+			"users":  sortedIDs,
+			"status": "friends",
+		})
+		s.Require().NoError(err)
+	}
+
+	candidates := []primitive.ObjectID{f2.ID, f1.ID, f2.ID} // f2 duplicated
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Len(result, 2)
+	s.Equal(f2.ID, result[0].ID) // insertion order preserved
+	s.Equal(f1.ID, result[1].ID)
+}
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_DropsAuthorSelf() {
+	author := s.GetUser(0)
+
+	candidates := []primitive.ObjectID{author.ID}
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Empty(result)
+}
+
+// ========================================
+// CreatePost auto-tag Tests
+// ========================================
+
+// ========================================
+// UpdatePartialPost tag diff Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestUpdatePost_NotifiesOnlyNewlyAddedTags() {
+	author := s.GetUser(0)
+	f1 := s.GetUser(1)
+	f2 := s.GetUser(2)
+
+	// Seed both friendships.
+	for _, friend := range []primitive.ObjectID{f1.ID, f2.ID} {
+		sortedIDs := []primitive.ObjectID{author.ID, friend}
+		if author.ID.Hex() > friend.Hex() {
+			sortedIDs = []primitive.ObjectID{friend, author.ID}
+		}
+		_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+			"users":  sortedIDs,
+			"status": "friends",
+		})
+		s.Require().NoError(err)
+	}
+
+	// Create post with f1 already tagged.
+	post := s.GetPost(0) // fixture post owned by author (users[0])
+	_, err := s.Collections["posts"].UpdateOne(s.Ctx,
+		bson.M{"_id": post.ID},
+		bson.M{"$set": bson.M{
+			"taggedUsers": []bson.M{{"_id": f1.ID, "handle": f1.Handle}},
+			"user._id":    author.ID,
+		}})
+	s.Require().NoError(err)
+
+	// Snapshot notification count before.
+	countBefore, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f2.ID,
+	})
+
+	// Update with both f1 and f2.
+	newTags := []Post.MentionInput{
+		{ID: f1.ID.Hex(), Handle: f1.Handle},
+		{ID: f2.ID.Hex(), Handle: f2.Handle},
+	}
+	params := Post.UpdatePostParams{TaggedUsers: &newTags}
+	err = s.service.UpdatePartialPost(s.Ctx, post.ID, params)
+	s.Require().NoError(err)
+
+	// f2 (newly added) should have a new notification; f1 should NOT.
+	countAfter, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f2.ID,
+	})
+	s.Equal(int64(1), countAfter-countBefore)
+
+	f1Notifs, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f1.ID,
+	})
+	s.Equal(int64(0), f1Notifs)
+}
+
+// ========================================
+// CreatePost auto-tag Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestCreatePost_AutoTagsEncouragers() {
+	author := s.GetUser(0)
+	encourager := s.GetUser(1)
+
+	// Seed friendship author <-> encourager
+	sortedIDs := []primitive.ObjectID{author.ID, encourager.ID}
+	if author.ID.Hex() > encourager.ID.Hex() {
+		sortedIDs = []primitive.ObjectID{encourager.ID, author.ID}
+	}
+	_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+		"users":  sortedIDs,
+		"status": "friends",
+	})
+	s.Require().NoError(err)
+
+	// Seed an encouragement from encourager → author on some task
+	taskID := primitive.NewObjectID()
+	_, err = s.Collections["encouragements"].InsertOne(s.Ctx, bson.M{
+		"taskId":   taskID,
+		"receiver": author.ID,
+		"sender": bson.M{
+			"id":      encourager.ID,
+			"name":    encourager.DisplayName,
+			"picture": encourager.ProfilePicture,
+		},
+		"type":  "encouragement",
+		"scope": "task",
+	})
+	s.Require().NoError(err)
+
+	// Simulate what the handler does: build candidates from encouragements + resolve.
+	encs, err := s.service.EncouragementService.GetEncouragementsByTaskAndReceiver(taskID, author.ID)
+	s.Require().NoError(err)
+
+	var candidates []primitive.ObjectID
+	for _, e := range encs {
+		candidates = append(candidates, e.Sender.ID)
+	}
+
+	resolved, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+	s.Require().NoError(err)
+
+	// Create the post with the resolved tags already applied (mirrors handler logic).
+	newPost := &types.PostDocument{
+		ID:      primitive.NewObjectID(),
+		Caption: "Did it!",
+		User: types.UserExtendedReferenceInternal{
+			ID:             author.ID,
+			DisplayName:    author.DisplayName,
+			Handle:         author.Handle,
+			ProfilePicture: author.ProfilePicture,
+		},
+		Task: &types.PostTaskExtendedReference{
+			ID:      taskID,
+			Content: "Some task",
+		},
+		TaggedUsers: resolved,
+		Reactions:   map[string][]primitive.ObjectID{},
+		Comments:    []types.CommentDocument{},
+		Metadata:    types.PostMetadata{IsDeleted: false},
+	}
+	post, _, err := s.service.CreatePost(newPost)
+	s.Require().NoError(err)
+
+	s.Len(post.TaggedUsers, 1)
+	s.Equal(encourager.ID, post.TaggedUsers[0].ID)
 }
