@@ -52,6 +52,7 @@ type NotificationType =
     | "friend_request_accepted"
     | "new_post"
     | "comment"
+    | "post_tag"
     | "rings_closed"
     | "TASK_MISSED"
     | "TASK_REGENERATED"
@@ -120,6 +121,11 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
             }
             return "/(logged-in)/(tabs)/(feed)/feed";
         case "comment":
+            if (data.post_id) {
+                return `/(logged-in)/posting/${data.post_id}`;
+            }
+            return "/(logged-in)/(tabs)/(feed)/feed";
+        case "post_tag":
             if (data.post_id) {
                 return `/(logged-in)/posting/${data.post_id}`;
             }
