@@ -35,6 +35,8 @@ type ProcessedNotification = {
     icon: string;
     content: string;
     taskName?: string;
+    /** For encouragement/congratulation notifications: the actual kudos message text (after the "on TaskName:" prefix in content). */
+    kudosMessage?: string;
     image?: string;
     read: boolean;
     referenceId: string; // Post ID or Task ID that the notification references
@@ -239,7 +241,7 @@ const NotificationItem = ({
                     comment={notification.content}
                     icon={notification.icon}
                     time={notification.time}
-                    image={notification.thumbnail || notification.image || Icons.coffee}
+                    image={notification.thumbnail}
                     referenceId={notification.referenceId}
                 />
             ) : notification.type === "encouragement" ? (
@@ -247,6 +249,7 @@ const NotificationItem = ({
                     name={notification.name}
                     userId={notification.userId}
                     taskName={notification.taskName || "Task"}
+                    message={notification.kudosMessage}
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
@@ -257,6 +260,7 @@ const NotificationItem = ({
                     name={notification.name}
                     userId={notification.userId}
                     taskName={notification.taskName || "Task"}
+                    message={notification.kudosMessage}
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
@@ -408,11 +412,18 @@ const Notifications = () => {
         try {
             const notificationTime = new Date(notification.time).getTime();
 
-            // Extract task name from content for encouragement/congratulation notifications
+            // Extract task name + kudos message from content for encouragement/congratulation.
+            // Content shape: "X did Y on TaskName: actual message text"
             let taskName = "";
+            let kudosMessage: string | undefined;
             if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
-                const match = notification.content.match(/on (.+?):/);
-                taskName = match ? match[1] : "Task";
+                const match = notification.content.match(/on (.+?):\s*(.*)$/);
+                if (match) {
+                    taskName = match[1];
+                    kudosMessage = match[2]?.trim() || undefined;
+                } else {
+                    taskName = "Task";
+                }
             }
 
             return {
@@ -429,6 +440,7 @@ const Notifications = () => {
                 icon: notification.user.profile_picture || Icons.coffee,
                 content: notification.content,
                 taskName: taskName || undefined,
+                kudosMessage,
                 image: notification.user.profile_picture || Icons.coffee,
                 read: notification.read,
                 referenceId: notification.reference_id,
@@ -605,7 +617,7 @@ const stylesheet = (ThemedColor: any) => {
             marginBottom: 16,
         },
         listItem: {
-            marginVertical: 10,
+            marginVertical: 4,
         },
         sectionHeader: {
             marginBottom: 4,
