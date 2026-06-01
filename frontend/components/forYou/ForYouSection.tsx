@@ -12,7 +12,10 @@ type Props = {
 
 export default function ForYouSection({ section, onAction }: Props) {
     const ThemedColor = useThemeColor();
-    const isEmpty = section.cards.length === 0;
+    // Defensive: older backend builds could serialize an empty card list as
+    // `null` instead of `[]`. Treat null/undefined as empty.
+    const cards = section.cards ?? [];
+    const isEmpty = cards.length === 0;
 
     return (
         <View style={styles.container}>
@@ -33,7 +36,7 @@ export default function ForYouSection({ section, onAction }: Props) {
                 </View>
             ) : (
                 <View style={styles.cardList}>
-                    {section.cards.map((card) => (
+                    {cards.map((card) => (
                         <ForYouCard key={card.id} card={card} onAction={onAction} />
                     ))}
                 </View>

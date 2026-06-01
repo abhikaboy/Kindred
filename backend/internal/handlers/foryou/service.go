@@ -57,8 +57,11 @@ func (s *Service) GetForYou(ctx context.Context, userID primitive.ObjectID, time
 		exposures = map[string]ExposureDoc{}
 	}
 
-	var catchUp []ForYouCard
-	var suggested []ForYouCard
+	// Initialize as empty slices (not nil) so JSON marshaling produces `[]`
+	// rather than `null`. The frontend contract expects an array, and a null
+	// `cards` field crashes the renderer.
+	catchUp := []ForYouCard{}
+	suggested := []ForYouCard{}
 
 	if cards := s.buildKudosReceivedCards(ctx, userID, exposures); len(cards) > 0 {
 		catchUp = append(catchUp, cards...)
