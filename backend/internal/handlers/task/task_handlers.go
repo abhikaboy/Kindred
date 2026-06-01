@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -881,5 +882,57 @@ func (h *Handler) UpdateTaskReminders(ctx context.Context, input *UpdateTaskRemi
 
 	resp := &UpdateTaskReminderOutput{}
 	resp.Body.Message = "Task reminders updated successfully"
+	return resp, nil
+}
+
+// MoveTask moves a task from its current category to a different category.
+func (h *Handler) MoveTask(ctx context.Context, input *MoveTaskInput) (*MoveTaskOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	sourceCategoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	targetCategoryID, err := primitive.ObjectIDFromHex(input.Body.TargetCategoryID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid target category ID format", err)
+	}
+
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	_, err = h.service.MoveTask(userID, sourceCategoryID, id, targetCategoryID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrTaskNotFound):
+			return nil, huma.Error404NotFound("Task not found in the source category", err)
+		case errors.Is(err, ErrCategoryNotFound):
+			return nil, huma.Error404NotFound("Category not found", err)
+		case errors.Is(err, ErrNotCategoryOwner):
+			return nil, huma.Error403Forbidden("You do not have access to this category", err)
+		default:
+			slog.Error("Failed to move task",
+				"taskId", id.Hex(),
+				"sourceCategoryId", sourceCategoryID.Hex(),
+				"targetCategoryId", targetCategoryID.Hex(),
+				"userId", userID.Hex(),
+				"error", err)
+			return nil, huma.Error500InternalServerError("Unable to move task due to a database error. Please try again.", err)
+		}
+	}
+
+	resp := &MoveTaskOutput{}
+	resp.Body.Message = "Task moved successfully"
 	return resp, nil
 }

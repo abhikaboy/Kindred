@@ -5412,6 +5412,58 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/move:
+        post:
+            tags:
+                - tasks
+            summary: Move task to another category
+            description: Move a task from its current category to a different category. The task lands at the top of the target category, and any recurring template is re-pointed so future instances generate in the target.
+            operationId: move-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  description: Source category ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Source category ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  description: Task ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Task ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MoveTaskInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MoveTaskOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/notes:
         post:
             tags:
@@ -10420,6 +10472,41 @@ components:
             required:
                 - id
                 - handle
+        MoveTaskInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MoveTaskInputBody.json
+                    readOnly: true
+                targetCategoryID:
+                    type: string
+                    description: Destination category ID
+                    examples:
+                        - 507f1f77bcf86cd799439012
+            required:
+                - targetCategoryID
+        MoveTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MoveTaskOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task moved successfully
+            required:
+                - message
         MultiTaskOutputLocal:
             type: object
             additionalProperties: false

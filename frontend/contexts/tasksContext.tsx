@@ -2,7 +2,10 @@ import { useAuth } from "@/hooks/useAuth";
 import React, { useEffect, useMemo, useCallback, startTransition } from "react";
 import { createContext, useState, useContext } from "react";
 import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
-import { getUserTemplatesAPI } from "@/api/task";
+import { getUserTemplatesAPI, moveTaskAPI } from "@/api/task";
+import { moveTaskInWorkspaces } from "@/utils/moveTask";
+import { showToastable } from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 import { computePhantomTasks } from "@/utils/phantomTasks";
 import { fetchUserWorkspaces, createWorkspace } from "@/api/workspace";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI, updateWorkspaceMeta } from "@/api/category";
@@ -34,6 +37,7 @@ type TaskContextType = {
     addToWorkspace: (name: string, category: Categories) => void;
     addWorkspace: (name: string, category: Categories, icon?: string | null, color?: string | null) => void;
     updateTask: (categoryId: string, taskId: string, updates: Partial<Task>) => void;
+    moveTask: (sourceCategoryId: string, taskId: string, targetCategoryId: string) => Promise<void>;
     removeFromCategory: (categoryId: string, taskId: string) => void;
     removeFromWorkspace: (name: string, categoryId: string) => void;
     removeWorkspace: (name: string) => void;
@@ -295,6 +299,36 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
         invalidateWorkspacesCache();
     }, [invalidateWorkspacesCache]);
+
+    const moveTask = useCallback(
+        async (sourceCategoryId: string, taskId: string, targetCategoryId: string) => {
+            if (sourceCategoryId === targetCategoryId) return;
+
+            let snapshot: Workspace[] = [];
+            setRawWorkspaces((prev) => {
+                snapshot = prev;
+                return moveTaskInWorkspaces(prev, sourceCategoryId, taskId, targetCategoryId);
+            });
+            invalidateWorkspacesCache();
+
+            try {
+                await moveTaskAPI(sourceCategoryId, taskId, targetCategoryId);
+            } catch (error) {
+                logger.error("Failed to move task, rolling back", error);
+                setRawWorkspaces(snapshot);
+                invalidateWorkspacesCache();
+                showToastable({
+                    title: "Couldn't move task",
+                    status: "danger",
+                    position: "top",
+                    message: "Something went wrong. Please try again.",
+                    swipeDirection: "up",
+                    renderContent: (props) => <DefaultToast {...props} />,
+                });
+            }
+        },
+        [invalidateWorkspacesCache]
+    );
 
     const addToWorkspace = useCallback((name: string, category: Categories) => {
         setRawWorkspaces(prev => prev.map(workspace => {
@@ -581,6 +615,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         categories,
         addToCategory,
         updateTask,
+        moveTask,
         addToWorkspace,
         addWorkspace,
         removeFromCategory,
@@ -614,7 +649,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         clearRecentWorkspaces,
     }), [
         workspaces, getWorkspace, fetchWorkspaces, selected, handleSetSelected,
-        categories, addToCategory, updateTask, addToWorkspace, addWorkspace,
+        categories, addToCategory, updateTask, moveTask, addToWorkspace, addWorkspace,
         removeFromCategory, removeFromWorkspace, removeWorkspace, restoreWorkspace,
         renameWorkspace, renameCategory, getCategoriesByTag, updateCategoryTags, updateWorkspaceIconColor, setCreateCategory,
         selectedCategory, showConfetti, task, getTaskById, doesWorkspaceExist,

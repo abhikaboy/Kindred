@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
+import { useDragOptional } from "@/contexts/dragContext";
 import { ThemedText } from "./ThemedText";
 import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
@@ -37,12 +38,39 @@ export const Category: React.FC<CategoryProps> = ({
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
+    const drag = useDragOptional();
+    const containerRef = useRef<View>(null);
+    const isDropTarget = drag?.hoveredCategoryId === id;
+
+    const measure = useCallback(() => {
+        if (!drag) return;
+        containerRef.current?.measureInWindow((x, y, width, height) => {
+            drag.setCategoryRect({ categoryId: id, x, y, width, height });
+        });
+    }, [drag, id]);
+
+    useEffect(() => {
+        return () => {
+            drag?.removeCategoryRect(id);
+        };
+    }, [drag, id]);
+
     const categoryNameText = (
         <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
     );
 
     return (
-        <View style={styles.container}>
+        <View
+            style={[
+                styles.container,
+                isDropTarget && {
+                    backgroundColor: ThemedColor.lightenedCard,
+                    borderRadius: 12,
+                },
+            ]}
+            ref={containerRef}
+            onLayout={measure}
+            collapsable={false}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <TouchableOpacity
                     style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { TouchableOpacity, View, StyleSheet, Dimensions, Platform } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
@@ -22,6 +22,9 @@ import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { setWorkingAPI } from "@/api/task";
 import * as Haptics from "expo-haptics";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
+import { useDragOptional } from "@/contexts/dragContext";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -349,109 +352,171 @@ const TaskCard = ({
         setEditing(true);
     };
 
+    // ── Drag-and-drop gesture (only active when DragProvider is present) ──
+    const drag = useDragOptional();
+    const draggable = Boolean(drag) && Boolean(redirect) && !task?.isPhantom && Boolean(task);
+    const liftedRef = useRef(false);
+
+    const onLift = useCallback((absX: number, absY: number) => {
+        if (Platform.OS === "ios") {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        liftedRef.current = true;
+        if (task && drag) drag.beginDrag(task, categoryId, absX, absY);
+    }, [task, categoryId, drag]);
+
+    const onReleaseInPlaceOpenMenu = useCallback(() => {
+        drag?.endDrag();
+        liftedRef.current = false;
+        setEditing(true);
+    }, [drag]);
+
+    const dragGesture = useMemo(() => {
+        const longPress = Gesture.LongPress()
+            .minDuration(350)
+            .onStart((e) => {
+                runOnJS(onLift)(e.absoluteX, e.absoluteY);
+            });
+
+        const longPressMenu = Gesture.LongPress()
+            .minDuration(350)
+            .onEnd((_e, success) => {
+                if (success && liftedRef.current) {
+                    runOnJS(onReleaseInPlaceOpenMenu)();
+                }
+            });
+
+        const pan = Gesture.Pan()
+            .manualActivation(true)
+            .onTouchesMove((_e, state) => {
+                if (liftedRef.current) {
+                    state.activate();
+                }
+            })
+            .onUpdate((e) => {
+                runOnJS((x: number, y: number) => drag?.updateDrag(x, y))(e.absoluteX, e.absoluteY);
+            })
+            .onEnd(() => {
+                runOnJS(() => {
+                    drag?.endDrag();
+                    liftedRef.current = false;
+                })();
+            });
+
+        return Gesture.Simultaneous(Gesture.Race(longPress, longPressMenu), pan);
+    }, [onLift, onReleaseInPlaceOpenMenu, drag]);
+
+    const cardBody = (
+        <TouchableOpacity
+            style={[
+                styles.container,
+                {
+                    backgroundColor: ThemedColor.lightenedCard,
+                    borderWidth: 1,
+                    borderColor: ThemedColor.tertiary,
+                    ...(task?.isPhantom
+                        ? { opacity: 0.45, borderStyle: "dashed" as const }
+                        : null),
+                },
+            ]}
+            disabled={
+                Boolean(task?.isPhantom) ||
+                (!redirect && !encourage && !congratulate)
+            }
+            onPress={handlePress}
+            onLongPress={draggable ? undefined : handleLongPress}>
+            {editing && (
+                <EditPost
+                    visible={editing}
+                    setVisible={setEditing}
+                    id={{ id, category: categoryId }}
+                    task={task}
+                    onStartWorking={task && !task.isPhantom ? startWorking : undefined}
+                />
+            )}
+
+            <View style={styles.row}>
+                <View style={styles.contentContainer}>
+                    {highlightContent ? (
+                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                            {content}
+                            {dateDisplay && (
+                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                    {" "}{dateDisplay.text}
+                                </ThemedText>
+                            )}
+                        </ThemedText>
+                    ) : (
+                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                            {content}
+                            {task?.workingOnSince && (
+                                <ThemedText type="default" style={{ color: ThemedColor.primary }}>
+                                    {" "}(active)
+                                </ThemedText>
+                            )}
+                            {dateDisplay && (
+                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                    {" "}{dateDisplay.text}
+                                </ThemedText>
+                            )}
+                        </ThemedText>
+                    )}
+                    {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
+                </View>
+                <View style={styles.iconRow}>
+                    <ConditionalView condition={!encourage}>
+                        <ConditionalView condition={isRunningState}>
+                            <Timer size={20} color={ThemedColor.caption} weight="regular" />
+                        </ConditionalView>
+                        <ConditionalView condition={task?.recurring}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                <Repeat size={20} color={ThemedColor.caption} weight="regular" />
+                                {task?.flexInfo && (
+                                    <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
+                                        {task.flexInfo.instanceNumber}/{task.flexInfo.target}
+                                    </ThemedText>
+                                )}
+                            </View>
+                        </ConditionalView>
+                        <ConditionalView condition={!!task?.integration}>
+                            {getIntegrationIcon(task?.integration, ThemedColor.caption)}
+                        </ConditionalView>
+                        {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                        {value}
+                    </ThemedText> */}
+
+                        {/* Show priority dot — purple when actively working */}
+                        <View
+                            style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                        />
+                    </ConditionalView>
+                    <ConditionalView condition={encourage}>
+                        <Sparkle
+                            size={24}
+                            color="#9333EA"
+                            weight="regular"
+                        />
+                    </ConditionalView>
+                    <ConditionalView condition={congratulate}>
+                        <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <Path
+                                d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"
+                                fill="#FFD700"
+                            />
+                        </Svg>
+                    </ConditionalView>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
     return (
         <>
-            <TouchableOpacity
-                style={[
-                    styles.container,
-                    {
-                        backgroundColor: ThemedColor.lightenedCard,
-                        borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
-                        ...(task?.isPhantom
-                            ? { opacity: 0.45, borderStyle: "dashed" as const }
-                            : null),
-                    },
-                ]}
-                disabled={
-                    Boolean(task?.isPhantom) ||
-                    (!redirect && !encourage && !congratulate)
-                }
-                onPress={handlePress}
-                onLongPress={handleLongPress}>
-                {editing && (
-                    <EditPost
-                        visible={editing}
-                        setVisible={setEditing}
-                        id={{ id, category: categoryId }}
-                        task={task}
-                        onStartWorking={task && !task.isPhantom ? startWorking : undefined}
-                    />
-                )}
-
-                <View style={styles.row}>
-                    <View style={styles.contentContainer}>
-                        {highlightContent ? (
-                            <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
-                                {content}
-                                {dateDisplay && (
-                                    <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
-                                        {" "}{dateDisplay.text}
-                                    </ThemedText>
-                                )}
-                            </ThemedText>
-                        ) : (
-                            <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
-                                {content}
-                                {task?.workingOnSince && (
-                                    <ThemedText type="default" style={{ color: ThemedColor.primary }}>
-                                        {" "}(active)
-                                    </ThemedText>
-                                )}
-                                {dateDisplay && (
-                                    <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
-                                        {" "}{dateDisplay.text}
-                                    </ThemedText>
-                                )}
-                            </ThemedText>
-                        )}
-                        {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
-                    </View>
-                    <View style={styles.iconRow}>
-                        <ConditionalView condition={!encourage}>
-                            <ConditionalView condition={isRunningState}>
-                                <Timer size={20} color={ThemedColor.caption} weight="regular" />
-                            </ConditionalView>
-                            <ConditionalView condition={task?.recurring}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                                    <Repeat size={20} color={ThemedColor.caption} weight="regular" />
-                                    {task?.flexInfo && (
-                                        <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
-                                            {task.flexInfo.instanceNumber}/{task.flexInfo.target}
-                                        </ThemedText>
-                                    )}
-                                </View>
-                            </ConditionalView>
-                            <ConditionalView condition={!!task?.integration}>
-                                {getIntegrationIcon(task?.integration, ThemedColor.caption)}
-                            </ConditionalView>
-                            {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                            {value}
-                        </ThemedText> */}
-
-                            {/* Show priority dot — purple when actively working */}
-                            <View
-                                style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
-                            />
-                        </ConditionalView>
-                        <ConditionalView condition={encourage}>
-                            <Sparkle
-                                size={24}
-                                color="#9333EA"
-                                weight="regular"
-                            />
-                        </ConditionalView>
-                        <ConditionalView condition={congratulate}>
-                            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <Path
-                                    d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"
-                                    fill="#FFD700"
-                                />
-                            </Svg>
-                        </ConditionalView>
-                    </View>
-                </View>
-            </TouchableOpacity>
+            {draggable ? (
+                <GestureDetector gesture={dragGesture}>{cardBody}</GestureDetector>
+            ) : (
+                cardBody
+            )}
 
             {/* Lazy load modals - only render when needed */}
             {showEncourageModal && (

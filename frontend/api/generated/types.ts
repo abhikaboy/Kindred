@@ -2616,6 +2616,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move task to another category
+         * @description Move a task from its current category to a different category. The task lands at the top of the target category, and any recurring template is re-pointed so future instances generate in the target.
+         */
+        post: operations["move-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}/notes": {
         parameters: {
             query?: never;
@@ -5541,6 +5561,29 @@ export interface components {
         MentionReference: {
             handle: string;
             id: string;
+        };
+        MoveTaskInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MoveTaskInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Destination category ID
+             * @example 507f1f77bcf86cd799439012
+             */
+            targetCategoryID: string;
+        };
+        MoveTaskOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MoveTaskOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Task moved successfully */
+            message: string;
         };
         MultiTaskOutputLocal: {
             categories: components["schemas"]["NewCategoryWithTasksLocal"][];
@@ -12546,6 +12589,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTaskChecklistOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "move-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /**
+                 * @description Source category ID
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                category: string;
+                /**
+                 * @description Task ID
+                 * @example 507f1f77bcf86cd799439011
+                 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveTaskInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveTaskOutputBody"];
                 };
             };
             /** @description Error */

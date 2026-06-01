@@ -28,8 +28,40 @@ import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
+import { DragProvider, useDrag } from "@/contexts/dragContext";
 
 type Props = {};
+
+/**
+ * While a task is being dragged, scroll the workspace when the finger nears the
+ * top/bottom edge so off-screen categories can be reached. EDGE/STEP are tuned
+ * for feel during QA. Mounted inside DragProvider so it can read drag state.
+ */
+const DragAutoScroll = ({
+    scrollViewRef,
+    scrollOffsetRef,
+}: {
+    scrollViewRef: React.RefObject<ScrollView>;
+    scrollOffsetRef: React.MutableRefObject<number>;
+}) => {
+    const { isDragging, fingerY } = useDrag();
+    useEffect(() => {
+        if (!isDragging) return;
+        const screenH = Dimensions.get("window").height;
+        const EDGE = 120;
+        const STEP = 24;
+        const interval = setInterval(() => {
+            const y = fingerY.value;
+            if (y < EDGE) {
+                scrollViewRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current - STEP), animated: false });
+            } else if (y > screenH - EDGE) {
+                scrollViewRef.current?.scrollTo({ y: scrollOffsetRef.current + STEP, animated: false });
+            }
+        }, 16);
+        return () => clearInterval(interval);
+    }, [isDragging, fingerY, scrollViewRef, scrollOffsetRef]);
+    return null;
+};
 
 const Workspace = (props: Props) => {
     let ThemedColor = useThemeColor();
@@ -64,11 +96,13 @@ const Workspace = (props: Props) => {
 
     const drawerRef = useRef<DrawerLayout>(null);
     const scrollViewRef = useRef<ScrollView>(null);
+    const scrollOffsetRef = useRef(0);
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
     const { setIsDrawerOpen } = useDrawer();
 
     const handleScroll = (event: any) => {
         const scrollY = event.nativeEvent.contentOffset.y;
+        scrollOffsetRef.current = scrollY;
         // Adjust this threshold based on when you want the header to become sticky
         const stickyThreshold = 100; // Adjust this value as needed
         setIsHeaderSticky(scrollY > stickyThreshold);
@@ -79,7 +113,8 @@ const Workspace = (props: Props) => {
     const workspaceColor = currentWorkspace?.color ?? undefined;
 
     return (
-        <WorkspaceContent
+        <DragProvider>
+            <WorkspaceContent
             drawerRef={drawerRef}
             scrollViewRef={scrollViewRef}
             ThemedColor={ThemedColor}
@@ -107,7 +142,9 @@ const Workspace = (props: Props) => {
             requestWorkspaceAction={requestWorkspaceAction}
             workspaceAction={workspaceAction}
             setWorkspaceAction={setWorkspaceAction}
-        />
+            />
+            <DragAutoScroll scrollViewRef={scrollViewRef} scrollOffsetRef={scrollOffsetRef} />
+        </DragProvider>
     );
 };
 
