@@ -29,6 +29,7 @@ const (
 	NotificationTypeFriendRequestAccepted NotificationType = "FRIEND_REQUEST_ACCEPTED"
 	NotificationTypePost                  NotificationType = "POST"
 	NotificationTypeRingsClosed           NotificationType = "RINGS_CLOSED"
+	NotificationTypePostTag               NotificationType = "POST_TAG"
 )
 
 // NotificationDocument represents a notification stored in the database
