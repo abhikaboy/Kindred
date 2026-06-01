@@ -49,6 +49,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterUpdateTaskDeadlineOperation(api, handler)
 	RegisterUpdateTaskStartOperation(api, handler)
 	RegisterUpdateTaskReminderOperation(api, handler)
+	RegisterMoveTaskOperation(api, handler)
 	RegisterGetTemplateByIDOperation(api, handler)
 	RegisterUpdateTemplateOperation(api, handler)
 	RegisterResetTemplateMetricsOperation(api, handler)

@@ -462,3 +462,30 @@ func RegisterUpdateTaskReminderOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTaskReminders)
 }
+
+// Move Task
+type MoveTaskInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Category      string `path:"category" example:"507f1f77bcf86cd799439011" doc:"Source category ID"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011" doc:"Task ID"`
+	Body          struct {
+		TargetCategoryID string `json:"targetCategoryID" example:"507f1f77bcf86cd799439012" doc:"Destination category ID"`
+	} `json:"body"`
+}
+
+type MoveTaskOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Task moved successfully"`
+	}
+}
+
+func RegisterMoveTaskOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "move-task",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/{category}/{id}/move",
+		Summary:     "Move task to another category",
+		Description: "Move a task from its current category to a different category. The task lands at the top of the target category, and any recurring template is re-pointed so future instances generate in the target.",
+		Tags:        []string{"tasks"},
+	}, handler.MoveTask)
+}
