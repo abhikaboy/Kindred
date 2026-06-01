@@ -35,7 +35,8 @@ export const createPost = async (
     isPublic: boolean = true,
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
-    dual?: string
+    dual?: string,
+    taggedUsers?: Array<{ id: string; handle: string }>,
 ): Promise<{
     post: PostDocumentAPI;
     userStats: { posts_made: number; points: number } | null;
@@ -51,7 +52,8 @@ export const createPost = async (
             isPublic,
             size,
             groups,
-            dual
+            dual,
+            taggedUsers,
         },
     });
 
@@ -431,11 +433,12 @@ export const updatePost = async (
     postId: string,
     caption?: string,
     isPublic?: boolean,
-    size?: { width: number; height: number; bytes: number }
+    size?: { width: number; height: number; bytes: number },
+    taggedUsers?: Array<{ id: string; handle: string }>,
 ): Promise<void> => {
     const { error } = await client.PATCH("/v1/user/posts/{id}", {
         params: withAuthHeaders({ path: { id: postId } }),
-        body: { caption, isPublic, size },
+        body: { caption, isPublic, size, taggedUsers },
     });
 
     if (error) {
@@ -452,14 +455,15 @@ export const createPostToBackend = async (
     isPublic: boolean = false,
     size?: { width: number; height: number; bytes: number },
     groups?: string[],
-    dual?: string
+    dual?: string,
+    taggedUsers?: Array<{ id: string; handle: string }>,
 ): Promise<{
     post: PostDocumentAPI;
     userStats: { posts_made: number; points: number } | null;
     ringDelta?: RingDelta;
 }> => {
     try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual);
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual, taggedUsers);
         return result;
     } catch (error) {
         logger.error("Failed to create post to backend", error);
