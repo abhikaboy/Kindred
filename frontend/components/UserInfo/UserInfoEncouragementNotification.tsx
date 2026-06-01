@@ -31,7 +31,7 @@ const UserInfoEncouragementNotification = ({
 }: Props) => {
     const ThemedColor = useThemeColor();
     const isCongrats = type === "congratulation";
-    const ctaLabel = isCongrats ? "View post" : "View goal";
+    const ctaLabel = isCongrats ? "Open post" : "Open task";
 
     const handlePress = () => {
         if (!referenceId) {
