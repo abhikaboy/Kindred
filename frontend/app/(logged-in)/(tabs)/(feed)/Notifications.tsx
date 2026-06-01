@@ -7,17 +7,19 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoFriendNotification from "@/components/UserInfo/UserInfoFriendNotification";
+import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import type { NotificationDocument } from "@/api/types";
-import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ForYouTab from "@/components/forYou/ForYouTab";
 import { useForYou } from "@/hooks/useForYou";
+import RequestsTab from "@/components/requests/RequestsTab";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -28,13 +30,16 @@ const ACTIVITY_TAB_INDEX = 1;
 
 type ProcessedNotification = {
     id: string;
-    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted";
+    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed";
     name: string;
+    handle: string;
     userId: string;
     time: number;
     icon: string;
     content: string;
     taskName?: string;
+    /** For encouragement/congratulation notifications: the actual kudos message text (after the "on TaskName:" prefix in content). */
+    kudosMessage?: string;
     image?: string;
     read: boolean;
     referenceId: string; // Post ID or Task ID that the notification references
@@ -239,7 +244,7 @@ const NotificationItem = ({
                     comment={notification.content}
                     icon={notification.icon}
                     time={notification.time}
-                    image={notification.thumbnail || notification.image || Icons.coffee}
+                    image={notification.thumbnail}
                     referenceId={notification.referenceId}
                 />
             ) : notification.type === "encouragement" ? (
@@ -247,6 +252,7 @@ const NotificationItem = ({
                     name={notification.name}
                     userId={notification.userId}
                     taskName={notification.taskName || "Task"}
+                    message={notification.kudosMessage}
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
@@ -257,6 +263,7 @@ const NotificationItem = ({
                     name={notification.name}
                     userId={notification.userId}
                     taskName={notification.taskName || "Task"}
+                    message={notification.kudosMessage}
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
@@ -271,6 +278,16 @@ const NotificationItem = ({
                     message={notification.content}
                     referenceId={notification.referenceId}
                     thumbnail={notification.thumbnail}
+                />
+            ) : notification.type === "rings_closed" ? (
+                <UserInfoRingsClosedNotification
+                    notificationId={notification.id}
+                    name={notification.name}
+                    handle={notification.handle}
+                    userId={notification.userId}
+                    content={notification.content}
+                    icon={notification.icon}
+                    time={notification.time}
                 />
             ) : null}
         </TouchableOpacity>
@@ -311,23 +328,21 @@ const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const { notifications: rawNotifications, loading, error, refreshNotifications, markAllAsRead } = useNotifications();
+    const { user: currentUser } = useAuth();
+    const currentUserId = currentUser?._id;
     const hasMarkedAsRead = useRef(false);
     const { capture } = useAnalytics();
     const [ready, setReady] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState(ACTIVITY_TAB_INDEX);
     const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
-    const followRequestsRef = useRef<{ refresh: () => Promise<void> }>(null);
     const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction } = useForYou();
     const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
     const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([
-            refreshNotifications(),
-            followRequestsRef.current?.refresh(),
-        ]);
+        await refreshNotifications();
         setRefreshing(false);
     }, [refreshNotifications]);
 
@@ -404,15 +419,51 @@ const Notifications = () => {
     const isOlder = (time: number) => time < now - ONE_MONTH;
 
     // Convert API notification to processed notification
+    // The backend emits more notification types (POST, RINGS_CLOSED, ...) than
+    // NotificationItem knows how to render. If we let them through, they end up
+    // as invisible rows that still count toward `section.data.length`, which
+    // produces a section header ("This Week") with nothing beneath it.
+    const SUPPORTED_TYPES = new Set([
+        "comment",
+        "encouragement",
+        "congratulation",
+        "friend_request",
+        "friend_request_accepted",
+        "rings_closed",
+    ]);
+
     const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
         try {
+            const rawType = notification.notificationType.toLowerCase();
+            if (!SUPPORTED_TYPES.has(rawType)) {
+                return null;
+            }
+            // Strip legacy self-notifications (older rings-closed docs where
+            // the user notified themselves about their own rings closing).
+            // The backend no longer writes these, but pre-existing docs in
+            // the DB would otherwise still render.
+            if (rawType === "rings_closed" && currentUserId && notification.user.id === currentUserId) {
+                return null;
+            }
             const notificationTime = new Date(notification.time).getTime();
 
-            // Extract task name from content for encouragement/congratulation notifications
+            // Extract task name + kudos message from content for encouragement/congratulation.
+            // Two backend content shapes:
+            //   task scope    → `{name} on "{taskName}": "{message}"`
+            //   profile scope → `{name} says: "{message}"`           (e.g. ring encouragements)
             let taskName = "";
+            let kudosMessage: string | undefined;
             if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
-                const match = notification.content.match(/on (.+?):/);
-                taskName = match ? match[1] : "Task";
+                const taskMatch = notification.content.match(/ on "?(.+?)"?:\s*"?(.*?)"?$/);
+                const profileMatch = notification.content.match(/ says:\s*"?(.*?)"?$/);
+                if (taskMatch) {
+                    taskName = taskMatch[1];
+                    kudosMessage = taskMatch[2]?.trim() || undefined;
+                } else if (profileMatch) {
+                    kudosMessage = profileMatch[1]?.trim() || undefined;
+                    // taskName stays empty — UserInfoEncouragementNotification reads
+                    // empty referenceId + empty taskName as profile-scope.
+                }
             }
 
             return {
@@ -424,11 +475,13 @@ const Notifications = () => {
                     | "friend_request"
                     | "friend_request_accepted",
                 name: notification.user.display_name,
+                handle: notification.user.handle ?? "",
                 userId: notification.user.id,
                 time: notificationTime,
                 icon: notification.user.profile_picture || Icons.coffee,
                 content: notification.content,
                 taskName: taskName || undefined,
+                kudosMessage,
                 image: notification.user.profile_picture || Icons.coffee,
                 read: notification.read,
                 referenceId: notification.reference_id,
@@ -465,13 +518,10 @@ const Notifications = () => {
         { title: "Older", data: olderNotifications },
     ].filter((s) => s.data.length > 0);
 
+    // Activity tab no longer hosts FollowRequestsSection — friend requests
+    // now live in their own Requests tab.
     const activityHeader = (
-        <>
-            <NotificationFilterChips active={activeChip} onChange={setActiveChip} ThemedColor={ThemedColor} />
-            {activeChip === "all" && (
-                <FollowRequestsSection ref={followRequestsRef} styles={styles} maxVisible={4} />
-            )}
-        </>
+        <NotificationFilterChips active={activeChip} onChange={setActiveChip} ThemedColor={ThemedColor} />
     );
 
     const activityTabContent = !ready || loading ? (
@@ -495,19 +545,30 @@ const Notifications = () => {
         <SectionList
             sections={sections}
             keyExtractor={(item, index) => `${item.type}-${item.id}-${index}`}
-            renderItem={({ item, index }) => (
-                <NotificationItem
-                    notification={item}
-                    index={index}
-                    styles={styles}
-                    onNotificationPress={handleNotificationPress}
-                />
-            )}
-            renderSectionHeader={({ section: { title } }) => (
-                <View style={styles.sectionHeader}>
-                    <ThemedText type="defaultSemiBold">{title}</ThemedText>
-                </View>
-            )}
+            renderItem={({ item, index, section }) => {
+                // Inline the section header on the FIRST item of each section.
+                // SectionList's renderSectionHeader was adding mystery vertical
+                // space between header and first item that no margin tweak
+                // could clear; rendering the header as part of the item view
+                // bypasses that entirely.
+                const isFirstInSection = section.data[0] === item;
+                return (
+                    <View>
+                        {isFirstInSection ? (
+                            <View style={styles.sectionHeader}>
+                                <ThemedText type="defaultSemiBold">{section.title}</ThemedText>
+                            </View>
+                        ) : null}
+                        <NotificationItem
+                            notification={item}
+                            index={index}
+                            styles={styles}
+                            onNotificationPress={handleNotificationPress}
+                        />
+                    </View>
+                );
+            }}
+            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
             ListHeaderComponent={activityHeader}
             ListEmptyComponent={
                 <View style={styles.emptyFilterState}>
@@ -564,7 +625,7 @@ const Notifications = () => {
                     onInteraction={recordForYouInteraction}
                 />
                 <View style={{ flex: 1 }}>{activityTabContent}</View>
-                <TabPlaceholder label="Requests — coming soon" ThemedColor={ThemedColor} />
+                <RequestsTab horizontalPadding={Dimensions.get("window").width * 0.05} />
             </AnimatedTabContent>
         </ThemedView>
     );
@@ -600,16 +661,22 @@ const stylesheet = (ThemedColor: any) => {
         scrollViewContent: {
             paddingHorizontal: PADDING_HORIZTONAL,
             paddingTop: 16,
+            paddingBottom: 128,
         },
         section: {
             marginBottom: 16,
         },
         listItem: {
-            marginVertical: 10,
+            // No per-item margin — vertical rhythm is owned by
+            // ItemSeparatorComponent + sectionHeader so the header can sit
+            // tight against the first item.
+        },
+        itemSeparator: {
+            height: 16,
         },
         sectionHeader: {
-            marginBottom: 4,
-            marginTop: 12,
+            marginBottom: 12,
+            marginTop: 8,
         },
         emptyFilterState: {
             paddingVertical: 32,

@@ -10,6 +10,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import * as SMS from "expo-sms";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { APP_STORE_URL } from "@/constants/appLinks";
 
 type FollowRequestProps = {
     name: string;
@@ -73,7 +74,7 @@ const FollowRequests = () => {
         if (!isAvailable) {
             alert("SMS is not available on this device");
         } else {
-            await SMS.sendSMSAsync(" ", "Join me on Kindred!");
+            await SMS.sendSMSAsync(" ", `Join me on Kindred! ${APP_STORE_URL}`);
         }
     };
 

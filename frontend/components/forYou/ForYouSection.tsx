@@ -36,8 +36,16 @@ export default function ForYouSection({ section, onAction }: Props) {
                 </View>
             ) : (
                 <View style={styles.cardList}>
-                    {cards.map((card) => (
-                        <ForYouCard key={card.id} card={card} onAction={onAction} />
+                    {cards.map((card, index) => (
+                        <ForYouCard
+                            key={card.id}
+                            card={card}
+                            onAction={onAction}
+                            elevated={section.id === "catch_up"}
+                            // Only the lead card in "Suggested for you" gets a primary CTA;
+                            // the rest demote so there's a single visual focal point per section.
+                            demoteCtas={section.id === "suggested" && index > 0}
+                        />
                     ))}
                 </View>
             )}

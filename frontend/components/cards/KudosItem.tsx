@@ -28,9 +28,11 @@ interface KudosItemProps {
     formatTime: (timestamp: string) => string;
     visible?: boolean; // triggers animation when item scrolls into view
     index?: number;
+    /** Optional content rendered inside the bubble below the message + timestamp (e.g. an action button when this kudos is shown as a notification). */
+    footerSlot?: React.ReactNode;
 }
 
-export default function KudosItem({ kudos, formatTime, visible = false, index = 0 }: KudosItemProps) {
+export default function KudosItem({ kudos, formatTime, visible = false, index = 0, footerSlot }: KudosItemProps) {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
     const router = useRouter();
@@ -153,9 +155,18 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
                                 {kudos.message}
                             </ThemedText>
                         )}
-                        <ThemedText type="caption" style={styles.timeText}>
-                            {formatTime(kudos.timestamp)}
-                        </ThemedText>
+                        {footerSlot ? (
+                            <View style={styles.footerRow}>
+                                <ThemedText type="caption" style={styles.timeTextInline}>
+                                    {formatTime(kudos.timestamp)}
+                                </ThemedText>
+                                <View>{footerSlot}</View>
+                            </View>
+                        ) : (
+                            <ThemedText type="caption" style={styles.timeText}>
+                                {formatTime(kudos.timestamp)}
+                            </ThemedText>
+                        )}
                     </View>
                 </View>
             </Animated.View>
@@ -274,5 +285,16 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             height: 8,
             borderRadius: 4,
             backgroundColor: ThemedColor.error,
+        },
+        footerRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 10,
+            gap: 8,
+        },
+        timeTextInline: {
+            color: ThemedColor.caption,
+            fontSize: 12,
         },
     });

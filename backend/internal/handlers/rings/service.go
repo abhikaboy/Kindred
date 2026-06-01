@@ -437,7 +437,10 @@ func (s *RingService) NotifyAllRingsClosed(userID primitive.ObjectID) {
 			return
 		}
 
-		// Notify the user
+		// Push to the user themselves is fine (in-the-moment celebration),
+		// but we deliberately do NOT write an in-app notification doc for
+		// self-rings-closed — the Notifications feed should only surface
+		// friends' wins, not your own.
 		if user.PushToken != "" {
 			_ = xutils.SendNotification(xutils.Notification{
 				Token:   user.PushToken,
@@ -446,8 +449,6 @@ func (s *RingService) NotifyAllRingsClosed(userID primitive.ObjectID) {
 				Data:    map[string]string{"type": "rings_closed"},
 			})
 		}
-
-		s.createRingNotification(ctx, userID, userID, user, "You closed all your rings today!")
 
 		// Notify friends
 		if len(user.Friends) == 0 {
