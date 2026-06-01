@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import KudosItem from "@/components/cards/KudosItem";
-import EncourageModal from "@/components/modals/EncourageModal";
 import { getNotificationTimeLabel } from "./notificationTime";
 
 type Props = {
@@ -27,29 +26,16 @@ const UserInfoEncouragementNotification = ({
     message,
     icon,
     time,
-    referenceId,
     type = "encouragement",
 }: Props) => {
     const ThemedColor = useThemeColor();
     const isCongrats = type === "congratulation";
-    const [encourageModalVisible, setEncourageModalVisible] = useState(false);
 
-    // For encouragement: best reciprocal action is to send a kudos back to the
-    // sender — works whether or not the original task is still active.
-    // For congratulation: the celebration lives on a post; the natural action
-    // is to open it so the recipient can react/reply in context.
-    const ctaLabel = isCongrats ? "Open post" : "Send kudos back";
-
+    // Reply to a kudos by opening the sender's profile — from there the user
+    // can send a kudos back, encourage them on their own tasks, or react in
+    // any other context-appropriate way.
     const handlePress = () => {
-        if (!isCongrats) {
-            setEncourageModalVisible(true);
-            return;
-        }
-        if (!referenceId) {
-            router.push(`/(logged-in)/(tabs)/(task)/kudos?tab=congratulations` as never);
-            return;
-        }
-        router.push(`/(logged-in)/posting/${referenceId}` as never);
+        router.push(`/account/${userId}` as never);
     };
 
     // Adapt the notification shape to the KudosData contract that KudosItem
@@ -68,38 +54,23 @@ const UserInfoEncouragementNotification = ({
     };
 
     return (
-        <>
-            <KudosItem
-                kudos={kudos}
-                formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
-                visible
-                footerSlot={
-                    <TouchableOpacity
-                        onPress={handlePress}
-                        activeOpacity={0.8}
-                        style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
-                        accessibilityRole="button"
-                        accessibilityLabel={ctaLabel}>
-                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
-                            {ctaLabel}
-                        </ThemedText>
-                    </TouchableOpacity>
-                }
-            />
-            {encourageModalVisible && (
-                <EncourageModal
-                    visible={encourageModalVisible}
-                    setVisible={setEncourageModalVisible}
-                    task={undefined}
-                    encouragementConfig={{
-                        userHandle: name,
-                        receiverId: userId,
-                        categoryName: "",
-                    }}
-                    isProfileLevel
-                />
-            )}
-        </>
+        <KudosItem
+            kudos={kudos}
+            formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
+            visible
+            footerSlot={
+                <TouchableOpacity
+                    onPress={handlePress}
+                    activeOpacity={0.8}
+                    style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${name}'s profile`}>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
+                        View profile
+                    </ThemedText>
+                </TouchableOpacity>
+            }
+        />
     );
 };
 
