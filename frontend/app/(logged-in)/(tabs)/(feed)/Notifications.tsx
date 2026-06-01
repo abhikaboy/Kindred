@@ -621,6 +621,7 @@ const stylesheet = (ThemedColor: any) => {
         scrollViewContent: {
             paddingHorizontal: PADDING_HORIZTONAL,
             paddingTop: 16,
+            paddingBottom: 128,
         },
         section: {
             marginBottom: 16,

@@ -83,7 +83,6 @@ export default function ForYouTab({ horizontalPadding, feed, loading, error, ref
             {feed.sections.map((section) => (
                 <ForYouSection key={section.id} section={section} onAction={handleAction} />
             ))}
-            <View style={{ height: 40 }} />
         </ScrollView>
     );
 }
@@ -95,6 +94,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     scrollContent: {
-        paddingBottom: 16,
+        paddingBottom: 128,
     },
 });

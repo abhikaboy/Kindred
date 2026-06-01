@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingTop: 20,
-        paddingBottom: 40,
+        paddingBottom: 128,
     },
     emptyBlock: {
         paddingVertical: 24,
