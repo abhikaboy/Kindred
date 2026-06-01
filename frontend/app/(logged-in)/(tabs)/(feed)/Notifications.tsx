@@ -617,7 +617,7 @@ const stylesheet = (ThemedColor: any) => {
             marginBottom: 16,
         },
         listItem: {
-            marginVertical: 4,
+            marginVertical: 14,
         },
         sectionHeader: {
             marginBottom: 4,
