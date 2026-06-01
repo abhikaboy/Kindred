@@ -34,6 +34,7 @@ type CreatePostParams struct {
 	BlueprintIsPublic *bool                            `json:"blueprintIsPublic,omitempty"`
 	Groups            []string                         `json:"groups,omitempty" validate:"omitempty,dive,len=24"`
 	IsPublic          bool                             `json:"isPublic"`
+	TaggedUsers       []MentionInput                   `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
 }
 
 // Get Posts (all)
@@ -152,9 +153,10 @@ type UpdatePostOutput struct {
 }
 
 type UpdatePostParams struct {
-	Caption  *string          `json:"caption,omitempty"`
-	IsPublic *bool            `json:"isPublic,omitempty"`
-	Size     *types.ImageSize `json:"size,omitempty"`
+	Caption     *string          `json:"caption,omitempty"`
+	IsPublic    *bool            `json:"isPublic,omitempty"`
+	Size        *types.ImageSize `json:"size,omitempty"`
+	TaggedUsers *[]MentionInput  `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
 }
 
 // Get User Groups (for posts)
