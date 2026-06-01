@@ -400,10 +400,11 @@ type PostDocument struct {
 	Caption string     `bson:"caption" json:"caption"`
 	Size    *ImageSize `bson:"size,omitempty" json:"size,omitempty"`
 
-	Category  *CategoryExtendedReference  `bson:"category,omitempty" json:"category,omitempty"`
-	Task      *PostTaskExtendedReference  `bson:"task,omitempty" json:"task,omitempty"`
-	Blueprint *EnhancedBlueprintReference `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
-	Groups    []primitive.ObjectID        `bson:"groups,omitempty" json:"groups,omitempty"`
+	Category    *CategoryExtendedReference  `bson:"category,omitempty" json:"category,omitempty"`
+	Task        *PostTaskExtendedReference  `bson:"task,omitempty" json:"task,omitempty"`
+	Blueprint   *EnhancedBlueprintReference `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
+	Groups      []primitive.ObjectID        `bson:"groups,omitempty" json:"groups,omitempty"`
+	TaggedUsers []MentionReference          `bson:"taggedUsers,omitempty" json:"taggedUsers,omitempty"`
 
 	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
 	Comments  []CommentDocument               `bson:"comments" json:"comments"`
@@ -605,14 +606,15 @@ type PostDocumentAPI struct {
 	ID   primitive.ObjectID    `json:"_id"`
 	User UserExtendedReference `json:"user"`
 
-	Images    []string                    `json:"images"`
-	Dual      *string                     `json:"dual,omitempty"`
-	Caption   string                      `json:"caption"`
-	Size      *ImageSize                  `json:"size,omitempty"`
-	Category  *CategoryExtendedReference  `json:"category,omitempty"`
-	Task      *PostTaskExtendedReference  `json:"task,omitempty"`
-	Blueprint *EnhancedBlueprintReference `json:"blueprint,omitempty"`
-	Groups    []string                    `json:"groups,omitempty"`
+	Images      []string                    `json:"images"`
+	Dual        *string                     `json:"dual,omitempty"`
+	Caption     string                      `json:"caption"`
+	Size        *ImageSize                  `json:"size,omitempty"`
+	Category    *CategoryExtendedReference  `json:"category,omitempty"`
+	Task        *PostTaskExtendedReference  `json:"task,omitempty"`
+	Blueprint   *EnhancedBlueprintReference `json:"blueprint,omitempty"`
+	Groups      []string                    `json:"groups,omitempty"`
+	TaggedUsers []MentionReference          `json:"taggedUsers,omitempty"`
 
 	Reactions map[string][]string  `json:"reactions"`
 	Comments  []CommentDocumentAPI `json:"comments"`
@@ -642,19 +644,20 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 	}
 
 	return &PostDocumentAPI{
-		ID:        p.ID,
-		User:      *p.User.ToAPI(),
-		Images:    p.Images,
-		Dual:      p.Dual,
-		Caption:   p.Caption,
-		Size:      p.Size,
-		Category:  p.Category,
-		Task:      p.Task,
-		Blueprint: p.Blueprint,
-		Groups:    groupStrings,
-		Reactions: apiReactions,
-		Comments:  apiComments,
-		Metadata:  p.Metadata,
+		ID:          p.ID,
+		User:        *p.User.ToAPI(),
+		Images:      p.Images,
+		Dual:        p.Dual,
+		Caption:     p.Caption,
+		Size:        p.Size,
+		Category:    p.Category,
+		Task:        p.Task,
+		Blueprint:   p.Blueprint,
+		Groups:      groupStrings,
+		TaggedUsers: p.TaggedUsers,
+		Reactions:   apiReactions,
+		Comments:    apiComments,
+		Metadata:    p.Metadata,
 	}
 }
 

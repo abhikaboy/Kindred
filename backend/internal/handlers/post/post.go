@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
@@ -94,6 +95,33 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	doc.Metadata.IsPublic = input.Body.IsPublic
 
+	// Collect tag candidates: explicit + encourager auto-tag.
+	var tagCandidates []primitive.ObjectID
+	for _, m := range input.Body.TaggedUsers {
+		if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
+			tagCandidates = append(tagCandidates, objID)
+		}
+	}
+	if input.Body.Task != nil && h.service.EncouragementService != nil {
+		taskID := input.Body.Task.ID
+		encs, encErr := h.service.EncouragementService.GetEncouragementsByTaskAndReceiver(taskID, userObjID)
+		if encErr != nil {
+			slog.Warn("Failed to fetch encouragements for auto-tag", "task_id", taskID, "err", encErr)
+		} else {
+			for _, e := range encs {
+				tagCandidates = append(tagCandidates, e.Sender.ID)
+			}
+		}
+	}
+	if len(tagCandidates) > 0 {
+		resolved, resolveErr := h.service.ResolveTaggedUsers(ctx, userObjID, tagCandidates)
+		if resolveErr != nil {
+			slog.Warn("Failed to resolve tagged users", "err", resolveErr)
+		} else {
+			doc.TaggedUsers = resolved
+		}
+	}
+
 	createdPost, userStats, err := h.service.CreatePost(&doc)
 	if err != nil {
 		slog.Error("failed to create post", "userId", user_id, "error", err)
@@ -113,6 +141,24 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 			if delta.JustClosedAll {
 				h.service.RingService.NotifyAllRingsClosed(userObjID)
 			}
+		}
+	}
+
+	// Fan out tag notifications.
+	var thumbnail string
+	if len(createdPost.Images) > 0 {
+		thumbnail = createdPost.Images[0]
+	}
+	for _, tagged := range createdPost.TaggedUsers {
+		if tagged.ID == userObjID {
+			continue
+		}
+		content := fmt.Sprintf("%s tagged you in a post", createdPost.User.DisplayName)
+		if err := h.service.NotificationService.CreateNotification(userObjID, tagged.ID, content, notifications.NotificationTypePostTag, createdPost.ID, thumbnail); err != nil {
+			slog.Error("Failed to create tag notification", "tagged_user_id", tagged.ID, "err", err)
+		}
+		if err := h.service.sendTagPushNotification(tagged.ID, createdPost.ID, createdPost.User.DisplayName); err != nil {
+			slog.Error("Failed to send tag push notification", "tagged_user_id", tagged.ID, "err", err)
 		}
 	}
 
@@ -584,7 +630,7 @@ func (h *Handler) UpdatePostHuma(ctx context.Context, input *UpdatePostInput) (*
 		return nil, huma.Error403Forbidden("You can only edit your own posts")
 	}
 
-	if err := h.service.UpdatePartialPost(id, input.Body); err != nil {
+	if err := h.service.UpdatePartialPost(ctx, id, input.Body); err != nil {
 		slog.Error("failed to update post", "userId", user_id, "postId", input.ID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to update post. Please try again.", err)
 	}

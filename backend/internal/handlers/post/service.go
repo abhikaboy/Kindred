@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -26,15 +27,16 @@ type UserStatsUpdate struct {
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	return &Service{
-		Posts:               collections["posts"],
-		Users:               collections["users"],
-		Blueprints:          collections["blueprints"],
-		Categories:          collections["categories"],
-		Groups:              collections["groups"],
-		Connections:         collections["friend-requests"],
-		Reports:             collections["reports"],
-		NotificationService: notifications.NewNotificationService(collections),
-		RingService:         ringService,
+		Posts:                collections["posts"],
+		Users:                collections["users"],
+		Blueprints:           collections["blueprints"],
+		Categories:           collections["categories"],
+		Groups:               collections["groups"],
+		Connections:          collections["friend-requests"],
+		Reports:              collections["reports"],
+		NotificationService:  notifications.NewNotificationService(collections),
+		RingService:          ringService,
+		EncouragementService: encouragement.NewEncouragementService(collections),
 	}
 }
 
@@ -270,8 +272,7 @@ func (s *Service) updateUserPostStats(ctx context.Context, userID primitive.Obje
 }
 
 // UpdatePartialPost updates only specified fields of a Post document by ObjectID.
-func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostParams) error {
-	ctx := context.Background()
+func (s *Service) UpdatePartialPost(ctx context.Context, id primitive.ObjectID, updated UpdatePostParams) error {
 	filter := bson.M{"_id": id}
 
 	updateDoc := bson.M{
@@ -295,6 +296,54 @@ func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostPar
 
 	if updated.Size != nil {
 		setMap["size"] = *updated.Size
+	}
+
+	if updated.TaggedUsers != nil {
+		// Fetch the existing post to diff against.
+		var existing types.PostDocument
+		if err := s.Posts.FindOne(ctx, bson.M{"_id": id, "metadata.isDeleted": false}).Decode(&existing); err != nil {
+			return fmt.Errorf("failed to fetch existing post for tag diff: %w", err)
+		}
+
+		var candidates []primitive.ObjectID
+		for _, m := range *updated.TaggedUsers {
+			if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
+				candidates = append(candidates, objID)
+			}
+		}
+
+		resolved, err := s.ResolveTaggedUsers(ctx, existing.User.ID, candidates)
+		if err != nil {
+			return fmt.Errorf("failed to resolve tagged users: %w", err)
+		}
+
+		// Diff against the existing list.
+		prevSet := make(map[primitive.ObjectID]struct{}, len(existing.TaggedUsers))
+		for _, t := range existing.TaggedUsers {
+			prevSet[t.ID] = struct{}{}
+		}
+		var newlyAdded []types.MentionReference
+		for _, t := range resolved {
+			if _, found := prevSet[t.ID]; !found {
+				newlyAdded = append(newlyAdded, t)
+			}
+		}
+
+		setMap["taggedUsers"] = resolved
+
+		// Fan out notifications only to the newly added users.
+		var thumbnail string
+		if len(existing.Images) > 0 {
+			thumbnail = existing.Images[0]
+		}
+		for _, t := range newlyAdded {
+			if t.ID == existing.User.ID {
+				continue
+			}
+			content := fmt.Sprintf("%s tagged you in a post", existing.User.DisplayName)
+			_ = s.NotificationService.CreateNotification(existing.User.ID, t.ID, content, notifications.NotificationTypePostTag, existing.ID, thumbnail)
+			_ = s.sendTagPushNotification(t.ID, existing.ID, existing.User.DisplayName)
+		}
 	}
 
 	_, err := s.Posts.UpdateOne(ctx, filter, updateDoc)
@@ -1005,6 +1054,43 @@ func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID
 	return xutils.SendNotification(notification)
 }
 
+// sendTagPushNotification sends a push notification when a user is tagged in a post.
+func (s *Service) sendTagPushNotification(taggedUserID, postID primitive.ObjectID, taggerName string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	var taggedUser types.User
+	err := s.Users.FindOne(ctx, bson.M{"_id": taggedUserID}).Decode(&taggedUser)
+	if err != nil {
+		return fmt.Errorf("failed to get tagged user: %w", err)
+	}
+
+	if taggedUser.PushToken == "" {
+		slog.Warn("Tagged user has no push token", "tagged_user_id", taggedUserID)
+		return nil
+	}
+
+	data := map[string]string{
+		"type":        "post_tag",
+		"tagger_name": taggerName,
+	}
+	if !postID.IsZero() {
+		data["post_id"] = postID.Hex()
+	}
+
+	notification := xutils.Notification{
+		Token:   taggedUser.PushToken,
+		Title:   "You were tagged in a post",
+		Message: fmt.Sprintf("%s tagged you in a post", taggerName),
+		Data:    data,
+	}
+
+	return xutils.SendNotification(notification)
+}
+
 // CheckRelationship checks the relationship between two users
 // Returns true if they are friends or if it's the same user
 func (s *Service) CheckRelationship(viewerID, profileUserID primitive.ObjectID) (bool, error) {
@@ -1286,4 +1372,94 @@ func (s *Service) GetFriendsRingClosures(userID primitive.ObjectID, limit, offse
 	}
 
 	return results, int(total), nil
+}
+
+// ResolveTaggedUsers validates a candidate set of user IDs against the
+// author's friends list and returns canonical MentionReferences in the
+// original insertion order, deduped, with self excluded.
+func (s *Service) ResolveTaggedUsers(ctx context.Context, authorID primitive.ObjectID, candidates []primitive.ObjectID) ([]types.MentionReference, error) {
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	// 1. Load the author's accepted friend IDs.
+	cursor, err := s.Connections.Find(ctx, bson.M{
+		"users":  authorID,
+		"status": "friends",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query author's friends: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var connections []struct {
+		Users []primitive.ObjectID `bson:"users"`
+	}
+	if err := cursor.All(ctx, &connections); err != nil {
+		return nil, fmt.Errorf("failed to decode friends: %w", err)
+	}
+
+	friends := make(map[primitive.ObjectID]struct{}, len(connections))
+	for _, c := range connections {
+		for _, uid := range c.Users {
+			if uid != authorID {
+				friends[uid] = struct{}{}
+			}
+		}
+	}
+
+	// 2. Walk candidates in order, keeping the first occurrence of each
+	//    candidate that is a friend (and not the author themselves).
+	seen := make(map[primitive.ObjectID]struct{}, len(candidates))
+	var validIDs []primitive.ObjectID
+	for _, cid := range candidates {
+		if cid == authorID {
+			continue
+		}
+		if _, ok := friends[cid]; !ok {
+			continue
+		}
+		if _, dup := seen[cid]; dup {
+			continue
+		}
+		seen[cid] = struct{}{}
+		validIDs = append(validIDs, cid)
+	}
+
+	if len(validIDs) == 0 {
+		return nil, nil
+	}
+
+	// 3. Fetch canonical handles in one query.
+	userCursor, err := s.Users.Find(ctx, bson.M{"_id": bson.M{"$in": validIDs}}, options.Find().SetProjection(bson.M{"_id": 1, "handle": 1}))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user handles: %w", err)
+	}
+	defer userCursor.Close(ctx)
+
+	var users []struct {
+		ID     primitive.ObjectID `bson:"_id"`
+		Handle string             `bson:"handle"`
+	}
+	if err := userCursor.All(ctx, &users); err != nil {
+		return nil, fmt.Errorf("failed to decode users: %w", err)
+	}
+
+	handleByID := make(map[primitive.ObjectID]string, len(users))
+	for _, u := range users {
+		handleByID[u.ID] = u.Handle
+	}
+
+	// 4. Build result in the order of validIDs.
+	result := make([]types.MentionReference, 0, len(validIDs))
+	for _, id := range validIDs {
+		handle, ok := handleByID[id]
+		if !ok {
+			// User was a friend but doesn't exist anymore — skip.
+			continue
+		}
+		result = append(result, types.MentionReference{ID: id, Handle: handle})
+	}
+
+	return result, nil
 }

@@ -1,6 +1,7 @@
 package Post
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -34,6 +35,7 @@ type CreatePostParams struct {
 	BlueprintIsPublic *bool                            `json:"blueprintIsPublic,omitempty"`
 	Groups            []string                         `json:"groups,omitempty" validate:"omitempty,dive,len=24"`
 	IsPublic          bool                             `json:"isPublic"`
+	TaggedUsers       []MentionInput                   `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
 }
 
 // Get Posts (all)
@@ -152,9 +154,10 @@ type UpdatePostOutput struct {
 }
 
 type UpdatePostParams struct {
-	Caption  *string          `json:"caption,omitempty"`
-	IsPublic *bool            `json:"isPublic,omitempty"`
-	Size     *types.ImageSize `json:"size,omitempty"`
+	Caption     *string          `json:"caption,omitempty"`
+	IsPublic    *bool            `json:"isPublic,omitempty"`
+	Size        *types.ImageSize `json:"size,omitempty"`
+	TaggedUsers *[]MentionInput  `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
 }
 
 // Get User Groups (for posts)
@@ -252,13 +255,14 @@ Database layer of the application
 */
 
 type Service struct {
-	Posts               *mongo.Collection
-	Users               *mongo.Collection
-	Categories          *mongo.Collection
-	Blueprints          *mongo.Collection
-	Groups              *mongo.Collection
-	Connections         *mongo.Collection
-	Reports             *mongo.Collection
-	NotificationService *notifications.Service
-	RingService         *rings.RingService
+	Posts                *mongo.Collection
+	Users                *mongo.Collection
+	Categories           *mongo.Collection
+	Blueprints           *mongo.Collection
+	Groups               *mongo.Collection
+	Connections          *mongo.Collection
+	Reports              *mongo.Collection
+	NotificationService  *notifications.Service
+	RingService          *rings.RingService
+	EncouragementService *encouragement.Service
 }
