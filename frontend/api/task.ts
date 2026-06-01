@@ -745,3 +745,26 @@ export const confirmTasksFromNaturalLanguageAPI = async (
     const responsePayload = (data as any)?.body ?? data;
     return responsePayload as NaturalLanguageTaskCreationResponse;
 };
+
+/**
+ * Move a task to a different category.
+ * API: POST /v1/user/tasks/{category}/{id}/move
+ * The task lands at the top of the target category; recurring templates re-point.
+ * @param sourceCategoryId - The category the task currently lives in
+ * @param taskId - The task to move
+ * @param targetCategoryId - The destination category
+ */
+export const moveTaskAPI = async (
+    sourceCategoryId: string,
+    taskId: string,
+    targetCategoryId: string
+): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/{category}/{id}/move", {
+        params: withAuthHeaders({ path: { category: sourceCategoryId, id: taskId } }),
+        body: { targetCategoryID: targetCategoryId },
+    });
+
+    if (error) {
+        throw new Error(`Failed to move task: ${JSON.stringify(error)}`);
+    }
+};
