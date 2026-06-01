@@ -515,9 +515,6 @@ const Notifications = () => {
             )}
             renderSectionHeader={({ section: { title, data } }) => {
                 // Defensive: never render a bucket header above an empty bucket.
-                // The `.filter((s) => s.data.length > 0)` above should make this
-                // unreachable, but RN has occasionally rendered empty headers
-                // during chip-filter transitions.
                 if (!data || data.length === 0) return null;
                 return (
                     <View style={styles.sectionHeader}>
@@ -525,6 +522,7 @@ const Notifications = () => {
                     </View>
                 );
             }}
+            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
             ListHeaderComponent={activityHeader}
             ListEmptyComponent={
                 <View style={styles.emptyFilterState}>
@@ -622,14 +620,16 @@ const stylesheet = (ThemedColor: any) => {
             marginBottom: 16,
         },
         listItem: {
-            marginVertical: 14,
+            // No per-item margin — vertical rhythm is owned by
+            // ItemSeparatorComponent + sectionHeader so the header can sit
+            // tight against the first item.
+        },
+        itemSeparator: {
+            height: 16,
         },
         sectionHeader: {
-            // Negative bottom margin counteracts the first list item's
-            // marginVertical:14 so the header sits closer to its content
-            // without changing the gap between subsequent items.
-            marginBottom: -10,
-            marginTop: 16,
+            marginBottom: 8,
+            marginTop: 24,
         },
         emptyFilterState: {
             paddingVertical: 32,
