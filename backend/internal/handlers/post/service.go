@@ -272,8 +272,7 @@ func (s *Service) updateUserPostStats(ctx context.Context, userID primitive.Obje
 }
 
 // UpdatePartialPost updates only specified fields of a Post document by ObjectID.
-func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostParams) error {
-	ctx := context.Background()
+func (s *Service) UpdatePartialPost(ctx context.Context, id primitive.ObjectID, updated UpdatePostParams) error {
 	filter := bson.M{"_id": id}
 
 	updateDoc := bson.M{
@@ -297,6 +296,54 @@ func (s *Service) UpdatePartialPost(id primitive.ObjectID, updated UpdatePostPar
 
 	if updated.Size != nil {
 		setMap["size"] = *updated.Size
+	}
+
+	if updated.TaggedUsers != nil {
+		// Fetch the existing post to diff against.
+		var existing types.PostDocument
+		if err := s.Posts.FindOne(ctx, bson.M{"_id": id, "metadata.isDeleted": false}).Decode(&existing); err != nil {
+			return fmt.Errorf("failed to fetch existing post for tag diff: %w", err)
+		}
+
+		var candidates []primitive.ObjectID
+		for _, m := range *updated.TaggedUsers {
+			if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
+				candidates = append(candidates, objID)
+			}
+		}
+
+		resolved, err := s.ResolveTaggedUsers(ctx, existing.User.ID, candidates)
+		if err != nil {
+			return fmt.Errorf("failed to resolve tagged users: %w", err)
+		}
+
+		// Diff against the existing list.
+		prevSet := make(map[primitive.ObjectID]struct{}, len(existing.TaggedUsers))
+		for _, t := range existing.TaggedUsers {
+			prevSet[t.ID] = struct{}{}
+		}
+		var newlyAdded []types.MentionReference
+		for _, t := range resolved {
+			if _, found := prevSet[t.ID]; !found {
+				newlyAdded = append(newlyAdded, t)
+			}
+		}
+
+		setMap["taggedUsers"] = resolved
+
+		// Fan out notifications only to the newly added users.
+		var thumbnail string
+		if len(existing.Images) > 0 {
+			thumbnail = existing.Images[0]
+		}
+		for _, t := range newlyAdded {
+			if t.ID == existing.User.ID {
+				continue
+			}
+			content := fmt.Sprintf("%s tagged you in a post", existing.User.DisplayName)
+			_ = s.NotificationService.CreateNotification(existing.User.ID, t.ID, content, notifications.NotificationTypePostTag, existing.ID, thumbnail)
+			_ = s.sendTagPushNotification(t.ID, existing.ID, existing.User.DisplayName)
+		}
 	}
 
 	_, err := s.Posts.UpdateOne(ctx, filter, updateDoc)

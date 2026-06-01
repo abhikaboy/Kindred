@@ -322,7 +322,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_Caption() {
 
 	// Update caption
 	newCaption := "Updated caption"
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Caption: &newCaption,
 	})
 	s.NoError(err)
@@ -348,7 +348,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_IsPublic() {
 
 	// Update to public
 	isPublic := true
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		IsPublic: &isPublic,
 	})
 	s.NoError(err)
@@ -372,7 +372,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_Size() {
 
 	// Update size
 	newSize := types.ImageSize{Width: 1920, Height: 1080}
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Size: &newSize,
 	})
 	s.NoError(err)
@@ -399,7 +399,7 @@ func (s *PostServiceTestSuite) TestUpdatePartialPost_MultipleFields() {
 	// Update multiple fields
 	newCaption := "Updated"
 	isPublic := true
-	err = s.service.UpdatePartialPost(created.ID, Post.UpdatePostParams{
+	err = s.service.UpdatePartialPost(s.Ctx, created.ID, Post.UpdatePostParams{
 		Caption:  &newCaption,
 		IsPublic: &isPublic,
 	})
@@ -1532,6 +1532,71 @@ func (s *PostServiceTestSuite) TestResolveTaggedUsers_DropsAuthorSelf() {
 
 	s.NoError(err)
 	s.Empty(result)
+}
+
+// ========================================
+// CreatePost auto-tag Tests
+// ========================================
+
+// ========================================
+// UpdatePartialPost tag diff Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestUpdatePost_NotifiesOnlyNewlyAddedTags() {
+	author := s.GetUser(0)
+	f1 := s.GetUser(1)
+	f2 := s.GetUser(2)
+
+	// Seed both friendships.
+	for _, friend := range []primitive.ObjectID{f1.ID, f2.ID} {
+		sortedIDs := []primitive.ObjectID{author.ID, friend}
+		if author.ID.Hex() > friend.Hex() {
+			sortedIDs = []primitive.ObjectID{friend, author.ID}
+		}
+		_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+			"users":  sortedIDs,
+			"status": "friends",
+		})
+		s.Require().NoError(err)
+	}
+
+	// Create post with f1 already tagged.
+	post := s.GetPost(0) // fixture post owned by author (users[0])
+	_, err := s.Collections["posts"].UpdateOne(s.Ctx,
+		bson.M{"_id": post.ID},
+		bson.M{"$set": bson.M{
+			"taggedUsers": []bson.M{{"_id": f1.ID, "handle": f1.Handle}},
+			"user._id":    author.ID,
+		}})
+	s.Require().NoError(err)
+
+	// Snapshot notification count before.
+	countBefore, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f2.ID,
+	})
+
+	// Update with both f1 and f2.
+	newTags := []Post.MentionInput{
+		{ID: f1.ID.Hex(), Handle: f1.Handle},
+		{ID: f2.ID.Hex(), Handle: f2.Handle},
+	}
+	params := Post.UpdatePostParams{TaggedUsers: &newTags}
+	err = s.service.UpdatePartialPost(s.Ctx, post.ID, params)
+	s.Require().NoError(err)
+
+	// f2 (newly added) should have a new notification; f1 should NOT.
+	countAfter, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f2.ID,
+	})
+	s.Equal(int64(1), countAfter-countBefore)
+
+	f1Notifs, _ := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"notificationType": "POST_TAG",
+		"receiver":         f1.ID,
+	})
+	s.Equal(int64(0), f1Notifs)
 }
 
 // ========================================

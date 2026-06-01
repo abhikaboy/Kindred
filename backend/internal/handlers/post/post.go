@@ -630,7 +630,7 @@ func (h *Handler) UpdatePostHuma(ctx context.Context, input *UpdatePostInput) (*
 		return nil, huma.Error403Forbidden("You can only edit your own posts")
 	}
 
-	if err := h.service.UpdatePartialPost(id, input.Body); err != nil {
+	if err := h.service.UpdatePartialPost(ctx, id, input.Body); err != nil {
 		slog.Error("failed to update post", "userId", user_id, "postId", input.ID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to update post. Please try again.", err)
 	}
