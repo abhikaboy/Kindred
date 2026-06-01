@@ -505,20 +505,26 @@ const Notifications = () => {
         <SectionList
             sections={sections}
             keyExtractor={(item, index) => `${item.type}-${item.id}-${index}`}
-            renderItem={({ item, index }) => (
-                <NotificationItem
-                    notification={item}
-                    index={index}
-                    styles={styles}
-                    onNotificationPress={handleNotificationPress}
-                />
-            )}
-            renderSectionHeader={({ section: { title, data } }) => {
-                // Defensive: never render a bucket header above an empty bucket.
-                if (!data || data.length === 0) return null;
+            renderItem={({ item, index, section }) => {
+                // Inline the section header on the FIRST item of each section.
+                // SectionList's renderSectionHeader was adding mystery vertical
+                // space between header and first item that no margin tweak
+                // could clear; rendering the header as part of the item view
+                // bypasses that entirely.
+                const isFirstInSection = section.data[0] === item;
                 return (
-                    <View style={styles.sectionHeader}>
-                        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+                    <View>
+                        {isFirstInSection ? (
+                            <View style={styles.sectionHeader}>
+                                <ThemedText type="defaultSemiBold">{section.title}</ThemedText>
+                            </View>
+                        ) : null}
+                        <NotificationItem
+                            notification={item}
+                            index={index}
+                            styles={styles}
+                            onNotificationPress={handleNotificationPress}
+                        />
                     </View>
                 );
             }}
@@ -629,7 +635,7 @@ const stylesheet = (ThemedColor: any) => {
         },
         sectionHeader: {
             marginBottom: 8,
-            marginTop: 24,
+            marginTop: 8,
         },
         emptyFilterState: {
             paddingVertical: 32,
