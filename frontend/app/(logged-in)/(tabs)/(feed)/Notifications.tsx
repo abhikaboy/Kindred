@@ -280,6 +280,7 @@ const NotificationItem = ({
                 />
             ) : notification.type === "rings_closed" ? (
                 <UserInfoRingsClosedNotification
+                    notificationId={notification.id}
                     name={notification.name}
                     userId={notification.userId}
                     content={notification.content}
