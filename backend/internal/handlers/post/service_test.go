@@ -1533,3 +1533,75 @@ func (s *PostServiceTestSuite) TestResolveTaggedUsers_DropsAuthorSelf() {
 	s.NoError(err)
 	s.Empty(result)
 }
+
+// ========================================
+// CreatePost auto-tag Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestCreatePost_AutoTagsEncouragers() {
+	author := s.GetUser(0)
+	encourager := s.GetUser(1)
+
+	// Seed friendship author <-> encourager
+	sortedIDs := []primitive.ObjectID{author.ID, encourager.ID}
+	if author.ID.Hex() > encourager.ID.Hex() {
+		sortedIDs = []primitive.ObjectID{encourager.ID, author.ID}
+	}
+	_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+		"users":  sortedIDs,
+		"status": "friends",
+	})
+	s.Require().NoError(err)
+
+	// Seed an encouragement from encourager → author on some task
+	taskID := primitive.NewObjectID()
+	_, err = s.Collections["encouragements"].InsertOne(s.Ctx, bson.M{
+		"taskId":   taskID,
+		"receiver": author.ID,
+		"sender": bson.M{
+			"id":      encourager.ID,
+			"name":    encourager.DisplayName,
+			"picture": encourager.ProfilePicture,
+		},
+		"type":  "encouragement",
+		"scope": "task",
+	})
+	s.Require().NoError(err)
+
+	// Simulate what the handler does: build candidates from encouragements + resolve.
+	encs, err := s.service.EncouragementService.GetEncouragementsByTaskAndReceiver(taskID, author.ID)
+	s.Require().NoError(err)
+
+	var candidates []primitive.ObjectID
+	for _, e := range encs {
+		candidates = append(candidates, e.Sender.ID)
+	}
+
+	resolved, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+	s.Require().NoError(err)
+
+	// Create the post with the resolved tags already applied (mirrors handler logic).
+	newPost := &types.PostDocument{
+		ID:      primitive.NewObjectID(),
+		Caption: "Did it!",
+		User: types.UserExtendedReferenceInternal{
+			ID:             author.ID,
+			DisplayName:    author.DisplayName,
+			Handle:         author.Handle,
+			ProfilePicture: author.ProfilePicture,
+		},
+		Task: &types.PostTaskExtendedReference{
+			ID:      taskID,
+			Content: "Some task",
+		},
+		TaggedUsers: resolved,
+		Reactions:   map[string][]primitive.ObjectID{},
+		Comments:    []types.CommentDocument{},
+		Metadata:    types.PostMetadata{IsDeleted: false},
+	}
+	post, _, err := s.service.CreatePost(newPost)
+	s.Require().NoError(err)
+
+	s.Len(post.TaggedUsers, 1)
+	s.Equal(encourager.ID, post.TaggedUsers[0].ID)
+}

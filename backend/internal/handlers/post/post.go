@@ -94,6 +94,33 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	doc.Metadata.IsPublic = input.Body.IsPublic
 
+	// Collect tag candidates: explicit + encourager auto-tag.
+	var tagCandidates []primitive.ObjectID
+	for _, m := range input.Body.TaggedUsers {
+		if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
+			tagCandidates = append(tagCandidates, objID)
+		}
+	}
+	if input.Body.Task != nil && h.service.EncouragementService != nil {
+		taskID := input.Body.Task.ID
+		encs, encErr := h.service.EncouragementService.GetEncouragementsByTaskAndReceiver(taskID, userObjID)
+		if encErr != nil {
+			slog.Warn("Failed to fetch encouragements for auto-tag", "task_id", taskID, "err", encErr)
+		} else {
+			for _, e := range encs {
+				tagCandidates = append(tagCandidates, e.Sender.ID)
+			}
+		}
+	}
+	if len(tagCandidates) > 0 {
+		resolved, resolveErr := h.service.ResolveTaggedUsers(ctx, userObjID, tagCandidates)
+		if resolveErr != nil {
+			slog.Warn("Failed to resolve tagged users", "err", resolveErr)
+		} else {
+			doc.TaggedUsers = resolved
+		}
+	}
+
 	createdPost, userStats, err := h.service.CreatePost(&doc)
 	if err != nil {
 		slog.Error("failed to create post", "userId", user_id, "error", err)

@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -26,15 +27,16 @@ type UserStatsUpdate struct {
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	return &Service{
-		Posts:               collections["posts"],
-		Users:               collections["users"],
-		Blueprints:          collections["blueprints"],
-		Categories:          collections["categories"],
-		Groups:              collections["groups"],
-		Connections:         collections["friend-requests"],
-		Reports:             collections["reports"],
-		NotificationService: notifications.NewNotificationService(collections),
-		RingService:         ringService,
+		Posts:                collections["posts"],
+		Users:                collections["users"],
+		Blueprints:           collections["blueprints"],
+		Categories:           collections["categories"],
+		Groups:               collections["groups"],
+		Connections:          collections["friend-requests"],
+		Reports:              collections["reports"],
+		NotificationService:  notifications.NewNotificationService(collections),
+		RingService:          ringService,
+		EncouragementService: encouragement.NewEncouragementService(collections),
 	}
 }
 

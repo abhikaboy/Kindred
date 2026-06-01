@@ -1,6 +1,7 @@
 package Post
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -254,13 +255,14 @@ Database layer of the application
 */
 
 type Service struct {
-	Posts               *mongo.Collection
-	Users               *mongo.Collection
-	Categories          *mongo.Collection
-	Blueprints          *mongo.Collection
-	Groups              *mongo.Collection
-	Connections         *mongo.Collection
-	Reports             *mongo.Collection
-	NotificationService *notifications.Service
-	RingService         *rings.RingService
+	Posts                *mongo.Collection
+	Users                *mongo.Collection
+	Categories           *mongo.Collection
+	Blueprints           *mongo.Collection
+	Groups               *mongo.Collection
+	Connections          *mongo.Collection
+	Reports              *mongo.Collection
+	NotificationService  *notifications.Service
+	RingService          *rings.RingService
+	EncouragementService *encouragement.Service
 }
