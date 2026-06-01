@@ -1,7 +1,10 @@
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import React from "react";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
+import React, { useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import MentionAutocomplete from "./MentionAutocomplete";
+import { useMentionTrigger } from "@/hooks/useMentionTrigger";
+import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 
 type Props = {
     onSubmit?: () => void;
@@ -10,6 +13,7 @@ type Props = {
     width?: number;
     value?: string;
     autoFocus?: boolean;
+    onMentionsChange?: (mentions: { id: string; handle: string }[]) => void;
 };
 
 const CommentInput = (props: Props) => {
@@ -20,24 +24,31 @@ const CommentInput = (props: Props) => {
     // Use controlled value if provided, otherwise use internal state
     const value = props.value !== undefined ? props.value : internalValue;
 
-    const handleChangeText = (text: string) => {
+    const setValue = (text: string) => {
         if (props.value !== undefined) {
-            // Controlled component
             props.onChangeText?.(text);
         } else {
-            // Uncontrolled component
             setInternalValue(text);
             props.onChangeText?.(text);
         }
     };
 
+    const { query, onChange, onSelection, onPick, picked } = useMentionTrigger(value, setValue);
+
+    // Notify parent whenever picked changes
+    useEffect(() => {
+        props.onMentionsChange?.(picked.map((p) => ({ id: p.id, handle: p.handle })));
+    }, [picked]);
+
     return (
         <View style={styles.container}>
+            <MentionAutocomplete query={query} onPick={onPick} />
             <BottomSheetTextInput
                 autoFocus={props.autoFocus}
                 placeholder={props.placeHolder || "Leave a comment"}
                 onSubmitEditing={props?.onSubmit}
-                onChangeText={handleChangeText}
+                onChangeText={onChange}
+                onSelectionChange={onSelection as any}
                 value={value}
                 multiline={false}
                 returnKeyType="send"

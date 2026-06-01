@@ -1,7 +1,8 @@
-import React, { useState, useRef } from "react";
-import { View, NativeSyntheticEvent, TextInputSelectionChangeEventData } from "react-native";
+import React from "react";
+import { View } from "react-native";
 import LongTextInput from "./LongTextInput";
 import MentionAutocomplete from "./MentionAutocomplete";
+import { useMentionTrigger } from "@/hooks/useMentionTrigger";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 
 type Props = {
@@ -14,59 +15,22 @@ type Props = {
 };
 
 const MentionTextInput = ({ value, setValue, onMentionPicked, placeholder, fontSize, minHeight }: Props) => {
-    const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
-    const [query, setQuery] = useState<string | null>(null);
-    const triggerStart = useRef<number | null>(null);
-
-    const recomputeTrigger = (text: string, caret: number) => {
-        for (let i = caret - 1; i >= 0; i--) {
-            const ch = text[i];
-            if (ch === "@") {
-                const prev = i === 0 ? " " : text[i - 1];
-                if (/\s/.test(prev) || i === 0) {
-                    triggerStart.current = i;
-                    setQuery(text.slice(i + 1, caret));
-                    return;
-                }
-            }
-            if (/\s/.test(ch)) break;
-        }
-        triggerStart.current = null;
-        setQuery(null);
-    };
-
-    const handleChange = (text: string) => {
-        setValue(text);
-        recomputeTrigger(text, selection.start);
-    };
-
-    const handleSelection = (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
-        const sel = e.nativeEvent.selection;
-        setSelection(sel);
-        recomputeTrigger(value, sel.start);
-    };
+    const { query, onChange, onSelection, onPick } = useMentionTrigger(value, setValue);
 
     const handlePick = (c: MentionCandidate) => {
-        if (triggerStart.current === null) return;
-        const before = value.slice(0, triggerStart.current);
-        const after = value.slice(selection.start);
-        const insertion = `@${c.handle} `;
-        const next = before + insertion + after;
-        setValue(next);
+        onPick(c);
         onMentionPicked(c);
-        triggerStart.current = null;
-        setQuery(null);
     };
 
     return (
         <View>
             <LongTextInput
                 value={value}
-                setValue={handleChange}
+                setValue={onChange}
                 placeholder={placeholder}
                 fontSize={fontSize}
                 minHeight={minHeight}
-                onSelectionChange={handleSelection}
+                onSelectionChange={onSelection}
             />
             <MentionAutocomplete query={query} onPick={handlePick} />
         </View>
