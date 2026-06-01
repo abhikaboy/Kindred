@@ -11,13 +11,13 @@ import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { NotificationDocument } from "@/api/types";
-import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ForYouTab from "@/components/forYou/ForYouTab";
 import { useForYou } from "@/hooks/useForYou";
+import RequestsTab from "@/components/requests/RequestsTab";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -321,17 +321,13 @@ const Notifications = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState(ACTIVITY_TAB_INDEX);
     const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
-    const followRequestsRef = useRef<{ refresh: () => Promise<void> }>(null);
     const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction } = useForYou();
     const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
     const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([
-            refreshNotifications(),
-            followRequestsRef.current?.refresh(),
-        ]);
+        await refreshNotifications();
         setRefreshing(false);
     }, [refreshNotifications]);
 
@@ -413,16 +409,21 @@ const Notifications = () => {
             const notificationTime = new Date(notification.time).getTime();
 
             // Extract task name + kudos message from content for encouragement/congratulation.
-            // Content shape: "X did Y on TaskName: actual message text"
+            // Two backend content shapes:
+            //   task scope    → `{name} on "{taskName}": "{message}"`
+            //   profile scope → `{name} says: "{message}"`           (e.g. ring encouragements)
             let taskName = "";
             let kudosMessage: string | undefined;
             if (notification.notificationType === "ENCOURAGEMENT" || notification.notificationType === "CONGRATULATION") {
-                const match = notification.content.match(/on (.+?):\s*(.*)$/);
-                if (match) {
-                    taskName = match[1];
-                    kudosMessage = match[2]?.trim() || undefined;
-                } else {
-                    taskName = "Task";
+                const taskMatch = notification.content.match(/ on "?(.+?)"?:\s*"?(.*?)"?$/);
+                const profileMatch = notification.content.match(/ says:\s*"?(.*?)"?$/);
+                if (taskMatch) {
+                    taskName = taskMatch[1];
+                    kudosMessage = taskMatch[2]?.trim() || undefined;
+                } else if (profileMatch) {
+                    kudosMessage = profileMatch[1]?.trim() || undefined;
+                    // taskName stays empty — UserInfoEncouragementNotification reads
+                    // empty referenceId + empty taskName as profile-scope.
                 }
             }
 
@@ -477,13 +478,10 @@ const Notifications = () => {
         { title: "Older", data: olderNotifications },
     ].filter((s) => s.data.length > 0);
 
+    // Activity tab no longer hosts FollowRequestsSection — friend requests
+    // now live in their own Requests tab.
     const activityHeader = (
-        <>
-            <NotificationFilterChips active={activeChip} onChange={setActiveChip} ThemedColor={ThemedColor} />
-            {activeChip === "all" && (
-                <FollowRequestsSection ref={followRequestsRef} styles={styles} maxVisible={4} />
-            )}
-        </>
+        <NotificationFilterChips active={activeChip} onChange={setActiveChip} ThemedColor={ThemedColor} />
     );
 
     const activityTabContent = !ready || loading ? (
@@ -583,7 +581,7 @@ const Notifications = () => {
                     onInteraction={recordForYouInteraction}
                 />
                 <View style={{ flex: 1 }}>{activityTabContent}</View>
-                <TabPlaceholder label="Requests — coming soon" ThemedColor={ThemedColor} />
+                <RequestsTab horizontalPadding={Dimensions.get("window").width * 0.05} />
             </AnimatedTabContent>
         </ThemedView>
     );

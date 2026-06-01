@@ -37,7 +37,13 @@ export default function ForYouTab({ horizontalPadding, feed, loading, error, ref
                     return;
                 case "send_kudos":
                 case "send_encouragement":
-                    router.push("/(logged-in)/(tabs)/(task)/kudos" as never);
+                    // Open the sender's profile — that's the surface for composing
+                    // a kudos back, encouraging them on their tasks, etc.
+                    if (action.targetUserId) {
+                        router.push(`/account/${action.targetUserId}` as never);
+                    } else {
+                        router.push("/(logged-in)/(tabs)/(task)/kudos" as never);
+                    }
                     return;
                 case "react":
                     if (action.postId) router.push(`/(logged-in)/posting/${action.postId}` as never);
