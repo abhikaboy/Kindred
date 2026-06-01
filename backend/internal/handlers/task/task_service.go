@@ -1419,6 +1419,118 @@ func (s *Service) UpdateTaskReminders(id primitive.ObjectID, categoryID primitiv
 	return handleMongoError(ctx, "update task reminders", err)
 }
 
+var (
+	ErrTaskNotFound     = errors.New("task not found in source category")
+	ErrCategoryNotFound = errors.New("category not found")
+	ErrNotCategoryOwner = errors.New("user does not own the category")
+)
+
+// MoveTask atomically moves a task from sourceCategoryID to the top of
+// targetCategoryID. If the task has a recurring template, the template's
+// categoryID is re-pointed so future instances generate into the target.
+// A same-category move is a no-op that returns the task unchanged.
+func (s *Service) MoveTask(userID, sourceCategoryID, taskID, targetCategoryID primitive.ObjectID) (*TaskDocument, error) {
+	ctx := context.Background()
+
+	if sourceCategoryID == targetCategoryID {
+		return s.findTaskInCategory(ctx, sourceCategoryID, taskID)
+	}
+
+	client := s.Tasks.Database().Client()
+	session, err := client.StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer session.EndSession(ctx)
+
+	var moved *TaskDocument
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		var sourceCat types.CategoryDocument
+		if err := s.Tasks.FindOne(sessCtx, bson.M{"_id": sourceCategoryID}).Decode(&sourceCat); err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, ErrCategoryNotFound
+			}
+			return nil, err
+		}
+		if sourceCat.User != userID {
+			return nil, ErrNotCategoryOwner
+		}
+
+		var task *TaskDocument
+		for i := range sourceCat.Tasks {
+			if sourceCat.Tasks[i].ID == taskID {
+				t := sourceCat.Tasks[i]
+				task = &t
+				break
+			}
+		}
+		if task == nil {
+			return nil, ErrTaskNotFound
+		}
+
+		var targetCat types.CategoryDocument
+		if err := s.Tasks.FindOne(sessCtx, bson.M{"_id": targetCategoryID}).Decode(&targetCat); err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, ErrCategoryNotFound
+			}
+			return nil, err
+		}
+		if targetCat.User != userID {
+			return nil, ErrNotCategoryOwner
+		}
+
+		if _, err := s.Tasks.UpdateOne(sessCtx,
+			bson.M{"_id": sourceCategoryID},
+			bson.M{"$pull": bson.M{"tasks": bson.M{"_id": taskID}}},
+		); err != nil {
+			return nil, err
+		}
+
+		task.CategoryID = targetCategoryID
+		if _, err := s.Tasks.UpdateOne(sessCtx,
+			bson.M{"_id": targetCategoryID},
+			bson.M{"$push": bson.M{"tasks": bson.M{"$each": bson.A{task}, "$position": 0}}},
+		); err != nil {
+			return nil, err
+		}
+
+		if task.TemplateID != nil {
+			if _, err := s.TemplateTasks.UpdateOne(sessCtx,
+				bson.M{"_id": *task.TemplateID},
+				bson.M{"$set": bson.M{"categoryID": targetCategoryID}},
+			); err != nil {
+				return nil, err
+			}
+		}
+
+		moved = task
+		return nil, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.enqueuePushUpsertIfEnabled(context.Background(), taskID, targetCategoryID, userID)
+	return moved, nil
+}
+
+func (s *Service) findTaskInCategory(ctx context.Context, categoryID, taskID primitive.ObjectID) (*TaskDocument, error) {
+	var cat types.CategoryDocument
+	if err := s.Tasks.FindOne(ctx, bson.M{"_id": categoryID}).Decode(&cat); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrCategoryNotFound
+		}
+		return nil, err
+	}
+	for i := range cat.Tasks {
+		if cat.Tasks[i].ID == taskID {
+			t := cat.Tasks[i]
+			return &t, nil
+		}
+	}
+	return nil, ErrTaskNotFound
+}
+
 // recalculateFollowUp removes any existing FOLLOW_UP reminder and injects a new one based on the new deadline.
 func (s *Service) recalculateFollowUp(ctx context.Context, taskID primitive.ObjectID, categoryID primitive.ObjectID, deadline *time.Time) error {
 	// Remove existing FOLLOW_UP reminders
