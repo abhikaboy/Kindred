@@ -625,8 +625,11 @@ const stylesheet = (ThemedColor: any) => {
             marginVertical: 14,
         },
         sectionHeader: {
-            marginBottom: 4,
-            marginTop: 12,
+            // Negative bottom margin counteracts the first list item's
+            // marginVertical:14 so the header sits closer to its content
+            // without changing the gap between subsequent items.
+            marginBottom: -10,
+            marginTop: 16,
         },
         emptyFilterState: {
             paddingVertical: 32,
