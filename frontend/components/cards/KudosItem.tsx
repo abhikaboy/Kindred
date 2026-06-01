@@ -155,10 +155,18 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
                                 {kudos.message}
                             </ThemedText>
                         )}
-                        <ThemedText type="caption" style={styles.timeText}>
-                            {formatTime(kudos.timestamp)}
-                        </ThemedText>
-                        {footerSlot ? <View style={styles.footerSlot}>{footerSlot}</View> : null}
+                        {footerSlot ? (
+                            <View style={styles.footerRow}>
+                                <ThemedText type="caption" style={styles.timeTextInline}>
+                                    {formatTime(kudos.timestamp)}
+                                </ThemedText>
+                                <View>{footerSlot}</View>
+                            </View>
+                        ) : (
+                            <ThemedText type="caption" style={styles.timeText}>
+                                {formatTime(kudos.timestamp)}
+                            </ThemedText>
+                        )}
                     </View>
                 </View>
             </Animated.View>
@@ -278,8 +286,15 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderRadius: 4,
             backgroundColor: ThemedColor.error,
         },
-        footerSlot: {
-            marginTop: 12,
-            alignItems: "flex-end",
+        footerRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 10,
+            gap: 8,
+        },
+        timeTextInline: {
+            color: ThemedColor.caption,
+            fontSize: 12,
         },
     });
