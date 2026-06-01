@@ -243,6 +243,13 @@ var Indexes = []Index{
 			},
 		},
 	},
+	// Supports future 'posts that tagged user X' query (e.g., profile "Tagged" tab)
+	{
+		Collection: "posts",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "taggedUsers._id", Value: 1}},
+		},
+	},
 
 	// Friend-requests (connections) collection indexes
 	// Covers GetRelationship, IsBlocked, AcceptConnection lookups by user pair
