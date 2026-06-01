@@ -14,6 +14,7 @@ import (
 	congratulation "github.com/abhikaboy/Kindred/internal/handlers/congratulation"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
 	encouragement "github.com/abhikaboy/Kindred/internal/handlers/encouragement"
+	"github.com/abhikaboy/Kindred/internal/handlers/foryou"
 	group "github.com/abhikaboy/Kindred/internal/handlers/group"
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
@@ -168,6 +169,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register notification routes
 	notifications.Routes(api, collections)
+
+	// Register For You feed routes
+	foryou.Routes(api, collections, ringService)
 
 	// Register referral routes
 	referral.Routes(api, collections)
