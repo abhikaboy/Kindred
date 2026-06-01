@@ -20,6 +20,7 @@ type DragContextValue = {
     beginDrag: (task: Task, sourceCategoryId: string, startX: number, startY: number) => void;
     updateDrag: (x: number, y: number) => void;
     endDrag: () => void;
+    cancelDrag: () => void;
 };
 
 const DragContext = createContext<DragContextValue | null>(null);
@@ -85,6 +86,15 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsDragging(false);
     }, [fingerX, fingerY, moveTask]);
 
+    // Clear the lifted/dragging state WITHOUT performing a move (e.g. the user
+    // held and released in place, or the drag was cancelled).
+    const cancelDrag = useCallback(() => {
+        draggingRef.current = null;
+        setDraggedTask(null);
+        setHoveredCategoryId(null);
+        setIsDragging(false);
+    }, []);
+
     const ghostStyle = useAnimatedStyle(() => ({
         position: "absolute",
         left: 0,
@@ -105,6 +115,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 beginDrag,
                 updateDrag,
                 endDrag,
+                cancelDrag,
             }}>
             {children}
             {isDragging && draggedTask && (

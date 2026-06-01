@@ -355,56 +355,49 @@ const TaskCard = ({
     // ── Drag-and-drop gesture (only active when DragProvider is present) ──
     const drag = useDragOptional();
     const draggable = Boolean(drag) && Boolean(redirect) && !task?.isPhantom && Boolean(task);
-    const liftedRef = useRef(false);
 
     const onLift = useCallback((absX: number, absY: number) => {
         if (Platform.OS === "ios") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }
-        liftedRef.current = true;
         if (task && drag) drag.beginDrag(task, categoryId, absX, absY);
     }, [task, categoryId, drag]);
 
-    const onReleaseInPlaceOpenMenu = useCallback(() => {
-        drag?.endDrag();
-        liftedRef.current = false;
-        setEditing(true);
+    const onMove = useCallback((x: number, y: number) => {
+        drag?.updateDrag(x, y);
     }, [drag]);
 
-    const dragGesture = useMemo(() => {
-        const longPress = Gesture.LongPress()
-            .minDuration(350)
-            .onStart((e) => {
-                runOnJS(onLift)(e.absoluteX, e.absoluteY);
-            });
+    // moved=true → the finger travelled, so treat the release as a drop;
+    // moved=false → held and released in place, so open the existing menu.
+    const finishDrag = useCallback((moved: boolean) => {
+        if (!drag) return;
+        if (moved) {
+            drag.endDrag();
+        } else {
+            drag.cancelDrag();
+            setEditing(true);
+        }
+    }, [drag]);
 
-        const longPressMenu = Gesture.LongPress()
-            .minDuration(350)
-            .onEnd((_e, success) => {
-                if (success && liftedRef.current) {
-                    runOnJS(onReleaseInPlaceOpenMenu)();
-                }
-            });
-
-        const pan = Gesture.Pan()
-            .manualActivation(true)
-            .onTouchesMove((_e, state) => {
-                if (liftedRef.current) {
-                    state.activate();
-                }
-            })
-            .onUpdate((e) => {
-                runOnJS((x: number, y: number) => drag?.updateDrag(x, y))(e.absoluteX, e.absoluteY);
-            })
-            .onEnd(() => {
-                runOnJS(() => {
-                    drag?.endDrag();
-                    liftedRef.current = false;
-                })();
-            });
-
-        return Gesture.Simultaneous(Gesture.Race(longPress, longPressMenu), pan);
-    }, [onLift, onReleaseInPlaceOpenMenu, drag]);
+    // Single Pan gesture that activates only after a 350ms hold (RNGH's
+    // press-and-hold-then-drag primitive). No shared JS refs cross the worklet
+    // boundary, and every callback handed to runOnJS is a stable named function.
+    const dragGesture = useMemo(
+        () =>
+            Gesture.Pan()
+                .activateAfterLongPress(350)
+                .onStart((e) => {
+                    runOnJS(onLift)(e.absoluteX, e.absoluteY);
+                })
+                .onUpdate((e) => {
+                    runOnJS(onMove)(e.absoluteX, e.absoluteY);
+                })
+                .onEnd((e) => {
+                    const moved = Math.hypot(e.translationX, e.translationY) > 10;
+                    runOnJS(finishDrag)(moved);
+                }),
+        [onLift, onMove, finishDrag]
+    );
 
     const cardBody = (
         <TouchableOpacity
