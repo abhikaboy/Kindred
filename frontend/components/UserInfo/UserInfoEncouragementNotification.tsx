@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -62,34 +62,30 @@ const UserInfoEncouragementNotification = ({
     };
 
     return (
-        <View style={styles.container}>
-            <KudosItem
-                kudos={kudos}
-                formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
-                visible
-            />
-            <TouchableOpacity
-                onPress={handlePress}
-                activeOpacity={0.8}
-                style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
-                accessibilityRole="button"
-                accessibilityLabel={ctaLabel}>
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
-                    {ctaLabel}
-                </ThemedText>
-            </TouchableOpacity>
-        </View>
+        <KudosItem
+            kudos={kudos}
+            formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
+            visible
+            footerSlot={
+                <TouchableOpacity
+                    onPress={handlePress}
+                    activeOpacity={0.8}
+                    style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={ctaLabel}>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
+                        {ctaLabel}
+                    </ThemedText>
+                </TouchableOpacity>
+            }
+        />
     );
 };
 
 export default UserInfoEncouragementNotification;
 
 const styles = StyleSheet.create({
-    container: {
-        gap: 12,
-    },
     ctaButton: {
-        alignSelf: "flex-end",
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 10,
