@@ -3627,6 +3627,84 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/for-you:
+        get:
+            tags:
+                - for-you
+            summary: Get the For You feed
+            description: Returns the curated For You feed for the authenticated user, organized into Catch up and Suggested for you sections.
+            operationId: get-for-you
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token
+                - name: refresh_token
+                  in: header
+                  description: Refresh token
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token
+                - name: X-Timezone
+                  in: header
+                  description: IANA timezone, e.g. America/New_York
+                  schema:
+                    type: string
+                    description: IANA timezone, e.g. America/New_York
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForYouFeed'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/for-you/interactions:
+        post:
+            tags:
+                - for-you
+            summary: Record a For You CTA interaction
+            description: Increments the interaction counter for a card type, counting toward the threshold that switches the card to compact display mode.
+            operationId: record-for-you-interaction
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: refresh_token
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RecordInteractionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RecordInteractionOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/groups:
         get:
             tags:
@@ -5070,6 +5148,32 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tags:
+        get:
+            tags:
+                - categories
+            summary: Get user tags
+            description: Retrieve the distinct list of category tags for the authenticated user
+            operationId: get-user-tags
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetUserTagsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/:
         get:
             tags:
@@ -5302,6 +5406,58 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateTaskChecklistOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/move:
+        post:
+            tags:
+                - tasks
+            summary: Move task to another category
+            description: Move a task from its current category to a different category. The task lands at the top of the target category, and any recurring template is re-pointed so future instances generate in the target.
+            operationId: move-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  description: Source category ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Source category ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  description: Task ID
+                  required: true
+                  schema:
+                    type: string
+                    description: Task ID
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MoveTaskInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MoveTaskOutputBody'
                 default:
                     description: Error
                     content:
@@ -6302,32 +6458,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/DeleteWaitlistOutputBody'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
-    /v1/user/tags:
-        get:
-            tags:
-                - categories
-            summary: Get user tags
-            description: Retrieve the distinct list of category tags for the authenticated user
-            operationId: get-user-tags
-            parameters:
-                - name: Authorization
-                  in: header
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetUserTagsOutputBody'
                 default:
                     description: Error
                     content:
@@ -9190,6 +9320,150 @@ components:
                 - target
                 - period
                 - completedInPeriod
+        ForYouCard:
+            type: object
+            additionalProperties: false
+            properties:
+                body:
+                    type: string
+                    description: Present iff displayMode == full
+                ctas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ForYouCta'
+                deepLink:
+                    type: string
+                    description: Tap-target for the entire card
+                displayMode:
+                    type: string
+                iconKind:
+                    type: string
+                id:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                subject:
+                    $ref: '#/components/schemas/ForYouSubject'
+                title:
+                    type: string
+                type:
+                    type: string
+            required:
+                - id
+                - type
+                - displayMode
+                - iconKind
+                - title
+                - ctas
+                - deepLink
+                - priority
+        ForYouCta:
+            type: object
+            additionalProperties: false
+            properties:
+                action:
+                    $ref: '#/components/schemas/ForYouCtaAction'
+                kind:
+                    type: string
+                    description: primary | secondary
+                    examples:
+                        - primary
+                label:
+                    type: string
+                    examples:
+                        - Send one back
+            required:
+                - label
+                - kind
+                - action
+        ForYouCtaAction:
+            type: object
+            additionalProperties: false
+            properties:
+                href:
+                    type: string
+                    examples:
+                        - /(logged-in)/(tabs)/(task)/kudos
+                postId:
+                    type: string
+                reaction:
+                    type: string
+                referenceId:
+                    type: string
+                targetUserId:
+                    type: string
+                taskId:
+                    type: string
+                type:
+                    type: string
+                    description: navigate | send_kudos | send_encouragement | react
+                    examples:
+                        - navigate
+            required:
+                - type
+        ForYouFeed:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ForYouFeed.json
+                    readOnly: true
+                sections:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ForYouSection'
+                unreadCount:
+                    type: integer
+                    description: Number of catch_up cards driving the tab dot
+                    format: int64
+            required:
+                - sections
+                - unreadCount
+        ForYouSection:
+            type: object
+            additionalProperties: false
+            properties:
+                cards:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ForYouCard'
+                id:
+                    type: string
+                    description: catch_up | suggested
+                    examples:
+                        - catch_up
+                title:
+                    type: string
+                    examples:
+                        - Catch up
+            required:
+                - id
+                - title
+                - cards
+        ForYouSubject:
+            type: object
+            additionalProperties: false
+            properties:
+                avatarUrl:
+                    type: string
+                    examples:
+                        - https://example.com/avatar.jpg
+                displayName:
+                    type: string
+                    examples:
+                        - Sarah
+                userId:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+            required:
+                - userId
+                - displayName
         FriendReference:
             type: object
             additionalProperties: false
@@ -10190,6 +10464,41 @@ components:
             required:
                 - id
                 - handle
+        MoveTaskInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MoveTaskInputBody.json
+                    readOnly: true
+                targetCategoryID:
+                    type: string
+                    description: Destination category ID
+                    examples:
+                        - 507f1f77bcf86cd799439012
+            required:
+                - targetCategoryID
+        MoveTaskOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MoveTaskOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task moved successfully
+            required:
+                - message
         MultiTaskOutputLocal:
             type: object
             additionalProperties: false
@@ -10617,6 +10926,41 @@ components:
             required:
                 - tasks
                 - query
+        RecordInteractionOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RecordInteractionOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Interaction recorded
+            required:
+                - message
+        RecordInteractionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RecordInteractionParams.json
+                    readOnly: true
+                cardType:
+                    type: string
+                    description: Card type the user interacted with
+                    examples:
+                        - kudos_received
+            required:
+                - cardType
         RecurDetails:
             type: object
             additionalProperties: false
