@@ -7,9 +7,11 @@ import { Confetti } from "phosphor-react-native";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import type { SlackReaction } from "./PostCard";
+import PostCardCaption from "./PostCardCaption";
 
 export type PostCardFooterProps = {
     caption?: string;
+    taggedUsers?: Array<{ id: string; handle: string }>;
     category?: string;
     taskName?: string;
     reactions?: SlackReaction[];
@@ -27,6 +29,7 @@ export type PostCardFooterProps = {
 
 const PostCardFooter = ({
     caption,
+    taggedUsers = [],
     category,
     taskName,
     reactions = [],
@@ -84,9 +87,7 @@ const PostCardFooter = ({
 
             <View style={styles.captionSection}>
                 {caption ? (
-                    <ThemedText type="default" style={[styles.caption, { color: ThemedColor.text }]}>
-                        {caption}
-                    </ThemedText>
+                    <PostCardCaption caption={caption} taggedUsers={taggedUsers} />
                 ) : null}
 
                 {!readOnly && (
