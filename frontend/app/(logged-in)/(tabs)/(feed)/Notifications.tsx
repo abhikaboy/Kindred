@@ -404,8 +404,24 @@ const Notifications = () => {
     const isOlder = (time: number) => time < now - ONE_MONTH;
 
     // Convert API notification to processed notification
+    // The backend emits more notification types (POST, RINGS_CLOSED, ...) than
+    // NotificationItem knows how to render. If we let them through, they end up
+    // as invisible rows that still count toward `section.data.length`, which
+    // produces a section header ("This Week") with nothing beneath it.
+    const SUPPORTED_TYPES = new Set([
+        "comment",
+        "encouragement",
+        "congratulation",
+        "friend_request",
+        "friend_request_accepted",
+    ]);
+
     const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
         try {
+            const rawType = notification.notificationType.toLowerCase();
+            if (!SUPPORTED_TYPES.has(rawType)) {
+                return null;
+            }
             const notificationTime = new Date(notification.time).getTime();
 
             // Extract task name + kudos message from content for encouragement/congratulation.
