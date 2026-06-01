@@ -32,6 +32,7 @@ type ProcessedNotification = {
     id: string;
     type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed";
     name: string;
+    handle: string;
     userId: string;
     time: number;
     icon: string;
@@ -282,6 +283,7 @@ const NotificationItem = ({
                 <UserInfoRingsClosedNotification
                     notificationId={notification.id}
                     name={notification.name}
+                    handle={notification.handle}
                     userId={notification.userId}
                     content={notification.content}
                     icon={notification.icon}
@@ -473,6 +475,7 @@ const Notifications = () => {
                     | "friend_request"
                     | "friend_request_accepted",
                 name: notification.user.display_name,
+                handle: notification.user.handle ?? "",
                 userId: notification.user.id,
                 time: notificationTime,
                 icon: notification.user.profile_picture || Icons.coffee,

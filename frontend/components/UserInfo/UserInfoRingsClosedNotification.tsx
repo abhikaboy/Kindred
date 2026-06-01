@@ -80,7 +80,10 @@ const UserInfoRingsClosedNotification = ({
                         categoryId: "",
                     }}
                     congratulationConfig={{
-                        userHandle: handle,
+                        // Fall back to display name when the user has no
+                        // handle set — otherwise the modal title reads
+                        // "Congratulate User".
+                        userHandle: handle || name,
                         receiverId: userId,
                         categoryName: "Rings",
                     }}
