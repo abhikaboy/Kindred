@@ -28,7 +28,7 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
-import { DragProvider, useDrag } from "@/contexts/dragContext";
+import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
 
 /**
  * While a task is being dragged, scroll the workspace when the finger nears the
@@ -70,7 +70,11 @@ interface WorkspaceContentProps {
  * Extracted content component with/ drawer wrapper
  */
 export const WorkspaceContent: React.FC<WorkspaceContentProps> = ({ workspaceName }) => {
-    return <WorkspaceContentBody workspaceName={workspaceName} />;
+    return (
+        <DragProvider>
+            <WorkspaceContentBody workspaceName={workspaceName} />
+        </DragProvider>
+    );
 };
 
 type WorkspaceContentBodyProps = WorkspaceContentProps;
@@ -140,6 +144,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     const scrollViewRef = useRef<ScrollView>(null);
     const scrollOffsetRef = useRef(0);
+    const isDragging = useDragOptional()?.isDragging ?? false;
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
 
     useEffect(() => {
@@ -233,7 +238,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     }, [applyFilters, groupByDay, visibleCategories]);
 
     return (
-        <DragProvider>
+        <>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <EditWorkspace
                 editing={editingWorkspace}
@@ -252,6 +257,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     showsVerticalScrollIndicator={false}
                     onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
                     scrollEventThrottle={16}
+                    scrollEnabled={!isDragging}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}
                     <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingTop: insets.top + 40 }}>
@@ -457,7 +463,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                 </ScrollView>
             </ThemedView>
             <DragAutoScroll scrollViewRef={scrollViewRef} scrollOffsetRef={scrollOffsetRef} />
-        </DragProvider>
+        </>
     );
 };
 

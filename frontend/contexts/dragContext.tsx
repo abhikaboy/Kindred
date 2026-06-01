@@ -95,12 +95,15 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsDragging(false);
     }, []);
 
+    // Ghost is horizontally fixed/centered and tracks the finger on the Y axis
+    // only (Notion-style). Hit-testing still uses the real finger X/Y.
     const ghostStyle = useAnimatedStyle(() => ({
         position: "absolute",
-        left: 0,
+        left: "5%",
+        right: "5%",
         top: 0,
-        transform: [{ translateX: fingerX.value - 24 }, { translateY: fingerY.value - 24 }],
-        opacity: 0.92,
+        transform: [{ translateY: fingerY.value - 30 }],
+        opacity: 0.95,
     }));
 
     return (
@@ -138,7 +141,6 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 const styles = StyleSheet.create({
     ghost: {
-        width: "90%",
         shadowColor: "#000",
         shadowOpacity: 0.25,
         shadowRadius: 12,

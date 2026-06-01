@@ -66,6 +66,9 @@ export const Category: React.FC<CategoryProps> = ({
                 isDropTarget && {
                     backgroundColor: ThemedColor.lightenedCard,
                     borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: ThemedColor.primary,
+                    padding: 8,
                 },
             ]}
             ref={containerRef}
@@ -99,6 +102,9 @@ export const Category: React.FC<CategoryProps> = ({
                 </TouchableOpacity>
                 {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
             </View>
+            {isDropTarget && (
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: ThemedColor.primary }} />
+            )}
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;
 
