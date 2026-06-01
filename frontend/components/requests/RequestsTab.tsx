@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import * as SMS from "expo-sms";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoFollowRequest from "@/components/UserInfo/UserInfoFollowRequest";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
+import ReferralCard from "@/components/profile/ReferralCard";
 import { Icons } from "@/constants/Icons";
 import { getConnectionsByReceiverAPI } from "@/api/connection";
 
@@ -58,12 +57,6 @@ export default function RequestsTab({ horizontalPadding }: Props) {
         setRefreshing(false);
     }, [load]);
 
-    const onInvite = useCallback(async () => {
-        const isAvailable = await SMS.isAvailableAsync();
-        if (!isAvailable) return;
-        await SMS.sendSMSAsync(" ", "Join me on Kindred!");
-    }, []);
-
     const removeRequest = (connectionID: string) => {
         setRequests((prev) => prev.filter((r) => r.connectionID !== connectionID));
     };
@@ -113,18 +106,8 @@ export default function RequestsTab({ horizontalPadding }: Props) {
                 </View>
             )}
 
-            <View
-                style={[
-                    styles.inviteCard,
-                    { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary },
-                ]}>
-                <ThemedText type="defaultSemiBold" style={styles.inviteTitle}>
-                    Invite friends
-                </ThemedText>
-                <ThemedText type="caption" style={{ color: ThemedColor.caption, textAlign: "center" }}>
-                    Grow your circle — invite friends and unlock rewards.
-                </ThemedText>
-                <PrimaryButton style={styles.inviteButton} title="Invite via SMS" onPress={onInvite} />
+            <View style={styles.inviteWrap}>
+                <ReferralCard />
             </View>
         </ScrollView>
     );
@@ -150,19 +133,7 @@ const styles = StyleSheet.create({
         gap: 14,
     },
     listItem: {},
-    inviteCard: {
-        marginTop: 28,
-        padding: 20,
-        borderRadius: 14,
-        borderWidth: 1,
-        alignItems: "center",
-        gap: 10,
-    },
-    inviteTitle: {
-        fontSize: 16,
-    },
-    inviteButton: {
-        width: "60%",
-        marginTop: 6,
+    inviteWrap: {
+        marginTop: 24,
     },
 });
