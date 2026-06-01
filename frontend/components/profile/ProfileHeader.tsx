@@ -5,6 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Camera } from "phosphor-react-native";
 import * as SMS from 'expo-sms';
+import { APP_STORE_URL } from "@/constants/appLinks";
 
 interface ProfileHeaderProps {
     displayName: string;
@@ -22,7 +23,7 @@ export default function ProfileHeader({ displayName, handle, userId, showCameraB
         try {
             await SMS.sendSMSAsync(
                 [],
-                `Add me on Kindred! kindred://account/${userId}`
+                `Add me on Kindred! Get the app: ${APP_STORE_URL}`
             );
         } catch (error) {
             console.error("Error sharing profile:", error);

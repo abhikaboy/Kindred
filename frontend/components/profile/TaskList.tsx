@@ -56,6 +56,11 @@ const TaskListComponent = ({
             {todayTasks.length > 0 && (
                 <View style={styles.taskSection}>
                     <ThemedText type="subtitle">Today's Tasks</ThemedText>
+                    {encouragementConfig && todayTasks.some((t) => t.encourage) && (
+                        <ThemedText type="caption" style={styles.encourageHint}>
+                            Tap a task to send encouragement
+                        </ThemedText>
+                    )}
                     {todayTasks.map((task) => (
                         <TaskCard
                             key={task.id}
@@ -100,6 +105,9 @@ const TaskListComponent = ({
 const styles = StyleSheet.create({
     taskSection: {
         gap: 12,
+    },
+    encourageHint: {
+        marginTop: -6,
     },
     emptyStateContainer: {
         paddingVertical: 40,

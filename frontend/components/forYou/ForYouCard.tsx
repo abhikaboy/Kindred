@@ -23,6 +23,7 @@ const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
     post: "create",
     comment: "chatbubble",
     blueprint: "grid",
+    recap: "sparkles",
 };
 
 export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Props) {
@@ -117,7 +118,7 @@ const stylesheet = (ThemedColor: any) =>
             paddingVertical: 12,
             paddingHorizontal: 14,
             borderRadius: 12,
-            backgroundColor: ThemedColor.lightened,
+            backgroundColor: ThemedColor.lightenedCard,
         },
         compactTitle: {
             flex: 1,
@@ -134,7 +135,7 @@ const stylesheet = (ThemedColor: any) =>
         fullContainer: {
             padding: 16,
             borderRadius: 14,
-            backgroundColor: ThemedColor.lightened,
+            backgroundColor: ThemedColor.lightenedCard,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
         },
