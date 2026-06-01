@@ -28,6 +28,38 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
+import { DragProvider, useDrag } from "@/contexts/dragContext";
+
+/**
+ * While a task is being dragged, scroll the workspace when the finger nears the
+ * top/bottom edge so off-screen categories can be reached. Mounted inside
+ * DragProvider so it can read drag state. EDGE/STEP tuned for feel during QA.
+ */
+const DragAutoScroll = ({
+    scrollViewRef,
+    scrollOffsetRef,
+}: {
+    scrollViewRef: React.RefObject<ScrollView>;
+    scrollOffsetRef: React.MutableRefObject<number>;
+}) => {
+    const { isDragging, fingerY } = useDrag();
+    useEffect(() => {
+        if (!isDragging) return;
+        const screenH = Dimensions.get("window").height;
+        const EDGE = 120;
+        const STEP = 24;
+        const interval = setInterval(() => {
+            const y = fingerY.value;
+            if (y < EDGE) {
+                scrollViewRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current - STEP), animated: false });
+            } else if (y > screenH - EDGE) {
+                scrollViewRef.current?.scrollTo({ y: scrollOffsetRef.current + STEP, animated: false });
+            }
+        }, 16);
+        return () => clearInterval(interval);
+    }, [isDragging, fingerY, scrollViewRef, scrollOffsetRef]);
+    return null;
+};
 
 interface WorkspaceContentProps {
     workspaceName?: string; // Optional: if not provided, uses global selected
@@ -107,6 +139,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     };
 
     const scrollViewRef = useRef<ScrollView>(null);
+    const scrollOffsetRef = useRef(0);
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
 
     useEffect(() => {
@@ -200,7 +233,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     }, [applyFilters, groupByDay, visibleCategories]);
 
     return (
-        <>
+        <DragProvider>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
             <EditWorkspace
                 editing={editingWorkspace}
@@ -217,6 +250,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     ref={scrollViewRef}
                     style={{ flex: 1 }}
                     showsVerticalScrollIndicator={false}
+                    onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+                    scrollEventThrottle={16}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}
                     <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingTop: insets.top + 40 }}>
@@ -421,7 +456,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     </View>
                 </ScrollView>
             </ThemedView>
-        </>
+            <DragAutoScroll scrollViewRef={scrollViewRef} scrollOffsetRef={scrollOffsetRef} />
+        </DragProvider>
     );
 };
 
