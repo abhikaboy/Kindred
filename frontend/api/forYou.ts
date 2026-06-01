@@ -4,13 +4,15 @@
 export type ForYouCardType =
     | "kudos_received"
     | "comment_reply"
+    | "friend_requests_count"
+    | "weekly_recap"
     | "reciprocity_encourage"
     | "reciprocity_react"
     | "ring_progress"
     | "post_prompt"
     | "blueprint_suggestion";
 
-export type ForYouIconKind = "kudos" | "users" | "ring" | "post" | "comment" | "blueprint";
+export type ForYouIconKind = "kudos" | "users" | "ring" | "post" | "comment" | "blueprint" | "recap";
 
 export type ForYouSubject = {
     userId: string;

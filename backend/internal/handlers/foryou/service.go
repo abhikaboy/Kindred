@@ -27,6 +27,9 @@ type Service struct {
 	Encouragements *mongo.Collection
 	Posts          *mongo.Collection
 	Users          *mongo.Collection
+	Notifications  *mongo.Collection
+	Connections    *mongo.Collection
+	RingStates     *mongo.Collection
 	Exposures      *mongo.Collection
 	RingService    *rings.RingService
 }
@@ -39,6 +42,9 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 		Encouragements: collections["encouragements"],
 		Posts:          collections["posts"],
 		Users:          collections["users"],
+		Notifications:  collections["notifications"],
+		Connections:    collections["friend-requests"],
+		RingStates:     collections["ring_states"],
 		Exposures:      collections["for_you_exposures"],
 		RingService:    ringService,
 	}
@@ -57,11 +63,25 @@ func (s *Service) GetForYou(ctx context.Context, userID primitive.ObjectID, time
 		exposures = map[string]ExposureDoc{}
 	}
 
-	var catchUp []ForYouCard
-	var suggested []ForYouCard
+	// Initialize as empty slices (not nil) so JSON marshaling produces `[]`
+	// rather than `null`. The frontend contract expects an array, and a null
+	// `cards` field crashes the renderer.
+	catchUp := []ForYouCard{}
+	suggested := []ForYouCard{}
 
 	if cards := s.buildKudosReceivedCards(ctx, userID, exposures); len(cards) > 0 {
 		catchUp = append(catchUp, cards...)
+	}
+	if cards := s.buildCommentReplyCards(ctx, userID, exposures); len(cards) > 0 {
+		catchUp = append(catchUp, cards...)
+	}
+	if card := s.buildFriendRequestsCountCard(ctx, userID, exposures); card != nil {
+		catchUp = append(catchUp, *card)
+	}
+	if card := s.buildWeeklyRecapCard(ctx, userID, exposures); card != nil {
+		// Always last in Catch up; gives a path into Activity even when nothing
+		// actionable is happening.
+		catchUp = append(catchUp, *card)
 	}
 	if card := s.buildRingProgressCard(ctx, userID, timezone, exposures); card != nil {
 		suggested = append(suggested, *card)
@@ -246,6 +266,212 @@ func (s *Service) buildRingProgressCard(ctx context.Context, userID primitive.Ob
 		card.Body = "Rings track how much of your day you've completed."
 	}
 	return &card
+}
+
+func (s *Service) buildCommentReplyCards(ctx context.Context, userID primitive.ObjectID, exposures map[string]ExposureDoc) []ForYouCard {
+	if s.Notifications == nil {
+		return nil
+	}
+
+	cutoff := time.Now().Add(-7 * 24 * time.Hour)
+	filter := bson.M{
+		"receiver":         userID,
+		"notificationType": "COMMENT",
+		"read":             false,
+		"time":             bson.M{"$gte": cutoff},
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "time", Value: -1}}).SetLimit(2)
+
+	cursor, err := s.Notifications.Find(ctx, filter, opts)
+	if err != nil {
+		slog.Warn("failed to fetch comment notifications for For You", "userId", userID.Hex(), "error", err)
+		return nil
+	}
+	defer cursor.Close(ctx)
+
+	type minimalNotification struct {
+		ID   primitive.ObjectID `bson:"_id"`
+		User struct {
+			ID             primitive.ObjectID `bson:"_id"`
+			DisplayName    string             `bson:"display_name"`
+			ProfilePicture string             `bson:"profile_picture"`
+		} `bson:"user"`
+		ReferenceID primitive.ObjectID `bson:"reference_id"`
+		Content     string             `bson:"content"`
+	}
+
+	var docs []minimalNotification
+	if err := cursor.All(ctx, &docs); err != nil {
+		slog.Warn("failed to decode comment notifications", "userId", userID.Hex(), "error", err)
+		return nil
+	}
+
+	mode := displayModeFor(exposures, CardCommentReply)
+	cards := make([]ForYouCard, 0, len(docs))
+	for i, d := range docs {
+		postRoute := fmt.Sprintf("/(logged-in)/posting/%s", d.ReferenceID.Hex())
+		card := ForYouCard{
+			ID:          fmt.Sprintf("comment-%s", d.ID.Hex()),
+			Type:        CardCommentReply,
+			DisplayMode: mode,
+			IconKind:    IconComment,
+			Title:       fmt.Sprintf("%s commented on your post", senderFirstName(d.User.DisplayName)),
+			Subject: &ForYouSubject{
+				UserID:      d.User.ID.Hex(),
+				DisplayName: d.User.DisplayName,
+				AvatarURL:   d.User.ProfilePicture,
+			},
+			DeepLink: postRoute,
+			Priority: 95 - i,
+			Ctas: []ForYouCta{
+				{
+					Label:  "Open discussion",
+					Kind:   "primary",
+					Action: ForYouCtaAction{Type: "navigate", Href: postRoute},
+				},
+			},
+		}
+		if mode == DisplayModeFull {
+			card.Body = "Tap to read and reply in context."
+		}
+		cards = append(cards, card)
+	}
+	return cards
+}
+
+func (s *Service) buildFriendRequestsCountCard(ctx context.Context, userID primitive.ObjectID, exposures map[string]ExposureDoc) *ForYouCard {
+	if s.Connections == nil {
+		return nil
+	}
+	count, err := s.Connections.CountDocuments(ctx, bson.M{
+		"receiver_id": userID,
+		"status":      "pending",
+	})
+	if err != nil {
+		slog.Warn("failed to count friend requests for For You", "userId", userID.Hex(), "error", err)
+		return nil
+	}
+	if count == 0 {
+		return nil
+	}
+
+	mode := displayModeFor(exposures, CardFriendRequestsCount)
+	noun := "friend request"
+	if count != 1 {
+		noun = "friend requests"
+	}
+	card := ForYouCard{
+		ID:          "friend-requests-count",
+		Type:        CardFriendRequestsCount,
+		DisplayMode: mode,
+		IconKind:    IconUsers,
+		Title:       fmt.Sprintf("%d %s", count, noun),
+		DeepLink:    "/(logged-in)/(tabs)/(feed)/FollowRequests",
+		Priority:    85,
+		Ctas: []ForYouCta{
+			{
+				Label:  "Review",
+				Kind:   "primary",
+				Action: ForYouCtaAction{Type: "navigate", Href: "/(logged-in)/(tabs)/(feed)/FollowRequests"},
+			},
+		},
+	}
+	if mode == DisplayModeFull {
+		card.Body = "People waiting to connect with you."
+	}
+	return &card
+}
+
+func (s *Service) buildWeeklyRecapCard(ctx context.Context, userID primitive.ObjectID, exposures map[string]ExposureDoc) *ForYouCard {
+	since := time.Now().Add(-7 * 24 * time.Hour)
+
+	kudosReceived := s.safeCount(ctx, s.Encouragements, bson.M{
+		"receiver":  userID,
+		"timestamp": bson.M{"$gte": since},
+	})
+	kudosSent := s.safeCount(ctx, s.Encouragements, bson.M{
+		"sender.id": userID,
+		"timestamp": bson.M{"$gte": since},
+	})
+	comments := s.safeCount(ctx, s.Notifications, bson.M{
+		"receiver":         userID,
+		"notificationType": "COMMENT",
+		"time":             bson.M{"$gte": since},
+	})
+	ringClosures := s.safeCount(ctx, s.RingStates, bson.M{
+		"user_id":    userID,
+		"all_closed": true,
+		"date":       bson.M{"$gte": since},
+	})
+
+	// Don't surface a recap card if literally nothing happened this week —
+	// then the empty state ("All caught up") actually means something.
+	if kudosReceived+kudosSent+comments+ringClosures == 0 {
+		return nil
+	}
+
+	mode := displayModeFor(exposures, CardWeeklyRecap)
+	card := ForYouCard{
+		ID:          fmt.Sprintf("recap-%s", since.Format("2006-01-02")),
+		Type:        CardWeeklyRecap,
+		DisplayMode: mode,
+		IconKind:    IconRecap,
+		Title:       "This week at a glance",
+		Body:        weeklyRecapBody(kudosReceived, kudosSent, comments, ringClosures),
+		DeepLink:    "/(logged-in)/(tabs)/(feed)/Notifications",
+		Priority:    10, // intentionally last in Catch up
+		Ctas: []ForYouCta{
+			{
+				Label:  "See activity",
+				Kind:   "primary",
+				Action: ForYouCtaAction{Type: "navigate", Href: "/(logged-in)/(tabs)/(feed)/Notifications"},
+			},
+		},
+	}
+	return &card
+}
+
+func (s *Service) safeCount(ctx context.Context, coll *mongo.Collection, filter bson.M) int64 {
+	if coll == nil {
+		return 0
+	}
+	count, err := coll.CountDocuments(ctx, filter)
+	if err != nil {
+		slog.Warn("failed to count documents for weekly recap", "error", err)
+		return 0
+	}
+	return count
+}
+
+func weeklyRecapBody(kudosReceived, kudosSent, comments, ringClosures int64) string {
+	parts := make([]string, 0, 4)
+	if kudosReceived > 0 {
+		parts = append(parts, fmt.Sprintf("%d kudos received", kudosReceived))
+	}
+	if kudosSent > 0 {
+		parts = append(parts, fmt.Sprintf("%d sent", kudosSent))
+	}
+	if comments > 0 {
+		parts = append(parts, fmt.Sprintf("%d comments", comments))
+	}
+	if ringClosures > 0 {
+		parts = append(parts, fmt.Sprintf("%d ring closures", ringClosures))
+	}
+	if len(parts) == 0 {
+		return "A quiet week."
+	}
+	return joinWithMiddot(parts)
+}
+
+func joinWithMiddot(parts []string) string {
+	out := ""
+	for i, p := range parts {
+		if i > 0 {
+			out += " · "
+		}
+		out += p
+	}
+	return out
 }
 
 func (s *Service) buildPostPromptCard(ctx context.Context, userID primitive.ObjectID, exposures map[string]ExposureDoc) *ForYouCard {

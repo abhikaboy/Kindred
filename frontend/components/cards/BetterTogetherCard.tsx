@@ -5,6 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { AddressBook, ShareNetwork, Gift, ListChecks } from "phosphor-react-native";
 import { useRouter } from "expo-router";
 import { useReferral } from "@/hooks/useReferral";
+import { APP_STORE_URL } from "@/constants/appLinks";
 
 type Props = {
     onSyncContacts?: () => void;
@@ -72,8 +73,8 @@ const BetterTogetherCard = ({ onSyncContacts, isLoadingContacts, isFindingFriend
 
     const handleShareInvite = async () => {
         const message = referralCode
-            ? `Join me on Kindred! Use my referral code "${referralCode}" when you sign up: https://kindred.so`
-            : "Join me on Kindred! Download the app and let's grow together: https://kindred.so";
+            ? `Join me on Kindred! Use my referral code "${referralCode}" when you sign up: ${APP_STORE_URL}`
+            : `Join me on Kindred! Download the app and let's grow together: ${APP_STORE_URL}`;
         try {
             await Share.share({ message });
         } catch (_) {}

@@ -12,6 +12,8 @@ type ForYouCardType string
 const (
 	CardKudosReceived        ForYouCardType = "kudos_received"
 	CardCommentReply         ForYouCardType = "comment_reply"
+	CardFriendRequestsCount  ForYouCardType = "friend_requests_count"
+	CardWeeklyRecap          ForYouCardType = "weekly_recap"
 	CardReciprocityEncourage ForYouCardType = "reciprocity_encourage"
 	CardReciprocityReact     ForYouCardType = "reciprocity_react"
 	CardRingProgress         ForYouCardType = "ring_progress"
@@ -29,6 +31,7 @@ const (
 	IconPost      ForYouIconKind = "post"
 	IconComment   ForYouIconKind = "comment"
 	IconBlueprint ForYouIconKind = "blueprint"
+	IconRecap     ForYouIconKind = "recap"
 )
 
 // DisplayMode is the layout the client should use for a card.

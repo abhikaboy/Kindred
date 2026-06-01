@@ -1,181 +1,86 @@
-import React, { useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { ThemedText } from "../ThemedText";
-import PreviewIcon from "../profile/PreviewIcon";
+import React from "react";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { Sparkle } from "phosphor-react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from "react-native-reanimated";
+import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import KudosItem from "@/components/cards/KudosItem";
+import { getNotificationTimeLabel } from "./notificationTime";
 
 type Props = {
     name: string;
     userId: string;
     taskName: string;
+    message?: string;
     icon: string;
     time: number;
-    // For encouragements this is the task ID; for congratulations this is the post ID.
-    // Empty string if the notification has no entity to deep-link to (e.g. profile-scope encouragement).
+    // Task ID for encouragements / Post ID for congratulations. Empty string
+    // for profile-scope kudos (e.g. ring encouragements) where there's no
+    // task to deep-link to.
     referenceId: string;
     type?: "encouragement" | "congratulation";
 };
 
-const UserInfoEncouragementNotification = ({ name, userId, taskName, icon, time, referenceId, type = "encouragement" }: Props) => {
+const UserInfoEncouragementNotification = ({
+    name,
+    userId,
+    taskName,
+    message,
+    icon,
+    time,
+    referenceId,
+    type = "encouragement",
+}: Props) => {
     const ThemedColor = useThemeColor();
+    const isCongrats = type === "congratulation";
+    // Profile-scope (ring) encouragements arrive with no taskName and no
+    // referenceId — KudosItem renders a "Profile Encouragement" header
+    // instead of an empty category/task row when we pass scope: "profile".
+    const isProfileScope = !referenceId && !taskName;
 
-    const getTimeLabel = (timestamp: number) => {
-        const currentTime = Date.now();
-        const notificationDate = new Date(timestamp);
-        const timeDifference = currentTime - timestamp;
-
-        const diffMinutes = Math.floor(timeDifference / (1000 * 60));
-        const diffHours = Math.floor(timeDifference / (1000 * 60 * 60));
-        const diffDays = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) {
-            if (diffMinutes < 60) {
-                return diffMinutes === 0 ? "Just now" : `${diffMinutes}m ago`;
-            } else {
-                return `${diffHours}h ago`;
-            }
-        }
-
-        if (diffDays < 7) {
-            return `${diffDays}d ago`;
-        }
-
-        const today = new Date();
-        if (
-            notificationDate.getMonth() === today.getMonth() &&
-            notificationDate.getFullYear() === today.getFullYear()
-        ) {
-            return `${notificationDate.getDate()} ${getMonthName(notificationDate).substring(0, 3)}`;
-        }
-
-        return `${notificationDate.getDate()} ${getMonthName(notificationDate).substring(0, 3)} ${notificationDate.getFullYear()}`;
-    };
-    const getMonthName = (date: Date) => {
-        const months = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-        ];
-        return months[date.getMonth()];
+    const handlePress = () => {
+        router.push(`/account/${userId}` as never);
     };
 
-    const timeLabel = getTimeLabel(time);
-
-    const handleNotificationPress = () => {
-        // Congratulations reference a post; encouragements reference a task.
-        // Fall back to the kudos tab if no referenceId (e.g. profile-scope encouragement).
-        if (!referenceId) {
-            const tab = type === "congratulation" ? "congratulations" : "encouragements";
-            router.push(`/(logged-in)/(tabs)/(task)/kudos?tab=${tab}`);
-            return;
-        }
-        if (type === "congratulation") {
-            router.push(`/(logged-in)/posting/${referenceId}`);
-        } else {
-            router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}`);
-        }
+    const kudos = {
+        id: `${type}-${time}`,
+        sender: { name, picture: icon, id: userId },
+        message: message || (isCongrats ? "Congratulated you!" : "Sent you an encouragement"),
+        scope: isProfileScope ? "profile" : "task",
+        categoryName: isProfileScope ? "" : isCongrats ? "Congratulations" : "Encouragement",
+        taskName: isProfileScope ? "" : taskName,
+        timestamp: new Date(time).toISOString(),
+        read: true,
+        type: "message",
     };
-
-    // Animation for sparkle icon
-    const scale = useSharedValue(1);
-    const rotation = useSharedValue(0);
-
-    useEffect(() => {
-        // Subtle pulse and rotation animation
-        scale.value = withRepeat(
-            withSequence(
-                withTiming(1.15, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            false
-        );
-
-        rotation.value = withRepeat(
-            withSequence(
-                withTiming(5, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(-5, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            false
-        );
-    }, []);
-
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                { scale: scale.value },
-                { rotate: `${rotation.value}deg` as any },
-            ],
-        } as any;
-    });
 
     return (
-        <TouchableOpacity style={styles.container} onPress={handleNotificationPress} activeOpacity={0.7}>
-            <TouchableOpacity onPress={() => router.push(`/account/${userId}`)} activeOpacity={0.7}>
-                <PreviewIcon size={"smallMedium"} icon={icon} />
-            </TouchableOpacity>
-
-            <View style={styles.textContainer}>
-                <ThemedText numberOfLines={0} ellipsizeMode="tail" type="smallerDefault" style={styles.text}>
-                    <View>
-                        <ThemedText>
-                            <ThemedText type="smallerDefault" style={{ fontWeight: "500" }}>{name}</ThemedText>
-                            <ThemedText type="smallerDefault">
-                                {type === "congratulation"
-                                    ? ` congratulated you on completing ${taskName}`
-                                    : ` sent you an encouragement for ${taskName}`}
-                            </ThemedText>
-                        </ThemedText>
-                        <ThemedText type="caption">
-                            {timeLabel}
-                        </ThemedText>
-                    </View>
-                </ThemedText>
-            </View>
-
-            <Animated.View style={[styles.iconContainer, animatedStyle] as any}>
-                <Sparkle size={36} color={ThemedColor.primary} weight="fill" />
-            </Animated.View>
-        </TouchableOpacity>
+        <KudosItem
+            kudos={kudos}
+            formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
+            visible
+            footerSlot={
+                <TouchableOpacity
+                    onPress={handlePress}
+                    activeOpacity={0.8}
+                    style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Send kudos back to ${name}`}>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
+                        Send kudos back
+                    </ThemedText>
+                </TouchableOpacity>
+            }
+        />
     );
 };
 
 export default UserInfoEncouragementNotification;
 
 const styles = StyleSheet.create({
-    container: {
-        flexDirection: "row",
-        width: "100%",
-        gap: 12,
-    },
-    textContainer: {
-        flex: 1,
-        flexShrink: 1,
-        marginRight: 8,
-    },
-    text: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-    },
-    iconContainer: {
-        width: 36,
-        height: 36,
-        justifyContent: "center",
-        alignItems: "center",
-        marginLeft: "auto",
+    ctaButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
     },
 });
