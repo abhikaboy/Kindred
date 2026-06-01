@@ -11,6 +11,7 @@ import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRings
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import type { NotificationDocument } from "@/api/types";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -324,6 +325,8 @@ const Notifications = () => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const { notifications: rawNotifications, loading, error, refreshNotifications, markAllAsRead } = useNotifications();
+    const { user: currentUser } = useAuth();
+    const currentUserId = currentUser?._id;
     const hasMarkedAsRead = useRef(false);
     const { capture } = useAnalytics();
     const [ready, setReady] = useState(false);
@@ -430,6 +433,13 @@ const Notifications = () => {
         try {
             const rawType = notification.notificationType.toLowerCase();
             if (!SUPPORTED_TYPES.has(rawType)) {
+                return null;
+            }
+            // Strip legacy self-notifications (older rings-closed docs where
+            // the user notified themselves about their own rings closing).
+            // The backend no longer writes these, but pre-existing docs in
+            // the DB would otherwise still render.
+            if (rawType === "rings_closed" && currentUserId && notification.user.id === currentUserId) {
                 return null;
             }
             const notificationTime = new Date(notification.time).getTime();
