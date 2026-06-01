@@ -27,6 +27,10 @@ export function computeVisibleItems(completion: CompletionMap): ItemKey[] {
     return gated.slice(0, 3);
 }
 
+export function computeCompletedItems(completion: CompletionMap): ItemKey[] {
+    return PRIORITY.filter((key) => completion[key]);
+}
+
 export function shouldShowCard(completion: CompletionMap, dismissed: boolean): boolean {
     if (dismissed) return false;
     return Object.values(completion).some((done) => !done);

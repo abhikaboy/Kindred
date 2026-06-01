@@ -1,5 +1,6 @@
 import {
     computeCompletion,
+    computeCompletedItems,
     computeVisibleItems,
     shouldShowCard,
     type ChecklistUser,
@@ -61,6 +62,39 @@ describe('computeVisibleItems', () => {
     it('shows nothing when all four are done', () => {
         const visible = computeVisibleItems({ task: true, kudos: true, friend: true, rings: true });
         expect(visible).toEqual([]);
+    });
+});
+
+describe('computeCompletedItems', () => {
+    it('returns nothing for a brand-new user', () => {
+        expect(computeCompletedItems({ task: false, kudos: false, friend: false, rings: false })).toEqual([]);
+    });
+
+    it('returns completed items in priority order', () => {
+        expect(computeCompletedItems({ task: true, kudos: false, friend: true, rings: false })).toEqual([
+            'task',
+            'friend',
+        ]);
+    });
+
+    it('includes a completed rings even if task is still pending (no gating for done items)', () => {
+        expect(computeCompletedItems({ task: false, kudos: false, friend: false, rings: true })).toEqual(['rings']);
+    });
+
+    it('returns all four when everything is done', () => {
+        expect(computeCompletedItems({ task: true, kudos: true, friend: true, rings: true })).toEqual([
+            'task',
+            'kudos',
+            'friend',
+            'rings',
+        ]);
+    });
+
+    it('never overlaps with the visible rotation', () => {
+        const completion = { task: true, kudos: false, friend: false, rings: false };
+        const done = computeCompletedItems(completion);
+        const visible = computeVisibleItems(completion);
+        expect(done.some((k) => visible.includes(k))).toBe(false);
     });
 });
 
