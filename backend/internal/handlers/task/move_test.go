@@ -20,6 +20,31 @@ type MoveTaskTestSuite struct {
 func (s *MoveTaskTestSuite) SetupTest() {
 	s.BaseSuite.SetupTest()
 	s.service = NewService(s.Collections)
+
+	// MoveTask performs a multi-document transaction, which MongoDB only allows
+	// on a replica set or mongos. Local and CI test databases are frequently
+	// standalone mongod instances, so skip these cases there rather than failing.
+	if !s.supportsTransactions() {
+		s.T().Skip("MoveTask requires a replica set for transactions; skipping on standalone mongod")
+	}
+}
+
+// supportsTransactions reports whether the connected MongoDB deployment can run
+// multi-document transactions (replica set or sharded cluster).
+func (s *MoveTaskTestSuite) supportsTransactions() bool {
+	var res bson.M
+	err := s.Collections["categories"].Database().
+		RunCommand(s.Ctx, bson.D{{Key: "hello", Value: 1}}).Decode(&res)
+	if err != nil {
+		return false
+	}
+	if _, ok := res["setName"]; ok { // replica set member
+		return true
+	}
+	if msg, ok := res["msg"]; ok && msg == "isdbgrid" { // mongos (sharded cluster)
+		return true
+	}
+	return false
 }
 
 func TestMoveTaskService(t *testing.T) {
