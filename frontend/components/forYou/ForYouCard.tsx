@@ -10,6 +10,10 @@ import { ForYouCtaRow } from "./ForYouCta";
 type Props = {
     card: ForYouCardModel;
     onAction?: (action: ForYouCtaAction, cardType: ForYouCardType) => void;
+    /** Adds a subtle drop shadow to the card. Used in the Catch up section to lift it off the page. */
+    elevated?: boolean;
+    /** When true, every CTA on the card renders as secondary. Used for non-lead cards in Suggested for you so there is only one primary CTA per section. */
+    demoteCtas?: boolean;
 };
 
 const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
@@ -21,9 +25,13 @@ const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
     blueprint: "grid",
 };
 
-export default function ForYouCard({ card, onAction }: Props) {
+export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Props) {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
+
+    const ctas = demoteCtas
+        ? card.ctas.map((c) => ({ ...c, kind: "secondary" as const }))
+        : card.ctas;
 
     const dispatchAction = (action: ForYouCtaAction) => {
         if (onAction) {
@@ -40,7 +48,7 @@ export default function ForYouCard({ card, onAction }: Props) {
     const iconName = ICON_FOR_KIND[card.iconKind];
 
     if (card.displayMode === "compact") {
-        const inlineCta = card.ctas[0];
+        const inlineCta = ctas[0];
         return (
             <TouchableOpacity
                 onPress={handleCardPress}
@@ -76,7 +84,7 @@ export default function ForYouCard({ card, onAction }: Props) {
         <TouchableOpacity
             onPress={handleCardPress}
             activeOpacity={0.8}
-            style={styles.fullContainer}
+            style={[styles.fullContainer, elevated && styles.elevation]}
             accessibilityRole="button"
             accessibilityLabel={card.title}>
             <View style={styles.fullHeader}>
@@ -88,7 +96,7 @@ export default function ForYouCard({ card, onAction }: Props) {
                     {card.body ? <ThemedText type="caption">{card.body}</ThemedText> : null}
                 </View>
             </View>
-            <ForYouCtaRow ctas={card.ctas} onAction={dispatchAction} />
+            <ForYouCtaRow ctas={ctas} onAction={dispatchAction} />
         </TouchableOpacity>
     );
 }
@@ -129,6 +137,13 @@ const stylesheet = (ThemedColor: any) =>
             backgroundColor: ThemedColor.lightened,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
+        },
+        elevation: {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 2,
         },
         fullHeader: {
             flexDirection: "row",
