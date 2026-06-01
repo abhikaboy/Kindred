@@ -1467,3 +1467,69 @@ func (s *PostServiceTestSuite) TestToggleReaction_PostNotFound() {
 	// Should return error
 	s.Error(err)
 }
+
+// ========================================
+// resolveTaggedUsers Tests
+// ========================================
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_FiltersNonFriends() {
+	author := s.GetUser(0)
+	friend := s.GetUser(1)
+	stranger := s.GetUser(2)
+
+	// Seed a "friends" connection between author and friend (sorted users array).
+	sortedIDs := []primitive.ObjectID{author.ID, friend.ID}
+	if author.ID.Hex() > friend.ID.Hex() {
+		sortedIDs = []primitive.ObjectID{friend.ID, author.ID}
+	}
+	_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+		"users":  sortedIDs,
+		"status": "friends",
+	})
+	s.Require().NoError(err)
+
+	// Candidate set includes friend and stranger; only friend should survive.
+	candidates := []primitive.ObjectID{friend.ID, stranger.ID}
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Len(result, 1)
+	s.Equal(friend.ID, result[0].ID)
+	s.Equal(friend.Handle, result[0].Handle) // canonical handle from users collection
+}
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_DedupesAndPreservesOrder() {
+	author := s.GetUser(0)
+	f1 := s.GetUser(1)
+	f2 := s.GetUser(2)
+
+	for _, friendID := range []primitive.ObjectID{f1.ID, f2.ID} {
+		sortedIDs := []primitive.ObjectID{author.ID, friendID}
+		if author.ID.Hex() > friendID.Hex() {
+			sortedIDs = []primitive.ObjectID{friendID, author.ID}
+		}
+		_, err := s.Collections["friend-requests"].InsertOne(s.Ctx, bson.M{
+			"users":  sortedIDs,
+			"status": "friends",
+		})
+		s.Require().NoError(err)
+	}
+
+	candidates := []primitive.ObjectID{f2.ID, f1.ID, f2.ID} // f2 duplicated
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Len(result, 2)
+	s.Equal(f2.ID, result[0].ID) // insertion order preserved
+	s.Equal(f1.ID, result[1].ID)
+}
+
+func (s *PostServiceTestSuite) TestResolveTaggedUsers_DropsAuthorSelf() {
+	author := s.GetUser(0)
+
+	candidates := []primitive.ObjectID{author.ID}
+	result, err := s.service.ResolveTaggedUsers(s.Ctx, author.ID, candidates)
+
+	s.NoError(err)
+	s.Empty(result)
+}

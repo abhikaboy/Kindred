@@ -1287,3 +1287,93 @@ func (s *Service) GetFriendsRingClosures(userID primitive.ObjectID, limit, offse
 
 	return results, int(total), nil
 }
+
+// ResolveTaggedUsers validates a candidate set of user IDs against the
+// author's friends list and returns canonical MentionReferences in the
+// original insertion order, deduped, with self excluded.
+func (s *Service) ResolveTaggedUsers(ctx context.Context, authorID primitive.ObjectID, candidates []primitive.ObjectID) ([]types.MentionReference, error) {
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	// 1. Load the author's accepted friend IDs.
+	cursor, err := s.Connections.Find(ctx, bson.M{
+		"users":  authorID,
+		"status": "friends",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query author's friends: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var connections []struct {
+		Users []primitive.ObjectID `bson:"users"`
+	}
+	if err := cursor.All(ctx, &connections); err != nil {
+		return nil, fmt.Errorf("failed to decode friends: %w", err)
+	}
+
+	friends := make(map[primitive.ObjectID]struct{}, len(connections))
+	for _, c := range connections {
+		for _, uid := range c.Users {
+			if uid != authorID {
+				friends[uid] = struct{}{}
+			}
+		}
+	}
+
+	// 2. Walk candidates in order, keeping the first occurrence of each
+	//    candidate that is a friend (and not the author themselves).
+	seen := make(map[primitive.ObjectID]struct{}, len(candidates))
+	var validIDs []primitive.ObjectID
+	for _, cid := range candidates {
+		if cid == authorID {
+			continue
+		}
+		if _, ok := friends[cid]; !ok {
+			continue
+		}
+		if _, dup := seen[cid]; dup {
+			continue
+		}
+		seen[cid] = struct{}{}
+		validIDs = append(validIDs, cid)
+	}
+
+	if len(validIDs) == 0 {
+		return nil, nil
+	}
+
+	// 3. Fetch canonical handles in one query.
+	userCursor, err := s.Users.Find(ctx, bson.M{"_id": bson.M{"$in": validIDs}}, options.Find().SetProjection(bson.M{"_id": 1, "handle": 1}))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user handles: %w", err)
+	}
+	defer userCursor.Close(ctx)
+
+	var users []struct {
+		ID     primitive.ObjectID `bson:"_id"`
+		Handle string             `bson:"handle"`
+	}
+	if err := userCursor.All(ctx, &users); err != nil {
+		return nil, fmt.Errorf("failed to decode users: %w", err)
+	}
+
+	handleByID := make(map[primitive.ObjectID]string, len(users))
+	for _, u := range users {
+		handleByID[u.ID] = u.Handle
+	}
+
+	// 4. Build result in the order of validIDs.
+	result := make([]types.MentionReference, 0, len(validIDs))
+	for _, id := range validIDs {
+		handle, ok := handleByID[id]
+		if !ok {
+			// User was a friend but doesn't exist anymore — skip.
+			continue
+		}
+		result = append(result, types.MentionReference{ID: id, Handle: handle})
+	}
+
+	return result, nil
+}
