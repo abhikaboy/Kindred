@@ -12,7 +12,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
 import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays, format, isThisWeek } from "date-fns";
-import { Sparkle, Timer, Repeat } from "phosphor-react-native";
+import { Sparkle, Timer, Repeat, Camera } from "phosphor-react-native";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -50,6 +50,7 @@ interface Props {
     showRedOutline?: boolean; // Add red outline when categoryId is not configured
     detailed?: boolean; // Controls whether to show date labels like "(today)" or "(tomorrow)"
     inlineComponent?: React.ReactNode; // Optional component to render inline below the content text
+    onPostPress?: () => void; // When provided, renders a camera button that starts a post for this task
     highlightContent?: boolean; // Whether to highlight just the task content text
     encouragementConfig?: {
         userHandle?: string;
@@ -69,6 +70,7 @@ const TaskCard = ({
     priority,
     redirect = false,
     inlineComponent,
+    onPostPress,
     id,
     categoryId,
     encourage = false,
@@ -457,6 +459,17 @@ const TaskCard = ({
                     {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                 </View>
                 <View style={styles.iconRow}>
+                    {onPostPress && (
+                        <TouchableOpacity
+                            testID="task-card-post-button"
+                            hitSlop={8}
+                            onPress={(e) => {
+                                e?.stopPropagation?.();
+                                onPostPress();
+                            }}>
+                            <Camera size={20} color={ThemedColor.caption} weight="regular" />
+                        </TouchableOpacity>
+                    )}
                     <ConditionalView condition={!encourage}>
                         <ConditionalView condition={isRunningState}>
                             <Timer size={20} color={ThemedColor.caption} weight="regular" />
