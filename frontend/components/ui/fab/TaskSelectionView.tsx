@@ -7,90 +7,71 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 interface TaskSelectionViewProps {
     opacity: Animated.Value;
     onTaskPress: () => void;
-    onSecondaryPress: () => void;
+    onPostPress: () => void;
+    onWorkspacePress: () => void;
     onVoiceInputPress: () => void;
-    isOnFeedTab: boolean;
     onLayout: (event: any) => void;
 }
 
 export const TaskSelectionView: React.FC<TaskSelectionViewProps> = ({
     opacity,
     onTaskPress,
-    onSecondaryPress,
+    onPostPress,
+    onWorkspacePress,
     onVoiceInputPress,
-    isOnFeedTab,
     onLayout,
 }) => {
     const ThemedColor = useThemeColor();
 
     return (
         <Animated.View
-            style={[
-                styles.menuSection,
-                {
-                    opacity,
-                }
-            ]}
+            style={[styles.menuSection, { opacity }]}
             onLayout={onLayout}
         >
-            <TouchableOpacity
-                style={[styles.menuItem, { borderBottomColor: ThemedColor.lightened }]}
-                onPress={onTaskPress}
-            >
+            <TouchableOpacity style={styles.menuItem} onPress={onTaskPress}>
                 <View style={styles.menuItemContent}>
                     <View style={[styles.iconContainer, { backgroundColor: ThemedColor.lightened }]}>
                         <CheckCircle size={24} color={ThemedColor.primary} weight="bold" />
                     </View>
                     <View style={styles.menuItemText}>
                         <ThemedText type="defaultSemiBold">Task</ThemedText>
-                        <ThemedText type="caption">
-                            Create a new task
-                        </ThemedText>
+                        <ThemedText type="caption">Create a new task</ThemedText>
                     </View>
                 </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={onSecondaryPress}
-            >
+            <TouchableOpacity style={styles.menuItem} onPress={onPostPress}>
                 <View style={styles.menuItemContent}>
-                    <View
-                        style={[
-                            styles.iconContainer,
-                            { backgroundColor: ThemedColor.lightened },
-                        ]}
-                    >
-                        {isOnFeedTab ? (
-                            <Camera size={20} color={ThemedColor.primary} weight="bold" />
-                        ) : (
-                            <Folder size={20} color={ThemedColor.primary} weight="bold" />
-                        )}
+                    <View style={[styles.iconContainer, { backgroundColor: ThemedColor.lightened }]}>
+                        <Camera size={20} color={ThemedColor.primary} weight="bold" />
                     </View>
                     <View style={styles.menuItemText}>
-                        <ThemedText type="defaultSemiBold">
-                            {isOnFeedTab ? "Post" : "Workspace"}
-                        </ThemedText>
-                        <ThemedText type="caption">
-                            {isOnFeedTab ? "Share a completed task" : "Create a new workspace"}
-                        </ThemedText>
+                        <ThemedText type="defaultSemiBold">Post</ThemedText>
+                        <ThemedText type="caption">Share a completed task</ThemedText>
                     </View>
                 </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={onVoiceInputPress}
-            >
+            <TouchableOpacity style={styles.menuItem} onPress={onWorkspacePress}>
+                <View style={styles.menuItemContent}>
+                    <View style={[styles.iconContainer, { backgroundColor: ThemedColor.lightened }]}>
+                        <Folder size={20} color={ThemedColor.primary} weight="bold" />
+                    </View>
+                    <View style={styles.menuItemText}>
+                        <ThemedText type="defaultSemiBold">Workspace</ThemedText>
+                        <ThemedText type="caption">Create a new workspace</ThemedText>
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={onVoiceInputPress}>
                 <View style={styles.menuItemContent}>
                     <View style={[styles.iconContainer, { backgroundColor: ThemedColor.lightened }]}>
                         <Microphone size={22} color={ThemedColor.primary} weight="bold" />
                     </View>
                     <View style={styles.menuItemText}>
                         <ThemedText type="defaultSemiBold">Voice Input</ThemedText>
-                        <ThemedText type="caption">
-                            Capture tasks with your voice
-                        </ThemedText>
+                        <ThemedText type="caption">Capture tasks with your voice</ThemedText>
                     </View>
                 </View>
             </TouchableOpacity>
