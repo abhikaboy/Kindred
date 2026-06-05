@@ -106,19 +106,9 @@ export default function SpeechBubbleCard({
 
                     <View style={styles.headerRow}>
                         <View style={styles.headerContent}>{header}</View>
-                        {thumbnailUri ? (
-                            <CachedImage
-                                testID="bubble-thumbnail"
-                                source={{ uri: thumbnailUri }}
-                                variant="thumbnail"
-                                cachePolicy="memory-disk"
-                                style={styles.thumbnail}
-                            />
-                        ) : (
-                            <ThemedText type="caption" style={styles.timeTextTopRight}>
-                                {timeLabel}
-                            </ThemedText>
-                        )}
+                        <ThemedText type="caption" style={styles.timeTextTopRight}>
+                            {timeLabel}
+                        </ThemedText>
                     </View>
                 </View>
 
@@ -131,27 +121,31 @@ export default function SpeechBubbleCard({
                     </View>
 
                     <View style={styles.bubbleBody}>
-                        {imageUri ? (
-                            <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
-                        ) : message ? (
-                            <ThemedText type="lightBody" style={styles.messageText}>
-                                {message}
-                            </ThemedText>
-                        ) : null}
+                        <View style={styles.contentRow}>
+                            <View style={styles.contentMain}>
+                                {imageUri ? (
+                                    <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
+                                ) : message ? (
+                                    <ThemedText type="lightBody" style={styles.messageText}>
+                                        {message}
+                                    </ThemedText>
+                                ) : null}
+                            </View>
+                            {thumbnailUri ? (
+                                <CachedImage
+                                    testID="bubble-thumbnail"
+                                    source={{ uri: thumbnailUri }}
+                                    variant="thumbnail"
+                                    cachePolicy="memory-disk"
+                                    style={styles.thumbnail}
+                                />
+                            ) : null}
+                        </View>
 
                         {footerSlot ? (
                             <View style={styles.footerRow}>
                                 <View>{footerSlot}</View>
-                                {thumbnailUri ? (
-                                    <ThemedText type="caption" style={styles.timeTextInline}>
-                                        {timeLabel}
-                                    </ThemedText>
-                                ) : null}
                             </View>
-                        ) : thumbnailUri ? (
-                            <ThemedText type="caption" style={styles.timeText}>
-                                {timeLabel}
-                            </ThemedText>
                         ) : null}
                     </View>
                 </View>
@@ -191,6 +185,8 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             gap: 8,
         },
         headerContent: { flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+        contentRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+        contentMain: { flex: 1 },
         thumbnail: { width: 40, height: 40, borderRadius: 6 },
         messageText: { color: ThemedColor.caption, fontSize: 15, lineHeight: 20 },
         image: {
@@ -202,7 +198,6 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderRadius: 8,
             marginBottom: 8,
         },
-        timeText: { color: ThemedColor.caption, fontSize: 12, marginTop: 10 },
         timeTextTopRight: { color: ThemedColor.caption, fontSize: 12, flexShrink: 0, alignSelf: "flex-start" },
         unreadDot: {
             position: "absolute",
@@ -215,5 +210,4 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             zIndex: 1,
         },
         footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8 },
-        timeTextInline: { color: ThemedColor.caption, fontSize: 12 },
     });
