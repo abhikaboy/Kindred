@@ -3,7 +3,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Reanimated, { runOnJS, useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { runOnJS } from "react-native-reanimated";
 import PostCard from "@/components/cards/PostCard";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
@@ -81,11 +81,6 @@ export default function Feed() {
         router.push("/(logged-in)/(tabs)/(feed)/Notifications");
     }, [router]);
 
-    // Drives the interactive left-drag: the feed follows the finger, then springs
-    // back on release (we push Notifications, which slides in over it).
-    const dragX = useSharedValue(0);
-    const dragStyle = useAnimatedStyle(() => ({ transform: [{ translateX: dragX.value }] }));
-
     // Swipe left on the feed to open Notifications (DM-style). activeOffsetX makes
     // it claim only horizontal drags; failOffsetY yields to the vertical scroll.
     const swipeToNotifications = useMemo(
@@ -93,19 +88,13 @@ export default function Feed() {
             Gesture.Pan()
                 .activeOffsetX(-20)
                 .failOffsetY([-15, 15])
-                .onUpdate((e) => {
-                    "worklet";
-                    // Follow the finger leftward, with a soft cap.
-                    dragX.value = Math.max(-140, Math.min(0, e.translationX));
-                })
                 .onEnd((e) => {
                     "worklet";
                     if (e.translationX < -80 || (e.velocityX < -700 && e.translationX < -30)) {
                         runOnJS(goToNotifications)();
                     }
-                    dragX.value = withSpring(0, { damping: 20, stiffness: 200, mass: 0.5 });
                 }),
-        [goToNotifications, dragX]
+        [goToNotifications]
     );
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
@@ -717,8 +706,6 @@ export default function Feed() {
 
     return (
         <View style={styles.container}>
-            <GestureDetector gesture={swipeToNotifications}>
-            <Reanimated.View style={[styles.container, dragStyle]}>
             <Animated.View
                 style={[
                     styles.animatedHeader,
@@ -763,6 +750,7 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
+            <GestureDetector gesture={swipeToNotifications}>
             <FlatList
                 ref={flatListRef}
                 data={currentFeed.id === "feed" ? filteredFeedItems : sortedPosts}
@@ -799,7 +787,6 @@ export default function Feed() {
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
             />
-            </Reanimated.View>
             </GestureDetector>
         </View>
     );
