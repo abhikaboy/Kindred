@@ -400,7 +400,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 </View>
 
                 {/* Google Calendar Connection Card */}
-                {showGoogleCalendarCard && (
+                {/* Once Google Calendar is linked, the whole section is hidden from the
+                    home page — there's nothing left to prompt. (Sync still lives elsewhere.) */}
+                {showGoogleCalendarCard && !isCalendarLinked && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
                         <View style={{ marginBottom: 8 }}>
                             <SectionHeader title="GOOGLE CALENDAR" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
