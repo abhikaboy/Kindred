@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     emptyText: {
-        textAlign: "center",
+        textAlign: "left",
         marginTop: 12,
         marginBottom: 12,
     },

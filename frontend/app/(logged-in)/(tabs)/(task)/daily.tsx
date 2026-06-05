@@ -189,17 +189,11 @@ const Daily = (props: Props) => {
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    style={[
-                        styles.backButton,
-                        {
-                            backgroundColor: ThemedColor.lightened,
-                            borderColor: ThemedColor.tertiary,
-                        },
-                    ]}
+                    style={[styles.backButton, { backgroundColor: ThemedColor.primary }]}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     accessibilityRole="button"
                     accessibilityLabel="Go back">
-                    <CaretLeft size={24} color={ThemedColor.text} weight="bold" />
+                    <CaretLeft size={24} color="#FFFFFF" weight="bold" />
                 </TouchableOpacity>
 
                 {renderHeader()}
@@ -265,12 +259,11 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: 100,
         left: 16,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         justifyContent: "center",
         alignItems: "center",
-        borderWidth: 1,
         zIndex: 1000,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
