@@ -94,7 +94,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
                     />
                 </View>
             ) : (
-                <ThemedText type="lightBody" style={styles.emptyText}>
+                <ThemedText type="caption" style={styles.emptyText}>
                     No tasks for this date
                 </ThemedText>
             )}
@@ -139,6 +139,6 @@ const styles = StyleSheet.create({
     emptyText: {
         textAlign: "left",
         marginTop: 12,
-        marginBottom: 12,
+        marginBottom: 4,
     },
 });
