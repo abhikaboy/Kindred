@@ -9,7 +9,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { CaretLeft } from "phosphor-react-native";
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
@@ -23,6 +24,7 @@ import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
 import { ScheduleTaskSheet } from "@/components/daily/ScheduleTaskSheet";
 import { FloatingDateNav } from "@/components/daily/FloatingDateNav";
+import { FloatingViewToggle } from "@/components/daily/FloatingViewToggle";
 import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
 // Hooks
@@ -161,12 +163,7 @@ const Daily = (props: Props) => {
 
     const renderHeader = () => (
         <View style={{  marginBottom: 12 }}>
-            <DailyHeader
-                onOpenDrawer={() => drawerRef.current?.openDrawer()}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                selectedDate={selectedDate}
-            />
+            <DailyHeader selectedDate={selectedDate} />
             {/* <DatePager
                 centerDate={centerDate}
                 selectedDate={selectedDate}
@@ -190,6 +187,22 @@ const Daily = (props: Props) => {
             onDrawerClose={() => setIsDrawerOpen(false)}>
 
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={[
+                        styles.backButton,
+                        {
+                            top: insets.top + 4,
+                            backgroundColor: ThemedColor.lightened,
+                            borderColor: ThemedColor.tertiary,
+                        },
+                    ]}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back">
+                    <CaretLeft size={24} color={ThemedColor.text} weight="bold" />
+                </TouchableOpacity>
+
                 {renderHeader()}
 
                 <AnimatedTabContent activeTab={activeTab === "List" ? 0 : 1} setActiveTab={(i) => setActiveTab(i === 0 ? "List" : "Calendar")} flex>
