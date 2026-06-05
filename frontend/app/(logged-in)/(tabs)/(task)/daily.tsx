@@ -262,4 +262,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    backButton: {
+        position: "absolute",
+        left: 16,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 1,
+        zIndex: 1000,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 8,
+    },
 });
