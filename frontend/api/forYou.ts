@@ -20,6 +20,12 @@ export type ForYouSubject = {
     avatarUrl?: string;
 };
 
+/** A single labeled value row in a weekly_recap card's table. */
+export type ForYouMetric = {
+    label: string;
+    value: number;
+};
+
 export type ForYouCtaAction =
     | { type: "navigate"; href: string }
     | { type: "send_kudos"; targetUserId: string; referenceId?: string }
@@ -39,6 +45,8 @@ export type ForYouCard = {
     iconKind: ForYouIconKind;
     title: string;
     body?: string;
+    /** Present on weekly_recap cards: structured value rows for the table. */
+    metrics?: ForYouMetric[];
     subject?: ForYouSubject;
     ctas: ForYouCta[];
     deepLink: string;

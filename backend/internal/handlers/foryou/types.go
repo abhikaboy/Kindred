@@ -49,6 +49,12 @@ const (
 	CompactViewThreshold        = 5
 )
 
+// ForYouMetric is a single labeled value row in a weekly_recap card's table.
+type ForYouMetric struct {
+	Label string `json:"label" example:"Kudos received"`
+	Value int    `json:"value" example:"5"`
+}
+
 // ForYouSubject is the human-visible "who" a card is about (when applicable).
 type ForYouSubject struct {
 	UserID      string `json:"userId" example:"507f1f77bcf86cd799439011"`
@@ -83,6 +89,7 @@ type ForYouCard struct {
 	IconKind    ForYouIconKind `json:"iconKind"`
 	Title       string         `json:"title"`
 	Body        string         `json:"body,omitempty" doc:"Present iff displayMode == full"`
+	Metrics     []ForYouMetric `json:"metrics,omitempty" doc:"Structured value rows for weekly_recap cards"`
 	Subject     *ForYouSubject `json:"subject,omitempty"`
 	Ctas        []ForYouCta    `json:"ctas"`
 	DeepLink    string         `json:"deepLink" doc:"Tap-target for the entire card"`

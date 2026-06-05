@@ -418,8 +418,14 @@ func (s *Service) buildWeeklyRecapCard(ctx context.Context, userID primitive.Obj
 		IconKind:    IconRecap,
 		Title:       "This week at a glance",
 		Body:        weeklyRecapBody(kudosReceived, kudosSent, comments, ringClosures),
-		DeepLink:    "/(logged-in)/(tabs)/(feed)/Notifications",
-		Priority:    10, // intentionally last in Catch up
+		Metrics: []ForYouMetric{
+			{Label: "Kudos received", Value: int(kudosReceived)},
+			{Label: "Kudos sent", Value: int(kudosSent)},
+			{Label: "Comments", Value: int(comments)},
+			{Label: "Rings closed", Value: int(ringClosures)},
+		},
+		DeepLink: "/(logged-in)/(tabs)/(feed)/Notifications",
+		Priority: 10, // intentionally last in Catch up
 		Ctas: []ForYouCta{
 			{
 				Label:  "See activity",
