@@ -8,6 +8,7 @@ import * as Haptics from "expo-haptics";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
 import { Trophy } from "phosphor-react-native";
+import TagChip from "@/components/TagChip";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 
 type RingsClosedFeedCardProps = {
@@ -82,6 +83,17 @@ const RingsClosedFeedCard = React.memo(({
 
     const isOwnItem = currentUser?._id === user._id;
 
+    // The feed header already shows the actor, so strip a leading display name
+    // from the backend content; the headline reads "Closed all their rings
+    // today!" instead of repeating the name.
+    const message = useMemo(() => {
+        let text = content ?? "";
+        if (user.display_name && text.startsWith(`${user.display_name} `)) {
+            text = text.slice(user.display_name.length + 1);
+        }
+        return text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+    }, [content, user.display_name]);
+
     const styles = useMemo(() => StyleSheet.create({
         container: {
             backgroundColor: ThemedColor.background,
@@ -129,41 +141,37 @@ const RingsClosedFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.caption,
         },
-        categorySection: {
+        cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 18,
+            marginBottom: 14,
+        },
+        taskCard: {
+            backgroundColor: ThemedColor.lightenedCard,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
+            borderRadius: 16,
+            padding: 16,
             gap: 12,
         },
-        taskIndicator: {
-            fontSize: 13,
-            fontWeight: "300",
-            letterSpacing: -0.13,
-            color: ThemedColor.caption,
+        taskTitle: {
+            fontSize: 16,
+            color: ThemedColor.text,
         },
-        categoryRow: {
+        tagsRow: {
+            flexDirection: "row",
+            gap: 8,
+            flexWrap: "wrap",
+        },
+        footerRow: {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            paddingHorizontal: HORIZONTAL_PADDING,
         },
-        categoryInfo: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            maxWidth: "60%",
-            flex: 1,
-        },
-        categoryText: {
-            fontSize: 16,
-            fontWeight: "400",
-            letterSpacing: -0.16,
-            color: ThemedColor.text,
-        },
-        dot: {
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: ThemedColor.primary,
+        actionLabel: {
+            fontSize: 13,
+            letterSpacing: -0.13,
+            color: ThemedColor.caption,
         },
         congratulateButton: {
             flexDirection: "row",
@@ -172,18 +180,8 @@ const RingsClosedFeedCard = React.memo(({
         },
         congratulateText: {
             fontSize: 14,
-            fontWeight: "400",
             letterSpacing: -0.14,
             color: ThemedColor.primary,
-        },
-        contentSection: {
-            paddingHorizontal: HORIZONTAL_PADDING,
-        },
-        taskContent: {
-            fontSize: 16,
-            fontWeight: "400",
-            lineHeight: 20,
-            color: ThemedColor.text,
         },
     }), [ThemedColor]);
 
@@ -216,47 +214,39 @@ const RingsClosedFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Category Section with Congratulate Button */}
-                <View style={styles.categorySection}>
-                    <ThemedText style={styles.taskIndicator}>
-                        closed all their rings
-                    </ThemedText>
-                    <View style={styles.categoryRow}>
-                        <View style={styles.categoryInfo}>
-                            <ThemedText style={styles.categoryText}>
-                                Plan
-                            </ThemedText>
-                            <View style={styles.dot} />
-                            <ThemedText style={styles.categoryText}>
-                                Do
-                            </ThemedText>
-                            <View style={styles.dot} />
-                            <ThemedText style={styles.categoryText}>
-                                Share
-                            </ThemedText>
+                {/* Non-interactive card styled like a task-list card */}
+                <View style={styles.cardOuter}>
+                    <View style={styles.taskCard}>
+                        <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
+                            {message}
+                        </ThemedText>
+                        <View style={styles.tagsRow}>
+                            {["Plan", "Do", "Share"].map((ring) => (
+                                <TagChip key={ring} tag={ring} />
+                            ))}
                         </View>
-                        {!isOwnItem && (
-                            <TouchableOpacity
-                                style={[
-                                    styles.congratulateButton,
-                                    !currentUser?._id && { opacity: 0.5 },
-                                ]}
-                                onPress={handleCongratulatePress}
-                                disabled={!currentUser?._id}>
-                                <Trophy size={20} color={ThemedColor.primary} weight="regular" />
-                                <ThemedText style={styles.congratulateText}>
-                                    {!currentUser?._id ? "Login" : "Congratulate"}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        )}
                     </View>
                 </View>
 
-                {/* Content */}
-                <View style={styles.contentSection}>
-                    <ThemedText style={styles.taskContent}>
-                        {content}
+                {/* Action label + Congratulate */}
+                <View style={styles.footerRow}>
+                    <ThemedText type="caption" style={styles.actionLabel}>
+                        Closed all their rings
                     </ThemedText>
+                    {!isOwnItem && (
+                        <TouchableOpacity
+                            style={[
+                                styles.congratulateButton,
+                                !currentUser?._id && { opacity: 0.5 },
+                            ]}
+                            onPress={handleCongratulatePress}
+                            disabled={!currentUser?._id}>
+                            <Trophy size={20} color={ThemedColor.primary} weight="regular" />
+                            <ThemedText style={styles.congratulateText}>
+                                {!currentUser?._id ? "Login" : "Congratulate"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Congratulate Modal */}

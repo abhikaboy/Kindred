@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import EncourageModal from "../modals/EncourageModal";
 import CachedImage from "../CachedImage";
 import Svg, { Path } from "react-native-svg";
+import TagChip from "@/components/TagChip";
 import * as Haptics from "expo-haptics";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
@@ -147,41 +148,37 @@ const TaskFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.caption,
         },
-        categorySection: {
+        cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 18,
-            gap: 12,
+            marginBottom: 14,
         },
-        taskIndicator: {
-            fontSize: 13,
-            fontWeight: "300",
-            letterSpacing: -0.13,
-            color: ThemedColor.caption,
+        taskCard: {
+            backgroundColor: ThemedColor.lightenedCard,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
+            borderRadius: 16,
+            padding: 16,
+            gap: 10,
         },
-        categoryRow: {
+        tagsRow: {
+            flexDirection: "row",
+            gap: 8,
+            flexWrap: "wrap",
+        },
+        taskTitle: {
+            fontSize: 16,
+            color: ThemedColor.text,
+        },
+        footerRow: {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            paddingHorizontal: HORIZONTAL_PADDING,
         },
-        categoryInfo: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            maxWidth: "60%",
-            flex: 1,
-        },
-        categoryText: {
-            fontSize: 16,
-            fontWeight: "400",
-            letterSpacing: -0.16,
-            color: ThemedColor.text,
-        },
-        dot: {
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: ThemedColor.primary,
+        actionLabel: {
+            fontSize: 13,
+            letterSpacing: -0.13,
+            color: ThemedColor.caption,
         },
         encourageButton: {
             flexDirection: "row",
@@ -190,18 +187,8 @@ const TaskFeedCard = React.memo(({
         },
         encourageText: {
             fontSize: 14,
-            fontWeight: "400",
             letterSpacing: -0.14,
             color: ThemedColor.primary,
-        },
-        contentSection: {
-            paddingHorizontal: HORIZONTAL_PADDING,
-        },
-        taskContent: {
-            fontSize: 16,
-            fontWeight: "400",
-            lineHeight: 20,
-            color: ThemedColor.text,
         },
     }), [ThemedColor]);
 
@@ -234,45 +221,40 @@ const TaskFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Category Section with Encourage Button */}
-                <View style={styles.categorySection}>
-                    <ThemedText style={styles.taskIndicator}>
-                        added a new task
-                    </ThemedText>
-                    <View style={styles.categoryRow}>
-                        <View style={styles.categoryInfo}>
-                            <ThemedText style={styles.categoryText}>
-                                {workspaceName}
-                            </ThemedText>
-                            <View style={styles.dot} />
-                            <ThemedText style={styles.categoryText}>
-                                {categoryName}
-                            </ThemedText>
+                {/* Non-interactive card styled like a task-list card */}
+                <View style={styles.cardOuter}>
+                    <View style={styles.taskCard}>
+                        <View style={styles.tagsRow}>
+                            <TagChip tag={workspaceName} />
+                            <TagChip tag={categoryName} />
                         </View>
-                        <TouchableOpacity
-                            style={[
-                                styles.encourageButton,
-                                (!currentUser?._id || isOwnTask) && { opacity: 0.5 },
-                            ]}
-                            onPress={handleEncouragePress}
-                            disabled={!currentUser?._id || isOwnTask}>
-                            <SparkleIcon size={20} color={ThemedColor.primary} />
-                            <ThemedText style={styles.encourageText}>
-                                {!currentUser?._id
-                                    ? "Login"
-                                    : isOwnTask
-                                      ? "Your Task"
-                                      : "Encourage"}
-                            </ThemedText>
-                        </TouchableOpacity>
+                        <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
+                            {content}
+                        </ThemedText>
                     </View>
                 </View>
 
-                {/* Task Content */}
-                <View style={styles.contentSection}>
-                    <ThemedText style={styles.taskContent}>
-                        {content}
+                {/* Action label + Encourage */}
+                <View style={styles.footerRow}>
+                    <ThemedText type="caption" style={styles.actionLabel}>
+                        Added a new task
                     </ThemedText>
+                    <TouchableOpacity
+                        style={[
+                            styles.encourageButton,
+                            (!currentUser?._id || isOwnTask) && { opacity: 0.5 },
+                        ]}
+                        onPress={handleEncouragePress}
+                        disabled={!currentUser?._id || isOwnTask}>
+                        <SparkleIcon size={20} color={ThemedColor.primary} />
+                        <ThemedText style={styles.encourageText}>
+                            {!currentUser?._id
+                                ? "Login"
+                                : isOwnTask
+                                  ? "Your Task"
+                                  : "Encourage"}
+                        </ThemedText>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Encourage Modal */}
