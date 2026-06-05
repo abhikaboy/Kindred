@@ -8,35 +8,31 @@ import { getNotificationTimeLabel } from "./notificationTime";
 type Props = {
     name: string;
     userId: string;
-    comment: string;
+    content: string;
     icon: string;
     time: number;
-    /** Post thumbnail. Suppressed when it's just the actor avatar again. */
-    image?: string;
-    referenceId: string;
 };
 
-const UserInfoCommentNotification = ({ name, userId, comment, icon, time, image, referenceId }: Props) => {
+const UserInfoFriendAcceptedNotification = ({ name, userId, content, icon, time }: Props) => {
     const ThemedColor = useThemeColor();
-    const showThumbnail = !!image && image !== icon;
+    const message = content.startsWith(`${name} `) ? content.slice(name.length + 1) : content;
 
     return (
         <SpeechBubbleCard
             sender={{ name, picture: icon, id: userId }}
             header={
                 <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 15 }}>
-                    commented on your post
+                    Friends now
                 </ThemedText>
             }
-            message={comment}
-            thumbnailUri={showThumbnail ? image : undefined}
+            message={message}
             timeLabel={getNotificationTimeLabel(time)}
             read
-            onPress={() => router.push(`/posting/${referenceId}`)}
+            onPress={() => router.push(`/account/${userId}`)}
             onAvatarPress={() => router.push(`/account/${userId}`)}
             visible
         />
     );
 };
 
-export default UserInfoCommentNotification;
+export default UserInfoFriendAcceptedNotification;

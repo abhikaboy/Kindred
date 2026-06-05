@@ -6,7 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
-import UserInfoFriendNotification from "@/components/UserInfo/UserInfoFriendNotification";
+import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFriendAcceptedNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
@@ -20,6 +20,13 @@ import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTa
 import ForYouTab from "@/components/forYou/ForYouTab";
 import { useForYou } from "@/hooks/useForYou";
 import RequestsTab from "@/components/requests/RequestsTab";
+import {
+    type ProcessedNotification,
+    type ActivityFilter,
+    FILTER_CHIPS,
+    SUPPORTED_TYPES,
+    filterByActivityType,
+} from "@/utils/notifications";
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
@@ -27,49 +34,6 @@ const ONE_MONTH = 30 * ONE_DAY;
 
 const NOTIFICATION_TABS = ["For You", "Activity", "Requests"];
 const ACTIVITY_TAB_INDEX = 1;
-
-type ProcessedNotification = {
-    id: string;
-    type: "comment" | "encouragement" | "congratulation" | "friend_request" | "friend_request_accepted" | "rings_closed" | "post_tag";
-    name: string;
-    handle: string;
-    userId: string;
-    time: number;
-    icon: string;
-    content: string;
-    taskName?: string;
-    /** For encouragement/congratulation notifications: the actual kudos message text (after the "on TaskName:" prefix in content). */
-    kudosMessage?: string;
-    image?: string;
-    read: boolean;
-    referenceId: string; // Post ID or Task ID that the notification references
-    thumbnail?: string; // Optional thumbnail for friend notifications
-};
-
-type ActivityFilter = "all" | "encouragements" | "comments" | "social";
-
-const FILTER_CHIPS: { id: ActivityFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "encouragements", label: "Encouragements" },
-    { id: "comments", label: "Comments" },
-    { id: "social", label: "Social" },
-];
-
-const filterByActivityType = (
-    notifications: ProcessedNotification[],
-    filter: ActivityFilter,
-): ProcessedNotification[] => {
-    switch (filter) {
-        case "all":
-            return notifications;
-        case "encouragements":
-            return notifications.filter((n) => n.type === "encouragement" || n.type === "congratulation");
-        case "comments":
-            return notifications.filter((n) => n.type === "comment");
-        case "social":
-            return notifications.filter((n) => n.type === "friend_request" || n.type === "friend_request_accepted");
-    }
-};
 
 const NotificationFilterChips = ({
     active,
@@ -269,15 +233,13 @@ const NotificationItem = ({
                     referenceId={notification.referenceId}
                     type="congratulation"
                 />
-            ) : notification.type === "friend_request" || notification.type === "friend_request_accepted" ? (
-                <UserInfoFriendNotification
+            ) : notification.type === "friend_request_accepted" ? (
+                <UserInfoFriendAcceptedNotification
                     name={notification.name}
                     userId={notification.userId}
+                    content={notification.content}
                     icon={notification.icon}
                     time={notification.time}
-                    message={notification.content}
-                    referenceId={notification.referenceId}
-                    thumbnail={notification.thumbnail}
                 />
             ) : notification.type === "rings_closed" ? (
                 <UserInfoRingsClosedNotification
@@ -376,9 +338,7 @@ const Notifications = () => {
                     router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
                 }
                 break;
-            case "friend_request":
             case "friend_request_accepted":
-                // Already on the notifications page which shows friend requests
                 break;
             case "comment":
             case "post_tag":
@@ -419,21 +379,12 @@ const Notifications = () => {
     const isThisMonth = (time: number) => time >= now - ONE_MONTH && time < now - ONE_WEEK;
     const isOlder = (time: number) => time < now - ONE_MONTH;
 
-    // Convert API notification to processed notification
-    // The backend emits more notification types (POST, RINGS_CLOSED, ...) than
-    // NotificationItem knows how to render. If we let them through, they end up
-    // as invisible rows that still count toward `section.data.length`, which
-    // produces a section header ("This Week") with nothing beneath it.
-    const SUPPORTED_TYPES = new Set([
-        "comment",
-        "encouragement",
-        "congratulation",
-        "friend_request",
-        "friend_request_accepted",
-        "rings_closed",
-        "post_tag",
-    ]);
-
+    // Convert API notification to processed notification. SUPPORTED_TYPES (from
+    // @/utils/notifications) gates which backend types render on Activity. The
+    // backend emits more types than NotificationItem knows how to render; if we
+    // let them through they become invisible rows that still count toward
+    // `section.data.length`, producing a section header with nothing beneath it.
+    // friend_request is intentionally excluded — it lives on the Requests tab.
     const processNotification = (notification: NotificationDocument): ProcessedNotification | null => {
         try {
             const rawType = notification.notificationType.toLowerCase();
