@@ -626,7 +626,7 @@ const stylesheet = (ThemedColor: any) => {
             // tight against the first item.
         },
         itemSeparator: {
-            height: 16,
+            height: 10,
         },
         sectionHeader: {
             marginBottom: 12,
