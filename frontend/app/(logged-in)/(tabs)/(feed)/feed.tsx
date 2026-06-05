@@ -86,7 +86,7 @@ export default function Feed() {
     const swipeToNotifications = useMemo(
         () =>
             Gesture.Pan()
-                .activeOffsetX([-20, 20])
+                .activeOffsetX(-20)
                 .failOffsetY([-15, 15])
                 .onEnd((e) => {
                     "worklet";
