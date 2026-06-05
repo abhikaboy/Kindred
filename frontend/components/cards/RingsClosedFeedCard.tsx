@@ -153,7 +153,7 @@ const RingsClosedFeedCard = React.memo(({
             borderBottomColor: ThemedColor.tertiary,
         },
         content: {
-            paddingVertical: 12,
+            paddingVertical: 20,
         },
         header: {
             flexDirection: "row",
