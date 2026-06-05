@@ -1,7 +1,8 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
 
-jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock("@/contexts/tasksContext", () => ({
     useTasks: () => ({ setTask: jest.fn(), updateTask: jest.fn() }),
 }));
@@ -67,6 +68,10 @@ const baseProps = {
 };
 
 describe("TaskCard post button", () => {
+    beforeEach(() => {
+        mockPush.mockClear();
+    });
+
     test("does not render the post button when onPostPress is absent", () => {
         const { queryByTestId } = render(<TaskCard {...baseProps} />);
         expect(queryByTestId("task-card-post-button")).toBeNull();
@@ -79,5 +84,27 @@ describe("TaskCard post button", () => {
         );
         fireEvent.press(getByTestId("task-card-post-button"));
         expect(onPostPress).toHaveBeenCalledTimes(1);
+    });
+
+    test("pressing the post button does not trigger the card's tap-to-redirect", () => {
+        jest.useFakeTimers();
+        try {
+            const onPostPress = jest.fn();
+            const { getByTestId } = render(
+                <TaskCard
+                    {...baseProps}
+                    redirect={true}
+                    task={{ id: "task-1", content: "Run 5k" } as any}
+                    onPostPress={onPostPress}
+                />
+            );
+            fireEvent.press(getByTestId("task-card-post-button"));
+            // Flush the card's double-tap timeout + redirect debounce.
+            jest.runAllTimers();
+            expect(onPostPress).toHaveBeenCalledTimes(1);
+            expect(mockPush).not.toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });
