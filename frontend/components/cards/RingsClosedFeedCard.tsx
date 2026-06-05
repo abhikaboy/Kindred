@@ -206,13 +206,8 @@ const RingsClosedFeedCard = React.memo(({
         footerRow: {
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             paddingHorizontal: HORIZONTAL_PADDING,
-        },
-        actionLabel: {
-            fontSize: 13,
-            letterSpacing: -0.13,
-            color: ThemedColor.caption,
         },
         congratulateButton: {
             flexDirection: "row",
@@ -258,7 +253,7 @@ const RingsClosedFeedCard = React.memo(({
                 {/* Ring + headline inline — no card box; this isn't a task */}
                 <View style={styles.ringRow}>
                     <FillingRing
-                        size={36}
+                        size={48}
                         stroke={3}
                         color={ThemedColor.primary}
                         trackColor={ThemedColor.tertiary}
@@ -268,11 +263,8 @@ const RingsClosedFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Action label + Congratulate */}
+                {/* Congratulate */}
                 <View style={styles.footerRow}>
-                    <ThemedText type="caption" style={styles.actionLabel}>
-                        Closed all their rings
-                    </ThemedText>
                     {!isOwnItem && (
                         <TouchableOpacity
                             style={[
