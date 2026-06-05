@@ -192,25 +192,15 @@ const RingsClosedFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.caption,
         },
-        cardOuter: {
-            paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 14,
-        },
-        taskCard: {
-            backgroundColor: ThemedColor.background,
-            borderWidth: 1,
-            borderColor: ThemedColor.tertiary,
-            borderRadius: 16,
-            padding: 16,
-        },
-        cardRow: {
+        ringRow: {
             flexDirection: "row",
             alignItems: "center",
             gap: 12,
+            paddingHorizontal: HORIZONTAL_PADDING,
+            marginBottom: 14,
         },
-        taskTitle: {
+        headline: {
             flex: 1,
-            fontSize: 16,
             color: ThemedColor.text,
         },
         footerRow: {
@@ -265,21 +255,17 @@ const RingsClosedFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Non-interactive card with a ring filling to full */}
-                <View style={styles.cardOuter}>
-                    <View style={styles.taskCard}>
-                        <View style={styles.cardRow}>
-                            <FillingRing
-                                size={36}
-                                stroke={5}
-                                color={ThemedColor.primary}
-                                trackColor={ThemedColor.tertiary}
-                            />
-                            <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
-                                {message}
-                            </ThemedText>
-                        </View>
-                    </View>
+                {/* Ring + headline inline — no card box; this isn't a task */}
+                <View style={styles.ringRow}>
+                    <FillingRing
+                        size={36}
+                        stroke={3}
+                        color={ThemedColor.primary}
+                        trackColor={ThemedColor.tertiary}
+                    />
+                    <ThemedText type="defaultSemiBold" style={styles.headline}>
+                        {message}
+                    </ThemedText>
                 </View>
 
                 {/* Action label + Congratulate */}
