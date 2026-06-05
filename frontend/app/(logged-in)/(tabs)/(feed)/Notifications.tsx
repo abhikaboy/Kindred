@@ -510,7 +510,7 @@ const Notifications = () => {
                     <View>
                         {isFirstInSection ? (
                             <View style={styles.sectionHeader}>
-                                <ThemedText type="defaultSemiBold">{section.title}</ThemedText>
+                                <ThemedText type="subtitle">{section.title}</ThemedText>
                             </View>
                         ) : null}
                         <NotificationItem
