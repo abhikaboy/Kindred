@@ -631,6 +631,7 @@ const stylesheet = (ThemedColor: any) => {
         sectionHeader: {
             marginBottom: 12,
             marginTop: 8,
+            paddingVertical: 2,
         },
         emptyFilterState: {
             paddingVertical: 32,
