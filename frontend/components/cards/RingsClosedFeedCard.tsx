@@ -197,7 +197,7 @@ const RingsClosedFeedCard = React.memo(({
             marginBottom: 14,
         },
         taskCard: {
-            backgroundColor: ThemedColor.lightenedCard,
+            backgroundColor: ThemedColor.background,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
             borderRadius: 16,
