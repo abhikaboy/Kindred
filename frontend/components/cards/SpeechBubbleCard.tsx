@@ -142,10 +142,10 @@ export default function SpeechBubbleCard({
 
                         {footerSlot ? (
                             <View style={styles.footerRow}>
+                                <View>{footerSlot}</View>
                                 <ThemedText type="caption" style={styles.timeTextInline}>
                                     {timeLabel}
                                 </ThemedText>
-                                <View>{footerSlot}</View>
                             </View>
                         ) : (
                             <ThemedText type="caption" style={styles.timeText}>
@@ -200,7 +200,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         headerContent: { flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
         thumbnail: { width: 40, height: 40, borderRadius: 6 },
         contentContainer: { marginTop: 2, width: "100%" },
-        messageText: { color: ThemedColor.text, fontSize: 16, lineHeight: 21 },
+        messageText: { color: ThemedColor.caption, fontSize: 15, lineHeight: 20 },
         image: {
             width: "100%",
             alignSelf: "flex-start",
