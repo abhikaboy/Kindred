@@ -121,6 +121,8 @@ export default function Feed() {
     const velocityThreshold = 0.3;
     const flatListRef = useRef<any>(null);
     const isInitialMount = useRef(true);
+    // Tracks whether the tab bar / FAB are currently shown, so we only emit on change.
+    const navVisibleRef = useRef(true);
 
     const updatePostInFeed = useCallback((postId: string, updatedPost: Partial<PostData>) => {
         setPosts((prevPosts) => prevPosts.map((post) => (post._id === postId ? { ...post, ...updatedPost } : post)));
@@ -352,6 +354,7 @@ export default function Feed() {
     // screens don't inherit a hidden state from a mid-scroll navigation.
     useFocusEffect(
         useCallback(() => {
+            navVisibleRef.current = true;
             return () => {
                 feedScrollVisibilityEvents.emit(true);
             };
@@ -393,18 +396,28 @@ export default function Feed() {
                 scrollVelocity.current = (currentScrollY - lastScrollY.current) / timeDiff;
             }
 
-            const isScrollingUp = scrollVelocity.current < -velocityThreshold && currentScrollY > 100;
-            const isScrollingDown = scrollVelocity.current > velocityThreshold;
-            const shouldHideHeader = currentScrollY < 50;
+            const atTop = currentScrollY < 50;
+            const isScrollingUp = scrollVelocity.current < -velocityThreshold;
+            const isScrollingDown = scrollVelocity.current > velocityThreshold && !atTop;
 
-            if (isScrollingUp && !showAnimatedHeader) {
+            // Tab bar + FAB: shown at the top or when scrolling up, hidden when
+            // scrolling down. Emit only on change so we don't spam subscribers.
+            let nextNavVisible = navVisibleRef.current;
+            if (atTop || isScrollingUp) nextNavVisible = true;
+            else if (isScrollingDown) nextNavVisible = false;
+            if (nextNavVisible !== navVisibleRef.current) {
+                navVisibleRef.current = nextNavVisible;
+                feedScrollVisibilityEvents.emit(nextNavVisible);
+            }
+
+            // Floating sticky header: reappears when scrolling up mid-feed, and
+            // hides at the top (the in-list header is there) or when scrolling down.
+            if (isScrollingUp && currentScrollY > 100 && !showAnimatedHeader) {
                 setShowAnimatedHeader(true);
                 animateHeader(true);
-                feedScrollVisibilityEvents.emit(true);
-            } else if ((isScrollingDown || shouldHideHeader) && showAnimatedHeader) {
+            } else if ((isScrollingDown || atTop) && showAnimatedHeader) {
                 setShowAnimatedHeader(false);
                 animateHeader(false);
-                feedScrollVisibilityEvents.emit(false);
             }
 
             scrollY.setValue(currentScrollY);
@@ -732,6 +745,7 @@ export default function Feed() {
                 }}
                 renderItem={currentFeed.id === "feed" ? renderFeedItem : renderPost}
                 onScroll={handleScroll}
+                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
