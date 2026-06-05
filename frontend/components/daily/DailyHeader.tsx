@@ -28,6 +28,8 @@ export const DailyHeader: React.FC<DailyHeaderProps> = ({ selectedDate }) => {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: HORIZONTAL_PADDING,
+        // 24px above the date, on top of the safe-area inset applied by the screen container.
+        paddingTop: 24,
     },
     title: {
         fontWeight: "600",
