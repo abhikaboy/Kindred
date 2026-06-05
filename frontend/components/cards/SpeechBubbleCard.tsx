@@ -116,20 +116,22 @@ export default function SpeechBubbleCard({
                     {...(onPress ? { onPress, activeOpacity: 0.85 } : {})}>
                     {!read ? <View testID="unread-dot" style={styles.unreadDot} /> : null}
 
-                    {header || thumbnailUri ? (
-                        <View style={styles.headerRow}>
-                            <View style={styles.headerContent}>{header}</View>
-                            {thumbnailUri ? (
-                                <CachedImage
-                                    testID="bubble-thumbnail"
-                                    source={{ uri: thumbnailUri }}
-                                    variant="thumbnail"
-                                    cachePolicy="memory-disk"
-                                    style={styles.thumbnail}
-                                />
-                            ) : null}
-                        </View>
-                    ) : null}
+                    <View style={styles.headerRow}>
+                        <View style={styles.headerContent}>{header}</View>
+                        {thumbnailUri ? (
+                            <CachedImage
+                                testID="bubble-thumbnail"
+                                source={{ uri: thumbnailUri }}
+                                variant="thumbnail"
+                                cachePolicy="memory-disk"
+                                style={styles.thumbnail}
+                            />
+                        ) : (
+                            <ThemedText type="caption" style={styles.timeTextTopRight}>
+                                {timeLabel}
+                            </ThemedText>
+                        )}
+                    </View>
 
                     <View style={styles.contentContainer}>
                         {imageUri ? (
@@ -143,15 +145,17 @@ export default function SpeechBubbleCard({
                         {footerSlot ? (
                             <View style={styles.footerRow}>
                                 <View>{footerSlot}</View>
-                                <ThemedText type="caption" style={styles.timeTextInline}>
-                                    {timeLabel}
-                                </ThemedText>
+                                {thumbnailUri ? (
+                                    <ThemedText type="caption" style={styles.timeTextInline}>
+                                        {timeLabel}
+                                    </ThemedText>
+                                ) : null}
                             </View>
-                        ) : (
+                        ) : thumbnailUri ? (
                             <ThemedText type="caption" style={styles.timeText}>
                                 {timeLabel}
                             </ThemedText>
-                        )}
+                        ) : null}
                     </View>
                 </CardContainer>
             </Animated.View>
@@ -189,8 +193,8 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.04,
-            shadowRadius: 4,
-            elevation: 1,
+            shadowRadius: 3,
+            elevation: 2,
         },
         headerRow: {
             flexDirection: "row",
@@ -213,6 +217,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             marginBottom: 8,
         },
         timeText: { color: ThemedColor.caption, fontSize: 12, marginTop: 10 },
+        timeTextTopRight: { color: ThemedColor.caption, fontSize: 12, flexShrink: 0, alignSelf: "flex-start" },
         unreadDot: {
             position: "absolute",
             top: 8,

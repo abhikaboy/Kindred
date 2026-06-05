@@ -24,7 +24,7 @@ const UserInfoCommentNotification = ({ name, userId, comment, icon, time, image,
         <SpeechBubbleCard
             sender={{ name, picture: icon, id: userId }}
             header={
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 15 }}>
+                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text, fontSize: 15 }}>
                     commented on your post
                 </ThemedText>
             }

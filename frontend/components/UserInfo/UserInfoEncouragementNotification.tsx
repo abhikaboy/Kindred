@@ -65,7 +65,7 @@ const UserInfoEncouragementNotification = ({
                     style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
                     accessibilityRole="button"
                     accessibilityLabel={`Send kudos back to ${name}`}>
-                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 13 }}>
                         Send kudos back
                     </ThemedText>
                 </TouchableOpacity>
@@ -78,8 +78,8 @@ export default UserInfoEncouragementNotification;
 
 const styles = StyleSheet.create({
     ctaButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
         borderRadius: 10,
         borderWidth: 1,
     },
