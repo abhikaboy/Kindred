@@ -21,6 +21,7 @@ import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useTasks } from "@/contexts/tasksContext";
+import { useCreateModal } from "@/contexts/createModalContext";
 import { updateTaskAPI, markAsCompletedAPI } from "@/api/task";
 import { Task } from "@/api/types";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
@@ -63,6 +64,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 }) => {
     const ThemedColor = useThemeColor();
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
+    const { openModal } = useCreateModal();
     const queryClient = useQueryClient();
     const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
         useDailyTasks(selectedDate);
@@ -493,7 +495,8 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                             description=""
                             collapsible
                             useSchedulable={false}
-                            emptyMessage="No tasks without specific times"
+                            emptyMessage="No tasks with specific times"
+                            onEmptyPress={() => openModal()}
                         />
                     </View>
                 </View>

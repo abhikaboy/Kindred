@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
@@ -13,6 +13,8 @@ interface UnscheduledTasksSectionProps {
     title?: string;
     description?: string;
     emptyMessage?: string;
+    /** When set, the empty state shows a "tap to create a task" CTA and fires this on press. */
+    onEmptyPress?: () => void;
     collapsible?: boolean;
     // SwipableTaskCard props
     useSwipable?: boolean;
@@ -28,6 +30,7 @@ const UnscheduledTasksSection = ({
     title = "Tasks",
     description,
     emptyMessage = "No tasks",
+    onEmptyPress,
     collapsible = false,
     useSwipable = false,
     onCompleteTask,
@@ -73,9 +76,20 @@ const UnscheduledTasksSection = ({
                     {description}
                 </ThemedText>
             ) : null}
-            <ThemedText type="lightBody" style={styles.emptyText}>
-                {emptyMessage}
-            </ThemedText>
+            {onEmptyPress ? (
+                <TouchableOpacity onPress={onEmptyPress} activeOpacity={0.7}>
+                    <ThemedText type="caption" style={styles.emptyText}>
+                        {emptyMessage}
+                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                            {"  ·  tap to create a task"}
+                        </ThemedText>
+                    </ThemedText>
+                </TouchableOpacity>
+            ) : (
+                <ThemedText type="caption" style={styles.emptyText}>
+                    {emptyMessage}
+                </ThemedText>
+            )}
         </>
     ) : (
         <>
