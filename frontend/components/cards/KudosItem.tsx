@@ -41,12 +41,12 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
     const isProfileLevel = kudos.scope === "profile";
 
     const header = isProfileLevel ? (
-        <ThemedText type="default" style={styles.categoryText}>
+        <ThemedText type="defaultSemiBold" style={styles.categoryText}>
             Profile Encouragement 🎉
         </ThemedText>
     ) : (
         <>
-            <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
+            <ThemedText type="defaultSemiBold" style={styles.categoryText} numberOfLines={1}>
                 {kudos.categoryName}
             </ThemedText>
             <View style={styles.dot} />
@@ -74,7 +74,7 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
 
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
-        categoryText: { color: ThemedColor.primary, fontSize: 15, fontWeight: "600", flexShrink: 1 },
+        categoryText: { color: ThemedColor.primary, fontSize: 15, flexShrink: 1 },
         dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: ThemedColor.caption, flexShrink: 0 },
         taskName: { color: ThemedColor.primary, fontSize: 15, flexShrink: 1 },
     });
