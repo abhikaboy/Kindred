@@ -17,7 +17,7 @@ type Props = {
 };
 
 const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
-    kudos: "trophy",
+    kudos: "heart",
     users: "people",
     ring: "ellipse",
     post: "create",
