@@ -365,9 +365,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                             <TaskSelectionView
                                 opacity={animations.taskSelectionOpacity}
                                 onTaskPress={handleTaskPress}
-                                onSecondaryPress={isOnFeedTab ? handlePostPress : handleWorkspacePress}
+                                onPostPress={handlePostPress}
+                                onWorkspacePress={handleWorkspacePress}
                                 onVoiceInputPress={handleVoiceInputPress}
-                                isOnFeedTab={isOnFeedTab}
                                 onLayout={(event) => {
                                     const h = event.nativeEvent.layout.height;
                                     if (h > 0) {

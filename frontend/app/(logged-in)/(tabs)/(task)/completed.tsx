@@ -12,6 +12,7 @@ import { getCompletedTasksAPI, PaginatedCompletedTasksResponse } from "@/api/tas
 import TaskCard from "@/components/cards/TaskCard";
 import { useTasks } from "@/contexts/tasksContext";
 import { stringToLocalAwareDate } from "@/utils/timeUtils";
+import { router } from "expo-router";
 
 const TASKS_PER_PAGE = 20;
 
@@ -170,6 +171,21 @@ const CompletedTasks = () => {
         return category?.name || "Unknown";
     };
 
+    const handlePostTask = (task: CompletedTask) => {
+        const categoryName = getCategoryName(task.categoryID);
+        router.push({
+            pathname: "/posting/cameraview",
+            params: {
+                taskInfo: JSON.stringify({
+                    id: task.id,
+                    name: task.content,
+                    category: task.categoryID,
+                    categoryName,
+                }),
+            },
+        });
+    };
+
     return (
         <DrawerLayout
             ref={drawerRef}
@@ -245,6 +261,7 @@ const CompletedTasks = () => {
                                                 id={task.id}
                                                 task={task as any}
                                                 detailed={false}
+                                                onPostPress={() => handlePostTask(task)}
                                                 inlineComponent={
                                                     task.timeCompleted ? (
                                                         <View style={styles.completionTimeContainer}>
