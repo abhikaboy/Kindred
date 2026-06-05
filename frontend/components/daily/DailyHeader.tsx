@@ -28,8 +28,6 @@ export const DailyHeader: React.FC<DailyHeaderProps> = ({ selectedDate }) => {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: HORIZONTAL_PADDING,
-        // Top padding clears the floating back button so the date stays left-aligned.
-        paddingTop: 48,
     },
     title: {
         fontWeight: "600",

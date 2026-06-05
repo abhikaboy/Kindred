@@ -236,6 +236,8 @@ const Daily = (props: Props) => {
                     </View>
                 </AnimatedTabContent>
 
+                <FloatingViewToggle activeTab={activeTab} setActiveTab={setActiveTab} />
+
                 <FloatingDateNav
                     selectedDate={selectedDate}
                     onDateChange={handleDateChange}
