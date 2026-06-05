@@ -194,7 +194,7 @@ const RingsClosedFeedCard = React.memo(({
         },
         ringRow: {
             flexDirection: "row",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: 12,
             paddingHorizontal: HORIZONTAL_PADDING,
         },
