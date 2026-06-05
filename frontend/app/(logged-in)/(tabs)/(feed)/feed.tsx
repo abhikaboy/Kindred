@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import PostCard from "@/components/cards/PostCard";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
@@ -74,6 +76,26 @@ type PostData = {
 
 export default function Feed() {
     const router = useRouter();
+
+    const goToNotifications = useCallback(() => {
+        router.push("/(logged-in)/(tabs)/(feed)/Notifications");
+    }, [router]);
+
+    // Swipe left on the feed to open Notifications (DM-style). activeOffsetX makes
+    // it claim only horizontal drags; failOffsetY yields to the vertical scroll.
+    const swipeToNotifications = useMemo(
+        () =>
+            Gesture.Pan()
+                .activeOffsetX([-20, 20])
+                .failOffsetY([-15, 15])
+                .onEnd((e) => {
+                    "worklet";
+                    if (e.translationX < -80 || (e.velocityX < -700 && e.translationX < -30)) {
+                        runOnJS(goToNotifications)();
+                    }
+                }),
+        [goToNotifications]
+    );
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
     const ThemedColor = useThemeColor();
@@ -728,6 +750,7 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
+            <GestureDetector gesture={swipeToNotifications}>
             <FlatList
                 ref={flatListRef}
                 data={currentFeed.id === "feed" ? filteredFeedItems : sortedPosts}
@@ -764,6 +787,7 @@ export default function Feed() {
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
             />
+            </GestureDetector>
         </View>
     );
 }
