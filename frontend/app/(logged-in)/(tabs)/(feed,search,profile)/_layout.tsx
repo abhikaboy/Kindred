@@ -18,7 +18,7 @@ export const unstable_settings = {
 
 export default function DynamicLayout({ segment }) {
     const ThemedColor = useThemeColor();
-    
+
     if (segment === "(search)") {
         return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />;
     }
@@ -26,7 +26,11 @@ export default function DynamicLayout({ segment }) {
         return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />;
     }
     if (segment === "(feed)") {
-        return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }} />;
+        return (
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: ThemedColor.background } }}>
+                <Stack.Screen name="Notifications" options={{ animation: "slide_from_right" }} />
+            </Stack>
+        );
     }
     return <Stack screenOptions={{ contentStyle: { backgroundColor: ThemedColor.background } }} />;
 }
