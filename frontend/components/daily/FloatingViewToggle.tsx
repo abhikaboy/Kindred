@@ -46,8 +46,9 @@ export const FloatingViewToggle: React.FC<FloatingViewToggleProps> = ({ activeTa
 const styles = StyleSheet.create({
     container: {
         position: "absolute",
-        bottom: 100,
-        left: 16,
+        // Sits directly above FloatingDateNav (bottom: 100, height: 48) + gap.
+        bottom: 156,
+        right: 16,
         flexDirection: "row",
         alignItems: "center",
         height: 48,
