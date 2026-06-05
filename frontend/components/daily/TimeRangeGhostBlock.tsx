@@ -176,9 +176,9 @@ const styles = StyleSheet.create({
         zIndex: 210,
     },
     handle: {
-        width: HANDLE_SIZE,
-        height: HANDLE_SIZE,
-        borderRadius: HANDLE_SIZE,
+        width: HANDLE_SIZE*2,
+        height: HANDLE_SIZE/1.5,
+        borderRadius: 6,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.25,
