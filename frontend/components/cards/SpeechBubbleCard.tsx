@@ -34,8 +34,6 @@ export interface SpeechBubbleCardProps {
     index?: number;
 }
 
-const TAIL_SIZE = 10;
-
 export default function SpeechBubbleCard({
     sender,
     header,
@@ -81,85 +79,82 @@ export default function SpeechBubbleCard({
     const CardContainer: React.ComponentType<any> = onPress ? TouchableOpacity : View;
 
     return (
-        <View style={styles.row}>
-            <Animated.View style={{ opacity: avatarOpacity }}>
-                <TouchableOpacity
-                    style={styles.userSection}
-                    onPress={onAvatarPress}
-                    disabled={!onAvatarPress}
-                    activeOpacity={0.7}>
-                    <CachedImage
-                        source={{ uri: sender.picture }}
-                        fallbackSource={require("@/assets/images/head.png")}
-                        variant="thumbnail"
-                        cachePolicy="memory-disk"
-                        style={styles.userAvatar}
-                    />
-                    <View style={styles.userInfo}>
-                        <ThemedText type="default" style={styles.userName} numberOfLines={1}>
-                            {sender.name}
-                        </ThemedText>
-                    </View>
-                </TouchableOpacity>
-            </Animated.View>
+        <Animated.View
+            style={[styles.row, { opacity: bubbleOpacity, transform: [{ translateX: bubbleTranslateX }] }]}>
+            <CardContainer
+                testID="speech-bubble-card"
+                style={styles.card}
+                {...(onPress ? { onPress, activeOpacity: 0.85 } : {})}>
+                {!read ? <View testID="unread-dot" style={styles.unreadDot} /> : null}
 
-            <Animated.View
-                style={[
-                    styles.bubbleWrapper,
-                    { opacity: bubbleOpacity, transform: [{ translateX: bubbleTranslateX }] },
-                ]}>
-                <View style={styles.bubbleTail} />
-
-                <CardContainer
-                    testID="speech-bubble-card"
-                    style={styles.card}
-                    {...(onPress ? { onPress, activeOpacity: 0.85 } : {})}>
-                    {!read ? <View testID="unread-dot" style={styles.unreadDot} /> : null}
-
-                    <View style={styles.headerRow}>
-                        <View style={styles.headerContent}>{header}</View>
-                        {thumbnailUri ? (
+                <View style={styles.innerRow}>
+                    <Animated.View style={{ opacity: avatarOpacity }}>
+                        <TouchableOpacity
+                            style={styles.userSection}
+                            onPress={onAvatarPress}
+                            disabled={!onAvatarPress}
+                            activeOpacity={0.7}>
                             <CachedImage
-                                testID="bubble-thumbnail"
-                                source={{ uri: thumbnailUri }}
+                                source={{ uri: sender.picture }}
+                                fallbackSource={require("@/assets/images/head.png")}
                                 variant="thumbnail"
                                 cachePolicy="memory-disk"
-                                style={styles.thumbnail}
+                                style={styles.userAvatar}
                             />
-                        ) : (
-                            <ThemedText type="caption" style={styles.timeTextTopRight}>
-                                {timeLabel}
-                            </ThemedText>
-                        )}
-                    </View>
-
-                    <View style={styles.contentContainer}>
-                        {imageUri ? (
-                            <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
-                        ) : message ? (
-                            <ThemedText type="lightBody" style={styles.messageText}>
-                                {message}
-                            </ThemedText>
-                        ) : null}
-
-                        {footerSlot ? (
-                            <View style={styles.footerRow}>
-                                <View>{footerSlot}</View>
-                                {thumbnailUri ? (
-                                    <ThemedText type="caption" style={styles.timeTextInline}>
-                                        {timeLabel}
-                                    </ThemedText>
-                                ) : null}
+                            <View style={styles.userInfo}>
+                                <ThemedText type="default" style={styles.userName} numberOfLines={1}>
+                                    {sender.name}
+                                </ThemedText>
                             </View>
-                        ) : thumbnailUri ? (
-                            <ThemedText type="caption" style={styles.timeText}>
-                                {timeLabel}
-                            </ThemedText>
-                        ) : null}
+                        </TouchableOpacity>
+                    </Animated.View>
+
+                    <View style={styles.bubbleBody}>
+                        <View style={styles.headerRow}>
+                            <View style={styles.headerContent}>{header}</View>
+                            {thumbnailUri ? (
+                                <CachedImage
+                                    testID="bubble-thumbnail"
+                                    source={{ uri: thumbnailUri }}
+                                    variant="thumbnail"
+                                    cachePolicy="memory-disk"
+                                    style={styles.thumbnail}
+                                />
+                            ) : (
+                                <ThemedText type="caption" style={styles.timeTextTopRight}>
+                                    {timeLabel}
+                                </ThemedText>
+                            )}
+                        </View>
+
+                        <View style={styles.contentContainer}>
+                            {imageUri ? (
+                                <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
+                            ) : message ? (
+                                <ThemedText type="lightBody" style={styles.messageText}>
+                                    {message}
+                                </ThemedText>
+                            ) : null}
+
+                            {footerSlot ? (
+                                <View style={styles.footerRow}>
+                                    <View>{footerSlot}</View>
+                                    {thumbnailUri ? (
+                                        <ThemedText type="caption" style={styles.timeTextInline}>
+                                            {timeLabel}
+                                        </ThemedText>
+                                    ) : null}
+                                </View>
+                            ) : thumbnailUri ? (
+                                <ThemedText type="caption" style={styles.timeText}>
+                                    {timeLabel}
+                                </ThemedText>
+                            ) : null}
+                        </View>
                     </View>
-                </CardContainer>
-            </Animated.View>
-        </View>
+                </View>
+            </CardContainer>
+        </Animated.View>
     );
 }
 
@@ -170,30 +165,20 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: ThemedColor.tertiary },
         userInfo: { width: 52 },
         userName: { color: ThemedColor.caption, fontSize: 11, textAlign: "center" },
-        bubbleWrapper: { flex: 1, flexDirection: "row", alignItems: "flex-start" },
-        bubbleTail: {
-            width: 0,
-            height: 0,
-            borderTopWidth: TAIL_SIZE,
-            borderBottomWidth: TAIL_SIZE,
-            borderRightWidth: TAIL_SIZE,
-            borderTopColor: "transparent",
-            borderBottomColor: "transparent",
-            borderRightColor: ThemedColor.background,
-            marginTop: 4,
-        },
+        innerRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+        bubbleBody: { flex: 1 },
         card: {
             flex: 1,
             backgroundColor: ThemedColor.background,
+            padding: 12,
+            paddingVertical: 16,
             borderWidth: 0.5,
             borderColor: ThemedColor.tertiary,
             borderRadius: 14,
-            borderTopLeftRadius: 8,
-            padding: 16,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.04,
-            shadowRadius: 3,
+            shadowRadius: 2,
             elevation: 2,
         },
         headerRow: {
