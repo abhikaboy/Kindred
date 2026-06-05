@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import EncourageModal from "../modals/EncourageModal";
 import CachedImage from "../CachedImage";
 import Svg, { Path } from "react-native-svg";
-import TagChip from "@/components/TagChip";
 import * as Haptics from "expo-haptics";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
@@ -101,6 +100,16 @@ const TaskFeedCard = React.memo(({
 
     const isOwnTask = currentUser?._id === user._id;
 
+    // Mirror TaskCard's priority dot: low=success, medium=warning, high=error.
+    const priorityColor =
+        priority >= 3
+            ? ThemedColor.error
+            : priority === 2
+              ? ThemedColor.warning
+              : priority === 1
+                ? ThemedColor.success
+                : ThemedColor.tertiary;
+
     const styles = useMemo(() => StyleSheet.create({
         container: {
             backgroundColor: ThemedColor.background,
@@ -148,6 +157,23 @@ const TaskFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.caption,
         },
+        tagsRow: {
+            flexDirection: "row",
+            gap: 8,
+            flexWrap: "wrap",
+            paddingHorizontal: HORIZONTAL_PADDING,
+            marginBottom: 8,
+        },
+        tag: {
+            backgroundColor: ThemedColor.primary + "20",
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 6,
+        },
+        tagText: {
+            color: ThemedColor.primary,
+            fontSize: 12,
+        },
         cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,
             marginBottom: 14,
@@ -158,16 +184,22 @@ const TaskFeedCard = React.memo(({
             borderColor: ThemedColor.tertiary,
             borderRadius: 16,
             padding: 16,
-            gap: 10,
         },
-        tagsRow: {
+        contentRow: {
             flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
             gap: 8,
-            flexWrap: "wrap",
         },
         taskTitle: {
+            flex: 1,
             fontSize: 16,
             color: ThemedColor.text,
+        },
+        priorityDot: {
+            width: 10,
+            height: 10,
+            borderRadius: 5,
         },
         footerRow: {
             flexDirection: "row",
@@ -221,16 +253,29 @@ const TaskFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
+                {/* Workspace / category tags above the card */}
+                <View style={styles.tagsRow}>
+                    <View style={styles.tag}>
+                        <ThemedText type="defaultSemiBold" style={styles.tagText} numberOfLines={1}>
+                            {workspaceName}
+                        </ThemedText>
+                    </View>
+                    <View style={styles.tag}>
+                        <ThemedText type="defaultSemiBold" style={styles.tagText} numberOfLines={1}>
+                            {categoryName}
+                        </ThemedText>
+                    </View>
+                </View>
+
                 {/* Non-interactive card styled like a task-list card */}
                 <View style={styles.cardOuter}>
                     <View style={styles.taskCard}>
-                        <View style={styles.tagsRow}>
-                            <TagChip tag={workspaceName} />
-                            <TagChip tag={categoryName} />
+                        <View style={styles.contentRow}>
+                            <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
+                                {content}
+                            </ThemedText>
+                            <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
                         </View>
-                        <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
-                            {content}
-                        </ThemedText>
                     </View>
                 </View>
 

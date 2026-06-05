@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, Platform, Animated } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,8 +8,59 @@ import * as Haptics from "expo-haptics";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router } from "expo-router";
 import { Trophy } from "phosphor-react-native";
-import TagChip from "@/components/TagChip";
+import Svg, { Circle } from "react-native-svg";
 import CongratulateModal from "@/components/modals/CongratulateModal";
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+/** A small ring that animates from empty to full on mount ("rings closed"). */
+const FillingRing = ({
+    size = 36,
+    stroke = 5,
+    color,
+    trackColor,
+}: {
+    size?: number;
+    stroke?: number;
+    color: string;
+    trackColor: string;
+}) => {
+    const r = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * r;
+    const anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.timing(anim, {
+            toValue: 1,
+            duration: 900,
+            useNativeDriver: false,
+        }).start();
+    }, [anim]);
+
+    const strokeDashoffset = anim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [circumference, 0],
+    });
+
+    return (
+        <Svg width={size} height={size}>
+            <Circle cx={size / 2} cy={size / 2} r={r} stroke={trackColor} strokeWidth={stroke} fill="none" />
+            <AnimatedCircle
+                cx={size / 2}
+                cy={size / 2}
+                r={r}
+                stroke={color}
+                strokeWidth={stroke}
+                fill="none"
+                strokeDasharray={`${circumference}`}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                rotation={-90}
+                origin={`${size / 2}, ${size / 2}`}
+            />
+        </Svg>
+    );
+};
 
 type RingsClosedFeedCardProps = {
     id: string;
@@ -151,16 +202,16 @@ const RingsClosedFeedCard = React.memo(({
             borderColor: ThemedColor.tertiary,
             borderRadius: 16,
             padding: 16,
+        },
+        cardRow: {
+            flexDirection: "row",
+            alignItems: "center",
             gap: 12,
         },
         taskTitle: {
+            flex: 1,
             fontSize: 16,
             color: ThemedColor.text,
-        },
-        tagsRow: {
-            flexDirection: "row",
-            gap: 8,
-            flexWrap: "wrap",
         },
         footerRow: {
             flexDirection: "row",
@@ -214,16 +265,19 @@ const RingsClosedFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Non-interactive card styled like a task-list card */}
+                {/* Non-interactive card with a ring filling to full */}
                 <View style={styles.cardOuter}>
                     <View style={styles.taskCard}>
-                        <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
-                            {message}
-                        </ThemedText>
-                        <View style={styles.tagsRow}>
-                            {["Plan", "Do", "Share"].map((ring) => (
-                                <TagChip key={ring} tag={ring} />
-                            ))}
+                        <View style={styles.cardRow}>
+                            <FillingRing
+                                size={36}
+                                stroke={5}
+                                color={ThemedColor.primary}
+                                trackColor={ThemedColor.tertiary}
+                            />
+                            <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
+                                {message}
+                            </ThemedText>
                         </View>
                     </View>
                 </View>
