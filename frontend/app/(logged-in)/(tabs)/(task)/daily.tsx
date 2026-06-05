@@ -192,7 +192,6 @@ const Daily = (props: Props) => {
                     style={[
                         styles.backButton,
                         {
-                            top: insets.top + 4,
                             backgroundColor: ThemedColor.lightened,
                             borderColor: ThemedColor.tertiary,
                         },
@@ -264,6 +263,7 @@ const styles = StyleSheet.create({
     },
     backButton: {
         position: "absolute",
+        bottom: 100,
         left: 16,
         width: 40,
         height: 40,
