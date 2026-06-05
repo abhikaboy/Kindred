@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Heart, Users, Aperture, NotePencil, ChatCircle, GridFour, Sparkle, CaretRight, IconProps } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { ForYouCard as ForYouCardModel, ForYouCardType, ForYouCtaAction, ForYouIconKind } from "@/api/forYou";
@@ -16,14 +16,14 @@ type Props = {
     demoteCtas?: boolean;
 };
 
-const ICON_FOR_KIND: Record<ForYouIconKind, keyof typeof Ionicons.glyphMap> = {
-    kudos: "heart",
-    users: "people",
-    ring: "ellipse",
-    post: "create",
-    comment: "chatbubble",
-    blueprint: "grid",
-    recap: "sparkles",
+const ICON_FOR_KIND: Record<ForYouIconKind, React.ComponentType<IconProps>> = {
+    kudos: Heart,
+    users: Users,
+    ring: Aperture,
+    post: NotePencil,
+    comment: ChatCircle,
+    blueprint: GridFour,
+    recap: Sparkle,
 };
 
 export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Props) {
@@ -46,7 +46,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
         dispatchAction({ type: "navigate", href: card.deepLink });
     };
 
-    const iconName = ICON_FOR_KIND[card.iconKind];
+    const KindIcon = ICON_FOR_KIND[card.iconKind];
 
     if (card.displayMode === "compact") {
         const inlineCta = ctas[0];
@@ -58,7 +58,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
                 accessibilityRole="button"
                 accessibilityLabel={card.title}>
                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
-                    <Ionicons name={iconName} size={18} color={ThemedColor.primary} />
+                    <KindIcon size={18} color={ThemedColor.primary} weight="regular" />
                 </View>
                 <ThemedText type="defaultSemiBold" style={styles.compactTitle} numberOfLines={1}>
                     {card.title}
@@ -76,7 +76,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
                         </ThemedText>
                     </TouchableOpacity>
                 ) : null}
-                <Ionicons name="chevron-forward" size={18} color={ThemedColor.caption} />
+                <CaretRight size={18} color={ThemedColor.caption} weight="regular" />
             </TouchableOpacity>
         );
     }
@@ -90,7 +90,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
             accessibilityLabel={card.title}>
             <View style={styles.fullHeader}>
                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
-                    <Ionicons name={iconName} size={20} color={ThemedColor.primary} />
+                    <KindIcon size={20} color={ThemedColor.primary} weight="regular" />
                 </View>
                 <View style={styles.fullTextBlock}>
                     <ThemedText type="defaultSemiBold">{card.title}</ThemedText>
