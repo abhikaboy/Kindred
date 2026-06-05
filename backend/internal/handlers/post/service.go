@@ -874,8 +874,11 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
 		}
 
-		// Create notification in the database with thumbnail (first image from post if available)
-		notificationContent := fmt.Sprintf("%s commented: \"%s\"", comment.User.DisplayName, comment.Content)
+		// Create notification in the database with thumbnail (first image from post if available).
+		// The in-app card already shows the commenter's avatar + name and a
+		// "commented on your post" header, so the body is just the comment text.
+		// (Push notifications still prefix the name — see sendCommentNotification.)
+		notificationContent := comment.Content
 		var thumbnail string
 		if len(post.Images) > 0 {
 			thumbnail = post.Images[0]
