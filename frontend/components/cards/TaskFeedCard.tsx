@@ -157,22 +157,22 @@ const TaskFeedCard = React.memo(({
             fontWeight: "400",
             color: ThemedColor.caption,
         },
-        tagsRow: {
+        categoryRow: {
             flexDirection: "row",
+            alignItems: "center",
             gap: 8,
             flexWrap: "wrap",
             paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 8,
+            marginBottom: 10,
         },
-        tag: {
-            backgroundColor: ThemedColor.primary + "20",
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 6,
+        workspaceText: {
+            color: ThemedColor.caption,
         },
-        tagText: {
-            color: ThemedColor.primary,
-            fontSize: 12,
+        separatorDot: {
+            width: 3,
+            height: 3,
+            borderRadius: 1.5,
+            backgroundColor: ThemedColor.caption,
         },
         cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,
@@ -193,7 +193,6 @@ const TaskFeedCard = React.memo(({
         },
         taskTitle: {
             flex: 1,
-            fontSize: 16,
             color: ThemedColor.text,
         },
         priorityDot: {
@@ -253,25 +252,22 @@ const TaskFeedCard = React.memo(({
                     </ThemedText>
                 </View>
 
-                {/* Workspace / category tags above the card */}
-                <View style={styles.tagsRow}>
-                    <View style={styles.tag}>
-                        <ThemedText type="defaultSemiBold" style={styles.tagText} numberOfLines={1}>
-                            {workspaceName}
-                        </ThemedText>
-                    </View>
-                    <View style={styles.tag}>
-                        <ThemedText type="defaultSemiBold" style={styles.tagText} numberOfLines={1}>
-                            {categoryName}
-                        </ThemedText>
-                    </View>
+                {/* Workspace breadcrumb + category rendered like a real category name */}
+                <View style={styles.categoryRow}>
+                    <ThemedText type="caption" style={styles.workspaceText} numberOfLines={1}>
+                        {workspaceName}
+                    </ThemedText>
+                    <View style={styles.separatorDot} />
+                    <ThemedText type="subtitle" numberOfLines={1}>
+                        {categoryName}
+                    </ThemedText>
                 </View>
 
                 {/* Non-interactive card styled like a task-list card */}
                 <View style={styles.cardOuter}>
                     <View style={styles.taskCard}>
                         <View style={styles.contentRow}>
-                            <ThemedText type="defaultSemiBold" style={styles.taskTitle}>
+                            <ThemedText type="default" style={styles.taskTitle}>
                                 {content}
                             </ThemedText>
                             <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
