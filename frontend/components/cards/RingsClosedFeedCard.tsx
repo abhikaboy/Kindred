@@ -251,7 +251,7 @@ const RingsClosedFeedCard = React.memo(({
                         color={ThemedColor.primary}
                         trackColor={ThemedColor.tertiary}
                     />
-                    <ThemedText type="defaultSemiBold" style={styles.headline}>
+                    <ThemedText type="default" style={styles.headline}>
                         {message}
                     </ThemedText>
                     {!isOwnItem && (
