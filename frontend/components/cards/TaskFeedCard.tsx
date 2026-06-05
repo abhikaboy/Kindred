@@ -165,14 +165,18 @@ const TaskFeedCard = React.memo(({
             paddingHorizontal: HORIZONTAL_PADDING,
             marginBottom: 10,
         },
-        workspaceText: {
-            color: ThemedColor.caption,
+        tag: {
+            backgroundColor: ThemedColor.primary + "20",
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderRadius: 6,
         },
-        separatorDot: {
-            width: 3,
-            height: 3,
-            borderRadius: 1.5,
-            backgroundColor: ThemedColor.caption,
+        tagText: {
+            color: ThemedColor.primary,
+            fontSize: 12,
+        },
+        categoryName: {
+            fontSize: 18,
         },
         cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,
@@ -254,13 +258,14 @@ const TaskFeedCard = React.memo(({
 
                 {/* Workspace breadcrumb + category rendered like a real category name */}
                 <View style={styles.categoryRow}>
-                    <ThemedText type="caption" style={styles.workspaceText} numberOfLines={1}>
-                        {workspaceName}
-                    </ThemedText>
-                    <View style={styles.separatorDot} />
-                    <ThemedText type="subtitle" numberOfLines={1}>
+                    <ThemedText type="larger_default" style={styles.categoryName} numberOfLines={1}>
                         {categoryName}
                     </ThemedText>
+                    <View style={styles.tag}>
+                        <ThemedText type="defaultSemiBold" style={styles.tagText} numberOfLines={1}>
+                            {workspaceName}
+                        </ThemedText>
+                    </View>
                 </View>
 
                 {/* Non-interactive card styled like a task-list card */}
