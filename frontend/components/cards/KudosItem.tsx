@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Dimensions, Image, TouchableOpacity, Animated } from "react-native";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import CachedImage from "@/components/CachedImage";
 import { useRouter } from "expo-router";
+import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
 
 interface KudosSender {
     name: string;
@@ -15,20 +15,20 @@ interface KudosData {
     id: string;
     sender: KudosSender;
     message: string;
-    scope?: string; // "task" or "profile" (optional for backwards compatibility)
+    scope?: string; // "task" or "profile"
     categoryName?: string;
     taskName?: string;
     timestamp: string;
     read: boolean;
-    type?: string; // "message" or "image" (optional for backwards compatibility)
+    type?: string; // "message" or "image"
 }
 
 interface KudosItemProps {
     kudos: KudosData;
     formatTime: (timestamp: string) => string;
-    visible?: boolean; // triggers animation when item scrolls into view
+    visible?: boolean;
     index?: number;
-    /** Optional content rendered inside the bubble below the message + timestamp (e.g. an action button when this kudos is shown as a notification). */
+    /** Optional content rendered in the bubble footer (e.g. an action button). */
     footerSlot?: React.ReactNode;
 }
 
@@ -40,261 +40,41 @@ export default function KudosItem({ kudos, formatTime, visible = false, index = 
     const isImage = kudos.type === "image";
     const isProfileLevel = kudos.scope === "profile";
 
-    const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
-    const bubbleOpacity = useRef(new Animated.Value(0)).current;
-    const avatarOpacity = useRef(new Animated.Value(0)).current;
-
-    const hasAnimated = useRef(false);
-
-    useEffect(() => {
-        if (!visible || hasAnimated.current) return;
-        hasAnimated.current = true;
-
-        const delay = Math.min(index * 120, 600);
-
-        Animated.sequence([
-            Animated.delay(delay),
-            Animated.parallel([
-                Animated.timing(avatarOpacity, {
-                    toValue: 1,
-                    duration: 200,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(bubbleOpacity, {
-                    toValue: 1,
-                    duration: 220,
-                    useNativeDriver: true,
-                }),
-                Animated.spring(bubbleTranslateX, {
-                    toValue: 0,
-                    stiffness: 280,
-                    damping: 26,
-                    mass: 0.8,
-                    useNativeDriver: true,
-                }),
-            ]),
-        ]).start();
-    }, [visible]);
-
-    const handleAvatarPress = () => {
-        router.push(`/account/${kudos.sender.id}`);
-    };
+    const header = isProfileLevel ? (
+        <ThemedText type="default" style={styles.categoryText}>
+            Profile Encouragement 🎉
+        </ThemedText>
+    ) : (
+        <>
+            <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
+                {kudos.categoryName}
+            </ThemedText>
+            <View style={styles.dot} />
+            <ThemedText type="default" style={styles.taskName} numberOfLines={1}>
+                {kudos.taskName}
+            </ThemedText>
+        </>
+    );
 
     return (
-        <View style={styles.kudosItem}>
-            {/* User Avatar and Name */}
-            <Animated.View style={{ opacity: avatarOpacity }}>
-                <TouchableOpacity style={styles.userSection} onPress={handleAvatarPress} activeOpacity={0.7}>
-                    <CachedImage
-                        source={{ uri: kudos.sender.picture }}
-                        fallbackSource={require("@/assets/images/head.png")}
-                        variant="thumbnail"
-                        cachePolicy="memory-disk"
-                        style={styles.userAvatar}
-                    />
-                    <View style={styles.userInfo}>
-                        <ThemedText type="default" style={styles.userName}>
-                            {kudos.sender.name}
-                        </ThemedText>
-                    </View>
-                </TouchableOpacity>
-            </Animated.View>
-
-            {/* Speech bubble wrapper: triangle + card */}
-            <Animated.View
-                style={[
-                    styles.bubbleWrapper,
-                    {
-                        opacity: bubbleOpacity,
-                        transform: [
-                            { translateX: bubbleTranslateX },
-                        ],
-                    },
-                ]}
-            >
-                {/* Triangle tail pointing left toward the avatar */}
-                <View style={styles.bubbleTail} />
-
-                {/* Kudos Card */}
-                <View style={styles.kudosCard}>
-                    {/* Unread Indicator */}
-                    {!kudos.read && <View style={styles.unreadDot} />}
-
-                    {/* Task Info or Profile Label */}
-                    {isProfileLevel ? (
-                        <View style={styles.taskInfo}>
-                            <ThemedText type="default" style={styles.categoryText}>
-                                Profile Encouragement 🎉
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        <View style={styles.taskInfo}>
-                            <ThemedText type="default" style={styles.categoryText} numberOfLines={1}>
-                                {kudos.categoryName}
-                            </ThemedText>
-                            <View style={styles.dot} />
-                            <ThemedText
-                                type="default"
-                                style={{ ...styles.taskName, color: ThemedColor.primary }}
-                                numberOfLines={1}
-                            >
-                                {kudos.taskName}
-                            </ThemedText>
-                        </View>
-                    )}
-
-                    {/* Message or Image */}
-                    <View style={styles.contentContainer}>
-                        {isImage ? (
-                            <Image
-                                source={{ uri: kudos.message }}
-                                style={styles.kudosImage}
-                            />
-                        ) : (
-                            <ThemedText type="lightBody" style={styles.messageText}>
-                                {kudos.message}
-                            </ThemedText>
-                        )}
-                        {footerSlot ? (
-                            <View style={styles.footerRow}>
-                                <ThemedText type="caption" style={styles.timeTextInline}>
-                                    {formatTime(kudos.timestamp)}
-                                </ThemedText>
-                                <View>{footerSlot}</View>
-                            </View>
-                        ) : (
-                            <ThemedText type="caption" style={styles.timeText}>
-                                {formatTime(kudos.timestamp)}
-                            </ThemedText>
-                        )}
-                    </View>
-                </View>
-            </Animated.View>
-        </View>
+        <SpeechBubbleCard
+            sender={kudos.sender}
+            header={header}
+            message={isImage ? undefined : kudos.message}
+            imageUri={isImage ? kudos.message : undefined}
+            timeLabel={formatTime(kudos.timestamp)}
+            read={kudos.read}
+            footerSlot={footerSlot}
+            onAvatarPress={() => router.push(`/account/${kudos.sender.id}`)}
+            visible={visible}
+            index={index}
+        />
     );
 }
 
-const TAIL_SIZE = 10;
-
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
-        kudosItem: {
-            flexDirection: "row",
-            alignItems: "flex-start",
-        },
-        userSection: {
-            alignItems: "center",
-            gap: 6,
-        },
-        userAvatar: {
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: ThemedColor.tertiary,
-        },
-        userInfo: {
-            width: 52,
-        },
-        userName: {
-            color: ThemedColor.caption,
-            fontSize: 11,
-            textAlign: "center",
-        },
-        bubbleWrapper: {
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "flex-start",
-        },
-        // CSS triangle pointing left — zero-size box with only right border visible
-        bubbleTail: {
-            width: 0,
-            height: 0,
-            borderTopWidth: TAIL_SIZE,
-            borderBottomWidth: TAIL_SIZE,
-            borderRightWidth: TAIL_SIZE,
-            borderTopColor: "transparent",
-            borderBottomColor: "transparent",
-            borderRightColor: ThemedColor.lightenedCard,
-            marginTop: 4,
-        },
-        kudosCard: {
-            flex: 1,
-            backgroundColor: ThemedColor.lightenedCard,
-            borderRadius: 14,
-            borderTopLeftRadius: 8,
-            padding: 14,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 3,
-        },
-        taskInfo: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 6,
-            flexWrap: "wrap",
-        },
-        categoryText: {
-            color: ThemedColor.primary,
-            fontSize: 15,
-            fontWeight: "600",
-            flexShrink: 1,
-        },
-        dot: {
-            width: 3,
-            height: 3,
-            borderRadius: 2,
-            backgroundColor: ThemedColor.caption,
-            flexShrink: 0,
-        },
-        taskName: {
-            color: ThemedColor.text,
-            fontSize: 15,
-            flexShrink: 1,
-        },
-        contentContainer: {
-            marginTop: 2,
-            width: "100%",
-        },
-        messageText: {
-            color: ThemedColor.text,
-            fontSize: 16,
-            lineHeight: 21,
-        },
-        kudosImage: {
-            width: "100%",
-            alignSelf: "flex-start",
-            height: 200,
-            maxHeight: Dimensions.get("window").height * 0.5,
-            resizeMode: "contain",
-            borderRadius: 8,
-            marginBottom: 8,
-        },
-        timeText: {
-            color: ThemedColor.caption,
-            fontSize: 12,
-            marginTop: 10,
-        },
-        unreadDot: {
-            position: "absolute",
-            top: 8,
-            right: 8,
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: ThemedColor.error,
-        },
-        footerRow: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 10,
-            gap: 8,
-        },
-        timeTextInline: {
-            color: ThemedColor.caption,
-            fontSize: 12,
-        },
+        categoryText: { color: ThemedColor.primary, fontSize: 15, fontWeight: "600", flexShrink: 1 },
+        dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: ThemedColor.caption, flexShrink: 0 },
+        taskName: { color: ThemedColor.primary, fontSize: 15, flexShrink: 1 },
     });
