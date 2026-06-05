@@ -49,6 +49,10 @@ interface HomeScrollContentProps {
     kudosOffsetRef: React.MutableRefObject<number>;
 }
 
+// Temporarily hidden from the dashboard (kept in code for easy re-enable).
+// Flip to true to bring the KUDOS row back.
+const SHOW_KUDOS_ROW = false;
+
 export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     encouragementCount,
     congratulationCount,
@@ -369,23 +373,25 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     {dashboardConfig.jump_back_in && <DashboardCards drawerRef={drawerRef} />}
                 </View>
 
-                {/* Kudos Cards (Encouragements & Congratulations) */}
-                <View
-                    style={{
-                        marginHorizontal: HORIZONTAL_PADDING,
-                        gap: 12,
-                        marginBottom: 18,
-                    }}>
-                    <SectionHeader title="KUDOS" visible={dashboardConfig.kudos} onToggleVisibility={() => toggleSection("kudos")} />
-                    {dashboardConfig.kudos && (
-                        <>
-                            <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
-                            <View ref={kudosRef} onLayout={handleKudosLayout}>
-                                <KudosCards />
-                            </View>
-                        </>
-                    )}
-                </View>
+                {/* Kudos Cards (Encouragements & Congratulations) — temporarily hidden via SHOW_KUDOS_ROW */}
+                {SHOW_KUDOS_ROW && (
+                    <View
+                        style={{
+                            marginHorizontal: HORIZONTAL_PADDING,
+                            gap: 12,
+                            marginBottom: 18,
+                        }}>
+                        <SectionHeader title="KUDOS" visible={dashboardConfig.kudos} onToggleVisibility={() => toggleSection("kudos")} />
+                        {dashboardConfig.kudos && (
+                            <>
+                                <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
+                                <View ref={kudosRef} onLayout={handleKudosLayout}>
+                                    <KudosCards />
+                                </View>
+                            </>
+                        )}
+                    </View>
+                )}
 
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
                     <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
