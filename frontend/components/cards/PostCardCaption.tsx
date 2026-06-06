@@ -3,10 +3,11 @@ import { router } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { Href } from "expo-router";
+import type { TaggedUser } from "./types";
 
 type Props = {
     caption: string;
-    taggedUsers: Array<{ id: string; handle: string }>;
+    taggedUsers: TaggedUser[];
 };
 
 const PostCardCaption = ({ caption, taggedUsers }: Props) => {

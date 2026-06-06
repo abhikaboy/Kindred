@@ -5,6 +5,7 @@ import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 import PagerView from "react-native-pager-view";
 import NotificationsView from "@/components/notifications/NotificationsView";
 import PostCard from "@/components/cards/PostCard";
+import type { TaggedUser } from "@/components/cards/types";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
@@ -50,7 +51,7 @@ type PostData = {
     images: string[];
     dual?: string;
     caption: string;
-    taggedUsers?: Array<{ id: string; handle: string }>;
+    taggedUsers?: TaggedUser[];
     size?: {
         width: number;
         height: number;

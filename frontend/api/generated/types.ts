@@ -5560,7 +5560,9 @@ export interface components {
         };
         MentionReference: {
             handle: string;
+            icon?: string;
             id: string;
+            name?: string;
         };
         MoveTaskInputBody: {
             /**

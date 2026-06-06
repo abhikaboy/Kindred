@@ -1433,35 +1433,37 @@ func (s *Service) ResolveTaggedUsers(ctx context.Context, authorID primitive.Obj
 		return nil, nil
 	}
 
-	// 3. Fetch canonical handles in one query.
-	userCursor, err := s.Users.Find(ctx, bson.M{"_id": bson.M{"$in": validIDs}}, options.Find().SetProjection(bson.M{"_id": 1, "handle": 1}))
+	// 3. Fetch canonical handle, name, and avatar in one query.
+	userCursor, err := s.Users.Find(ctx, bson.M{"_id": bson.M{"$in": validIDs}}, options.Find().SetProjection(bson.M{"_id": 1, "handle": 1, "display_name": 1, "profile_picture": 1}))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch user handles: %w", err)
 	}
 	defer userCursor.Close(ctx)
 
 	var users []struct {
-		ID     primitive.ObjectID `bson:"_id"`
-		Handle string             `bson:"handle"`
+		ID             primitive.ObjectID `bson:"_id"`
+		Handle         string             `bson:"handle"`
+		DisplayName    string             `bson:"display_name"`
+		ProfilePicture string             `bson:"profile_picture"`
 	}
 	if err := userCursor.All(ctx, &users); err != nil {
 		return nil, fmt.Errorf("failed to decode users: %w", err)
 	}
 
-	handleByID := make(map[primitive.ObjectID]string, len(users))
+	refByID := make(map[primitive.ObjectID]types.MentionReference, len(users))
 	for _, u := range users {
-		handleByID[u.ID] = u.Handle
+		refByID[u.ID] = types.MentionReference{ID: u.ID, Handle: u.Handle, Name: u.DisplayName, Icon: u.ProfilePicture}
 	}
 
 	// 4. Build result in the order of validIDs.
 	result := make([]types.MentionReference, 0, len(validIDs))
 	for _, id := range validIDs {
-		handle, ok := handleByID[id]
+		ref, ok := refByID[id]
 		if !ok {
 			// User was a friend but doesn't exist anymore — skip.
 			continue
 		}
-		result = append(result, types.MentionReference{ID: id, Handle: handle})
+		result = append(result, ref)
 	}
 
 	return result, nil
