@@ -2,10 +2,20 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Platform, useColorScheme, LayoutChangeEvent, Keyboard } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { GlassTabItem } from "./GlassTabItem";
+
+// iOS 26+ native Liquid Glass; falls back to BlurView/tint elsewhere.
+// Guarded so a dev client without the native module can't crash at import.
+let LIQUID_GLASS = false;
+try {
+    LIQUID_GLASS = isLiquidGlassAvailable();
+} catch {
+    LIQUID_GLASS = false;
+}
 
 const PILL_HEIGHT = 64;
 const H_MARGIN = 16;
@@ -69,15 +79,25 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
             pointerEvents={shown ? "box-none" : "none"}
             style={[styles.root, { paddingBottom: insets.bottom + 8 }, containerStyle]}>
             <View style={[styles.shadowWrap, { shadowColor: isDark ? "#000" : "#1F1D2E" }]}>
-                <View style={[styles.pill, { borderColor }]}>
-                    {Platform.OS === "ios" ? (
-                        <BlurView
-                            tint={isDark ? "dark" : "light"}
-                            intensity={40}
+                <View style={[styles.pill, { borderColor: LIQUID_GLASS ? "transparent" : borderColor }]}>
+                    {LIQUID_GLASS ? (
+                        <GlassView
+                            glassEffectStyle="regular"
+                            isInteractive
                             style={StyleSheet.absoluteFill}
                         />
-                    ) : null}
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: glassTint }]} />
+                    ) : (
+                        <>
+                            {Platform.OS === "ios" ? (
+                                <BlurView
+                                    tint={isDark ? "dark" : "light"}
+                                    intensity={40}
+                                    style={StyleSheet.absoluteFill}
+                                />
+                            ) : null}
+                            <View style={[StyleSheet.absoluteFill, { backgroundColor: glassTint }]} />
+                        </>
+                    )}
 
                     <View style={styles.content} onLayout={onContentLayout}>
                         {/* Sliding highlight capsule */}
@@ -86,8 +106,8 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                             style={[
                                 styles.capsule,
                                 {
-                                    backgroundColor: ThemedColor.primary + "33",
-                                    borderColor: ThemedColor.primary + "40",
+                                    // Soft lavender tint behind the active tab
+                                    backgroundColor: ThemedColor.primary + (isDark ? "33" : "24"),
                                 },
                                 capsuleStyle,
                             ]}
@@ -159,6 +179,5 @@ const styles = StyleSheet.create({
         top: CAPSULE_INSET,
         bottom: CAPSULE_INSET,
         borderRadius: (PILL_HEIGHT - 2 * CAPSULE_INSET) / 2,
-        borderWidth: StyleSheet.hairlineWidth,
     },
 });

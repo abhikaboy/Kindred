@@ -18,7 +18,7 @@ type Props = {
 // tabBarIcon option) with a light haptic on press and an optional count badge.
 export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel, badge }: Props) {
     const ThemedColor = useThemeColor();
-    const color = focused ? ThemedColor.text : ThemedColor.caption;
+    const color = focused ? ThemedColor.primary : ThemedColor.caption;
 
     const handlePress = async () => {
         if (Platform.OS === "ios") {
