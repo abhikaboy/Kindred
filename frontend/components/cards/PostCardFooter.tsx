@@ -28,6 +28,7 @@ export type PostCardFooterProps = {
     onCongratulatePress?: () => void;
     onOpenComments?: () => void;
     commentCount?: number;
+    onLongPressReaction?: (reaction: SlackReaction) => void;
 };
 
 const PostCardFooter = ({
@@ -44,6 +45,7 @@ const PostCardFooter = ({
     onCongratulatePress,
     onOpenComments,
     commentCount = 0,
+    onLongPressReaction,
 }: PostCardFooterProps) => {
     const ThemedColor = useThemeColor();
 
@@ -106,6 +108,7 @@ const PostCardFooter = ({
                                 postId={0}
                                 isHighlighted={hasUserReacted?.(react.emoji) ?? false}
                                 onPress={() => onReaction?.(react.emoji)}
+                                onLongPress={() => onLongPressReaction?.(react)}
                             />
                         ))}
                         <ReactionAction onAddReaction={(emoji) => onReaction?.(emoji)} postId={0} />
