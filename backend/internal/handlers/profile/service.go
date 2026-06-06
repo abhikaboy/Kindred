@@ -2,6 +2,7 @@ package Profile
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -614,6 +615,28 @@ func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
 	}
 
 	return results, nil
+}
+
+// parseUserIDs validates and dedupes hex user IDs. Invalid hex is skipped so one
+// bad ID doesn't fail the batch; returns an error only when the input exceeds max.
+func parseUserIDs(raw []string, max int) ([]primitive.ObjectID, error) {
+	if len(raw) > max {
+		return nil, fmt.Errorf("too many ids: %d (max %d)", len(raw), max)
+	}
+	seen := make(map[string]struct{}, len(raw))
+	out := make([]primitive.ObjectID, 0, len(raw))
+	for _, s := range raw {
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		oid, err := primitive.ObjectIDFromHex(s)
+		if err != nil {
+			continue
+		}
+		out = append(out, oid)
+	}
+	return out, nil
 }
 
 // FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
