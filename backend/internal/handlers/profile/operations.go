@@ -111,6 +111,21 @@ type FindUsersByPhoneNumbersOutput struct {
 	Body []types.UserExtendedReferenceWithPhone `json:"body"`
 }
 
+// Get Users by IDs (batch)
+type GetUsersByIDsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	Body          struct {
+		UserIDs []string `json:"userIds" maxItems:"200" doc:"List of user IDs to resolve to profile references"`
+	}
+}
+
+type GetUsersByIDsOutput struct {
+	Body struct {
+		Users []types.UserExtendedReference `json:"users"`
+	} `json:"body"`
+}
+
 // Update Timezone
 type UpdateTimezoneInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
@@ -239,6 +254,17 @@ func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
 		Description: "Efficiently find users matching any of the provided phone numbers using a single database query",
 		Tags:        []string{"profiles"},
 	}, handler.FindUsersByPhoneNumbers)
+}
+
+func RegisterGetUsersByIDsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-users-by-ids",
+		Method:      http.MethodPost,
+		Path:        "/v1/users/batch",
+		Summary:     "Get users by IDs",
+		Description: "Resolves a list of user IDs to public profile references in a single query.",
+		Tags:        []string{"profiles"},
+	}, handler.GetUsersByIDs)
 }
 
 func RegisterUpdateTimezoneOperation(api huma.API, handler *Handler) {

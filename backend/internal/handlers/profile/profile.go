@@ -313,6 +313,27 @@ func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersB
 	return &FindUsersByPhoneNumbersOutput{Body: users}, nil
 }
 
+func (h *Handler) GetUsersByIDs(ctx context.Context, input *GetUsersByIDsInput) (*GetUsersByIDsOutput, error) {
+	if _, err := auth.RequireAuth(ctx); err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	ids, err := parseUserIDs(input.Body.UserIDs, 200)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user IDs", err)
+	}
+
+	users, err := h.service.GetUsersByIDs(ids)
+	if err != nil {
+		slog.Error("Failed to get users by IDs", "count", len(ids), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to fetch users. Please try again.", err)
+	}
+
+	out := &GetUsersByIDsOutput{}
+	out.Body.Users = users
+	return out, nil
+}
+
 func (h *Handler) SearchProfilesHuma(ctx context.Context, input *SearchProfilesInput) (*SearchProfilesOutput, error) {
 	// Extract user_id from context for authorization
 	authenticatedUserID, err := auth.RequireAuth(ctx)
