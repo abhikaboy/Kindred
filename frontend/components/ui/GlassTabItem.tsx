@@ -12,13 +12,19 @@ type Props = {
     renderIcon?: IconRenderer;
     accessibilityLabel?: string;
     badge?: number;
+    // When true, inactive icons invert against the backdrop (difference blend)
+    // so they stay legible over any content behind the glass. Off for avatars.
+    invert?: boolean;
 };
 
 // A single tab slot: renders the route's icon (reused from the screen's
 // tabBarIcon option) with a light haptic on press and an optional count badge.
-export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel, badge }: Props) {
+export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel, badge, invert = true }: Props) {
     const ThemedColor = useThemeColor();
-    const color = focused ? ThemedColor.primary : ThemedColor.caption;
+    // Active icon is brand purple; inactive icons render white under a
+    // difference blend so they read as the inverse of whatever is behind them.
+    const inverting = invert && !focused;
+    const color = focused ? ThemedColor.primary : inverting ? "#FFFFFF" : ThemedColor.caption;
 
     const handlePress = async () => {
         if (Platform.OS === "ios") {
@@ -43,7 +49,12 @@ export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel,
                 justifyContent: "center",
                 height: "100%",
             }}>
-            <View style={{ alignItems: "center", justifyContent: "center" }}>
+            <View
+                style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    ...(inverting ? { mixBlendMode: "difference" as const } : null),
+                }}>
                 {renderIcon?.({ focused, color, size: 24 })}
                 {badge !== undefined && badge > 0 && (
                     <View

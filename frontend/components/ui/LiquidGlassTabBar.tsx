@@ -164,6 +164,7 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                                     renderIcon={options.tabBarIcon}
                                     accessibilityLabel={options.tabBarAccessibilityLabel}
                                     badge={badges?.[route.name]}
+                                    invert={route.name !== "(profile)"}
                                 />
                             );
                         })}
