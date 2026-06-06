@@ -27,6 +27,12 @@ type DragContextValue = {
 
 const DragContext = createContext<DragContextValue | null>(null);
 
+// Flip to false to silence drag hit-test logs. Temporary diagnostics.
+const DRAG_DEBUG = true;
+const dlog = (...args: unknown[]) => {
+    if (DRAG_DEBUG) console.log("[drag]", ...args);
+};
+
 export const useDrag = () => {
     const ctx = useContext(DragContext);
     if (!ctx) throw new Error("useDrag must be used within DragProvider");
@@ -59,6 +65,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Stamp the scroll offset at measure time so hit-testing can correct
         // for any scrolling that happens before/while a drag is in flight.
         rectsRef.current.set(rect.categoryId, { ...rect, scrollYAtMeasure: scrollYRef.current });
+        dlog("rect set", rect.categoryId, `y=${Math.round(rect.y)} h=${Math.round(rect.height)} scrollY=${Math.round(scrollYRef.current)}`, `(total ${rectsRef.current.size})`);
     }, []);
 
     const removeCategoryRect = useCallback((categoryId: string) => {
@@ -83,6 +90,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fingerY.value = startY;
         setDraggedTask(task);
         setIsDragging(true);
+        dlog("lift", `task=${task.id}`, `from=${sourceCategoryId}`, `at=(${Math.round(startX)},${Math.round(startY)})`, `rects=${rectsRef.current.size}`);
     }, [fingerX, fingerY]);
 
     const updateDrag = useCallback((x: number, y: number) => {
@@ -90,6 +98,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fingerY.value = y;
         const hit = categoryAtPoint(currentRects(), x, y);
         if (hit !== hoveredRef.current) {
+            dlog("hover →", hit ?? "(none)", `finger=(${Math.round(x)},${Math.round(y)})`, `scrollY=${Math.round(scrollYRef.current)}`);
             hoveredRef.current = hit;
             setHoveredCategoryId(hit);
             // Light tick when the finger crosses into a new drop zone (not the
@@ -103,6 +112,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const endDrag = useCallback(() => {
         const dragging = draggingRef.current;
         const target = categoryAtPoint(currentRects(), fingerX.value, fingerY.value);
+        dlog("drop", `finger=(${Math.round(fingerX.value)},${Math.round(fingerY.value)})`, `target=${target ?? "(none)"}`, `source=${dragging?.sourceCategoryId ?? "?"}`, `→ ${dragging && target && target !== dragging.sourceCategoryId ? "MOVE" : "no-op"}`);
         if (dragging && target && target !== dragging.sourceCategoryId) {
             if (Platform.OS === "ios") {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
