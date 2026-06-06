@@ -2,6 +2,7 @@ import client from "@/api/client";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { createLogger } from "@/utils/logger";
+import { request } from "@/hooks/useRequest";
 
 const logger = createLogger('ProfileAPI');
 
@@ -222,4 +223,11 @@ export const updateTimezone = async (timezone: string): Promise<void> => {
     if (error) {
         throw new Error(`Failed to update timezone: ${JSON.stringify(error)}`);
     }
+};
+
+/** Resolve a list of user IDs to public profile references via POST /v1/users/batch. */
+export const getUsersByIds = async (ids: string[]): Promise<UserExtendedReference[]> => {
+    if (ids.length === 0) return [];
+    const res = await request("POST", "/users/batch", { userIds: ids });
+    return (res?.users ?? []) as UserExtendedReference[];
 };

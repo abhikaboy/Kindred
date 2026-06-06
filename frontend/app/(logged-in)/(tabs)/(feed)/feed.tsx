@@ -50,6 +50,7 @@ type PostData = {
     images: string[];
     dual?: string;
     caption: string;
+    taggedUsers?: Array<{ id: string; handle: string }>;
     size?: {
         width: number;
         height: number;
@@ -526,6 +527,7 @@ export default function Feed() {
                         images={post.images}
                         dual={post.dual}
                         caption={post.caption}
+                        taggedUsers={post.taggedUsers ?? []}
                         size={post.size}
                         time={postTime}
                         reactions={postReactions}
@@ -559,6 +561,7 @@ export default function Feed() {
                     username={post.user?.handle || "unknown"}
                     userId={post.user?._id || ""}
                     caption={post.caption || ""}
+                    taggedUsers={post.taggedUsers ?? []}
                     time={postTime}
                     dual={post.dual}
                     priority="low"

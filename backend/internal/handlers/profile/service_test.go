@@ -98,3 +98,25 @@ func TestCheckRelationship_Self(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, RelationshipSelf, result.Status)
 }
+
+func TestParseUserIDs(t *testing.T) {
+	a := primitive.NewObjectID()
+	b := primitive.NewObjectID()
+
+	t.Run("parses, dedupes, and skips invalid hex", func(t *testing.T) {
+		got, err := parseUserIDs([]string{a.Hex(), a.Hex(), "not-hex", b.Hex()}, 200)
+		assert.NoError(t, err)
+		assert.Equal(t, []primitive.ObjectID{a, b}, got)
+	})
+
+	t.Run("empty input returns empty slice", func(t *testing.T) {
+		got, err := parseUserIDs(nil, 200)
+		assert.NoError(t, err)
+		assert.Empty(t, got)
+	})
+
+	t.Run("errors when over the cap", func(t *testing.T) {
+		_, err := parseUserIDs([]string{a.Hex(), b.Hex(), a.Hex()}, 2)
+		assert.Error(t, err)
+	})
+}

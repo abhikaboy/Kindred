@@ -27,6 +27,9 @@ import * as SMS from 'expo-sms';
 import PostCardHeader from "./PostCardHeader";
 import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
+import { getUsersByIds, type UserExtendedReference } from "@/api/profile";
+import { buildReactionGroups, type ReactionGroup } from "@/utils/reactions";
+import ReactionsBottomSheetModal from "@/components/modals/ReactionsBottomSheetModal";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useRouter } from "expo-router";
@@ -96,6 +99,11 @@ const PostCard = React.memo(({
     const [localReactions, setLocalReactions] = useState<SlackReaction[]>(reactions);
     const [imageHeight, setImageHeight] = useState<number>(512);
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+    const [reactionsSheetVisible, setReactionsSheetVisible] = useState(false);
+    const [reactionGroups, setReactionGroups] = useState<ReactionGroup[]>([]);
+    const [reactionsLoading, setReactionsLoading] = useState(false);
+    const [reactionsError, setReactionsError] = useState<string | null>(null);
+    const [longPressedEmoji, setLongPressedEmoji] = useState<string | undefined>(undefined);
     const queryClient = useQueryClient();
     const router = useRouter();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
@@ -355,6 +363,28 @@ const PostCard = React.memo(({
             console.error("Failed to toggle reaction:", error);
         }
     };
+    const loadReactionViewers = async (source: SlackReaction[]) => {
+        const ids = Array.from(new Set(source.flatMap((r) => r.ids)));
+        setReactionsLoading(true);
+        setReactionsError(null);
+        try {
+            const users = await getUsersByIds(ids);
+            const byId = new Map<string, UserExtendedReference>(users.map((u) => [u._id, u]));
+            setReactionGroups(buildReactionGroups(source, byId));
+        } catch (e) {
+            setReactionsError("Couldn't load reactions");
+        } finally {
+            setReactionsLoading(false);
+        }
+    };
+
+    const handleLongPressReaction = (reaction: SlackReaction) => {
+        setLongPressedEmoji(reaction.emoji);
+        setReactionGroups([]);
+        setReactionsSheetVisible(true);
+        loadReactionViewers(localReactions);
+    };
+
     const openModal = (imageIndex) => {
         setModalVisible(true);
         setModalIndex(imageIndex);
@@ -623,6 +653,7 @@ const PostCard = React.memo(({
                         onCongratulatePress={handleCongratulatePress}
                         onOpenComments={handleOpenComments}
                         commentCount={currentComments.length}
+                        onLongPressReaction={handleLongPressReaction}
                     />
                 </View>
 
@@ -707,6 +738,17 @@ const PostCard = React.memo(({
                         categoryName: category || "General",
                         postId: id, // Pass the post ID for thumbnail
                     }}
+                />
+
+                {/* Reaction viewers bottom sheet */}
+                <ReactionsBottomSheetModal
+                    visible={reactionsSheetVisible}
+                    setVisible={setReactionsSheetVisible}
+                    groups={reactionGroups}
+                    initialEmoji={longPressedEmoji}
+                    loading={reactionsLoading}
+                    error={reactionsError}
+                    onRetry={() => loadReactionViewers(localReactions)}
                 />
         </View>
     );

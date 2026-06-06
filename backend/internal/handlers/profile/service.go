@@ -2,6 +2,7 @@ package Profile
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -616,6 +617,28 @@ func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
 	return results, nil
 }
 
+// parseUserIDs validates and dedupes hex user IDs. Invalid hex is skipped so one
+// bad ID doesn't fail the batch; returns an error only when the input exceeds max.
+func parseUserIDs(raw []string, max int) ([]primitive.ObjectID, error) {
+	if len(raw) > max {
+		return nil, fmt.Errorf("too many ids: %d (max %d)", len(raw), max)
+	}
+	seen := make(map[string]struct{}, len(raw))
+	out := make([]primitive.ObjectID, 0, len(raw))
+	for _, s := range raw {
+		if _, ok := seen[s]; ok {
+			continue
+		}
+		seen[s] = struct{}{}
+		oid, err := primitive.ObjectIDFromHex(s)
+		if err != nil {
+			continue
+		}
+		out = append(out, oid)
+	}
+	return out, nil
+}
+
 // FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
 // Uses a single database query with $in operator to avoid multiple scans
 // Returns users with phone numbers included for contact name mapping
@@ -664,5 +687,39 @@ func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string, excludeUserID p
 		results[i] = *internal.ToAPI()
 	}
 
+	return results, nil
+}
+
+// GetUsersByIDs returns extended references for the given user IDs in a single
+// query. Missing users are omitted; order is not guaranteed.
+func (s *Service) GetUsersByIDs(ids []primitive.ObjectID) ([]types.UserExtendedReference, error) {
+	ctx := context.Background()
+	if len(ids) == 0 {
+		return []types.UserExtendedReference{}, nil
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	projection := bson.M{
+		"_id":             1,
+		"display_name":    1,
+		"handle":          1,
+		"profile_picture": 1,
+	}
+
+	cursor, err := s.Profiles.Find(ctx, filter, options.Find().SetProjection(projection))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internal []types.UserExtendedReferenceInternal
+	if err := cursor.All(ctx, &internal); err != nil {
+		return nil, err
+	}
+
+	results := make([]types.UserExtendedReference, len(internal))
+	for i, u := range internal {
+		results[i] = *u.ToAPI()
+	}
 	return results, nil
 }
