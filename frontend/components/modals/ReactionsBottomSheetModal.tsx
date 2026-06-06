@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { router, type Href } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
@@ -66,7 +67,7 @@ export default function ReactionsBottomSheetModal({
                         <ThemedText style={{ color: ThemedColor.caption }}>{error} — tap to retry</ThemedText>
                     </TouchableOpacity>
                 ) : (
-                    <FlatList
+                    <BottomSheetFlatList
                         data={active?.users ?? []}
                         keyExtractor={(u) => u._id}
                         renderItem={({ item }) => (
