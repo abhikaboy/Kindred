@@ -21,10 +21,12 @@ type Props = {
 // tabBarIcon option) with a light haptic on press and an optional count badge.
 export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel, badge, invert = true }: Props) {
     const ThemedColor = useThemeColor();
-    // Active icon is brand purple; inactive icons render white under a
-    // difference blend so they read as the inverse of whatever is behind them.
-    const inverting = invert && !focused;
-    const color = focused ? ThemedColor.primary : inverting ? "#FFFFFF" : ThemedColor.caption;
+    const isDark = ThemedColor.background === "#13121F";
+    // Active icon is brand purple. Inactive icons take the theme's text color
+    // with an opposite-tone glow so they stay legible over any backdrop.
+    const glowing = invert && !focused;
+    const color = focused ? ThemedColor.primary : ThemedColor.text;
+    const glow = isDark ? "rgba(0,0,0,0.9)" : "rgba(255,255,255,0.95)";
 
     const handlePress = async () => {
         if (Platform.OS === "ios") {
@@ -53,7 +55,9 @@ export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel,
                 style={{
                     alignItems: "center",
                     justifyContent: "center",
-                    ...(inverting ? { mixBlendMode: "difference" as const } : null),
+                    ...(glowing
+                        ? { filter: [{ dropShadow: `0px 0px 2px ${glow}` }, { dropShadow: `0px 0px 3px ${glow}` }] }
+                        : null),
                 }}>
                 {renderIcon?.({ focused, color, size: 24 })}
                 {badge !== undefined && badge > 0 && (
