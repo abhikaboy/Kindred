@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Animated, Easing, Dimensions, Modal } from "react-native";
+import { View, StyleSheet, Animated, Easing, Modal } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Pencil, Alarm, CheckCircle, Sparkle, Fire, Star, Atom } from "phosphor-react-native";
-import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+
+// Soft purple edge glow. A gradient falloff is far cheaper to render than a
+// huge shadowRadius blur (which forces an offscreen pass and heavy overdraw).
+const GLOW_THICKNESS = 140;
+const GLOW_FADE: readonly [string, string] = ["rgba(168,85,247,0.6)", "rgba(168,85,247,0)"];
 
 type Props = {
     message?: string;
@@ -20,9 +25,9 @@ const LOADING_ICONS = [
     Atom,
 ];
 
-export const TaskGenerationLoading = ({ 
-    message = "Processing with AI...", 
-    submessage = "This may take a few moments" 
+export const TaskGenerationLoading = ({
+    message = "Processing with AI...",
+    submessage = "This may take a few moments"
 }: Props) => {
     const ThemedColor = useThemeColor();
     const [currentIconIndex, setCurrentIconIndex] = useState(0);
@@ -52,20 +57,21 @@ export const TaskGenerationLoading = ({
         );
         bounceLoop.start();
 
-        // Continuous glow pulse animation
+        // Continuous glow pulse animation. Opacity runs on the native driver so
+        // the pulse stays on the UI thread (no per-frame JS bridge traffic).
         const glowLoop = Animated.loop(
             Animated.sequence([
                 Animated.timing(glowAnim, {
                     toValue: 1,
                     duration: 2000,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: false, // opacity in styles needs this
+                    useNativeDriver: true,
                 }),
                 Animated.timing(glowAnim, {
                     toValue: 0,
                     duration: 2000,
                     easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: false,
+                    useNativeDriver: true,
                 }),
             ])
         );
@@ -95,10 +101,10 @@ export const TaskGenerationLoading = ({
             ]).start(() => {
                 // Change icon
                 setCurrentIconIndex((prev) => (prev + 1) % LOADING_ICONS.length);
-                
+
                 // Reset rotation
                 rotateAnim.setValue(0);
-                
+
                 // Fade in, scale up with bounce, and rotate back
                 Animated.parallel([
                     Animated.timing(fadeAnim, {
@@ -125,7 +131,7 @@ export const TaskGenerationLoading = ({
     }, [fadeAnim, scaleAnim, rotateAnim, bounceAnim, glowAnim]);
 
     const CurrentIcon = LOADING_ICONS[currentIconIndex];
-    
+
     const rotation = rotateAnim.interpolate({
         inputRange: [0, 1],
         outputRange: ['0deg', '180deg'],
@@ -141,8 +147,6 @@ export const TaskGenerationLoading = ({
         outputRange: [0.6, 1],
     });
 
-    const { width, height } = Dimensions.get('screen');
-
     return (
         <>
             {/* Purple glow borders - rendered in Modal to overlay entire screen */}
@@ -154,44 +158,36 @@ export const TaskGenerationLoading = ({
                 presentationStyle="overFullScreen"
                 pointerEvents="none"
             >
-                <View style={styles.modalOverlay} pointerEvents="none">
-                    <Animated.View 
-                        style={[
-                            styles.glowTop,
-                            { 
-                                width,
-                                opacity: glowOpacity,
-                            }
-                        ]} 
+                <Animated.View style={[styles.modalOverlay, { opacity: glowOpacity }]} pointerEvents="none">
+                    <LinearGradient
+                        colors={GLOW_FADE}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                        style={[styles.glowTop, { height: GLOW_THICKNESS }]}
+                        pointerEvents="none"
                     />
-                    <Animated.View 
-                        style={[
-                            styles.glowBottom,
-                            { 
-                                width,
-                                opacity: glowOpacity,
-                            }
-                        ]} 
+                    <LinearGradient
+                        colors={GLOW_FADE}
+                        start={{ x: 0, y: 1 }}
+                        end={{ x: 0, y: 0 }}
+                        style={[styles.glowBottom, { height: GLOW_THICKNESS }]}
+                        pointerEvents="none"
                     />
-                    <Animated.View 
-                        style={[
-                            styles.glowLeft,
-                            { 
-                                height,
-                                opacity: glowOpacity,
-                            }
-                        ]} 
+                    <LinearGradient
+                        colors={GLOW_FADE}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[styles.glowLeft, { width: GLOW_THICKNESS }]}
+                        pointerEvents="none"
                     />
-                    <Animated.View 
-                        style={[
-                            styles.glowRight,
-                            { 
-                                height,
-                                opacity: glowOpacity,
-                            }
-                        ]} 
+                    <LinearGradient
+                        colors={GLOW_FADE}
+                        start={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 0 }}
+                        style={[styles.glowRight, { width: GLOW_THICKNESS }]}
+                        pointerEvents="none"
                     />
-                </View>
+                </Animated.View>
             </Modal>
 
             <View style={styles.loadingContainer}>
@@ -208,19 +204,19 @@ export const TaskGenerationLoading = ({
                     },
                 ]}
             >
-                <CurrentIcon 
-                    size={56} 
+                <CurrentIcon
+                    size={56}
                     color={ThemedColor.primary}
                     weight="duotone"
                 />
             </Animated.View>
-            <ThemedText 
-                type="default" 
+            <ThemedText
+                type="default"
                 style={[styles.loadingText, { color: ThemedColor.caption }]}>
                 {message}
             </ThemedText>
-            <ThemedText 
-                type="default" 
+            <ThemedText
+                type="default"
                 style={[styles.loadingSubtext, { color: ThemedColor.caption }]}>
                 {submessage}
             </ThemedText>
@@ -254,53 +250,28 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         left: 0,
-        height: 4,
-        backgroundColor: '#a855f7',
-        shadowColor: '#a855f7',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 150,
-        elevation: 30,
+        right: 0,
         zIndex: 9999,
     },
     glowBottom: {
         position: 'absolute',
         bottom: 0,
         left: 0,
-        height: 4,
-        backgroundColor: '#a855f7',
-        shadowColor: '#a855f7',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 1,
-        shadowRadius: 150,
-        elevation: 30,
+        right: 0,
         zIndex: 9999,
     },
     glowLeft: {
         position: 'absolute',
         top: 0,
+        bottom: 0,
         left: 0,
-        width: 4,
-        backgroundColor: '#a855f7',
-        shadowColor: '#a855f7',
-        shadowOffset: { width: 10, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 150,
-        elevation: 30,
         zIndex: 9999,
     },
     glowRight: {
         position: 'absolute',
         top: 0,
+        bottom: 0,
         right: 0,
-        width: 4,
-        backgroundColor: '#a855f7',
-        shadowColor: '#a855f7',
-        shadowOffset: { width: -10, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 150,
-        elevation: 30,
         zIndex: 9999,
     },
 });
-
