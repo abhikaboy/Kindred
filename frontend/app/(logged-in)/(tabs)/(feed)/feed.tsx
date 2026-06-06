@@ -83,6 +83,10 @@ export default function Feed() {
     const [activePage, setActivePage] = useState(0);
     // Lazily mount the notifications page on the first swipe toward it.
     const [notificationsMounted, setNotificationsMounted] = useState(false);
+    // react-native-pager-view doesn't reliably honor `initialPage` on first layout
+    // here (it can come up on page 1) — same reason DatePager sets the page
+    // imperatively. Pin page 0 exactly once, after the pager has laid out.
+    const didInitPage = useRef(false);
 
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
@@ -695,10 +699,24 @@ export default function Feed() {
             ref={pagerRef}
             style={{ flex: 1 }}
             initialPage={0}
-            onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
+            onLayout={() => {
+                if (!didInitPage.current) {
+                    didInitPage.current = true;
+                    pagerRef.current?.setPageWithoutAnimation(0);
+                }
+            }}
+            onPageSelected={(e) => {
+                const position = e.nativeEvent.position;
+                setActivePage(position);
+                if (position === 1) {
+                    setNotificationsMounted(true);
+                }
+            }}
             onPageScrollStateChanged={(e) => {
                 // Mount the notifications page as soon as the user starts dragging toward it.
-                if (e.nativeEvent.pageScrollState === "dragging") {
+                // Guard on didInitPage so the pager's mount-time positioning (which can emit a
+                // spurious "dragging") doesn't mount it before the user actually swipes.
+                if (didInitPage.current && e.nativeEvent.pageScrollState === "dragging") {
                     setNotificationsMounted(true);
                 }
             }}>
