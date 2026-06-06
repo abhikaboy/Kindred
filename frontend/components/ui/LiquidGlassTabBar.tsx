@@ -84,7 +84,7 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                         <GlassView
                             glassEffectStyle="regular"
                             isInteractive
-                            style={StyleSheet.absoluteFill}
+                            style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
                         />
                     ) : (
                         <>
