@@ -196,6 +196,7 @@ Database layer of the application
 type Service struct {
 	Encouragements      *mongo.Collection
 	Users               *mongo.Collection
+	Categories          *mongo.Collection
 	NotificationService *notifications.Service
 	RingService         *rings.RingService
 }

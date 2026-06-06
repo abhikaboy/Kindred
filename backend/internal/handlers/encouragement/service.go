@@ -19,6 +19,7 @@ import (
 func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	encouragements := collections["encouragements"]
 	users := collections["users"]
+	categories := collections["categories"]
 
 	// Log if collections are not found
 	if encouragements == nil {
@@ -27,10 +28,14 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 	if users == nil {
 		slog.Error("Users collection not found in database")
 	}
+	if categories == nil {
+		slog.Error("Categories collection not found in database")
+	}
 
 	return &Service{
 		Encouragements:      encouragements,
 		Users:               users,
+		Categories:          categories,
 		NotificationService: notifications.NewNotificationService(collections),
 		RingService:         ringService,
 	}
