@@ -86,12 +86,12 @@ export const Category: React.FC<CategoryProps> = ({
                         bottom: -8,
                         borderRadius: 12,
                         backgroundColor: ThemedColor.lightenedCard,
-                        // Slight drop shadow so the targeted category lifts off the page.
+                        // Drop shadow so the targeted category lifts off the page.
                         shadowColor: "#000",
-                        shadowOpacity: 0.18,
-                        shadowRadius: 8,
-                        shadowOffset: { width: 0, height: 4 },
-                        elevation: 6,
+                        shadowOpacity: 0.28,
+                        shadowRadius: 11,
+                        shadowOffset: { width: 0, height: 5 },
+                        elevation: 9,
                     }}
                 />
             )}
@@ -159,6 +159,7 @@ export const Category: React.FC<CategoryProps> = ({
                         borderRadius: 12,
                         borderWidth: 1.5,
                         borderColor: ThemedColor.primary,
+                        opacity: 0.6,
                         zIndex: 10,
                         elevation: 11,
                     }}
