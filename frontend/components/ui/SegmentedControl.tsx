@@ -9,9 +9,13 @@ interface SegmentedControlProps {
     selectedOption: string;
     onOptionPress: (option: string) => void;
     size?: 'default' | 'small';
+    /** Optional leading icon per option. Receives the resolved content color and focused state. */
+    icons?: Record<string, (color: string, focused: boolean) => React.ReactNode>;
+    /** Light-purple active segment with primary-colored label/icon (vs. the default gray segment). */
+    accent?: boolean;
 }
 
-const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress, size = 'default' }) => {
+const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress, size = 'default', icons, accent = false }) => {
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
     const [containerWidth, setContainerWidth] = useState(0);
@@ -70,26 +74,33 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
                         styles.activeBox,
                         {
                             width: segmentWidth - 8,
-                            backgroundColor: ThemedColor.lightened,
+                            backgroundColor: accent ? ThemedColor.primary + "1F" : ThemedColor.lightened,
                         },
                         animatedStyle,
                     ]}
                 />
             )}
-            {options.map((option) => (
-                <TouchableOpacity
-                    key={option}
-                    style={[styles.option, { flex: 1 }]}
-                    onPress={() => handlePress(option)}
-                    activeOpacity={0.8}>
-                    <ThemedText
-                        type={selectedOption === option ? "defaultSemiBold" : "default"}
-                        style={isSmall && styles.textSmall}
-                    >
-                        {option}
-                    </ThemedText>
-                </TouchableOpacity>
-            ))}
+            {options.map((option) => {
+                const focused = selectedOption === option;
+                const contentColor = focused && accent ? ThemedColor.primary : ThemedColor.text;
+                return (
+                    <TouchableOpacity
+                        key={option}
+                        style={[styles.option, { flex: 1 }]}
+                        onPress={() => handlePress(option)}
+                        activeOpacity={0.8}>
+                        <View style={styles.optionContent}>
+                            {icons?.[option]?.(contentColor, focused)}
+                            <ThemedText
+                                type={focused ? "defaultSemiBold" : "default"}
+                                style={[isSmall && styles.textSmall, { color: contentColor }]}
+                            >
+                                {option}
+                            </ThemedText>
+                        </View>
+                    </TouchableOpacity>
+                );
+            })}
         </View>
     );
 };
@@ -121,6 +132,11 @@ const stylesheet = (ThemedColor: any) => StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         zIndex: 1,
+    },
+    optionContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
     },
     text: {
         fontSize: 14,
