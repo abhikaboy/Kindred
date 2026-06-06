@@ -186,7 +186,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         row: {
             flexDirection: "row",
             alignItems: "center",
-            backgroundColor: ThemedColor.lightenedCard,
+            backgroundColor: ThemedColor.background,
             borderRadius: 14,
             padding: 12,
             borderWidth: 0.5,
