@@ -5,8 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showToastable } from 'react-native-toastable';
 import * as Haptics from 'expo-haptics';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { CaretRight, ArrowRight } from 'phosphor-react-native';
 import { ThemedText } from '@/components/ThemedText';
 import DefaultToast from '@/components/ui/DefaultToast';
+import { OnboardingStepSheet } from './OnboardingStepSheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateModal } from '@/contexts/createModalContext';
@@ -45,10 +47,20 @@ const TOTAL_ITEMS = ITEM_KEYS.length;
 const CELEBRATION_HOLD_MS = 2500;
 const CELEBRATION_FADE_MS = 350;
 
+// TEMP(testing): force the card to render with every step actionable so all four
+// sheets are reachable regardless of completion/dismissal. Remove before merging.
+const FORCE_SHOW = true;
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const FALLBACK_CARD_WIDTH = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
 
 const allDone = (c: CompletionMap) => ITEM_KEYS.every((k) => c[k]);
+
+const subtitleForRemaining = (remaining: number): string => {
+    if (remaining <= 1) return "You're almost there!";
+    if (remaining === 2) return "You're making progress";
+    return "Let's get you set up";
+};
 
 interface OnboardingChecklistProps {
     scrollRef: React.RefObject<ScrollView>;
@@ -62,6 +74,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
     const { openModal } = useCreateModal();
     const [dismissed, setDismissed] = useState<boolean | null>(null);
     const [celebrating, setCelebrating] = useState(false);
+    const [activeKey, setActiveKey] = useState<ItemKey | null>(null);
     const [cardWidth, setCardWidth] = useState(FALLBACK_CARD_WIDTH);
     const cardOpacity = useRef(new Animated.Value(1)).current;
     const celebrationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -95,11 +108,19 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
         return computeCompletion(user as unknown as ChecklistUser);
     }, [user]);
 
-    const visible = useMemo(() => (completion ? computeVisibleItems(completion) : []), [completion]);
-    const completed = useMemo(() => (completion ? computeCompletedItems(completion) : []), [completion]);
+    const computedVisible = useMemo(() => (completion ? computeVisibleItems(completion) : []), [completion]);
+    const computedCompleted = useMemo(() => (completion ? computeCompletedItems(completion) : []), [completion]);
     const totalDone = completion ? Object.values(completion).filter(Boolean).length : 0;
+    const remaining = TOTAL_ITEMS - totalDone;
+    // TEMP(testing): with FORCE_SHOW, every item is actionable so all four sheets are reachable.
+    const visible = FORCE_SHOW ? ITEM_KEYS : computedVisible;
+    const completed = FORCE_SHOW ? [] : computedCompleted;
+    // Only the top incomplete item gets the highlighted "Next step" treatment.
+    const nextKey = visible[0] ?? null;
+    const restIncomplete = visible.slice(1);
 
-    const handleRowPress = useCallback(
+    // The action a step's sheet CTA performs once the user commits to it.
+    const runAction = useCallback(
         (key: ItemKey) => {
             switch (key) {
                 case 'task':
@@ -185,46 +206,56 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
 
     // `celebrating` keeps the card alive through the finish animation even
     // though shouldShowCard flips to false the instant all items are done.
-    if (!completion || dismissed === null || (!shouldShowCard(completion, dismissed) && !celebrating)) return null;
+    if (!completion || dismissed === null) return null;
+    if (!FORCE_SHOW && !shouldShowCard(completion, dismissed) && !celebrating) return null;
 
     return (
         <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18, opacity: cardOpacity }}>
             <View
                 onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
                 style={{
-                    backgroundColor: ThemedColor.lightenedCard,
+                    backgroundColor: ThemedColor.background,
                     borderRadius: 20,
-                    padding: 18,
+                    padding: 16,
                     borderWidth: 1,
                     borderColor: ThemedColor.tertiary,
                     overflow: 'hidden',
                 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
-                        {celebrating ? "You're all set! 🎉" : 'Get started 🚀'}
-                    </ThemedText>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <ThemedText type="subtitle">{celebrating ? "You're all set!" : 'Get started'}</ThemedText>
                     {!celebrating && (
-                        <ThemedText style={{ fontSize: 12, color: ThemedColor.primary }}>
-                            {totalDone} of {TOTAL_ITEMS}
-                        </ThemedText>
+                        <View
+                            style={{
+                                backgroundColor: ThemedColor.primary + '20',
+                                paddingHorizontal: 10,
+                                paddingVertical: 4,
+                                borderRadius: 100,
+                            }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                {remaining} left
+                            </ThemedText>
+                        </View>
                     )}
                 </View>
 
-                {celebrating && (
-                    <ThemedText style={{ fontSize: 13, color: ThemedColor.caption, marginTop: 4 }}>
-                        Welcome to Kindred — you're ready to roll.
-                    </ThemedText>
-                )}
+                <ThemedText type="caption" style={{ color: celebrating ? ThemedColor.caption : ThemedColor.primary, marginTop: 4 }}>
+                    {celebrating ? "Welcome to Kindred — you're ready to roll." : subtitleForRemaining(remaining)}
+                </ThemedText>
 
                 <ProgressBar totalDone={totalDone} ThemedColor={ThemedColor} />
 
-                {visible.map((key) => (
+                {nextKey && (
                     <ChecklistRow
-                        key={key}
-                        label={LABELS[key]}
-                        onPress={() => handleRowPress(key)}
+                        label={LABELS[nextKey]}
+                        sublabel="Next step"
+                        highlighted
+                        onPress={() => setActiveKey(nextKey)}
                         ThemedColor={ThemedColor}
                     />
+                )}
+
+                {restIncomplete.map((key) => (
+                    <ChecklistRow key={key} label={LABELS[key]} onPress={() => setActiveKey(key)} ThemedColor={ThemedColor} />
                 ))}
 
                 {completed.map((key) => (
@@ -232,13 +263,26 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
                 ))}
 
                 {!celebrating && (
-                    <TouchableOpacity
-                        onPress={handleDismiss}
-                        style={{ alignSelf: 'flex-end', paddingVertical: 6, marginTop: 4 }}>
-                        <ThemedText type="caption" style={{ fontSize: 12 }}>
-                            Dismiss
-                        </ThemedText>
-                    </TouchableOpacity>
+                    <>
+                        <View style={{ height: 1, backgroundColor: ThemedColor.tertiary, marginTop: 12, marginBottom: 10 }} />
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <TouchableOpacity onPress={handleDismiss} style={{ paddingVertical: 4 }}>
+                                <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                                    Dismiss
+                                </ThemedText>
+                            </TouchableOpacity>
+                            {nextKey && (
+                                <TouchableOpacity
+                                    onPress={() => setActiveKey(nextKey)}
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
+                                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
+                                        Finish setup
+                                    </ThemedText>
+                                    <ArrowRight size={16} color={ThemedColor.primary} weight="bold" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </>
                 )}
             </View>
 
@@ -255,6 +299,8 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
                     />
                 </View>
             )}
+
+            <OnboardingStepSheet activeKey={activeKey} onClose={() => setActiveKey(null)} onAction={runAction} />
         </Animated.View>
     );
 };
@@ -263,25 +309,55 @@ interface ChecklistRowProps {
     label: string;
     onPress?: () => void;
     completed?: boolean;
+    highlighted?: boolean;
+    sublabel?: string;
     ThemedColor: ReturnType<typeof useThemeColor>;
 }
 
-const ChecklistRow: React.FC<ChecklistRowProps> = ({ label, onPress, completed = false, ThemedColor }) => {
-    const rowStyle = { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 } as const;
+const ChecklistRow: React.FC<ChecklistRowProps> = ({
+    label,
+    onPress,
+    completed = false,
+    highlighted = false,
+    sublabel,
+    ThemedColor,
+}) => {
+    const rowStyle = {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: highlighted ? 12 : 8,
+        // Negative margin offsets the padding so the circle stays aligned with the plain rows
+        // while the tint extends outward.
+        paddingHorizontal: highlighted ? 10 : 0,
+        marginHorizontal: highlighted ? -10 : 0,
+        marginTop: highlighted ? 4 : 0,
+        borderRadius: highlighted ? 14 : 0,
+        backgroundColor: highlighted ? ThemedColor.primary + '14' : 'transparent',
+    } as const;
+
+    // On the purple highlight the circle border must read as primary, not gray.
+    const circleColor = highlighted ? ThemedColor.primary : undefined;
 
     const content = (
         <>
-            <CheckCircle completed={completed} ThemedColor={ThemedColor} />
-            <ThemedText
-                style={{
-                    flex: 1,
-                    fontSize: 14,
-                    color: completed ? ThemedColor.caption : undefined,
-                    textDecorationLine: completed ? 'line-through' : 'none',
-                }}>
-                {label}
-            </ThemedText>
-            {!completed && <ThemedText style={{ color: ThemedColor.caption, fontSize: 14 }}>›</ThemedText>}
+            <CheckCircle completed={completed} ThemedColor={ThemedColor} borderOverride={circleColor} />
+            <View style={{ flex: 1 }}>
+                <ThemedText
+                    type="default"
+                    style={{
+                        color: completed ? ThemedColor.caption : undefined,
+                        textDecorationLine: completed ? 'line-through' : 'none',
+                    }}>
+                    {label}
+                </ThemedText>
+                {sublabel && (
+                    <ThemedText type="caption" style={{ color: ThemedColor.primary, marginTop: 2 }}>
+                        {sublabel}
+                    </ThemedText>
+                )}
+            </View>
+            {!completed && <CaretRight size={16} color={highlighted ? ThemedColor.primary : ThemedColor.caption} />}
         </>
     );
 
@@ -299,9 +375,10 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({ label, onPress, completed =
 interface CheckCircleProps {
     completed: boolean;
     ThemedColor: ReturnType<typeof useThemeColor>;
+    borderOverride?: string;
 }
 
-const CheckCircle: React.FC<CheckCircleProps> = ({ completed, ThemedColor }) => {
+const CheckCircle: React.FC<CheckCircleProps> = ({ completed, ThemedColor, borderOverride }) => {
     const scale = useRef(new Animated.Value(completed ? 0 : 1)).current;
 
     useEffect(() => {
@@ -317,7 +394,7 @@ const CheckCircle: React.FC<CheckCircleProps> = ({ completed, ThemedColor }) => 
                 height: 18,
                 borderRadius: 100,
                 borderWidth: 1.5,
-                borderColor: completed ? ThemedColor.primary : ThemedColor.caption,
+                borderColor: completed ? ThemedColor.primary : borderOverride ?? ThemedColor.caption,
                 backgroundColor: completed ? ThemedColor.primary : 'transparent',
                 alignItems: 'center',
                 justifyContent: 'center',

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ListBullets, CalendarBlank } from "phosphor-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 interface FloatingViewToggleProps {
@@ -9,18 +10,21 @@ interface FloatingViewToggleProps {
 }
 
 /**
- * Condensed List/Calendar switcher that floats at the bottom-left, mirroring
- * FloatingDateNav on the right. Replaces the segmented control in the header so
- * the daily page reclaims that vertical space.
+ * Condensed List/Calendar switcher that floats at the bottom-right, clearing the
+ * tab bar. Replaces the segmented control in the header so the daily page
+ * reclaims that vertical space.
  */
 export const FloatingViewToggle: React.FC<FloatingViewToggleProps> = ({ activeTab, setActiveTab }) => {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const isList = activeTab === "List";
 
     return (
         <View
             style={[
                 styles.container,
+                // Clear the floating tab-bar pill (height 64 + bottom inset + padding) with a gap.
+                { bottom: insets.bottom + 84 },
                 { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary },
             ]}>
             <TouchableOpacity
@@ -46,8 +50,6 @@ export const FloatingViewToggle: React.FC<FloatingViewToggleProps> = ({ activeTa
 const styles = StyleSheet.create({
     container: {
         position: "absolute",
-        // Sits directly above FloatingDateNav (bottom: 100, height: 48) + gap.
-        bottom: 156,
         right: 16,
         flexDirection: "row",
         alignItems: "center",

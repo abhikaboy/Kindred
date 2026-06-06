@@ -9,6 +9,7 @@ type IconRenderer = (props: { focused: boolean; color: string; size: number }) =
 type Props = {
     focused: boolean;
     onPress: () => void;
+    onLongPress?: () => void;
     renderIcon?: IconRenderer;
     accessibilityLabel?: string;
     badge?: number;
@@ -19,7 +20,11 @@ type Props = {
 
 // A single tab slot: renders the route's icon (reused from the screen's
 // tabBarIcon option) with a light haptic on press and an optional count badge.
-export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel, badge, invert = true }: Props) {
+// Forwards a ref to its Pressable so callers can anchor a popover to the tab.
+export const GlassTabItem = React.forwardRef<View, Props>(function GlassTabItem(
+    { focused, onPress, onLongPress, renderIcon, accessibilityLabel, badge, invert = true },
+    ref
+) {
     const ThemedColor = useThemeColor();
     const isDark = ThemedColor.background === "#13121F";
     // Active icon is brand purple. Inactive icons take the theme's text color
@@ -39,12 +44,26 @@ export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel,
         onPress();
     };
 
+    const handleLongPress = async () => {
+        if (!onLongPress) return;
+        if (Platform.OS === "ios") {
+            try {
+                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            } catch {
+                // haptics are best-effort
+            }
+        }
+        onLongPress();
+    };
+
     return (
         <Pressable
+            ref={ref}
             accessibilityRole="button"
             accessibilityState={{ selected: focused }}
             accessibilityLabel={accessibilityLabel}
             onPress={handlePress}
+            onLongPress={onLongPress ? handleLongPress : undefined}
             style={{
                 flex: 1,
                 alignItems: "center",
@@ -84,4 +103,4 @@ export function GlassTabItem({ focused, onPress, renderIcon, accessibilityLabel,
             </View>
         </Pressable>
     );
-}
+});

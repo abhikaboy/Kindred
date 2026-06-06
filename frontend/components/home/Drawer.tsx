@@ -95,7 +95,7 @@ const DrawerContent = ({
 
     // Helper function to determine which drawer item should be selected based on current route
     const getSelectedItem = () => {
-        if (pathname.includes("/daily")) return "Daily";
+        if (pathname.includes("/daily")) return "Today";
         if (pathname.includes("/calendar")) return "Calendar";
         if (pathname.includes("/analytics")) return "Analytics";
         if (pathname.includes("/completed")) return "Completed Tasks";
@@ -214,7 +214,7 @@ const DrawerContent = ({
                     onLongPress={() => {}}
                 />
                 <DrawerItem
-                    title="Daily"
+                    title="Today"
                     selected={currentSelected}
                     icon={<CalendarBlank size={20} color={ThemedColor.primary} weight="regular" />}
                     onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/daily")}
@@ -400,47 +400,47 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
 const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number; workspaceIcon?: string; workspaceColor?: string }) => {
     const ThemedColor = useThemeColor();
     const isSelected = props.selected === props.title;
+    // Left accent uses the workspace color, falling back to the foreground.
+    const accentColor = props.workspaceColor ?? ThemedColor.tertiary;
 
     const IconComponent = props.workspaceIcon
         ? ((PhosphorIcons as any)[props.workspaceIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
         : undefined;
 
     return (
-        <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingVertical: 4 }}>
-            <TouchableOpacity
-                style={[
-                    {
-                        borderWidth: 1,
-                        borderColor: ThemedColor.tertiary,
-                        borderRadius: 8,
-                        paddingVertical: 16,
-                        paddingHorizontal: 16,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        overflow: "hidden",
-                    },
-                    isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
-                ]}
-                onPress={props.onPress}
-                onLongPress={props.onLongPress}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, flexGrow: 1 }}>
-                    <SelectedIndicator selected={isSelected} />
-                    {IconComponent ? (
-                        <IconComponent size={18} color={props.workspaceColor ?? ThemedColor.primary} weight="regular" />
-                    ) : (
-                        <Feather name="grid" size={16} color={ThemedColor.caption} />
-                    )}
-                    <ThemedText type="default" style={{ flexShrink: 1, fontWeight: "600" }} numberOfLines={2}>
-                        {props.title}
-                    </ThemedText>
-                </View>
-                {props.taskCount !== undefined && (
-                    <ThemedText type="default" style={{ color: ThemedColor.caption, marginLeft: 8, flexShrink: 0 }}>
-                        {props.taskCount}
-                    </ThemedText>
+        <TouchableOpacity
+            style={[
+                {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    width: "100%",
+                    paddingVertical: 12,
+                    paddingHorizontal: HORIZONTAL_PADDING,
+                    gap: 8,
+                },
+                isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
+            ]}
+            onPress={props.onPress}
+            onLongPress={props.onLongPress}>
+            {/* Full-height accent so consecutive rows form one connected rail. */}
+            <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, width: 3, backgroundColor: accentColor }} />
+            {/* Fixed-width icon column so text aligns with the other drawer items. */}
+            <View style={{ width: 24, marginLeft: 12, alignItems: "center" }}>
+                {IconComponent ? (
+                    <IconComponent size={18} color={props.workspaceColor ?? ThemedColor.primary} weight="regular" />
+                ) : (
+                    <Feather name="grid" size={16} color={ThemedColor.caption} />
                 )}
-            </TouchableOpacity>
-        </View>
+            </View>
+            <ThemedText type="default" style={{ flexShrink: 1, fontWeight: "600" }} numberOfLines={2}>
+                {props.title}
+            </ThemedText>
+            {props.taskCount !== undefined && (
+                <ThemedText type="default" style={{ color: ThemedColor.caption, marginLeft: "auto", flexShrink: 0 }}>
+                    {props.taskCount}
+                </ThemedText>
+            )}
+        </TouchableOpacity>
     );
 };
 

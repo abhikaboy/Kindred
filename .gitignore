@@ -19,6 +19,7 @@ coverage.html
 
 # Claude Code
 .claude/
+.claire/
 
 # Superpowers
 .superpowers/

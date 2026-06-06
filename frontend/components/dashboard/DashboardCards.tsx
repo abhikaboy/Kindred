@@ -11,7 +11,7 @@ const DashboardCards = () => {
 
     const cards = [
         {
-            title: "Daily View",
+            title: "Today",
             icon: <Bird size={28} weight="light" color={ThemedColor.primary} />,
             onPress: () => {
                 router.push({

@@ -85,6 +85,7 @@ export default function TabLayout() {
                         {...props}
                         badges={{ "(task)": todayTaskCount > 0 ? todayTaskCount : undefined }}
                         visible={!shouldHideTabBar}
+                        switcherTabName="(task)"
                     />
                 )}
                 screenOptions={{

@@ -144,11 +144,11 @@ const BetterTogetherCard = ({ onSyncContacts, isLoadingContacts, isFindingFriend
 
             <OnboardingStep
                 stepNumber={3}
-                title="Build Your Daily"
+                title="Build Your Day"
                 description="Set up tasks, complete them, and send kudos to friends along the way."
                 buttons={[
                     {
-                        label: "Go to Daily",
+                        label: "Go to Today",
                         icon: <ListChecks size={16} color={ThemedColor.text} weight="regular" />,
                         onPress: handleGoToDaily,
                         variant: "outline",
