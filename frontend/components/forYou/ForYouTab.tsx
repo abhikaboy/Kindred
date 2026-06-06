@@ -13,9 +13,10 @@ type Props = {
     error: string | null;
     refresh: () => Promise<void>;
     onInteraction?: (cardType: ForYouCardType) => void;
+    onDismiss?: (cardId: string) => void;
 };
 
-export default function ForYouTab({ horizontalPadding, feed, loading, error, refresh, onInteraction }: Props) {
+export default function ForYouTab({ horizontalPadding, feed, loading, error, refresh, onInteraction, onDismiss }: Props) {
     const ThemedColor = useThemeColor();
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -81,7 +82,7 @@ export default function ForYouTab({ horizontalPadding, feed, loading, error, ref
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ThemedColor.text} />
             }>
             {feed.sections.map((section) => (
-                <ForYouSection key={section.id} section={section} onAction={handleAction} />
+                <ForYouSection key={section.id} section={section} onAction={handleAction} onDismiss={onDismiss} />
             ))}
         </ScrollView>
     );

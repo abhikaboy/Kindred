@@ -30,7 +30,8 @@ export type ForYouCtaAction =
     | { type: "navigate"; href: string }
     | { type: "send_kudos"; targetUserId: string; referenceId?: string }
     | { type: "send_encouragement"; targetUserId: string; taskId: string }
-    | { type: "react"; postId: string; reaction: string };
+    | { type: "react"; postId: string; reaction: string }
+    | { type: "dismiss" };
 
 export type ForYouCta = {
     label: string;
@@ -63,3 +64,14 @@ export type ForYouFeed = {
     sections: ForYouSection[];
     unreadCount: number;
 };
+
+/** Removes a card from the feed by id, leaving sections and counts otherwise intact. */
+export function dismissCardFromFeed(feed: ForYouFeed, cardId: string): ForYouFeed {
+    return {
+        ...feed,
+        sections: feed.sections.map((section) => ({
+            ...section,
+            cards: section.cards.filter((card) => card.id !== cardId),
+        })),
+    };
+}

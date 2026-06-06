@@ -314,7 +314,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState(ACTIVITY_TAB_INDEX);
     const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
-    const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction } = useForYou();
+    const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction, dismissCard: dismissForYouCard } = useForYou();
     const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
     const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
 
@@ -591,6 +591,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     error={forYouError}
                     refresh={refreshForYou}
                     onInteraction={recordForYouInteraction}
+                    onDismiss={dismissForYouCard}
                 />
                 <View style={{ flex: 1 }}>{activityTabContent}</View>
                 <RequestsTab horizontalPadding={Dimensions.get("window").width * 0.05} />

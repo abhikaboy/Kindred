@@ -9,9 +9,10 @@ import WeeklyRecapCard from "./WeeklyRecapCard";
 type Props = {
     section: ForYouSectionModel;
     onAction?: (action: ForYouCtaAction, cardType: ForYouCardType) => void;
+    onDismiss?: (cardId: string) => void;
 };
 
-export default function ForYouSection({ section, onAction }: Props) {
+export default function ForYouSection({ section, onAction, onDismiss }: Props) {
     const ThemedColor = useThemeColor();
     // Defensive: older backend builds could serialize an empty card list as
     // `null` instead of `[]`. Treat null/undefined as empty.
@@ -49,6 +50,7 @@ export default function ForYouSection({ section, onAction }: Props) {
                                 key={card.id}
                                 card={card}
                                 onAction={onAction}
+                                onDismiss={onDismiss}
                                 elevated={section.id === "catch_up"}
                                 // Only the lead card in "Suggested for you" gets a primary CTA;
                                 // the rest demote so there's a single visual focal point per section.

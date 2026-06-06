@@ -32,6 +32,9 @@ const UserInfoEncouragementNotification = ({
 }: Props) => {
     const ThemedColor = useThemeColor();
     const isCongrats = type === "congratulation";
+    // Notification content carries no kudos type, so an image/GIF kudos arrives
+    // as its URL in `message`. Detect it so KudosItem renders the image, not the URL.
+    const isImage = !!message && /^https?:\/\//i.test(message.trim());
     // Profile-scope (ring) encouragements arrive with no taskName and no
     // referenceId — KudosItem renders a "Profile Encouragement" header
     // instead of an empty category/task row when we pass scope: "profile".
@@ -50,7 +53,7 @@ const UserInfoEncouragementNotification = ({
         taskName: isProfileScope ? "" : taskName,
         timestamp: new Date(time).toISOString(),
         read: true,
-        type: "message",
+        type: isImage ? "image" : "message",
     };
 
     return (

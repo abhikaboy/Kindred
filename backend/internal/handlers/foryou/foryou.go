@@ -59,3 +59,26 @@ func (h *Handler) RecordInteractionHuma(ctx context.Context, input *RecordIntera
 	out.Body.Message = "Interaction recorded"
 	return out, nil
 }
+
+// DismissCardHuma records that the user dismissed a card so it no longer
+// appears in their For You feed.
+func (h *Handler) DismissCardHuma(ctx context.Context, input *DismissCardInput) (*DismissCardOutput, error) {
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+	if input.Body.CardID == "" {
+		return nil, huma.Error400BadRequest("cardId is required", nil)
+	}
+	if err := h.service.DismissCard(ctx, userID, input.Body.CardID); err != nil {
+		slog.Error("failed to dismiss For You card", "userId", userIDStr, "cardId", input.Body.CardID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to dismiss card", err)
+	}
+	out := &DismissCardOutput{}
+	out.Body.Message = "Card dismissed"
+	return out, nil
+}

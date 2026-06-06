@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
@@ -126,6 +127,46 @@ func (s *Service) RecordInteraction(ctx context.Context, userID primitive.Object
 	return err
 }
 
+// DismissCard records that the user dismissed a card so it stops appearing in
+// their feed. The dismissal is stored as a flag on the backing entity — card
+// IDs encode their source (e.g. "kudos-<encouragementID>"), so we route the
+// flag to the right document. Scoped to the receiver so a user can only dismiss
+// their own cards.
+func (s *Service) DismissCard(ctx context.Context, userID primitive.ObjectID, cardID string) error {
+	prefix, id, err := parseEntityCardID(cardID)
+	if err != nil {
+		return err
+	}
+	switch prefix {
+	case "kudos":
+		if s.Encouragements == nil {
+			return nil
+		}
+		_, err := s.Encouragements.UpdateOne(
+			ctx,
+			bson.M{"_id": id, "receiver": userID},
+			bson.M{"$set": bson.M{"feed_dismissed": true}},
+		)
+		return err
+	default:
+		return fmt.Errorf("card type %q is not dismissible", prefix)
+	}
+}
+
+// parseEntityCardID splits an entity-backed card ID ("<prefix>-<hex>") into its
+// prefix and the backing document's ObjectID.
+func parseEntityCardID(cardID string) (prefix string, id primitive.ObjectID, err error) {
+	dash := strings.IndexByte(cardID, '-')
+	if dash <= 0 || dash == len(cardID)-1 {
+		return "", primitive.NilObjectID, fmt.Errorf("malformed card id %q", cardID)
+	}
+	id, err = primitive.ObjectIDFromHex(cardID[dash+1:])
+	if err != nil {
+		return "", primitive.NilObjectID, fmt.Errorf("malformed card id %q: %w", cardID, err)
+	}
+	return cardID[:dash], id, nil
+}
+
 // ---------- Card builders ----------
 
 func (s *Service) buildKudosReceivedCards(ctx context.Context, userID primitive.ObjectID, exposures map[string]ExposureDoc) []ForYouCard {
@@ -135,8 +176,9 @@ func (s *Service) buildKudosReceivedCards(ctx context.Context, userID primitive.
 
 	cutoff := time.Now().Add(-7 * 24 * time.Hour)
 	filter := bson.M{
-		"receiver":  userID,
-		"timestamp": bson.M{"$gte": cutoff},
+		"receiver":       userID,
+		"timestamp":      bson.M{"$gte": cutoff},
+		"feed_dismissed": bson.M{"$ne": true},
 	}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(3)
 
@@ -193,11 +235,10 @@ func (s *Service) buildKudosReceivedCards(ctx context.Context, userID primitive.
 					},
 				},
 				{
-					Label: "Reply",
+					Label: "Dismiss",
 					Kind:  "secondary",
 					Action: ForYouCtaAction{
-						Type: "navigate",
-						Href: "/(logged-in)/(tabs)/(task)/kudos",
+						Type: "dismiss",
 					},
 				},
 			}

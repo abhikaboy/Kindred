@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { request } from "@/hooks/useRequest";
 import { createLogger } from "@/utils/logger";
-import type { ForYouFeed, ForYouCardType } from "@/api/forYou";
+import { dismissCardFromFeed, type ForYouFeed, type ForYouCardType } from "@/api/forYou";
 
 const logger = createLogger("ForYou");
 
@@ -11,6 +11,7 @@ export type UseForYouResult = {
     error: string | null;
     refresh: () => Promise<void>;
     recordInteraction: (cardType: ForYouCardType) => Promise<void>;
+    dismissCard: (cardId: string) => void;
 };
 
 export function useForYou(): UseForYouResult {
@@ -40,9 +41,19 @@ export function useForYou(): UseForYouResult {
         }
     }, []);
 
+    // Optimistically remove the card, then persist the dismissal so it stays
+    // gone across refreshes. Fire-and-forget — the local removal is what the
+    // user sees; a failed request just means it may reappear next refresh.
+    const dismissCard = useCallback((cardId: string) => {
+        setFeed((prev) => (prev ? dismissCardFromFeed(prev, cardId) : prev));
+        request("POST", "/user/for-you/dismiss", { cardId }).catch((e) => {
+            logger.warn("Failed to dismiss For You card", e);
+        });
+    }, []);
+
     useEffect(() => {
         load();
     }, [load]);
 
-    return { feed, loading, error, refresh: load, recordInteraction };
+    return { feed, loading, error, refresh: load, recordInteraction, dismissCard };
 }

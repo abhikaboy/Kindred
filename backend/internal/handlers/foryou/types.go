@@ -65,7 +65,7 @@ type ForYouSubject struct {
 // ForYouCtaAction is a tagged-union describing what a CTA does. Exactly one of
 // the inner fields is non-zero for any given action.
 type ForYouCtaAction struct {
-	Type         string `json:"type" example:"navigate" doc:"navigate | send_kudos | send_encouragement | react"`
+	Type         string `json:"type" example:"navigate" doc:"navigate | send_kudos | send_encouragement | react | dismiss"`
 	Href         string `json:"href,omitempty" example:"/(logged-in)/(tabs)/(task)/kudos"`
 	TargetUserID string `json:"targetUserId,omitempty"`
 	ReferenceID  string `json:"referenceId,omitempty"`
@@ -134,6 +134,22 @@ type RecordInteractionParams struct {
 type RecordInteractionOutput struct {
 	Body struct {
 		Message string `json:"message" example:"Interaction recorded"`
+	} `json:"body"`
+}
+
+type DismissCardInput struct {
+	Authorization string            `header:"Authorization" required:"true"`
+	RefreshToken  string            `header:"refresh_token" required:"true"`
+	Body          DismissCardParams `json:"body"`
+}
+
+type DismissCardParams struct {
+	CardID string `json:"cardId" validate:"required" example:"kudos-665f..." doc:"ID of the card to dismiss"`
+}
+
+type DismissCardOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Card dismissed"`
 	} `json:"body"`
 }
 

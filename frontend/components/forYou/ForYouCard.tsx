@@ -3,6 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Heart, Users, Aperture, NotePencil, ChatCircle, GridFour, Sparkle, CaretRight, IconProps } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
+import CachedImage from "@/components/CachedImage";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { ForYouCard as ForYouCardModel, ForYouCardType, ForYouCtaAction, ForYouIconKind } from "@/api/forYou";
 import { ForYouCtaRow } from "./ForYouCta";
@@ -10,6 +11,8 @@ import { ForYouCtaRow } from "./ForYouCta";
 type Props = {
     card: ForYouCardModel;
     onAction?: (action: ForYouCtaAction, cardType: ForYouCardType) => void;
+    /** Called when the card's dismiss CTA is tapped; removes the card from the feed. */
+    onDismiss?: (cardId: string) => void;
     /** Adds a subtle drop shadow to the card. Used in the Catch up section to lift it off the page. */
     elevated?: boolean;
     /** When true, every CTA on the card renders as secondary. Used for non-lead cards in Suggested for you so there is only one primary CTA per section. */
@@ -26,7 +29,69 @@ const ICON_FOR_KIND: Record<ForYouIconKind, React.ComponentType<IconProps>> = {
     recap: Sparkle,
 };
 
-export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Props) {
+// The card's leading visual. Person-centric cards (kudos, comment, reciprocity)
+// carry a sender avatar — feature it large with a small kind badge so the card
+// reads as personal; everything else keeps the tinted kind-icon circle.
+function ForYouCardLeading({
+    avatarUrl,
+    Icon,
+    avatarSize,
+    iconSize,
+}: {
+    avatarUrl?: string;
+    Icon: React.ComponentType<IconProps>;
+    avatarSize: number;
+    iconSize: number;
+}) {
+    const ThemedColor = useThemeColor();
+
+    if (!avatarUrl) {
+        return (
+            <View
+                style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: ThemedColor.primary + "20",
+                }}>
+                <Icon size={iconSize} color={ThemedColor.primary} weight="regular" />
+            </View>
+        );
+    }
+
+    const badge = Math.round(avatarSize * 0.42);
+    return (
+        <View style={{ width: avatarSize, height: avatarSize }}>
+            <CachedImage
+                testID="foryou-card-avatar"
+                source={{ uri: avatarUrl }}
+                variant="thumbnail"
+                cachePolicy="memory-disk"
+                style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: ThemedColor.tertiary }}
+            />
+            <View
+                style={{
+                    position: "absolute",
+                    right: -2,
+                    bottom: -2,
+                    width: badge,
+                    height: badge,
+                    borderRadius: badge / 2,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: ThemedColor.primary,
+                    borderWidth: 2,
+                    borderColor: ThemedColor.lightenedCard,
+                }}>
+                <Icon size={Math.round(badge * 0.6)} color="#fff" weight="fill" />
+            </View>
+        </View>
+    );
+}
+
+export default function ForYouCard({ card, onAction, onDismiss, elevated, demoteCtas }: Props) {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
 
@@ -35,6 +100,10 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
         : card.ctas;
 
     const dispatchAction = (action: ForYouCtaAction) => {
+        if (action.type === "dismiss") {
+            onDismiss?.(card.id);
+            return;
+        }
         if (onAction) {
             onAction(action, card.type);
         } else if (action.type === "navigate" && action.href) {
@@ -57,9 +126,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
                 style={styles.compactContainer}
                 accessibilityRole="button"
                 accessibilityLabel={card.title}>
-                <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
-                    <KindIcon size={18} color={ThemedColor.primary} weight="regular" />
-                </View>
+                <ForYouCardLeading avatarUrl={card.subject?.avatarUrl} Icon={KindIcon} avatarSize={44} iconSize={18} />
                 <ThemedText type="defaultSemiBold" style={styles.compactTitle} numberOfLines={1}>
                     {card.title}
                 </ThemedText>
@@ -89,9 +156,7 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
             accessibilityRole="button"
             accessibilityLabel={card.title}>
             <View style={styles.fullHeader}>
-                <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
-                    <KindIcon size={20} color={ThemedColor.primary} weight="regular" />
-                </View>
+                <ForYouCardLeading avatarUrl={card.subject?.avatarUrl} Icon={KindIcon} avatarSize={56} iconSize={20} />
                 <View style={styles.fullTextBlock}>
                     <ThemedText type="defaultSemiBold">{card.title}</ThemedText>
                     {card.body ? <ThemedText type="caption">{card.body}</ThemedText> : null}
@@ -104,13 +169,6 @@ export default function ForYouCard({ card, onAction, elevated, demoteCtas }: Pro
 
 const stylesheet = (ThemedColor: any) =>
     StyleSheet.create({
-        iconCircle: {
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            alignItems: "center",
-            justifyContent: "center",
-        },
         compactContainer: {
             flexDirection: "row",
             alignItems: "center",
