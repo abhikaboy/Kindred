@@ -87,13 +87,33 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                             : "0px 8px 18px rgba(31,29,46,0.20)",
                     },
                 ]}>
-                <View style={[styles.pill, { borderColor: LIQUID_GLASS ? "transparent" : borderColor }]}>
+                <View
+                    style={[
+                        styles.pill,
+                        {
+                            // Faint specular rim so the glass pane has a defined edge on white
+                            borderColor: LIQUID_GLASS
+                                ? isDark
+                                    ? "rgba(255,255,255,0.22)"
+                                    : "rgba(255,255,255,0.7)"
+                                : borderColor,
+                        },
+                    ]}>
                     {LIQUID_GLASS ? (
-                        <GlassView
-                            glassEffectStyle="clear"
-                            isInteractive
-                            style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
-                        />
+                        <>
+                            {/* BlurView gives reliable frost on simulator + device */}
+                            <BlurView
+                                tint={isDark ? "dark" : "light"}
+                                intensity={15}
+                                style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
+                            />
+                            {/* Native Liquid Glass on top for real refraction/specular on device */}
+                            <GlassView
+                                glassEffectStyle="clear"
+                                isInteractive
+                                style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
+                            />
+                        </>
                     ) : (
                         <>
                             {Platform.OS === "ios" ? (
