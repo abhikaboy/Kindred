@@ -1,18 +1,15 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Platform, Animated } from "react-native";
 import { usePathname } from "expo-router";
 
-import { HapticTab } from "@/components/HapticTab";
-import TabBarBackground from "@/components/ui/TabBarBackground";
-import { useColorScheme } from "react-native";
-import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
+import { LiquidGlassTabBar } from "@/components/ui/LiquidGlassTabBar";
+import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
@@ -21,66 +18,22 @@ import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 import {
     PencilSimple,
     PencilSimpleLine,
-    Compass,
-    CompassTool,
     MagnifyingGlass,
-    User,
-    Stack,
-    StackSimple,
-    Cards,
-    SquaresFour,
-    GridFour,
-    Rows,
-    TextColumns,
+    Newspaper,
     Brain,
 } from "phosphor-react-native";
 
 // Narrow selector: only subscribe to the index, return -1 if state isn't ready yet
 const useTabIndex = () => useNavigationState((state) => state?.index ?? -1);
 
-// Custom tab button components
-const TasksTabButton = (props: any) => {
-    const currentIndex = useTabIndex();
-    return <HapticTab {...props} isSelected={currentIndex === 0} />;
-};
-
-const FeedTabButton = (props: any) => {
-    const { focusMode } = useFocusMode();
-    const currentIndex = useTabIndex();
-    if (focusMode) return null;
-    return <HapticTab {...props} isSelected={currentIndex === 1} />;
-};
-
-const SearchTabButton = (props: any) => {
-    const { focusMode } = useFocusMode();
-    const currentIndex = useTabIndex();
-    if (focusMode) return null;
-    return <HapticTab {...props} isSelected={currentIndex === 2} />;
-};
-
-const ActivityTabButton = (props: any) => {
-    const { focusMode } = useFocusMode();
-    const currentIndex = useTabIndex();
-    if (focusMode) return null;
-    return <HapticTab {...props} isSelected={currentIndex === 3} />;
-};
-
-const ProfileTabButton = (props: any) => {
-    const { focusMode } = useFocusMode();
-    const currentIndex = useTabIndex();
-    if (focusMode) return null;
-    return <HapticTab {...props} isSelected={currentIndex === 4} />;
-};
-
 export const unstable_settings = {
     initialRouteName: "index",
 };
 
 export default function TabLayout() {
-    let ThemedColor = useThemeColor();
+    const ThemedColor = useThemeColor();
     const pathname = usePathname();
     const segments = useSegments();
-    const router = useRouter();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
@@ -92,10 +45,6 @@ export default function TabLayout() {
     useEffect(() => {
         return feedScrollVisibilityEvents.subscribe(setScrollVisible);
     }, []);
-    const [modalVisible, setModalVisible] = useState(true);
-    const toggleModal = () => {
-        setModalVisible(!modalVisible);
-    };
 
     const prevTabIndex = useRef(currentIndex);
 
@@ -109,29 +58,15 @@ export default function TabLayout() {
         }
     }, [currentIndex]);
 
-    // Calculate total tasks for today
+    // Calculate total tasks for today (shown as a badge on the Tasks tab)
     const todayTaskCount = useMemo(() => {
         return startTodayTasks.length + dueTodayTasks.length + windowTasks.length;
     }, [startTodayTasks, dueTodayTasks, windowTasks]);
 
-    // Create animated value for tab bar visibility
-    const tabBarOpacity = React.useRef(new Animated.Value(1)).current;
-    const tabBarTranslateY = React.useRef(new Animated.Value(0)).current;
-
-    // Define screens where you want to hide the tab bar
-    const hideTabBarScreens = [
-        // "/blueprint",
-        "/blueprint/create",
-        "/voice",
-        "/review",
-    ];
-
-    // Define screens where you want to hide the FAB (but keep tab bar visible)
-    const hideFABScreens = [
-        "/daily",
-        "/review",
-        "/settings",
-    ];
+    // Screens where the whole tab bar hides
+    const hideTabBarScreens = ["/blueprint/create", "/voice", "/review"];
+    // Screens where only the FAB hides (tab bar stays visible)
+    const hideFABScreens = ["/daily", "/review", "/settings"];
 
     const shouldHideTabBar =
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
@@ -142,94 +77,22 @@ export default function TabLayout() {
     const shouldHideFAB =
         shouldHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
 
-    // Animate tab bar visibility
-    useEffect(() => {
-        const animationDuration = 300; // 300ms for smooth animation
-
-        if (shouldHideTabBar) {
-            // Animate out
-            Animated.parallel([
-                Animated.timing(tabBarOpacity, {
-                    toValue: 0,
-                    duration: animationDuration,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(tabBarTranslateY, {
-                    toValue: 100, // Move down to hide
-                    duration: animationDuration,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        } else {
-            // Animate in
-            Animated.parallel([
-                Animated.timing(tabBarOpacity, {
-                    toValue: 1,
-                    duration: animationDuration,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(tabBarTranslateY, {
-                    toValue: 0, // Move back to original position
-                    duration: animationDuration,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }
-    }, [shouldHideTabBar, tabBarOpacity, tabBarTranslateY]);
-
     return (
         <>
             <Tabs
+                tabBar={(props) => (
+                    <LiquidGlassTabBar
+                        {...props}
+                        badges={{ "(task)": todayTaskCount > 0 ? todayTaskCount : undefined }}
+                        visible={!shouldHideTabBar}
+                    />
+                )}
                 screenOptions={{
-                    tabBarActiveTintColor: "#854DFF", // Purple color for selected state
-                    tabBarInactiveTintColor: ThemedColor.text, // Default text color for inactive state
-                    tabBarShowLabel: false, // Hide default labels
                     headerShown: false,
                     tabBarHideOnKeyboard: true,
-                    headerTitleStyle: {
-                        fontFamily: "Outfit",
-                    },
-                    tabBarBackground: TabBarBackground,
                     animation: "fade",
-                    tabBarVariant: "uikit",
-                    tabBarPosition: "bottom",
-                    tabBarItemStyle: {
-                        flex: 1,
-                        alignItems: "center",
-                        justifyContent: "flex-start", // Keep this for top alignment
-                    },
                     sceneStyle: {
                         backgroundColor: ThemedColor.background,
-                    },
-                    tabBarStyle: {
-                        ...Platform.select({
-                            ios: {
-                                borderTopWidth: 1,
-                                borderColor: ThemedColor.tertiary,
-                                position: "absolute",
-                                paddingTop: 12,
-                                height: 90,
-                                paddingBottom: 32,
-                                borderBottomLeftRadius: 0,
-                                borderBottomRightRadius: 0,
-                                width: "100%",
-                                overflow: "hidden",
-                            },
-                            android: {
-                                borderTopWidth: 1,
-                                borderColor: ThemedColor.tertiary,
-                                position: "absolute",
-                                paddingTop: 12,
-                                height: 90,
-                                paddingBottom: 64,
-                                borderRadius: 30,
-                                width: "100%",
-                                overflow: "hidden",
-                                borderWidth: 1,
-                            },
-                        }),
-                        opacity: tabBarOpacity,
-                        transform: [{ translateY: tabBarTranslateY }],
                     },
                 }}>
                 <Tabs.Screen
@@ -242,8 +105,6 @@ export default function TabLayout() {
                             ) : (
                                 <PencilSimpleLine size={24} color={color} />
                             ),
-                        tabBarBadge: todayTaskCount > 0 ? todayTaskCount : undefined,
-                        tabBarButton: TasksTabButton,
                         tabBarAccessibilityLabel: "Tasks",
                     }}
                 />
@@ -251,13 +112,9 @@ export default function TabLayout() {
                     name="(feed)"
                     options={{
                         title: "Feed",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? (
-                                <SquaresFour size={24} color={color} weight="fill" />
-                            ) : (
-                                <SquaresFour size={24} color={color} />
-                            ),
-                        tabBarButton: FeedTabButton,
+                        tabBarIcon: ({ color, focused }) => (
+                            <Newspaper size={24} color={color} weight={focused ? "fill" : "regular"} />
+                        ),
                         tabBarAccessibilityLabel: "Feed",
                     }}
                 />
@@ -265,13 +122,9 @@ export default function TabLayout() {
                     name="(search)"
                     options={{
                         title: "Search",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? (
-                                <MagnifyingGlass size={24} color={color} weight="bold" />
-                            ) : (
-                                <MagnifyingGlass size={24} color={color} />
-                            ),
-                        tabBarButton: SearchTabButton,
+                        tabBarIcon: ({ color, focused }) => (
+                            <MagnifyingGlass size={24} color={color} weight={focused ? "bold" : "regular"} />
+                        ),
                         tabBarAccessibilityLabel: "Search",
                     }}
                 />
@@ -279,9 +132,9 @@ export default function TabLayout() {
                     name="(activity)"
                     options={{
                         title: "Activity",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? <Brain size={24} color={color} weight="fill" /> : <Brain size={24} color={color} />,
-                        tabBarButton: ActivityTabButton,
+                        tabBarIcon: ({ color, focused }) => (
+                            <Brain size={24} color={color} weight={focused ? "fill" : "regular"} />
+                        ),
                         tabBarAccessibilityLabel: "Activity",
                     }}
                 />
@@ -289,9 +142,7 @@ export default function TabLayout() {
                     name="(profile)"
                     options={{
                         title: "Profile",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? <User size={24} color={color} weight="fill" /> : <User size={24} color={color} />,
-                        tabBarButton: ProfileTabButton,
+                        tabBarIcon: ({ color, focused }) => <ProfileTabIcon focused={focused} color={color} />,
                         tabBarAccessibilityLabel: "Profile",
                     }}
                 />
