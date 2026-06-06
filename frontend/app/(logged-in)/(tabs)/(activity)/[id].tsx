@@ -11,6 +11,9 @@ import { activityAPI, getMonthlyActivityLevels, ActivityDocument, calculateActiv
 import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBottomSheetModal";
 import RecurringTasksSelectionModal from "@/components/modals/RecurringTasksSelectionModal";
 import { getUserTemplatesAPI } from "@/api/task";
+import { useTasks } from "@/contexts/tasksContext";
+import TagBreakdownRow from "@/components/activity/TagBreakdownRow";
+import { buildTagAggregates, selectedTagTemplateIds } from "@/utils/tagBreakdown";
 import { useAuth } from "@/hooks/useAuth";
 import { RecurringTaskCard } from "@/components/activity/RecurringTaskCard";
 import CalendarMonth, { CELL_SIZE, GRID_GAP } from "@/components/activity/CalendarMonth";
@@ -96,12 +99,13 @@ const Activity = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [templates, setTemplates] = useState<any[]>([]);
     const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [breakdownModalVisible, setBreakdownModalVisible] = useState(false);
-    const [breakdownMode, setBreakdownMode] = useState(false);
     const [recurringTasksExpanded, setRecurringTasksExpanded] = useState(true);
     const [showAllTemplates, setShowAllTemplates] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
+    const { workspaces } = useTasks();
 
     const userId = user?._id || (params.id as string);
     const displayName = params.displayName as string || user?.display_name;
@@ -148,11 +152,34 @@ const Activity = () => {
         ? templates
         : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
 
+    const allCategories = useMemo(
+        () => workspaces.flatMap((ws) => ws.categories ?? []),
+        [workspaces],
+    );
+
+    const tagAggregates = useMemo(
+        () => buildTagAggregates(templates, allCategories),
+        [templates, allCategories],
+    );
+
+    const effectiveTemplateIds = useMemo(() => {
+        const tagIds = selectedTagTemplateIds(selectedTags, templates, allCategories);
+        return Array.from(new Set([...selectedTemplateIds, ...tagIds]));
+    }, [selectedTemplateIds, selectedTags, templates, allCategories]);
+
+    const breakdownMode = effectiveTemplateIds.length > 0;
+
+    const handleToggleTag = (tag: string) => {
+        setSelectedTags((prev) =>
+            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+        );
+    };
+
     const getBreakdownActivityLevels = (targetMonth: number): number[] => {
         const daysInMonth = new Date(year, targetMonth, 0).getDate();
         const monthlyLevels: number[] = new Array(daysInMonth).fill(0);
 
-        selectedTemplateIds.forEach((templateId) => {
+        effectiveTemplateIds.forEach((templateId) => {
             const template = templates.find((t) => t.id === templateId);
             if (!template?.completionDates) return;
 
@@ -173,15 +200,9 @@ const Activity = () => {
     const handleToggleTemplate = (templateId: string) => {
         setSelectedTemplateIds(prev => {
             if (prev.includes(templateId)) {
-                const newIds = prev.filter(id => id !== templateId);
-                if (newIds.length === 0) {
-                    setBreakdownMode(false);
-                }
-                return newIds;
-            } else {
-                setBreakdownMode(true);
-                return [...prev, templateId];
+                return prev.filter(id => id !== templateId);
             }
+            return [...prev, templateId];
         });
     };
 
@@ -208,6 +229,15 @@ const Activity = () => {
                             total tasks completed this year
                         </ThemedText>
                     </View>
+                )}
+
+                {/* Tag Breakdown - only for own activity */}
+                {isOwnActivity && tagAggregates.length > 0 && (
+                    <TagBreakdownRow
+                        tags={tagAggregates}
+                        selectedTags={selectedTags}
+                        onToggle={handleToggleTag}
+                    />
                 )}
 
                 {/* Recurring Tasks Section - only for own activity */}
@@ -347,7 +377,6 @@ const Activity = () => {
                 selectedTemplateIds={selectedTemplateIds}
                 onApply={(selectedIds) => {
                     setSelectedTemplateIds(selectedIds);
-                    setBreakdownMode(selectedIds.length > 0);
                     setBreakdownModalVisible(false);
                 }}
             />
