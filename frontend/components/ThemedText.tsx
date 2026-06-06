@@ -50,7 +50,7 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
                 type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
                 type === "subtitle" ? styles.subtitle : undefined,
                 type === "link" ? styles.link : undefined,
-                type === "hero" ? { fontSize: 48, fontWeight: "bold", color: ThemedColor.header } : undefined,
+                type === "hero" ? { fontSize: 48, fontWeight: "600", fontFamily: "Outfit", letterSpacing: -1, color: ThemedColor.header } : undefined,
                 type === "lightBody" ? styles.lightBody : undefined,
                 type === "caption" ? styles.caption : undefined,
                 type === "captionLight" ? styles.captionLight : undefined,

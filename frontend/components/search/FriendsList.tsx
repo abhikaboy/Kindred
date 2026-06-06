@@ -10,6 +10,7 @@ import { Sparkle, Fire, Camera } from "phosphor-react-native";
 import EncourageModal from "@/components/modals/EncourageModal";
 import { useUserKudos } from "@/hooks/useUserKudos";
 import * as Haptics from "expo-haptics";
+import { formatHandle } from "@/utils/handle";
 
 interface FriendData {
     _id: string;
@@ -44,7 +45,7 @@ const FriendRow = React.memo(({ friend, onEncourage }: FriendRowProps) => {
         onEncourage(friend);
     };
 
-    const displayHandle = friend.handle.startsWith("@") ? friend.handle : `@${friend.handle}`;
+    const displayHandle = formatHandle(friend.handle);
 
     return (
         <TouchableOpacity style={styles.row} onPress={handlePress} activeOpacity={0.7}>

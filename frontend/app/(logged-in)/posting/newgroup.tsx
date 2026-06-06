@@ -6,6 +6,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
+import { formatHandle } from "@/utils/handle";
 import { useGroups } from "@/hooks/useGroups";
 import { getFriendsAPI, type UserExtendedReference } from "@/api/connection";
 import { Ionicons } from "@expo/vector-icons";
@@ -161,7 +162,7 @@ export default function NewGroup() {
                                 >
                                     <UserInfoRowBase
                                         name={friend.display_name}
-                                        username={`@${friend.handle}`}
+                                        username={formatHandle(friend.handle)}
                                         icon={friend.profile_picture || ""}
                                         id={undefined} // Disable navigation
                                         right={

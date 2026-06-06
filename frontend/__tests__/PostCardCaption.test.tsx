@@ -9,7 +9,7 @@ describe("PostCardCaption", () => {
         const { getByText } = render(
             <PostCardCaption
                 caption="hi @sarah and @notreal"
-                taggedUsers={[{ id: "u1", handle: "sarah" }]}
+                taggedUsers={[{ id: "u1", handle: "@sarah" }]}
             />
         );
         expect(getByText("@sarah")).toBeTruthy();

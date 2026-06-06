@@ -1,6 +1,6 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Platform, Animated } from "react-native";
+import { Platform, Animated, View, StyleSheet } from "react-native";
 import { usePathname } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -13,6 +13,7 @@ import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
+import CachedImage from "@/components/CachedImage";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
@@ -28,7 +29,7 @@ import {
     Stack,
     StackSimple,
     Cards,
-    SquaresFour,
+    Newspaper,
     GridFour,
     Rows,
     TextColumns,
@@ -57,6 +58,45 @@ const SearchTabButton = (props: any) => {
     if (focusMode) return null;
     return <HapticTab {...props} isSelected={currentIndex === 2} />;
 };
+
+// Profile tab uses the user's avatar in a circle, falling back to the person icon
+const ProfileTabIcon = ({ color, focused }: { color: string; focused: boolean }) => {
+    const { user } = useAuth();
+    const ThemedColor = useThemeColor();
+    const uri = user?.profile_picture;
+
+    if (!uri) {
+        return focused ? (
+            <User size={24} color={color} weight="fill" />
+        ) : (
+            <User size={24} color={color} />
+        );
+    }
+
+    return (
+        <View style={[styles.avatar, focused && { borderColor: color, borderWidth: 2 }]}>
+            <CachedImage
+                source={{ uri }}
+                style={styles.avatarImage}
+                variant="thumbnail"
+                cachePolicy="memory-disk"
+            />
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    avatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        overflow: "hidden",
+    },
+    avatarImage: {
+        width: "100%",
+        height: "100%",
+    },
+});
 
 const ActivityTabButton = (props: any) => {
     const { focusMode } = useFocusMode();
@@ -253,9 +293,9 @@ export default function TabLayout() {
                         title: "Feed",
                         tabBarIcon: ({ color, focused }) =>
                             focused ? (
-                                <SquaresFour size={24} color={color} weight="fill" />
+                                <Newspaper size={24} color={color} weight="fill" />
                             ) : (
-                                <SquaresFour size={24} color={color} />
+                                <Newspaper size={24} color={color} />
                             ),
                         tabBarButton: FeedTabButton,
                         tabBarAccessibilityLabel: "Feed",
@@ -289,8 +329,7 @@ export default function TabLayout() {
                     name="(profile)"
                     options={{
                         title: "Profile",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? <User size={24} color={color} weight="fill" /> : <User size={24} color={color} />,
+                        tabBarIcon: ({ color, focused }) => <ProfileTabIcon color={color} focused={focused} />,
                         tabBarButton: ProfileTabButton,
                         tabBarAccessibilityLabel: "Profile",
                     }}

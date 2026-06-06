@@ -3,6 +3,7 @@ import { useTypedMutation } from './useTypedAPI';
 import { useAuth, saveAuthData } from './useAuth';
 import client from '@/api/client';
 import { createLogger } from '@/utils/logger';
+import { formatHandle } from '@/utils/handle';
 
 const logger = createLogger('OnboardingHook');
 
@@ -129,8 +130,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         if (!handle) {
             return 'Handle is required';
         }
-        // Ensure handle starts with @
-        const handleToValidate = handle.startsWith('@') ? handle : `@${handle}`;
+        const handleToValidate = formatHandle(handle);
 
         if (handleToValidate.length < 2) {
             return 'Handle must be at least 1 character (plus @)';
@@ -205,8 +205,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     };
 
     const updateHandle = (handle: string) => {
-        // Ensure handle starts with @
-        const formattedHandle = handle.startsWith('@') ? handle : `@${handle}`;
+        const formattedHandle = formatHandle(handle);
         setOnboardingData(prev => ({ ...prev, handle: formattedHandle }));
         const error = validateHandle(formattedHandle);
         setValidationErrors(prev => ({ ...prev, handle: error || undefined }));

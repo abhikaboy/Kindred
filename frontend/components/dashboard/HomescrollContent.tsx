@@ -370,7 +370,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     <View style={{ paddingRight: HORIZONTAL_PADDING }}>
                         <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
                     </View>
-                    {dashboardConfig.jump_back_in && <DashboardCards drawerRef={drawerRef} />}
+                    {dashboardConfig.jump_back_in && <DashboardCards />}
                 </View>
 
                 {/* Kudos Cards (Encouragements & Congratulations) — temporarily hidden via SHOW_KUDOS_ROW */}

@@ -160,7 +160,7 @@ const RingsClosedFeedCard = React.memo(({
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: HORIZONTAL_PADDING,
-            marginBottom: 18,
+            marginBottom: 32,
         },
         userInfo: {
             flexDirection: "row",

@@ -229,18 +229,20 @@ export default function Profile() {
                         />
                     </View>
 
-                    <View style={{ marginTop: 8 }}>
-                        {profile?.ring_state ? (
-                            <FriendRings
-                                ringState={profile.ring_state}
-                                userId={profile.id}
-                                userHandle={profile.handle}
-                                userName={profile.display_name}
-                            />
-                        ) : (
-                            <TodayStats userId={profile?.id} />
-                        )}
-                    </View>
+                    {canViewPersonalContent && (
+                        <View style={{ marginTop: 8 }}>
+                            {profile?.ring_state ? (
+                                <FriendRings
+                                    ringState={profile.ring_state}
+                                    userId={profile.id}
+                                    userHandle={profile.handle}
+                                    userName={profile.display_name}
+                                />
+                            ) : (
+                                <TodayStats userId={profile?.id} />
+                            )}
+                        </View>
+                    )}
                 </View>
                 {canViewPersonalContent ? (
                     <>

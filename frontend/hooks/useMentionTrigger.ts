@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import type { NativeSyntheticEvent, TextInputSelectionChangeEventData } from "react-native";
 import type { MentionCandidate } from "./useFriendsForMention";
+import { formatHandle } from "@/utils/handle";
 
 export const useMentionTrigger = (value: string, setValue: (v: string) => void) => {
     const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
@@ -40,7 +41,7 @@ export const useMentionTrigger = (value: string, setValue: (v: string) => void) 
         if (triggerStart.current === null) return;
         const before = value.slice(0, triggerStart.current);
         const after = value.slice(selection.start);
-        setValue(before + `@${c.handle} ` + after);
+        setValue(before + `${formatHandle(c.handle)} ` + after);
         setPicked((p) => (p.find((x) => x.id === c.id) ? p : [...p, c]));
         triggerStart.current = null;
         setQuery(null);

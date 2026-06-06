@@ -73,7 +73,6 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     displayName: {
-        fontWeight: "700",
         zIndex: 3,
         verticalAlign: "top",
     },

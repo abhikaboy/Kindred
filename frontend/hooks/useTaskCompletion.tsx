@@ -2,7 +2,11 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { markAsCompletedAPI, setWorkingAPI, type RingDelta } from '@/api/task';
-import { ActiveTaskActivityFactory } from '@/widgets/widgetUpdaters';
+import {
+    ActiveTaskActivityFactory,
+    DeadlineCountdownActivityFactory,
+} from '@/widgets/widgetUpdaters';
+import { endActivity } from '@/utils/liveActivityManager';
 import { useTasks } from '@/contexts/tasksContext';
 import { Task } from '@/api/types';
 import { showToastable } from 'react-native-toastable';
@@ -51,8 +55,11 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         isCompletingRef.current = true;
         setIsCompleting(true);
         try {
-            // End any live activity and clear working state
+            // endActivity clears the update interval + state; factory ends cover
+            // deadline activities and the rehydrated (no-op instance) case.
+            endActivity(taskId).catch(() => {});
             ActiveTaskActivityFactory.getInstances().forEach((a) => a.end("default"));
+            DeadlineCountdownActivityFactory.getInstances().forEach((a) => a.end("default"));
             setWorkingAPI(categoryId, taskId, false).catch(() => {});
 
             const res = await markAsCompletedAPI(categoryId, taskId, {

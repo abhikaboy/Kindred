@@ -26,11 +26,17 @@ import { useIntentRouterFlow } from "@/hooks/useIntentRouterFlow";
 import type { components } from "@/api/generated/types";
 import type { Task } from "@/api/types";
 import TaskCard from "@/components/cards/TaskCard";
+import { GlowOverlay } from "@/components/ui/GlowOverlay";
+import { BorderGlow } from "@/components/ui/BorderGlow";
+import { VoiceWaveform } from "@/components/ui/VoiceWaveform";
+import { useSharedValue } from "react-native-reanimated";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const TAB_BAR_HEIGHT = 83;
 const GRADIENT_HEIGHT = SCREEN_HEIGHT * 0.65;
 const DEV_FALLBACK_TRANSCRIPTION = "shovel the snow at noon tomorrow";
+// How long we keep listening through silence before stopping on our own.
+const SILENCE_GRACE_MS = 5000;
 
 const PLACEHOLDER_SUGGESTIONS = [
     'Try saying "Add a gym session tomorrow at 7am"',
@@ -141,6 +147,10 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const isClosingRef = useRef(false);
     // Kept in a ref so the cleanup effect can check it without a stale closure
     const recognizingRef = useRef(false);
+    // Finalized transcript segments accumulated across the continuous session.
+    const finalizedTranscriptRef = useRef("");
+    // Stops listening after a stretch of silence instead of the OS cutting off early.
+    const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Animated values
     const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -160,6 +170,9 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     // Fades the entire mic section out independently of the enter/exit animation.
     const micSectionOpacity = useRef(new Animated.Value(1)).current;
+
+    // Live mic loudness (0..1) for the waveform — written on the UI thread, no re-renders.
+    const volumeLevel = useSharedValue(0);
 
     // Rotating placeholder suggestions
     const [suggestionIndex, setSuggestionIndex] = useState(0);
@@ -194,6 +207,24 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         micPulse.current?.stop();
         micPulse.current = null;
         Animated.timing(micScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+    };
+
+    // ─── Inactivity (silence) grace timer ──────────────────────────────────────
+
+    const armInactivityTimer = () => {
+        if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+        inactivityTimer.current = setTimeout(() => {
+            if (recognizingRef.current && ExpoSpeechRecognitionModule) {
+                ExpoSpeechRecognitionModule.stop();
+            }
+        }, SILENCE_GRACE_MS);
+    };
+
+    const clearInactivityTimer = () => {
+        if (inactivityTimer.current) {
+            clearTimeout(inactivityTimer.current);
+            inactivityTimer.current = null;
+        }
     };
 
     // ─── Enter / exit animations ───────────────────────────────────────────────
@@ -317,6 +348,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     useEffect(() => {
         animateIn();
         return () => {
+            clearInactivityTimer();
             if (recognizingRef.current && ExpoSpeechRecognitionModule) {
                 ExpoSpeechRecognitionModule.stop();
             }
@@ -486,24 +518,56 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         clearError();
         recognizingRef.current = true;
         setRecognizing(true);
+        finalizedTranscriptRef.current = "";
         startPulse();
+        armInactivityTimer();
     });
 
     useSpeechRecognitionEvent("end", () => {
         recognizingRef.current = false;
         setRecognizing(false);
         stopPulse();
+        clearInactivityTimer();
     });
 
     useSpeechRecognitionEvent("result", (event) => {
-        const t = event.results[0]?.transcript;
-        if (t) setTranscription(t);
+        const seg = (event.results[0]?.transcript ?? "").trim();
+        if (seg) {
+            const base = finalizedTranscriptRef.current;
+            // Handle both cumulative finals (iOS) and separate segments (Android continuous).
+            const merged = !base ? seg : seg.startsWith(base) ? seg : `${base} ${seg}`;
+            if (event.isFinal) {
+                finalizedTranscriptRef.current = merged;
+            }
+            setTranscription(merged);
+        }
+        // Any speech result resets the silence countdown.
+        armInactivityTimer();
     });
 
-    useSpeechRecognitionEvent("error", () => {
+    useSpeechRecognitionEvent("volumechange", (event) => {
+        // Library reports ~-2..10. Gate out the noise floor (~1.5) so idle stays flat,
+        // map the speaking range to 0..1, then curve it so quiet sounds read small.
+        const value = typeof event?.value === "number" ? event.value : 0;
+        const norm = Math.max(0, Math.min(1, (value - 1.5) / 7.5));
+        volumeLevel.value = Math.pow(norm, 1.4);
+        // Audible input also counts as activity — keep listening through pauses.
+        if (norm > 0.12) armInactivityTimer();
+    });
+
+    useSpeechRecognitionEvent("error", (event) => {
         recognizingRef.current = false;
         setRecognizing(false);
         stopPulse();
+        clearInactivityTimer();
+        // Silence/timeout/abort aren't real failures — stop quietly, keep any transcript.
+        const code = event?.error;
+        const benign =
+            code === "no-speech" ||
+            code === "speech-timeout" ||
+            code === "aborted" ||
+            code === "client";
+        if (benign) return;
         setError("Voice Input Failed", ["Try again or type a request."]);
     });
 
@@ -527,9 +591,15 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         ExpoSpeechRecognitionModule.start({
             lang: "en-US",
             interimResults: true,
-            continuous: false,
+            // Don't let the OS endpoint on a short pause — we stop via the grace timer.
+            continuous: true,
             maxAlternatives: 1,
             recordingOptions: { persist: false },
+            volumeChangeEventOptions: { enabled: true, intervalMillis: 100 },
+            androidIntentOptions: {
+                EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: SILENCE_GRACE_MS,
+                EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: SILENCE_GRACE_MS,
+            },
         });
     };
 
@@ -541,6 +611,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     const closeOverlay = React.useCallback(() => {
         if (isClosingRef.current) return;
         isClosingRef.current = true;
+        clearInactivityTimer();
         if (recognizingRef.current && ExpoSpeechRecognitionModule) {
             ExpoSpeechRecognitionModule.stop();
         }
@@ -549,6 +620,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         // means the unmount happens after everything is already at opacity 0 — no snap.
         animateOut(() => {
             setTranscription("");
+            finalizedTranscriptRef.current = "";
             resetIntentFlow();
             setPendingClose(false);
             onClose();
@@ -572,6 +644,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     const handleRetry = () => {
         setTranscription("");
+        finalizedTranscriptRef.current = "";
         resetIntentFlow();
     };
 
@@ -693,6 +766,9 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         style={StyleSheet.absoluteFill}
                     />
                 </Animated.View>
+
+                {/* Gemini-style edge glow — orbits the screen border while listening */}
+                <BorderGlow active={recognizing} />
             </View>
 
             {/* Intercept background touches and dismiss */}
@@ -1066,7 +1142,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 style={[
                     styles.stopPillWrapper,
                     {
-                        bottom: insets.bottom + TAB_BAR_HEIGHT + 120,
+                        bottom: insets.bottom + TAB_BAR_HEIGHT + 176,
                         opacity: stopPillOpacity,
                         transform: [{ translateY: stopPillTranslateY }],
                     },
@@ -1100,21 +1176,26 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                 ]}
                 pointerEvents={hasPreview || hasDeletePreview ? "none" : "auto"}
             >
-                {!transcription || recognizing ? (
+                {/* Glow sits behind everything in the mic section, centered on the button */}
+                <View style={styles.micGlowWrap} pointerEvents="none">
+                    <GlowOverlay active={recognizing} />
+                </View>
+                {!transcription && !recognizing ? (
                     <ThemedText
-                        style={[
-                            styles.listeningLabel,
-                            {
-                                color: recognizing
-                                    ? "rgba(255,255,255,0.85)"
-                                    : "rgba(255,255,255,0.55)",
-                            },
-                        ]}
+                        style={[styles.listeningLabel, { color: "rgba(255,255,255,0.55)" }]}
                     >
-                        {recognizing ? "Now Listening" : "Tap to Speak"}
+                        Tap to Speak
                     </ThemedText>
                 ) : null}
-                <Animated.View style={{ transform: [{ scale: micScale }] }}>
+                {recognizing && (
+                    <VoiceWaveform
+                        level={volumeLevel}
+                        active={recognizing}
+                        style={styles.waveform}
+                    />
+                )}
+                <View style={styles.micButtonStage}>
+                    <Animated.View style={{ transform: [{ scale: micScale }] }}>
                     <TouchableOpacity
                         onPress={
                             transcription && !recognizing
@@ -1141,7 +1222,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             color="#ffffff"
                         />
                     </TouchableOpacity>
-                </Animated.View>
+                    </Animated.View>
+                </View>
             </Animated.View>
 
             {/* Generate / Done button */}
@@ -1396,11 +1478,28 @@ const styles = StyleSheet.create({
         fontWeight: "500",
         letterSpacing: 0.2,
     },
+    waveform: {
+        marginTop: 16,
+        width: 200,
+    },
+    micButtonStage: {
+        marginTop: 24,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    micGlowWrap: {
+        position: "absolute",
+        width: 240,
+        height: 240,
+        // Centered horizontally; bottom -88 puts the 240 glow's center on the button.
+        left: "50%",
+        marginLeft: -120,
+        bottom: -88,
+    },
     micButton: {
         width: 64,
         height: 64,
         borderRadius: 36,
-        marginTop: 12,
         alignItems: "center",
         justifyContent: "center",
         shadowColor: "#000",

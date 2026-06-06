@@ -1,21 +1,13 @@
-import { View, ScrollView, Dimensions, Modal } from "react-native";
-import React, { useState } from "react";
+import { View, ScrollView } from "react-native";
+import React from "react";
 import DashboardCard from "../cards/DashboardCard";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
-import { DrawerLayout } from "react-native-gesture-handler";
-import TodaySection from "./TodaySection";
-import { Bird, BookBookmark, Calendar, ChartBar, CheckCircle, HandSwipeRight, Microphone, PencilLine } from "phosphor-react-native";
+import { Bird, Calendar, HandSwipeRight, PencilLine } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import { VoiceInputOverlay } from "@/components/ui/fab/VoiceInputOverlay";
 
-type Props = {
-    drawerRef?: React.RefObject<DrawerLayout>;
-};
-
-const DashboardCards = (props: Props) => {
+const DashboardCards = () => {
     const ThemedColor = useThemeColor();
-    const [voiceOverlayVisible, setVoiceOverlayVisible] = useState(false);
 
     const cards = [
         {
@@ -26,14 +18,6 @@ const DashboardCards = (props: Props) => {
                     pathname: "/(logged-in)/(tabs)/(task)/daily",
                     params: { workspace: "Daily" },
                 });
-            },
-        },
-        {
-            title: "Voice Dump",
-            icon: <Microphone size={28} weight="light" color={ThemedColor.primary} />,
-            badge: "AI",
-            onPress: () => {
-                setVoiceOverlayVisible(true);
             },
         },
         {
@@ -64,23 +48,6 @@ const DashboardCards = (props: Props) => {
                 router.push("/text-dump");
             },
         },
-        {
-            title: "Analytics",
-            icon: <ChartBar size={28} weight="light" color={ThemedColor.primary} />,
-            onPress: () => {
-                router.push({
-                    pathname: "/(logged-in)/(tabs)/(task)/analytics",
-                    params: { workspace: "Analytics" },
-                });
-            },
-        },
-        {
-            title: "Workspaces",
-            icon: <BookBookmark size={28} weight="light" color={ThemedColor.primary} />,
-            onPress: () => {
-                props.drawerRef?.current?.openDrawer();
-            },
-        },
     ];
 
     // Split cards into two rows
@@ -89,9 +56,6 @@ const DashboardCards = (props: Props) => {
 
     return (
         <View style={{ flexDirection: "column", gap: 12, width: "100%"}}>
-            <Modal visible={voiceOverlayVisible} transparent animationType="none" statusBarTranslucent>
-                <VoiceInputOverlay onClose={() => setVoiceOverlayVisible(false)} />
-            </Modal>
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}

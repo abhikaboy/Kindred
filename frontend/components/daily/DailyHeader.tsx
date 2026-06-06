@@ -8,6 +8,22 @@ interface DailyHeaderProps {
     selectedDate: Date;
 }
 
+const getTitle = (selectedDate: Date): string => {
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const selected = startOfDay(selectedDate);
+    const today = startOfDay(new Date());
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (selected === today) return "Today";
+    if (selected === today + oneDay) return "Tomorrow";
+
+    return selectedDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+    });
+};
+
 export const DailyHeader: React.FC<DailyHeaderProps> = ({ selectedDate }) => {
     // ThemedColor kept for parity with the rest of the daily components.
     useThemeColor();
@@ -15,11 +31,7 @@ export const DailyHeader: React.FC<DailyHeaderProps> = ({ selectedDate }) => {
     return (
         <View style={styles.container}>
             <ThemedText type="title" style={styles.title}>
-                {selectedDate.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                })}
+                {getTitle(selectedDate)}
             </ThemedText>
         </View>
     );

@@ -13,7 +13,8 @@ const PostCardCaption = ({ caption, taggedUsers }: Props) => {
     const ThemedColor = useThemeColor();
     const tagIndex = React.useMemo(() => {
         const m = new Map<string, string>();
-        for (const t of taggedUsers) m.set(t.handle.toLowerCase(), t.id);
+        // handle has the leading @ baked in; the regex captures the bare name, so key without it
+        for (const t of taggedUsers) m.set(t.handle.replace(/^@/, "").toLowerCase(), t.id);
         return m;
     }, [taggedUsers]);
 

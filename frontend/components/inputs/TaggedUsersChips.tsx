@@ -3,6 +3,7 @@ import { View, TouchableOpacity } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
+import { formatHandle } from "@/utils/handle";
 
 export type TaggedUser = {
     id: string;
@@ -12,32 +13,12 @@ export type TaggedUser = {
 
 type Props = {
     users: TaggedUser[];
-    onRemove?: (id: string) => void; // composer mode
-    onPressUser?: (id: string) => void; // read mode
+    onRemove: (id: string) => void;
 };
 
-const TaggedUsersChips = ({ users, onRemove, onPressUser }: Props) => {
+const TaggedUsersChips = ({ users, onRemove }: Props) => {
     const ThemedColor = useThemeColor();
     if (users.length === 0) return null;
-
-    const readMode = !onRemove;
-
-    if (readMode) {
-        const names = users.map((u) => u.display_name ?? u.handle);
-        return (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 16, paddingVertical: 6 }}>
-                <ThemedText type="caption">with </ThemedText>
-                {users.map((u, i) => (
-                    <TouchableOpacity key={u.id} onPress={() => onPressUser?.(u.id)} activeOpacity={0.7}>
-                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                            {names[i]}
-                            {i < users.length - 1 ? ", " : ""}
-                        </ThemedText>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        );
-    }
 
     return (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 16 }}>
@@ -53,8 +34,8 @@ const TaggedUsersChips = ({ users, onRemove, onPressUser }: Props) => {
                         borderRadius: 16,
                         gap: 6,
                     }}>
-                    <ThemedText type="caption">@{u.handle}</ThemedText>
-                    <TouchableOpacity onPress={() => onRemove?.(u.id)} hitSlop={8}>
+                    <ThemedText type="caption">{formatHandle(u.handle)}</ThemedText>
+                    <TouchableOpacity onPress={() => onRemove(u.id)} hitSlop={8}>
                         <Ionicons name="close-circle" size={16} color={ThemedColor.caption} />
                     </TouchableOpacity>
                 </View>

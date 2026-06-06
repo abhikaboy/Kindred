@@ -176,7 +176,8 @@ const TaskFeedCard = React.memo(({
             fontSize: 12,
         },
         categoryName: {
-            fontSize: 18,
+            fontSize: 16,
+            color: ThemedColor.caption,
         },
         cardOuter: {
             paddingHorizontal: HORIZONTAL_PADDING,

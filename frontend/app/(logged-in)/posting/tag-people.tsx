@@ -10,6 +10,7 @@ import { usePostComposer } from "@/contexts/PostComposerContext";
 import { Ionicons } from "@expo/vector-icons";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
+import { formatHandle } from "@/utils/handle";
 
 export default function TagPeople() {
     const insets = useSafeAreaInsets();
@@ -89,7 +90,7 @@ function FriendRow({ item, checked, onToggle, primaryColor, captionColor }: Frie
             style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 16, gap: 12 }}>
             <View style={{ flex: 1 }}>
                 <ThemedText type="defaultSemiBold">{item.display_name}</ThemedText>
-                <ThemedText type="caption">@{item.handle}</ThemedText>
+                <ThemedText type="caption">{formatHandle(item.handle)}</ThemedText>
             </View>
             <Ionicons
                 name={checked ? "checkmark-circle" : "ellipse-outline"}

@@ -491,7 +491,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                     <View style={{ paddingBottom: 16, paddingHorizontal: 16 }}>
                         <UnscheduledTasksSection
                             tasks={tasksForTodayNoTime}
-                            title="Today's Tasks"
+                            title="Tasks"
                             description=""
                             collapsible
                             useSchedulable={false}

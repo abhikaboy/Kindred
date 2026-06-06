@@ -597,6 +597,7 @@ const PostCard = React.memo(({
                         name={name}
                         username={username}
                         userId={userId}
+                        taggedUsers={taggedUsers}
                         timeLabel={formatTime(time)}
                         onOptionsPress={showPostOptions}
                     />

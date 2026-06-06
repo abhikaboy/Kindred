@@ -5,6 +5,7 @@ import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { formatHandle } from "@/utils/handle";
 
 type Props = {
     name: string;
@@ -27,10 +28,17 @@ const ContactCard = ({ name, icon, handle, following, id, contactName, width }: 
         }
     };
 
-    const displayHandle = handle.startsWith("@") ? handle : `@${handle}`;
+    const displayHandle = formatHandle(handle);
 
     return (
-        <TouchableOpacity style={[styles.container, width != null && { width, marginRight: 0 }]} onPress={handlePress}>
+        <TouchableOpacity
+            style={[
+                styles.container,
+                // Keep the card a bit taller than wide (matches the 125x160 carousel ratio).
+                width != null && { width, height: width * 1.28, marginRight: 0 },
+            ]}
+            onPress={handlePress}>
+
             <CachedImage
                 source={{ uri: icon }}
                 style={StyleSheet.absoluteFillObject}

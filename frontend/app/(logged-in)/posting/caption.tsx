@@ -8,6 +8,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import MentionTextInput from "@/components/inputs/MentionTextInput";
 import TaggedUsersChips, { TaggedUser } from "@/components/inputs/TaggedUsersChips";
+import { formatHandle } from "@/utils/handle";
 import { createPostToBackend } from "@/api/post";
 import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
 import { ObjectId } from "bson";
@@ -319,7 +320,7 @@ export default function Caption() {
                                     {taggedUsers.length === 0
                                         ? "None"
                                         : taggedUsers.length === 1
-                                            ? `@${taggedUsers[0].handle}`
+                                            ? formatHandle(taggedUsers[0].handle)
                                             : `${taggedUsers.length} tagged`}
                                 </ThemedText>
                                 <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
