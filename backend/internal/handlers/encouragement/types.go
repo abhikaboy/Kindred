@@ -103,6 +103,7 @@ type EncouragementSenderInternal struct {
 	Name    string             `bson:"name"`
 	Picture string             `bson:"picture"`
 	ID      primitive.ObjectID `bson:"id"`
+	Handle  string             `bson:"handle"`
 }
 
 // Helper function to convert from internal to API type

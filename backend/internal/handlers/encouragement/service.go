@@ -341,6 +341,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 		Name:    user.DisplayName,
 		Picture: user.ProfilePicture,
 		ID:      user.ID,
+		Handle:  user.Handle,
 	}, nil
 }
 

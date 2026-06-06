@@ -85,6 +85,28 @@ type TaskDocument struct {
 	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
 	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`
 	Posted        bool       `bson:"posted" json:"posted"`
+
+	// Encouragements recorded on this task (denormalized at encourage time).
+	Encouragements []TaskKudos `bson:"encouragements,omitempty" json:"encouragements,omitempty"`
+}
+
+// KudosSender is an extended reference to the user who sent an encouragement,
+// denormalized onto the task so the client can render it without a join.
+type KudosSender struct {
+	ID     primitive.ObjectID `bson:"id" json:"id"`
+	Handle string             `bson:"handle" json:"handle"`
+	Name   string             `bson:"name" json:"name"`
+	Icon   string             `bson:"icon" json:"icon"`
+}
+
+// TaskKudos is one encouragement recorded on a task. Self-contained so the
+// detail page can render the notification card with no extra fetch.
+type TaskKudos struct {
+	EncouragementID primitive.ObjectID `bson:"encouragementId" json:"encouragementId"`
+	Sender          KudosSender        `bson:"sender" json:"sender"`
+	Message         string             `bson:"message" json:"message"`
+	Timestamp       time.Time          `bson:"timestamp" json:"timestamp"`
+	Type            string             `bson:"type" json:"type"` // "message" | "image"
 }
 
 /*
