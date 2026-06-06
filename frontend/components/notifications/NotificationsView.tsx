@@ -7,6 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFriendAcceptedNotification";
+import UserInfoPostTagNotification from "@/components/UserInfo/UserInfoPostTagNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
@@ -249,6 +250,15 @@ const NotificationItem = ({
                     content={notification.content}
                     icon={notification.icon}
                     time={notification.time}
+                />
+            ) : notification.type === "post_tag" ? (
+                <UserInfoPostTagNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    icon={notification.icon}
+                    time={notification.time}
+                    image={notification.thumbnail}
+                    referenceId={notification.referenceId}
                 />
             ) : null}
         </TouchableOpacity>
