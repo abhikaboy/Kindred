@@ -19,6 +19,7 @@ const ReactPills = ({ reaction, isHighlighted = false, onPress, onLongPress }: P
 
     return (
         <TouchableOpacity
+            testID="react-pill"
             onPress={onPress}
             onLongPress={onLongPress}
             delayLongPress={300}
