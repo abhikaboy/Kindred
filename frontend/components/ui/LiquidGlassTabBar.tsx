@@ -78,7 +78,15 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
         <Animated.View
             pointerEvents={shown ? "box-none" : "none"}
             style={[styles.root, { paddingBottom: insets.bottom + 8 }, containerStyle]}>
-            <View style={[styles.shadowWrap, { shadowColor: isDark ? "#000" : "#1F1D2E" }]}>
+            <View
+                style={[
+                    styles.shadowWrap,
+                    {
+                        boxShadow: isDark
+                            ? "0px 10px 24px rgba(0,0,0,0.55)"
+                            : "0px 8px 18px rgba(31,29,46,0.20)",
+                    },
+                ]}>
                 <View style={[styles.pill, { borderColor: LIQUID_GLASS ? "transparent" : borderColor }]}>
                     {LIQUID_GLASS ? (
                         <GlassView
@@ -156,9 +164,8 @@ const styles = StyleSheet.create({
     },
     shadowWrap: {
         borderRadius: PILL_HEIGHT / 2,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.18,
-        shadowRadius: 16,
+        // boxShadow (set inline, theme-aware) renders around the transparent
+        // glass box; elevation is the Android fallback.
         elevation: 12,
     },
     pill: {
