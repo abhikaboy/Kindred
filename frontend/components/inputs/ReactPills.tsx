@@ -10,15 +10,18 @@ type Props = {
     reaction: SlackReaction;
     isHighlighted?: boolean;
     onPress: () => void;
+    onLongPress?: () => void;
 };
 
-const ReactPills = ({ reaction, isHighlighted = false, onPress }: Props) => {
+const ReactPills = ({ reaction, isHighlighted = false, onPress, onLongPress }: Props) => {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor, isHighlighted);
 
     return (
         <TouchableOpacity
             onPress={onPress}
+            onLongPress={onLongPress}
+            delayLongPress={300}
             style={[
                 styles.pill,
                 {
