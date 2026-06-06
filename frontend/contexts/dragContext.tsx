@@ -27,8 +27,8 @@ type DragContextValue = {
 
 const DragContext = createContext<DragContextValue | null>(null);
 
-// Flip to false to silence drag hit-test logs. Temporary diagnostics.
-const DRAG_DEBUG = true;
+// Flip to true to surface drag hit-test logs while debugging.
+const DRAG_DEBUG = false;
 const dlog = (...args: unknown[]) => {
     if (DRAG_DEBUG) console.log("[drag]", ...args);
 };
