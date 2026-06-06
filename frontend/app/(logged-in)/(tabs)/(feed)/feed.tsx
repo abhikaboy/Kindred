@@ -2,8 +2,8 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { runOnJS } from "react-native-reanimated";
+import PagerView from "react-native-pager-view";
+import NotificationsView from "@/components/notifications/NotificationsView";
 import PostCard from "@/components/cards/PostCard";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
@@ -77,25 +77,13 @@ type PostData = {
 export default function Feed() {
     const router = useRouter();
 
-    const goToNotifications = useCallback(() => {
-        router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-    }, [router]);
+    // Feed ↔ Notifications live as the two pages of a horizontal pager so the other
+    // side previews mid-swipe (Instagram-style). Page 0 = feed, page 1 = notifications.
+    const pagerRef = useRef<PagerView>(null);
+    const [activePage, setActivePage] = useState(0);
+    // Lazily mount the notifications page on the first swipe toward it.
+    const [notificationsMounted, setNotificationsMounted] = useState(false);
 
-    // Swipe left on the feed to open Notifications (DM-style). activeOffsetX makes
-    // it claim only horizontal drags; failOffsetY yields to the vertical scroll.
-    const swipeToNotifications = useMemo(
-        () =>
-            Gesture.Pan()
-                .activeOffsetX(-20)
-                .failOffsetY([-15, 15])
-                .onEnd((e) => {
-                    "worklet";
-                    if (e.translationX < -80 || (e.velocityX < -700 && e.translationX < -30)) {
-                        runOnJS(goToNotifications)();
-                    }
-                }),
-        [goToNotifications]
-    );
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();
     const ThemedColor = useThemeColor();
@@ -595,9 +583,7 @@ export default function Feed() {
                     <Image source={logoSource} style={{ width: 32, height: 32 }} />
                     <TouchableOpacity
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                        }}
+                        onPress={() => pagerRef.current?.setPage(1)}
                         style={{ position: "relative" }}>
                         <HeartStraightIcon size={32} weight="regular" color={ThemedColor.text} />
                         <View style={{ position: "absolute", top: -8, right: -8 }}>
@@ -705,7 +691,18 @@ export default function Feed() {
     }, [hasMore, loadingMore, loading, posts.length, loadMorePosts]);
 
     return (
-        <View style={styles.container}>
+        <PagerView
+            ref={pagerRef}
+            style={{ flex: 1 }}
+            initialPage={0}
+            onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
+            onPageScrollStateChanged={(e) => {
+                // Mount the notifications page as soon as the user starts dragging toward it.
+                if (e.nativeEvent.pageScrollState === "dragging") {
+                    setNotificationsMounted(true);
+                }
+            }}>
+            <View key="feed" style={styles.container}>
             <Animated.View
                 style={[
                     styles.animatedHeader,
@@ -724,9 +721,7 @@ export default function Feed() {
                         <Image source={logoSource} style={{ width: 32, height: 32 }} />
                         <TouchableOpacity
                             activeOpacity={0.8}
-                            onPress={() => {
-                                router.push("/(logged-in)/(tabs)/(feed)/Notifications");
-                            }}
+                            onPress={() => pagerRef.current?.setPage(1)}
                             style={{ position: "relative" }}>
                             <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
                             <View style={{ position: "absolute", top: -8, right: -8 }}>
@@ -750,7 +745,6 @@ export default function Feed() {
                 </View>
             </Animated.View>
 
-            <GestureDetector gesture={swipeToNotifications}>
             <FlatList
                 ref={flatListRef}
                 data={currentFeed.id === "feed" ? filteredFeedItems : sortedPosts}
@@ -787,8 +781,19 @@ export default function Feed() {
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
             />
-            </GestureDetector>
-        </View>
+            </View>
+
+            <View key="notifications" style={{ flex: 1 }}>
+                {notificationsMounted ? (
+                    <NotificationsView
+                        isActive={activePage === 1}
+                        onBack={() => pagerRef.current?.setPage(0)}
+                    />
+                ) : (
+                    <View style={{ flex: 1, backgroundColor: ThemedColor.background }} />
+                )}
+            </View>
+        </PagerView>
     );
 }
 
