@@ -104,7 +104,7 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                             {/* BlurView gives reliable frost on simulator + device */}
                             <BlurView
                                 tint={isDark ? "dark" : "light"}
-                                intensity={15}
+                                intensity={40}
                                 style={[StyleSheet.absoluteFill, { borderRadius: PILL_HEIGHT / 2 }]}
                             />
                             {/* Native Liquid Glass on top for real refraction/specular on device */}
