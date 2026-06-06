@@ -61,19 +61,28 @@ export const Category: React.FC<CategoryProps> = ({
 
     return (
         <View
-            style={[
-                styles.container,
-                isDropTarget && {
-                    backgroundColor: ThemedColor.lightenedCard,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: ThemedColor.primary,
-                    padding: 8,
-                },
-            ]}
+            style={styles.container}
             ref={containerRef}
             onLayout={measure}
             collapsable={false}>
+            {/* Drop-target highlight = two absolute overlays so it never changes
+                layout (a growing/shrinking category would re-stale sibling hit
+                rects mid-drag). Fill sits behind content; border paints on top. */}
+            {isDropTarget && (
+                <View
+                    pointerEvents="none"
+                    style={{
+                        position: "absolute",
+                        top: -8,
+                        left: -8,
+                        right: -8,
+                        bottom: -8,
+                        borderRadius: 12,
+                        backgroundColor: ThemedColor.lightenedCard,
+                        opacity: 0.5,
+                    }}
+                />
+            )}
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <TouchableOpacity
                     style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}
@@ -102,9 +111,6 @@ export const Category: React.FC<CategoryProps> = ({
                 </TouchableOpacity>
                 {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
             </View>
-            {isDropTarget && (
-                <View style={{ height: 4, borderRadius: 2, backgroundColor: ThemedColor.primary }} />
-            )}
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;
 
@@ -129,6 +135,23 @@ export const Category: React.FC<CategoryProps> = ({
                     />
                 );
             })}
+            {isDropTarget && (
+                <View
+                    pointerEvents="none"
+                    style={{
+                        position: "absolute",
+                        top: -8,
+                        left: -8,
+                        right: -8,
+                        bottom: -8,
+                        borderRadius: 12,
+                        borderWidth: 2.5,
+                        borderColor: ThemedColor.primary,
+                        zIndex: 10,
+                        elevation: 10,
+                    }}
+                />
+            )}
         </View>
     );
 };

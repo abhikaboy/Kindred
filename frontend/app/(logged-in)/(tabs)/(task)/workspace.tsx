@@ -28,7 +28,7 @@ import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-native";
 import * as PhosphorIcons from "phosphor-react-native";
-import { DragProvider, useDrag } from "@/contexts/dragContext";
+import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
 
 type Props = {};
 
@@ -44,7 +44,7 @@ const DragAutoScroll = ({
     scrollViewRef: React.RefObject<ScrollView>;
     scrollOffsetRef: React.MutableRefObject<number>;
 }) => {
-    const { isDragging, fingerY } = useDrag();
+    const { isDragging, fingerX, fingerY, setScrollOffset, updateDrag } = useDrag();
     useEffect(() => {
         if (!isDragging) return;
         const screenH = Dimensions.get("window").height;
@@ -52,14 +52,22 @@ const DragAutoScroll = ({
         const STEP = 24;
         const interval = setInterval(() => {
             const y = fingerY.value;
+            let next: number | null = null;
             if (y < EDGE) {
-                scrollViewRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current - STEP), animated: false });
+                next = Math.max(0, scrollOffsetRef.current - STEP);
             } else if (y > screenH - EDGE) {
-                scrollViewRef.current?.scrollTo({ y: scrollOffsetRef.current + STEP, animated: false });
+                next = scrollOffsetRef.current + STEP;
             }
+            if (next === null) return;
+            scrollOffsetRef.current = next;
+            // Keep hit-testing in sync with the programmatic scroll, and refresh
+            // the hovered category even though the finger itself is stationary.
+            setScrollOffset(next);
+            scrollViewRef.current?.scrollTo({ y: next, animated: false });
+            updateDrag(fingerX.value, fingerY.value);
         }, 16);
         return () => clearInterval(interval);
-    }, [isDragging, fingerY, scrollViewRef, scrollOffsetRef]);
+    }, [isDragging, fingerX, fingerY, scrollViewRef, scrollOffsetRef, setScrollOffset, updateDrag]);
     return null;
 };
 
@@ -179,6 +187,7 @@ const WorkspaceContent = ({
 }: any) => {
     const pathname = usePathname();
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const drag = useDragOptional();
 
     const { getWorkspace } = useTasks();
     const currentWorkspace = selected ? getWorkspace(selected) : undefined;
@@ -302,7 +311,10 @@ const WorkspaceContent = ({
                     ref={scrollViewRef}
                     style={{ flex: 1 }}
                     showsVerticalScrollIndicator={false}
-                    onScroll={handleScroll}
+                    onScroll={(e) => {
+                        handleScroll(e);
+                        drag?.setScrollOffset(e.nativeEvent.contentOffset.y);
+                    }}
                     scrollEventThrottle={16}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}

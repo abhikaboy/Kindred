@@ -42,7 +42,7 @@ const DragAutoScroll = ({
     scrollViewRef: React.RefObject<ScrollView>;
     scrollOffsetRef: React.MutableRefObject<number>;
 }) => {
-    const { isDragging, fingerY } = useDrag();
+    const { isDragging, fingerX, fingerY, setScrollOffset, updateDrag } = useDrag();
     useEffect(() => {
         if (!isDragging) return;
         const screenH = Dimensions.get("window").height;
@@ -50,14 +50,22 @@ const DragAutoScroll = ({
         const STEP = 24;
         const interval = setInterval(() => {
             const y = fingerY.value;
+            let next: number | null = null;
             if (y < EDGE) {
-                scrollViewRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current - STEP), animated: false });
+                next = Math.max(0, scrollOffsetRef.current - STEP);
             } else if (y > screenH - EDGE) {
-                scrollViewRef.current?.scrollTo({ y: scrollOffsetRef.current + STEP, animated: false });
+                next = scrollOffsetRef.current + STEP;
             }
+            if (next === null) return;
+            scrollOffsetRef.current = next;
+            // Keep hit-testing in sync with the programmatic scroll, and refresh
+            // the hovered category even though the finger itself is stationary.
+            setScrollOffset(next);
+            scrollViewRef.current?.scrollTo({ y: next, animated: false });
+            updateDrag(fingerX.value, fingerY.value);
         }, 16);
         return () => clearInterval(interval);
-    }, [isDragging, fingerY, scrollViewRef, scrollOffsetRef]);
+    }, [isDragging, fingerX, fingerY, scrollViewRef, scrollOffsetRef, setScrollOffset, updateDrag]);
     return null;
 };
 
@@ -144,7 +152,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     const scrollViewRef = useRef<ScrollView>(null);
     const scrollOffsetRef = useRef(0);
-    const isDragging = useDragOptional()?.isDragging ?? false;
+    const drag = useDragOptional();
+    const isDragging = drag?.isDragging ?? false;
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
 
     useEffect(() => {
@@ -255,7 +264,10 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     ref={scrollViewRef}
                     style={{ flex: 1 }}
                     showsVerticalScrollIndicator={false}
-                    onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+                    onScroll={(e) => {
+                        scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+                        drag?.setScrollOffset(e.nativeEvent.contentOffset.y);
+                    }}
                     scrollEventThrottle={16}
                     scrollEnabled={!isDragging}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>

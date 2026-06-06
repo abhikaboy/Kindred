@@ -36,6 +36,11 @@ export const PRIORITY_MAP = {
 type Priority = keyof typeof PRIORITY_MAP;
 type PriorityLevel = (typeof PRIORITY_MAP)[Priority];
 
+// Press-and-hold tuning for the drag/menu gesture.
+const LONG_PRESS_MS = 350; // hold before the drag gesture activates
+const MENU_HOLD_DELAY_MS = 850; // extra still-hold after activation → menu opens (~1.2s total)
+const DRAG_MOVE_THRESHOLD = 10; // px of travel that turns a hold into a drag
+
 interface Props {
     content: string;
     value: number;
@@ -93,6 +98,9 @@ const TaskCard = ({
     const isMounted = useRef(true);
     const lastTapRef = useRef<number>(0);
     const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const menuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const menuOpenedRef = useRef(false);
+    const movedRef = useRef(false);
     const { capture } = useAnalytics();
 
     // Alert state
@@ -114,6 +122,9 @@ const TaskCard = ({
             isMounted.current = false;
             if (singleTapTimeoutRef.current) {
                 clearTimeout(singleTapTimeoutRef.current);
+            }
+            if (menuTimerRef.current) {
+                clearTimeout(menuTimerRef.current);
             }
         };
     }, []);
@@ -362,17 +373,44 @@ const TaskCard = ({
         if (Platform.OS === "ios") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }
+        movedRef.current = false;
+        menuOpenedRef.current = false;
         if (task && drag) drag.beginDrag(task, categoryId, absX, absY);
+        // Held still past ~1s total → surface the menu without waiting for release.
+        menuTimerRef.current = setTimeout(() => {
+            menuTimerRef.current = null;
+            if (movedRef.current) return;
+            menuOpenedRef.current = true;
+            drag?.cancelDrag();
+            if (Platform.OS === "ios") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            setEditing(true);
+        }, MENU_HOLD_DELAY_MS);
     }, [task, categoryId, drag]);
 
-    const onMove = useCallback((x: number, y: number) => {
+    const onMove = useCallback((x: number, y: number, translationX: number, translationY: number) => {
+        if (menuOpenedRef.current) return;
+        if (!movedRef.current && Math.hypot(translationX, translationY) > DRAG_MOVE_THRESHOLD) {
+            movedRef.current = true;
+            if (menuTimerRef.current) {
+                clearTimeout(menuTimerRef.current);
+                menuTimerRef.current = null;
+            }
+        }
         drag?.updateDrag(x, y);
     }, [drag]);
 
     // moved=true → the finger travelled, so treat the release as a drop;
-    // moved=false → held and released in place, so open the existing menu.
+    // moved=false → held and released in place, so open the menu (if the
+    // hold-timer hasn't already opened it mid-press).
     const finishDrag = useCallback((moved: boolean) => {
+        if (menuTimerRef.current) {
+            clearTimeout(menuTimerRef.current);
+            menuTimerRef.current = null;
+        }
         if (!drag) return;
+        if (menuOpenedRef.current) return;
         if (moved) {
             drag.endDrag();
         } else {
@@ -387,15 +425,15 @@ const TaskCard = ({
     const dragGesture = useMemo(
         () =>
             Gesture.Pan()
-                .activateAfterLongPress(350)
+                .activateAfterLongPress(LONG_PRESS_MS)
                 .onStart((e) => {
                     runOnJS(onLift)(e.absoluteX, e.absoluteY);
                 })
                 .onUpdate((e) => {
-                    runOnJS(onMove)(e.absoluteX, e.absoluteY);
+                    runOnJS(onMove)(e.absoluteX, e.absoluteY, e.translationX, e.translationY);
                 })
                 .onEnd((e) => {
-                    const moved = Math.hypot(e.translationX, e.translationY) > 10;
+                    const moved = Math.hypot(e.translationX, e.translationY) > DRAG_MOVE_THRESHOLD;
                     runOnJS(finishDrag)(moved);
                 }),
         [onLift, onMove, finishDrag]

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import Reanimated, {
     useSharedValue,
     useAnimatedStyle,
@@ -17,6 +18,7 @@ type DragContextValue = {
     isDragging: boolean;
     setCategoryRect: (rect: CategoryRect) => void;
     removeCategoryRect: (categoryId: string) => void;
+    setScrollOffset: (y: number) => void;
     beginDrag: (task: Task, sourceCategoryId: string, startX: number, startY: number) => void;
     updateDrag: (x: number, y: number) => void;
     endDrag: () => void;
@@ -46,21 +48,37 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const rectsRef = useRef<Map<string, CategoryRect>>(new Map());
     const draggingRef = useRef<{ task: Task; sourceCategoryId: string } | null>(null);
+    const scrollYRef = useRef(0);
+    const hoveredRef = useRef<string | null>(null);
 
     const [isDragging, setIsDragging] = useState(false);
     const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
     const setCategoryRect = useCallback((rect: CategoryRect) => {
-        rectsRef.current.set(rect.categoryId, rect);
+        // Stamp the scroll offset at measure time so hit-testing can correct
+        // for any scrolling that happens before/while a drag is in flight.
+        rectsRef.current.set(rect.categoryId, { ...rect, scrollYAtMeasure: scrollYRef.current });
     }, []);
 
     const removeCategoryRect = useCallback((categoryId: string) => {
         rectsRef.current.delete(categoryId);
     }, []);
 
+    const setScrollOffset = useCallback((y: number) => {
+        scrollYRef.current = y;
+    }, []);
+
+    // Rects shifted by however far the list has scrolled since each was measured.
+    const currentRects = useCallback((): CategoryRect[] =>
+        Array.from(rectsRef.current.values()).map((r) => ({
+            ...r,
+            y: r.y - (scrollYRef.current - (r.scrollYAtMeasure ?? 0)),
+        })), []);
+
     const beginDrag = useCallback((task: Task, sourceCategoryId: string, startX: number, startY: number) => {
         draggingRef.current = { task, sourceCategoryId };
+        hoveredRef.current = null;
         fingerX.value = startX;
         fingerY.value = startY;
         setDraggedTask(task);
@@ -70,26 +88,39 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateDrag = useCallback((x: number, y: number) => {
         fingerX.value = x;
         fingerY.value = y;
-        const hit = categoryAtPoint(Array.from(rectsRef.current.values()), x, y);
-        setHoveredCategoryId((prev) => (prev === hit ? prev : hit));
-    }, [fingerX, fingerY]);
+        const hit = categoryAtPoint(currentRects(), x, y);
+        if (hit !== hoveredRef.current) {
+            hoveredRef.current = hit;
+            setHoveredCategoryId(hit);
+            // Light tick when the finger crosses into a new drop zone (not the
+            // source it's already in — that would just buzz right after lift).
+            if (hit && hit !== draggingRef.current?.sourceCategoryId && Platform.OS === "ios") {
+                Haptics.selectionAsync();
+            }
+        }
+    }, [fingerX, fingerY, currentRects]);
 
     const endDrag = useCallback(() => {
         const dragging = draggingRef.current;
-        const target = categoryAtPoint(Array.from(rectsRef.current.values()), fingerX.value, fingerY.value);
+        const target = categoryAtPoint(currentRects(), fingerX.value, fingerY.value);
         if (dragging && target && target !== dragging.sourceCategoryId) {
+            if (Platform.OS === "ios") {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
             void moveTask(dragging.sourceCategoryId, dragging.task.id, target);
         }
         draggingRef.current = null;
+        hoveredRef.current = null;
         setDraggedTask(null);
         setHoveredCategoryId(null);
         setIsDragging(false);
-    }, [fingerX, fingerY, moveTask]);
+    }, [fingerX, fingerY, moveTask, currentRects]);
 
     // Clear the lifted/dragging state WITHOUT performing a move (e.g. the user
     // held and released in place, or the drag was cancelled).
     const cancelDrag = useCallback(() => {
         draggingRef.current = null;
+        hoveredRef.current = null;
         setDraggedTask(null);
         setHoveredCategoryId(null);
         setIsDragging(false);
@@ -115,6 +146,7 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 isDragging,
                 setCategoryRect,
                 removeCategoryRect,
+                setScrollOffset,
                 beginDrag,
                 updateDrag,
                 endDrag,

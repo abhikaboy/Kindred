@@ -4,6 +4,9 @@ export interface CategoryRect {
     y: number;
     width: number;
     height: number;
+    // Scroll offset of the list when this rect was measured. Lets hit-testing
+    // correct for scrolling (incl. auto-scroll) without re-measuring every frame.
+    scrollYAtMeasure?: number;
 }
 
 /**
