@@ -20,7 +20,8 @@ import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspace
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 
-const TAB_BAR_HEIGHT = 83;
+// Clears the floating glass pill: paddingBottom (insets.bottom + 8) + 64px pill + 8px gap.
+const TAB_BAR_HEIGHT = 80;
 
 type FABState = "collapsed" | "task-selection" | "workspace-creation" | "post-task-selection";
 
