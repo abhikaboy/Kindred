@@ -47,5 +47,5 @@ export const useMentionTrigger = (value: string, setValue: (v: string) => void) 
         setQuery(null);
     };
 
-    return { query, onChange, onSelection, onPick, picked, setPicked };
+    return { query, caret: selection.start, onChange, onSelection, onPick, picked, setPicked };
 };
