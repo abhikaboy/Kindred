@@ -8,6 +8,7 @@ Cross-cutting helpers: analytics, notifications, Live Activity lifecycle, loggin
 - `notificationService.ts` — expo push/local setup, APNs token, Android channels.
 - `logger.ts` — leveled logging via `EXPO_PUBLIC_LOG_LEVEL` (defaults NONE in prod).
 - `subscription.ts`, `categorySort.ts` — tier/feature checks; pure category sorting.
+- `dragHitTest.ts` — pure `categoryAtPoint(rects, x, y)` for task drag-and-drop. Strict bounding-box containment first, then a gap-tolerant fallback that snaps to the vertically nearest category within `VERTICAL_SLACK` (28px) so a release in the gap between two stacked categories still lands.
 
 ## Conventions
 - Prefer pure functions that don't mutate inputs.
@@ -18,3 +19,4 @@ Cross-cutting helpers: analytics, notifications, Live Activity lifecycle, loggin
 - `endActivity(taskId)` is the correct teardown — it clears the update interval. Calling factory `.end()` directly leaves the interval running and the activity revives.
 - Deadline activities auto-end ~30min past due.
 - `categorySort` priority sort is a known no-op, kept bug-for-bug compatible with workspace sorting.
+- `dragHitTest` rects are **window-space**. Callers must keep them fresh: feed live scroll offset (rects carry `scrollYAtMeasure`) and re-measure on drag start, or hits drift after scrolling / PagerView page switches. Without the gap-tolerant fallback, the ~16–20px gaps between categories were dead zones and most drops no-op'd.
