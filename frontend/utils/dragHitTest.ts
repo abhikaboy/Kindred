@@ -9,9 +9,15 @@ export interface CategoryRect {
     scrollYAtMeasure?: number;
 }
 
+// How far above/below a category (in px) still counts as "on" it, so releasing
+// in the gap between two stacked categories snaps to the nearer one instead of
+// falling into a dead zone.
+const VERTICAL_SLACK = 28;
+
 /**
- * Returns the categoryId of the first rect that contains (pointX, pointY),
- * or null if the point is outside every rect. Coordinates are in window space.
+ * Returns the categoryId at (pointX, pointY). First tries strict containment;
+ * if the point lands in a gap between categories, snaps to the vertically
+ * nearest category within VERTICAL_SLACK. Coordinates are in window space.
  */
 export function categoryAtPoint(
     rects: CategoryRect[],
@@ -28,5 +34,19 @@ export function categoryAtPoint(
             return r.categoryId;
         }
     }
-    return null;
+
+    // Gap-tolerant fallback: among categories whose horizontal span contains the
+    // finger (single-column list), pick the one with the smallest vertical gap.
+    let best: string | null = null;
+    let bestDist = Infinity;
+    for (const r of rects) {
+        if (pointX < r.x || pointX > r.x + r.width) continue;
+        const dy =
+            pointY < r.y ? r.y - pointY : pointY > r.y + r.height ? pointY - (r.y + r.height) : 0;
+        if (dy < bestDist) {
+            bestDist = dy;
+            best = r.categoryId;
+        }
+    }
+    return bestDist <= VERTICAL_SLACK ? best : null;
 }

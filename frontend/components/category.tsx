@@ -55,6 +55,13 @@ export const Category: React.FC<CategoryProps> = ({
         };
     }, [drag, id]);
 
+    // PagerView reveals an offscreen page without re-firing onLayout, leaving
+    // this category's hit-rect stale or unregistered (rects=0). Re-measure the
+    // moment a drag starts so the hit-test runs against fresh coordinates.
+    useEffect(() => {
+        if (drag?.isDragging) measure();
+    }, [drag?.isDragging, measure]);
+
     const categoryNameText = (
         <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
     );
