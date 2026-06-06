@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, useColorScheme, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 import type { TagAggregate } from "@/utils/tagBreakdown";
@@ -15,6 +15,8 @@ export default function TagBreakdownRow({
     selectedTags,
     onToggle,
 }: TagBreakdownRowProps) {
+    const scheme = useColorScheme() ?? "light";
+
     if (tags.length === 0) return null;
 
     return (
@@ -24,7 +26,7 @@ export default function TagBreakdownRow({
             contentContainerStyle={styles.row}
         >
             {tags.map(({ tag, count }) => {
-                const { primary, light } = getCategoryDuotoneColors(undefined, tag);
+                const { primary, light, background } = getCategoryDuotoneColors(undefined, tag, scheme);
                 const isSelected = selectedTags.includes(tag);
                 return (
                     <TouchableOpacity
@@ -36,7 +38,7 @@ export default function TagBreakdownRow({
                         <View
                             style={[
                                 styles.chip,
-                                { backgroundColor: isSelected ? primary : light },
+                                { backgroundColor: isSelected ? primary : background },
                             ]}
                         >
                             <ThemedText

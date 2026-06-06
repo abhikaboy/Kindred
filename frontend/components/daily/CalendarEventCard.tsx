@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import Animated, { useAnimatedStyle, useAnimatedReaction, runOnJS, SharedValue } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -75,7 +75,8 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     const isDeadline = task.deadline && !task.startTime && !task.startDate;
 
     // Get category colors for duotone effect
-    const categoryColors = getCategoryDuotoneColors(task.categoryID, task.categoryName);
+    const scheme = useColorScheme() ?? "light";
+    const categoryColors = getCategoryDuotoneColors(task.categoryID, task.categoryName, scheme);
 
     // Calculate time display
     let startTime: Date | null = null;
@@ -110,7 +111,7 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
         styles.content,
         isDeadline
             ? { borderColor: ThemedColor.error, backgroundColor: ThemedColor.error }
-            : { backgroundColor: categoryColors.light, borderLeftWidth: 6, borderLeftColor: categoryColors.dark },
+            : { backgroundColor: categoryColors.background, borderLeftWidth: 6, borderLeftColor: categoryColors.dark },
     ];
 
     const textColor = isDeadline ? ThemedColor.background : categoryColors.dark;

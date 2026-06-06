@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, useColorScheme, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 
@@ -9,10 +9,11 @@ interface TagChipProps {
 }
 
 export default function TagChip({ tag, onPress }: TagChipProps) {
-    const { primary, light } = getCategoryDuotoneColors(undefined, tag);
+    const scheme = useColorScheme() ?? "light";
+    const { primary, background } = getCategoryDuotoneColors(undefined, tag, scheme);
 
     const content = (
-        <View style={[styles.chip, { backgroundColor: light }]}>
+        <View style={[styles.chip, { backgroundColor: background }]}>
             <ThemedText type="caption" style={{ color: primary }}>
                 {tag}
             </ThemedText>

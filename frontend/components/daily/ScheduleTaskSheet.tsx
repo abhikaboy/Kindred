@@ -5,6 +5,7 @@ import {
     StyleSheet,
     ScrollView,
     Dimensions,
+    useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -54,6 +55,7 @@ export const ScheduleTaskSheet: React.FC<ScheduleTaskSheetProps> = ({
     onCreateNew,
 }) => {
     const ThemedColor = useThemeColor();
+    const scheme = useColorScheme() ?? "light";
     const { workspaces, selected, updateTask } = useTasks();
     const [schedulingTaskId, setSchedulingTaskId] = useState<string | null>(
         null
@@ -207,7 +209,8 @@ export const ScheduleTaskSheet: React.FC<ScheduleTaskSheetProps> = ({
                                     {tasksUnscheduled.map((task) => {
                                         const colors = getCategoryDuotoneColors(
                                             task.categoryID,
-                                            task.categoryName
+                                            task.categoryName,
+                                            scheme
                                         );
                                         const isScheduling =
                                             schedulingTaskId === task.id;

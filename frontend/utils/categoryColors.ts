@@ -60,18 +60,38 @@ export function getCategoryColor(categoryId?: string, categoryName?: string): Ca
   return colorKeys[index];
 }
 
+export type ColorScheme = 'light' | 'dark';
+
+/** Append an alpha channel to a 6-digit hex color (e.g. '#ef4444' + 0.3 → '#ef44444d'). */
+function withAlpha(hex: string, alpha: number): string {
+  const a = Math.round(Math.min(Math.max(alpha, 0), 1) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${a}`;
+}
+
 /**
- * Get duotone colors for a category
- * Returns primary and light colors for duotone effect
+ * Get duotone colors for a category.
+ * In dark mode the pastel `light` fills wash out, so the chip `background`
+ * becomes a translucent tint of the hue (~30% opacity) and `dark` (used for
+ * borders/text/dots) brightens to the vivid `primary` so it stays legible.
  */
-export function getCategoryDuotoneColors(categoryId?: string, categoryName?: string) {
+export function getCategoryDuotoneColors(
+  categoryId?: string,
+  categoryName?: string,
+  scheme: ColorScheme = 'light'
+) {
   const colorName = getCategoryColor(categoryId, categoryName);
   const colors = CATEGORY_COLORS[colorName];
+  const isDark = scheme === 'dark';
 
   return {
     primary: colors.primary,
+    // Pastel — kept in both modes for text drawn on a solid `primary` fill.
     light: colors.light,
-    dark: colors.dark,
+    dark: isDark ? colors.primary : colors.dark,
+    // Theme-aware chip fill.
+    background: isDark ? withAlpha(colors.primary, 0.3) : colors.light,
     colorName,
   };
 }
