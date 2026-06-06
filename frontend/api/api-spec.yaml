@@ -10467,7 +10467,11 @@ components:
             properties:
                 handle:
                     type: string
+                icon:
+                    type: string
                 id:
+                    type: string
+                name:
                     type: string
             required:
                 - id

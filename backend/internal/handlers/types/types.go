@@ -456,6 +456,8 @@ type CommentMetadata struct {
 type MentionReference struct {
 	ID     primitive.ObjectID `bson:"_id" json:"id"`
 	Handle string             `bson:"handle" json:"handle"`
+	Name   string             `bson:"name" json:"name,omitempty"`
+	Icon   string             `bson:"icon" json:"icon,omitempty"`
 }
 
 type ReactDocument struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
@@ -19,11 +20,25 @@ import (
 type Service struct {
 	connections     *mongo.Collection
 	categories      *mongo.Collection
+	workspaces      *mongo.Collection
 	processedEvents *mongo.Collection
 	pushOutbox      *PushOutbox
 	providers       map[CalendarProvider]Provider
 	config          config.Config
 }
+
+// calendarPresetColors mirrors ICON_PRESET_COLORS in the frontend icon picker.
+var calendarPresetColors = []string{
+	"#FF3B3B",
+	"#FF6E2C",
+	"#3CCF6E",
+	"#56BFEE",
+	"#A259FF",
+	"#2962FF",
+}
+
+// calendarWorkspaceIcon is the default Phosphor icon for imported calendar workspaces.
+const calendarWorkspaceIcon = "CalendarBlank"
 
 // PushOutbox returns the push outbox helper (used by jobs and the task package).
 func (s *Service) PushOutbox() *PushOutbox {
@@ -52,10 +67,12 @@ func NewService(connections *mongo.Collection, categories *mongo.Collection, cfg
 	// Get processed events collection from the same database
 	processedEvents := connections.Database().Collection("calendar_processed_events")
 	pushOutboxCol := connections.Database().Collection("calendar_push_outbox")
+	workspaces := connections.Database().Collection("workspaces")
 
 	return &Service{
 		connections:     connections,
 		categories:      categories,
+		workspaces:      workspaces,
 		processedEvents: processedEvents,
 		pushOutbox:      NewPushOutbox(pushOutboxCol),
 		providers:       providers,
@@ -388,6 +405,9 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 
 	now := time.Now()
 
+	// Track distinct workspace names so each gets a default calendar icon + color.
+	workspaceNames := make(map[string]bool)
+
 	for _, cal := range allCalendars {
 		if !selectedSet[cal.ID] {
 			continue
@@ -404,6 +424,7 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		if !mergeIntoOne {
 			workspaceName = cal.Name
 		}
+		workspaceNames[workspaceName] = true
 
 		integrationKey := fmt.Sprintf("gcal:%s:%s", connectionID.Hex(), cal.ID)
 
@@ -449,6 +470,12 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		slog.Info("Created category for calendar", "calendar_id", cal.ID, "calendar_name", cal.Name, "workspace", workspaceName)
 	}
 
+	// Give each imported workspace a default calendar icon + random color,
+	// without clobbering one the user may have already customized.
+	for name := range workspaceNames {
+		s.ensureDefaultWorkspaceMeta(ctx, name, userID)
+	}
+
 	slog.Info("Workspace setup complete", "connection_id", connectionID, "calendars_requested", len(calendarIDs))
 
 	_, err = s.connections.UpdateOne(ctx, bson.M{"_id": connectionID, "user_id": userID}, bson.M{
@@ -458,6 +485,32 @@ func (s *Service) SetupWorkspacesForConnection(ctx context.Context, connectionID
 		slog.Error("Failed to mark calendar connection setup complete", "connection_id", connectionID, "error", err)
 	}
 	return nil
+}
+
+// ensureDefaultWorkspaceMeta sets a default calendar icon and a random preset
+// color on a freshly imported workspace. Uses $setOnInsert so an existing
+// workspace meta (e.g. one the user has customized) is left untouched.
+func (s *Service) ensureDefaultWorkspaceMeta(ctx context.Context, name string, userID primitive.ObjectID) {
+	if s.workspaces == nil {
+		return
+	}
+
+	color := calendarPresetColors[rand.Intn(len(calendarPresetColors))]
+	opts := options.Update().SetUpsert(true)
+	_, err := s.workspaces.UpdateOne(ctx,
+		bson.M{"name": name, "user": userID},
+		bson.D{{Key: "$setOnInsert", Value: bson.D{
+			{Key: "name", Value: name},
+			{Key: "user", Value: userID},
+			{Key: "icon", Value: calendarWorkspaceIcon},
+			{Key: "color", Value: color},
+		}}},
+		opts,
+	)
+	if err != nil {
+		slog.Warn("Failed to set default workspace meta for calendar import",
+			"workspace", name, "error", err)
+	}
 }
 
 // GetConnections retrieves all calendar connections for a user

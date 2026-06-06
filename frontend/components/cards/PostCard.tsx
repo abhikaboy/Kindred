@@ -9,6 +9,7 @@ import {
     Image as RNImage,
 } from "react-native";
 import { ThemedText } from "../ThemedText";
+import type { TaggedUser } from "./types";
 import Comment, { CommentProps } from "../inputs/Comment";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetBackdrop, BottomSheetModal } from "@gorhom/bottom-sheet";
@@ -49,7 +50,7 @@ type Props = {
     username: string;
     userId: string;
     caption: string;
-    taggedUsers?: Array<{ id: string; handle: string }>;
+    taggedUsers?: TaggedUser[];
     time: number;
     priority?: string;
     points?: number;

@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, TouchableOpacity, View, InteractionManager } from "react-native";
+import { Dimensions, StyleSheet, View, InteractionManager } from "react-native";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
@@ -10,7 +10,6 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { router, useLocalSearchParams } from "expo-router";
-import { CaretLeft } from "phosphor-react-native";
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
@@ -18,12 +17,11 @@ import Animated, {
 } from "react-native-reanimated";
 
 // Components
-import { DailyHeader } from "@/components/daily/DailyHeader";
-import { DatePager } from "@/components/daily/DatePager";
+import { DateNavBar } from "@/components/daily/DateNavBar";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
 import { ScheduleTaskSheet } from "@/components/daily/ScheduleTaskSheet";
-import { FloatingDateNav } from "@/components/daily/FloatingDateNav";
+import { CalendarPickerOverlay } from "@/components/daily/CalendarPickerOverlay";
 import { FloatingViewToggle } from "@/components/daily/FloatingViewToggle";
 import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 
@@ -66,6 +64,7 @@ const Daily = (props: Props) => {
     const [selectedDate, setSelectedDate] = useState(centerDate);
     const [activeTab, setActiveTab] = useState(initialTab);
     const [shouldRenderCalendar, setShouldRenderCalendar] = useState(initialTab === "Calendar");
+    const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
     // Defer Calendar view rendering until after interactions complete
     useEffect(() => {
@@ -120,16 +119,6 @@ const Daily = (props: Props) => {
         }
     };
 
-    const handlePageChange = (direction: "prev" | "next") => {
-        const newCenter = new Date(centerDate);
-        if (direction === "next") {
-            newCenter.setDate(centerDate.getDate() + 6); // PAGE_SIZE = 6
-        } else {
-            newCenter.setDate(centerDate.getDate() - 6);
-        }
-        setCenterDate(newCenter);
-    };
-
     const handleQuickSchedule = (task: any, type: 'deadline' | 'startDate') => {
         setSelectedTaskForScheduling(task);
         setSchedulingType(type);
@@ -161,18 +150,10 @@ const Daily = (props: Props) => {
         },
     });
 
-    const renderHeader = () => (
-        <View style={{  marginBottom: 12 }}>
-            <DailyHeader selectedDate={selectedDate} />
-            {/* <DatePager
-                centerDate={centerDate}
-                selectedDate={selectedDate}
-                onDateSelected={handleDateChange}
-                onPageChange={handlePageChange}
-                setCenterDate={setCenterDate}
-            /> */}
-        </View>
-    );
+    const handlePickDate = (date: Date) => {
+        handleDateChange(date);
+        setShowCalendarPicker(false);
+    };
 
     return (
         <DrawerLayout
@@ -187,16 +168,12 @@ const Daily = (props: Props) => {
             onDrawerClose={() => setIsDrawerOpen(false)}>
 
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    style={[styles.backButton, { backgroundColor: ThemedColor.primary }]}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back">
-                    <CaretLeft size={24} color="#FFFFFF" weight="bold" />
-                </TouchableOpacity>
-
-                {renderHeader()}
+                <DateNavBar
+                    selectedDate={selectedDate}
+                    onDateChange={handleDateChange}
+                    onPressLabel={() => setShowCalendarPicker(true)}
+                    onBack={() => router.back()}
+                />
 
                 <AnimatedTabContent activeTab={activeTab === "List" ? 0 : 1} setActiveTab={(i) => setActiveTab(i === 0 ? "List" : "Calendar")} flex>
                     <Animated.ScrollView
@@ -206,7 +183,7 @@ const Daily = (props: Props) => {
                         onScroll={listScrollHandler}
                         scrollEventThrottle={16}
                         removeClippedSubviews={true}
-                        contentContainerStyle={{ paddingBottom: 128 }}>
+                        contentContainerStyle={{ paddingTop: 16, paddingBottom: 128 }}>
                         <TaskListView
                             selectedDate={selectedDate}
                             tasksForSelectedDate={tasksForSelectedDate}
@@ -217,7 +194,7 @@ const Daily = (props: Props) => {
                             onQuickSchedule={handleQuickSchedule}
                         />
                     </Animated.ScrollView>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, paddingTop: 16 }}>
                         {shouldRenderCalendar && (
                             <CalendarView
                                 selectedDate={selectedDate}
@@ -231,9 +208,12 @@ const Daily = (props: Props) => {
 
                 <FloatingViewToggle activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                <FloatingDateNav
+                <CalendarPickerOverlay
+                    visible={showCalendarPicker}
                     selectedDate={selectedDate}
-                    onDateChange={handleDateChange}
+                    onDateChange={handlePickDate}
+                    onClose={() => setShowCalendarPicker(false)}
+                    topOffset={insets.top + 56}
                 />
 
                 <ScheduleTaskSheet
@@ -254,21 +234,5 @@ export default Daily;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    backButton: {
-        position: "absolute",
-        bottom: 100,
-        left: 16,
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1000,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 8,
     },
 });

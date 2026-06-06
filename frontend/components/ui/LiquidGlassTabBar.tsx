@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Platform, useColorScheme, LayoutChangeEvent, Keyboard } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, StyleSheet, Platform, useColorScheme, LayoutChangeEvent, Keyboard, Dimensions } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { GlassTabItem } from "./GlassTabItem";
+import { WorkspaceSwitcherPopover } from "./WorkspaceSwitcherPopover";
 
 // iOS 26+ native Liquid Glass; falls back to BlurView/tint elsewhere.
 // Guarded so a dev client without the native module can't crash at import.
@@ -25,16 +26,20 @@ const CAPSULE_INSET = 8;
 type Props = BottomTabBarProps & {
     badges?: Record<string, number | undefined>;
     visible?: boolean;
+    // Long-pressing this tab opens the workspace switcher anchored to it.
+    switcherTabName?: string;
 };
 
 // Floating "liquid glass" tab bar: a detached blurred pill with a highlight
 // capsule that springs between tabs. Reuses each screen's tabBarIcon option.
-export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visible = true }: Props) {
+export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visible = true, switcherTabName }: Props) {
     const ThemedColor = useThemeColor();
     const scheme = useColorScheme();
     const insets = useSafeAreaInsets();
     const [contentWidth, setContentWidth] = useState(0);
     const [keyboardUp, setKeyboardUp] = useState(false);
+    const [switcherOpen, setSwitcherOpen] = useState(false);
+    const switcherAnchorRef = useRef<View>(null);
 
     // Hide the floating pill when the keyboard is open (replaces tabBarHideOnKeyboard).
     useEffect(() => {
@@ -63,6 +68,14 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
         transform: [{ translateX: capsuleX.value }],
     }));
 
+    // Dim the content behind the switcher — but it's rendered here, below the
+    // glass pill, so the nav bar itself stays bright.
+    const dimOpacity = useSharedValue(0);
+    useEffect(() => {
+        dimOpacity.value = withTiming(switcherOpen ? 1 : 0, { duration: 220 });
+    }, [switcherOpen]);
+    const dimStyle = useAnimatedStyle(() => ({ opacity: dimOpacity.value }));
+
     const containerStyle = useAnimatedStyle(() => ({
         opacity: withTiming(shown ? 1 : 0, { duration: 300 }),
         transform: [{ translateY: withTiming(shown ? 0 : 120, { duration: 300 }) }],
@@ -78,6 +91,24 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
         <Animated.View
             pointerEvents={shown ? "box-none" : "none"}
             style={[styles.root, { paddingBottom: insets.bottom + 8 }, containerStyle]}>
+            {switcherTabName ? (
+                <Animated.View
+                    pointerEvents="none"
+                    style={[
+                        {
+                            position: "absolute",
+                            left: -H_MARGIN,
+                            right: -H_MARGIN,
+                            // Overshoot well past the top so the dim always reaches
+                            // the status bar regardless of safe-area math.
+                            top: -Dimensions.get("screen").height,
+                            bottom: -(insets.bottom + 40),
+                            backgroundColor: "rgba(0,0,0,0.35)",
+                        },
+                        dimStyle,
+                    ]}
+                />
+            ) : null}
             <View
                 style={[
                     styles.shadowWrap,
@@ -156,11 +187,15 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                                 }
                             };
 
+                            const isSwitcherTab = route.name === switcherTabName;
+
                             return (
                                 <GlassTabItem
                                     key={route.key}
+                                    ref={isSwitcherTab ? switcherAnchorRef : undefined}
                                     focused={focused}
                                     onPress={onPress}
+                                    onLongPress={isSwitcherTab ? () => setSwitcherOpen(true) : undefined}
                                     renderIcon={options.tabBarIcon}
                                     accessibilityLabel={options.tabBarAccessibilityLabel}
                                     badge={badges?.[route.name]}
@@ -171,6 +206,14 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                     </View>
                 </View>
             </View>
+
+            {switcherTabName && (
+                <WorkspaceSwitcherPopover
+                    isVisible={switcherOpen}
+                    onClose={() => setSwitcherOpen(false)}
+                    from={switcherAnchorRef}
+                />
+            )}
         </Animated.View>
     );
 }

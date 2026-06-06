@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import * as PhosphorIcons from "phosphor-react-native";
@@ -39,6 +39,20 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
     const router = useRouter();
+
+    // Expand each workspace by default the first time it appears, while still
+    // letting the user collapse it afterward.
+    const defaultedWorkspaces = useRef<Set<string>>(new Set());
+    useEffect(() => {
+        const unseen = displayWorkspaces.filter((ws) => !defaultedWorkspaces.current.has(ws.name));
+        if (unseen.length === 0) return;
+        setExpandedWorkspaces((prev) => {
+            const next = new Set(prev);
+            unseen.forEach((ws) => next.add(ws.name));
+            return next;
+        });
+        unseen.forEach((ws) => defaultedWorkspaces.current.add(ws.name));
+    }, [displayWorkspaces]);
 
     const { workspaces: allWorkspaces } = useTasks();
 
@@ -95,6 +109,7 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                         {displayWorkspaces.map((workspace) => {
                             const categories = getWorkspaceData(workspace.name);
                             const isExpanded = expandedWorkspaces.has(workspace.name);
+                            const colorAccent = workspace.color ?? null;
                             const validCategories = categories?.filter((cat: any) => cat.name !== "!-proxy-!") || [];
 
                             const pendingTaskCount = categories
@@ -138,7 +153,19 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                                         type: "timing",
                                                         duration: 200,
                                                     }}
-                                                    style={[styles.categoriesContainer, { overflow: "hidden" }]}>
+                                                    style={[
+                                                        styles.categoriesContainer,
+                                                        { overflow: "hidden" },
+                                                        // Same accent as the workspace, on the same left line, at half opacity.
+                                                        colorAccent
+                                                            ? {
+                                                                  marginLeft: 0,
+                                                                  paddingLeft: 21,
+                                                                  borderLeftWidth: 3,
+                                                                  borderLeftColor: colorAccent + "80",
+                                                              }
+                                                            : undefined,
+                                                    ]}>
                                                     {categories && categories.length > 0 ? (
                                                         validCategories.length > 0 ? (
                                                             validCategories.map((category: any) => {
@@ -367,7 +394,7 @@ const styles = StyleSheet.create({
     },
     workspaceWrapper: {
         width: "100%",
-        marginBottom: 4,
+        marginBottom: 2,
     },
     workspaceCard: {
         paddingVertical: 6,
@@ -387,7 +414,8 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     categoriesContainer: {
-        marginLeft: 15,
+        // Align category content under the workspace name (caret 16 + margin 8).
+        marginLeft: 24,
     },
     categoryRow: {
         flexDirection: "row",

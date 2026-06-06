@@ -7,11 +7,12 @@ import { Confetti } from "phosphor-react-native";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import type { SlackReaction } from "./PostCard";
+import type { TaggedUser } from "./types";
 import PostCardCaption from "./PostCardCaption";
 
 export type PostCardFooterProps = {
     caption?: string;
-    taggedUsers?: Array<{ id: string; handle: string }>;
+    taggedUsers?: TaggedUser[];
     category?: string;
     taskName?: string;
     reactions?: SlackReaction[];
