@@ -105,7 +105,7 @@ const Activity = () => {
     const [showAllTemplates, setShowAllTemplates] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const { categories } = useTasks();
+    const { workspaces } = useTasks();
 
     const userId = user?._id || (params.id as string);
     const displayName = params.displayName as string || user?.display_name;
@@ -152,15 +152,20 @@ const Activity = () => {
         ? templates
         : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
 
+    const allCategories = useMemo(
+        () => workspaces.flatMap((ws) => ws.categories ?? []),
+        [workspaces],
+    );
+
     const tagAggregates = useMemo(
-        () => buildTagAggregates(templates, categories),
-        [templates, categories],
+        () => buildTagAggregates(templates, allCategories),
+        [templates, allCategories],
     );
 
     const effectiveTemplateIds = useMemo(() => {
-        const tagIds = selectedTagTemplateIds(selectedTags, templates, categories);
+        const tagIds = selectedTagTemplateIds(selectedTags, templates, allCategories);
         return Array.from(new Set([...selectedTemplateIds, ...tagIds]));
-    }, [selectedTemplateIds, selectedTags, templates, categories]);
+    }, [selectedTemplateIds, selectedTags, templates, allCategories]);
 
     const breakdownMode = effectiveTemplateIds.length > 0;
 
