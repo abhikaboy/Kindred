@@ -1,9 +1,9 @@
-import { router } from "expo-router";
-import NotificationsView from "@/components/notifications/NotificationsView";
+import { Redirect } from "expo-router";
 
-// Standalone route kept for deep links / push-notification taps that open
-// Notifications directly. The swipe-pager path lives in feed.tsx; this wrapper
-// just renders the same view with a router-based back to the feed.
+// Notifications now lives as a page inside the feed pager (see feed.tsx), not as a
+// standalone screen. This route only remains to redirect any stale or restored
+// navigation that lands on it (dev nav-state restoration, old links) back to the feed,
+// so the Feed tab always opens on the feed.
 export default function NotificationsRoute() {
-    return <NotificationsView isActive onBack={() => router.dismissTo("/(logged-in)/(tabs)/(feed)/feed")} />;
+    return <Redirect href="/(logged-in)/(tabs)/(feed)/feed" />;
 }
