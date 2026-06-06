@@ -105,6 +105,7 @@ const Activity = () => {
     const [showAllTemplates, setShowAllTemplates] = useState(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
+    const { categories } = useTasks();
 
     const userId = user?._id || (params.id as string);
     const displayName = params.displayName as string || user?.display_name;
@@ -150,8 +151,6 @@ const Activity = () => {
     const visibleTemplates = showAllTemplates
         ? templates
         : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
-
-    const { categories } = useTasks();
 
     const tagAggregates = useMemo(
         () => buildTagAggregates(templates, categories),
