@@ -11,9 +11,12 @@ type Props = {
 
 const PostCardCaption = ({ caption, taggedUsers }: Props) => {
     const ThemedColor = useThemeColor();
+    // Handles may or may not carry a leading "@"; normalize both the index keys
+    // and the captured run so the lookup matches regardless.
+    const normalize = (h: string) => h.replace(/^@/, "").toLowerCase();
     const tagIndex = React.useMemo(() => {
         const m = new Map<string, string>();
-        for (const t of taggedUsers) m.set(t.handle.toLowerCase(), t.id);
+        for (const t of taggedUsers) m.set(normalize(t.handle), t.id);
         return m;
     }, [taggedUsers]);
 
@@ -22,7 +25,7 @@ const PostCardCaption = ({ caption, taggedUsers }: Props) => {
     let last = 0;
     let match: RegExpExecArray | null;
     while ((match = re.exec(caption)) !== null) {
-        const id = tagIndex.get(match[1].toLowerCase());
+        const id = tagIndex.get(normalize(match[1]));
         if (match.index > last) {
             parts.push({ type: "text", value: caption.slice(last, match.index) });
         }

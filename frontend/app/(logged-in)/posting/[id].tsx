@@ -144,6 +144,7 @@ export default function PostDetail() {
                     userId={post.user._id}
                     dual={post.dual}
                     caption={post.caption || ""}
+                    taggedUsers={post.taggedUsers ?? []}
                     time={
                         post.metadata?.createdAt
                             ? Math.abs(new Date().getTime() - new Date(post.metadata.createdAt).getTime()) / 36e5
