@@ -323,8 +323,10 @@ const CheckCircle: React.FC<CheckCircleProps> = ({ completed, ThemedColor }) => 
                 justifyContent: 'center',
                 transform: [{ scale }],
             }}>
+            {/* buttonText (white in both themes) keeps the check legible on the purple fill;
+                ThemedColor.background would go near-black in dark mode. */}
             {completed && (
-                <ThemedText style={{ color: ThemedColor.background, fontSize: 11, lineHeight: 13 }}>✓</ThemedText>
+                <ThemedText style={{ color: ThemedColor.buttonText, fontSize: 11, lineHeight: 13 }}>✓</ThemedText>
             )}
         </Animated.View>
     );
