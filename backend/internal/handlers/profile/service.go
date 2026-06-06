@@ -689,3 +689,37 @@ func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string, excludeUserID p
 
 	return results, nil
 }
+
+// GetUsersByIDs returns extended references for the given user IDs in a single
+// query. Missing users are omitted; order is not guaranteed.
+func (s *Service) GetUsersByIDs(ids []primitive.ObjectID) ([]types.UserExtendedReference, error) {
+	ctx := context.Background()
+	if len(ids) == 0 {
+		return []types.UserExtendedReference{}, nil
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	projection := bson.M{
+		"_id":             1,
+		"display_name":    1,
+		"handle":          1,
+		"profile_picture": 1,
+	}
+
+	cursor, err := s.Profiles.Find(ctx, filter, options.Find().SetProjection(projection))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var internal []types.UserExtendedReferenceInternal
+	if err := cursor.All(ctx, &internal); err != nil {
+		return nil, err
+	}
+
+	results := make([]types.UserExtendedReference, len(internal))
+	for i, u := range internal {
+		results[i] = *u.ToAPI()
+	}
+	return results, nil
+}
