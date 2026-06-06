@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // newService receives the map of collections and picks out encouragements
@@ -133,23 +134,19 @@ func (s *Service) GetEncouragementsByTaskAndReceiver(taskID, receiverID primitiv
 	return results, nil
 }
 
-// CreateEncouragement adds a new Encouragement document
+// CreateEncouragement atomically decrements the sender's balance, inserts the
+// encouragement, and (for task scope) records a TaskKudos on the embedded task.
+// A missing task is non-fatal: the push is skipped and the transaction commits.
+// Notifications and ring deltas remain best-effort, after commit.
 func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*EncouragementDocument, error) {
 	if s.Encouragements == nil {
 		return nil, fmt.Errorf("encouragements collection not available")
 	}
+	if s.Users == nil {
+		return nil, fmt.Errorf("users collection not available")
+	}
 
 	ctx := context.Background()
-
-	// Check if sender has enough encouragements
-	balance, err := s.GetUserBalance(r.Sender.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user balance: %w", err)
-	}
-
-	if balance <= 0 {
-		return nil, fmt.Errorf("insufficient encouragement balance: user has %d encouragements remaining", balance)
-	}
 
 	encouragement := EncouragementDocumentInternal{
 		ID:           primitive.NewObjectID(),
@@ -165,38 +162,84 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		Type:         r.Type,
 	}
 
-	slog.Info("Creating encouragement", "sender_id", r.Sender.ID, "receiver_id", r.Receiver, "scope", r.Scope, "balance", balance)
+	client := s.Encouragements.Database().Client()
+	session, err := client.StartSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start session: %w", err)
+	}
+	defer session.EndSession(ctx)
 
-	result, err := s.Encouragements.InsertOne(ctx, encouragement)
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// 1. Balance check inside the transaction.
+		var u struct {
+			Encouragements int `bson:"encouragements"`
+		}
+		if err := s.Users.FindOne(sessCtx, bson.M{"_id": r.Sender.ID}).Decode(&u); err != nil {
+			return nil, err
+		}
+		if u.Encouragements <= 0 {
+			return nil, fmt.Errorf("insufficient encouragement balance: user has %d encouragements remaining", u.Encouragements)
+		}
+
+		// 2. Decrement balance + increment sent-count.
+		if _, err := s.Users.UpdateOne(sessCtx,
+			bson.M{"_id": r.Sender.ID},
+			bson.M{"$inc": bson.M{
+				"encouragements":              -1,
+				"kudosRewards.encouragements": 1,
+			}},
+		); err != nil {
+			return nil, err
+		}
+
+		// 3. Insert the encouragement document.
+		if _, err := s.Encouragements.InsertOne(sessCtx, encouragement); err != nil {
+			return nil, err
+		}
+
+		// 4. Task scope: push a self-contained kudos onto the embedded task.
+		//    Missing task (matchedCount == 0) is logged and skipped, not fatal.
+		if encouragement.Scope == "task" && !encouragement.TaskID.IsZero() && s.Categories != nil {
+			kudos := types.TaskKudos{
+				EncouragementID: encouragement.ID,
+				Sender: types.KudosSender{
+					ID:     r.Sender.ID,
+					Handle: r.Sender.Handle,
+					Name:   r.Sender.Name,
+					Icon:   r.Sender.Picture,
+				},
+				Message:   encouragement.Message,
+				Timestamp: encouragement.Timestamp,
+				Type:      encouragement.Type,
+			}
+			res, err := s.Categories.UpdateOne(sessCtx,
+				bson.M{"tasks._id": encouragement.TaskID},
+				bson.M{"$push": bson.M{"tasks.$[t].encouragements": kudos}},
+				options.Update().SetArrayFilters(options.ArrayFilters{
+					Filters: bson.A{bson.M{"t._id": encouragement.TaskID}},
+				}),
+			)
+			if err != nil {
+				return nil, err
+			}
+			if res.MatchedCount == 0 {
+				slog.Warn("encouraged task not found; skipping task kudos push", "taskId", encouragement.TaskID.Hex())
+			}
+		}
+
+		return nil, nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Decrement user's encouragement balance
-	err = s.DecrementUserBalance(r.Sender.ID)
-	if err != nil {
-		slog.Error("Failed to decrement user balance after creating encouragement", "error", err, "sender_id", r.Sender.ID)
-	}
+	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", encouragement.ID.Hex()))
 
-	// Cast the inserted ID to ObjectID and update the internal document
-	id, ok := result.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert InsertedID to ObjectID")
-	}
-	encouragement.ID = id
-	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", id.Hex()))
-
-	// Send push notification to receiver
-	err = s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID)
-	if err != nil {
-		// Log error but don't fail the operation since encouragement was already created
+	// Best-effort side effects after commit (unchanged behavior).
+	if err := s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID); err != nil {
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
 	}
 
-	// Create notification in the database.
-	// ReferenceID points to the entity the user should land on when they tap the notification:
-	//   - task scope → the task being encouraged
-	//   - profile scope → no entity, leave zero (frontend will fall back)
 	var notificationContent string
 	var referenceID primitive.ObjectID
 	if r.Scope == "profile" {
@@ -205,10 +248,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		notificationContent = fmt.Sprintf("%s on \"%s\": \"%s\"", r.Sender.Name, r.TaskName, r.Message)
 		referenceID = r.TaskID
 	}
-	_ = id // encouragement document ID; not used as referenceID — see comment above
-	err = s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, referenceID)
-	if err != nil {
-		// Log error but don't fail the operation since encouragement was already created
+	if err := s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, referenceID); err != nil {
 		slog.Error("Failed to create encouragement notification in database", "error", err, "receiver_id", r.Receiver)
 	}
 

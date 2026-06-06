@@ -302,6 +302,46 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBala
 	s.Contains(err.Error(), "insufficient encouragement balance")
 }
 
+func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_RecordsKudosOnTask() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	taskID := primitive.NewObjectID()
+	s.seedCategoryWithTask(receiver.ID, taskID, "Morning run")
+	s.setUserEncouragementBalance(sender.ID, 5)
+
+	senderInfo, err := s.service.GetSenderInfo(sender.ID)
+	s.Require().NoError(err)
+
+	newEnc := &encouragement.EncouragementDocumentInternal{
+		Sender:       *senderInfo,
+		Receiver:     receiver.ID,
+		Message:      "Great progress!",
+		Scope:        "task",
+		CategoryName: "Health",
+		TaskName:     "Morning run",
+		TaskID:       taskID,
+		Type:         "message",
+	}
+
+	result, err := s.service.CreateEncouragement(newEnc)
+	s.NoError(err)
+	s.NotNil(result)
+
+	task := s.findTask(receiver.ID, taskID)
+	s.Require().Len(task.Encouragements, 1)
+	k := task.Encouragements[0]
+	s.Equal("Great progress!", k.Message)
+	s.Equal("message", k.Type)
+	s.Equal(sender.ID, k.Sender.ID)
+	s.Equal(sender.DisplayName, k.Sender.Name)
+	encID, _ := primitive.ObjectIDFromHex(result.ID)
+	s.Equal(encID, k.EncouragementID)
+
+	balance, err := s.service.GetUserBalance(sender.ID)
+	s.NoError(err)
+	s.Equal(4, balance)
+}
+
 // ========================================
 // UpdatePartialEncouragement Tests
 // ========================================
@@ -635,4 +675,32 @@ func (s *EncouragementServiceTestSuite) setUserEncouragementBalance(userID primi
 		bson.M{"$set": bson.M{"encouragements": balance}},
 	)
 	s.Require().NoError(err)
+}
+
+// seedCategoryWithTask inserts a category owned by ownerID containing one task.
+func (s *EncouragementServiceTestSuite) seedCategoryWithTask(ownerID, taskID primitive.ObjectID, content string) {
+	cat := types.CategoryDocument{
+		ID:   primitive.NewObjectID(),
+		Name: "Health",
+		User: ownerID,
+		Tasks: []types.TaskDocument{
+			{ID: taskID, Content: content, UserID: ownerID},
+		},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, cat)
+	s.Require().NoError(err)
+}
+
+// findTask reads the embedded task with taskID from a category owned by ownerID.
+func (s *EncouragementServiceTestSuite) findTask(ownerID, taskID primitive.ObjectID) types.TaskDocument {
+	var cat types.CategoryDocument
+	err := s.Collections["categories"].FindOne(s.Ctx, bson.M{"user": ownerID, "tasks._id": taskID}).Decode(&cat)
+	s.Require().NoError(err)
+	for _, t := range cat.Tasks {
+		if t.ID == taskID {
+			return t
+		}
+	}
+	s.Require().Fail("task not found in category")
+	return types.TaskDocument{}
 }
