@@ -13,9 +13,10 @@ type Props = {
     following: boolean;
     id?: string;
     contactName?: string; // Optional: The name from device contacts
+    width?: number; // Optional: override the fixed carousel width (e.g. to fill a grid column)
 };
 
-const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) => {
+const ContactCard = ({ name, icon, handle, following, id, contactName, width }: Props) => {
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
     const router = useRouter();
@@ -29,7 +30,7 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
     const displayHandle = handle.startsWith("@") ? handle : `@${handle}`;
 
     return (
-        <TouchableOpacity style={styles.container} onPress={handlePress}>
+        <TouchableOpacity style={[styles.container, width != null && { width, marginRight: 0 }]} onPress={handlePress}>
             <CachedImage
                 source={{ uri: icon }}
                 style={StyleSheet.absoluteFillObject}
@@ -37,7 +38,7 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
                 variant="medium"
                 blurRadius={2}
             />
-            
+
             <LinearGradient
                 colors={["transparent", "rgba(0,0,0,0.5)"]}
                 style={StyleSheet.absoluteFillObject}
@@ -46,16 +47,16 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
             />
 
             <View style={styles.contentContainer}>
-                <ThemedText 
-                    type="captionLight" 
+                <ThemedText
+                    type="captionLight"
                     style={styles.handleText}
                 >
                     {displayHandle}
                 </ThemedText>
-                
+
                 <View style={styles.nameRow}>
-                    <ThemedText 
-                        type="defaultSemiBold" 
+                    <ThemedText
+                        type="defaultSemiBold"
                         style={styles.nameText}
                         lightColor="#FFFFFF"
                         darkColor="#FFFFFF"
@@ -63,8 +64,8 @@ const ContactCard = ({ name, icon, handle, following, id, contactName }: Props) 
                     >
                         {name}
                     </ThemedText>
-                    <ThemedText 
-                        type="defaultSemiBold" 
+                    <ThemedText
+                        type="defaultSemiBold"
                         style={styles.arrowText}
                         lightColor="#FFFFFF"
                         darkColor="#FFFFFF"

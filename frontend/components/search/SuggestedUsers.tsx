@@ -1,14 +1,17 @@
 import React, { useCallback } from "react";
-import { View, StyleSheet, FlatList } from "react-native";
+import { View, StyleSheet, FlatList, Pressable } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import ContactCard from "@/components/cards/ContactCard";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import type { UserExtendedReference } from "@/api/profile";
 
 type SuggestedUsersProps = {
     users: UserExtendedReference[];
+    onSeeMore?: () => void;
 };
 
-const SuggestedUsersComponent: React.FC<SuggestedUsersProps> = ({ users }) => {
+const SuggestedUsersComponent: React.FC<SuggestedUsersProps> = ({ users, onSeeMore }) => {
+    const ThemedColor = useThemeColor();
     const renderUser = useCallback(
         ({ item }: { item: UserExtendedReference }) => (
             <ContactCard
@@ -28,9 +31,16 @@ const SuggestedUsersComponent: React.FC<SuggestedUsersProps> = ({ users }) => {
 
     return (
         <View style={styles.suggestedUsersSection}>
-            <ThemedText type="defaultSemiBold" style={styles.suggestedUsersHeader}>
-                Suggested Users
-            </ThemedText>
+            <View style={styles.suggestedUsersHeader}>
+                <ThemedText type="defaultSemiBold">Suggested Users</ThemedText>
+                {onSeeMore && (
+                    <Pressable onPress={onSeeMore} hitSlop={8}>
+                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                            See more
+                        </ThemedText>
+                    </Pressable>
+                )}
+            </View>
             <FlatList
                 data={users}
                 renderItem={renderUser}
@@ -50,10 +60,13 @@ const styles = StyleSheet.create({
     suggestedUsersHeader: {
         marginBottom: 12,
         paddingHorizontal: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
     },
     usersList: {
         paddingHorizontal: 16,
-        paddingBottom: 3, 
+        paddingBottom: 3,
     },
 });
 

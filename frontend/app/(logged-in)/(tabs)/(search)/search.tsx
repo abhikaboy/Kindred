@@ -37,6 +37,7 @@ import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import { UsersThree, SquaresFour } from "phosphor-react-native";
 import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
@@ -629,6 +630,15 @@ const Search = (props: Props) => {
                         options={["Blueprints", "Friends"]}
                         selectedOption={activeTab === 0 ? "Blueprints" : "Friends"}
                         onOptionPress={handleTogglePress}
+                        accent
+                        icons={{
+                            Friends: (color, focused) => (
+                                <UsersThree size={20} color={color} weight={focused ? "fill" : "regular"} />
+                            ),
+                            Blueprints: (color, focused) => (
+                                <SquaresFour size={20} color={color} weight={focused ? "fill" : "regular"} />
+                            ),
+                        }}
                     />
                 </View>
 
@@ -662,7 +672,10 @@ const Search = (props: Props) => {
                                     <ContactsFromPhone contacts={matchedContacts} />
                                 )}
                                 {!isLoadingSuggestedUsers && suggestedUsers.length > 0 && (
-                                    <SuggestedUsers users={suggestedUsers} />
+                                    <SuggestedUsers
+                                        users={suggestedUsers}
+                                        onSeeMore={() => router.push("/(logged-in)/(tabs)/(search)/discover")}
+                                    />
                                 )}
                                 <BetterTogetherCard
                                     onSyncContacts={handleAddContacts}
