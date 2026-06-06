@@ -49,7 +49,7 @@ export const Category: React.FC<CategoryProps> = ({
         highlight.value = withTiming(isDropTarget ? 1 : 0, { duration: 180 });
     }, [isDropTarget]);
     const fillStyle = useAnimatedStyle(() => ({ opacity: highlight.value }));
-    const borderStyle = useAnimatedStyle(() => ({ opacity: highlight.value * 0.4 }));
+    const borderStyle = useAnimatedStyle(() => ({ opacity: highlight.value * 0.1 }));
 
     const measure = useCallback(() => {
         if (!drag) return;
