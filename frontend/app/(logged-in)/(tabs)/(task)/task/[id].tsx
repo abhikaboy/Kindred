@@ -30,7 +30,8 @@ import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCateg
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle } from "phosphor-react-native";
+import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 // import PagerView from "react-native-pager-view"; // Removed - was causing modal issue
 import type { components } from "@/api/generated/types";
@@ -719,6 +720,28 @@ export default function Task() {
                                                     {new Date(reminder.triggerTime).toLocaleString()}
                                                 </ThemedText>
                                             </View>
+                                        ))}
+                                    </DataCard>
+                                </ConditionalView>
+                                <ConditionalView
+                                    condition={(task?.encouragements?.length ?? 0) > 0}
+                                    key="encouragements">
+                                    <DataCard
+                                        title={`Encouragements · ${task?.encouragements?.length ?? 0}`}
+                                        icon={<Sparkle size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
+                                        {task?.encouragements?.map((k) => (
+                                            <UserInfoEncouragementNotification
+                                                key={k.encouragementId}
+                                                name={k.sender.name || k.sender.handle.replace(/^@/, "")}
+                                                userId={k.sender.id}
+                                                taskName={task?.content ?? ""}
+                                                message={k.message}
+                                                icon={k.sender.icon}
+                                                time={new Date(k.timestamp).getTime()}
+                                                referenceId={task?.id ?? ""}
+                                                type="encouragement"
+                                            />
                                         ))}
                                     </DataCard>
                                 </ConditionalView>
