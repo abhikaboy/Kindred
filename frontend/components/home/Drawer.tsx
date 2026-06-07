@@ -156,7 +156,7 @@ const DrawerContent = ({
                     }}>
                     <ThemedText type="title">kindred</ThemedText>
                 </TouchableOpacity>
-                <ThemedText type="subtitle_subtle">v0.1.0</ThemedText>
+                <ThemedText type="subtitle_subtle">v1.0.4</ThemedText>
                 {/* <Image source={require("@/assets/images/Checkmark.png")} style={{ width: 32, height: 26 }} /> */}
             </View>
             <TouchableOpacity
@@ -400,7 +400,6 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
 const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number; workspaceIcon?: string; workspaceColor?: string }) => {
     const ThemedColor = useThemeColor();
     const isSelected = props.selected === props.title;
-    // Left accent uses the workspace color, falling back to the foreground.
     const accentColor = props.workspaceColor ?? ThemedColor.tertiary;
 
     const IconComponent = props.workspaceIcon
@@ -453,8 +452,8 @@ const styles = (ThemedColor) =>
             justifyContent: "flex-start",
             alignItems: "flex-start",
             paddingTop: 64,
-            backgroundColor: ThemedColor.lightened,
-            width: Dimensions.get("screen").width * 0.75,
+            backgroundColor: ThemedColor.background,
+            width: Dimensions.get("screen").width * 0.85,
             zIndex: 80,
         },
         bottomSheetContent: {

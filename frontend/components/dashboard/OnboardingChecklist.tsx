@@ -340,10 +340,10 @@ const ChecklistRow: React.FC<ChecklistRowProps> = ({
             <View style={{ flex: 1 }}>
                 <ThemedText
                     type="default"
-                    style={{
-                        color: completed ? ThemedColor.caption : undefined,
-                        textDecorationLine: completed ? 'line-through' : 'none',
-                    }}>
+                    style={[
+                        { textDecorationLine: completed ? 'line-through' : 'none' },
+                        completed ? { color: ThemedColor.caption } : null,
+                    ]}>
                     {label}
                 </ThemedText>
                 {sublabel && (
