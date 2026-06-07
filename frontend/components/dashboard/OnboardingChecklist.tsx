@@ -47,10 +47,6 @@ const TOTAL_ITEMS = ITEM_KEYS.length;
 const CELEBRATION_HOLD_MS = 2500;
 const CELEBRATION_FADE_MS = 350;
 
-// TEMP(testing): force the card to render with every step actionable so all four
-// sheets are reachable regardless of completion/dismissal. Remove before merging.
-const FORCE_SHOW = true;
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const FALLBACK_CARD_WIDTH = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
 
@@ -112,9 +108,8 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
     const computedCompleted = useMemo(() => (completion ? computeCompletedItems(completion) : []), [completion]);
     const totalDone = completion ? Object.values(completion).filter(Boolean).length : 0;
     const remaining = TOTAL_ITEMS - totalDone;
-    // TEMP(testing): with FORCE_SHOW, every item is actionable so all four sheets are reachable.
-    const visible = FORCE_SHOW ? ITEM_KEYS : computedVisible;
-    const completed = FORCE_SHOW ? [] : computedCompleted;
+    const visible = computedVisible;
+    const completed = computedCompleted;
     // Only the top incomplete item gets the highlighted "Next step" treatment.
     const nextKey = visible[0] ?? null;
     const restIncomplete = visible.slice(1);
@@ -207,7 +202,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
     // `celebrating` keeps the card alive through the finish animation even
     // though shouldShowCard flips to false the instant all items are done.
     if (!completion || dismissed === null) return null;
-    if (!FORCE_SHOW && !shouldShowCard(completion, dismissed) && !celebrating) return null;
+    if (!shouldShowCard(completion, dismissed) && !celebrating) return null;
 
     return (
         <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18, opacity: cardOpacity }}>
