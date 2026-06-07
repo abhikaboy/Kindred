@@ -5396,6 +5396,12 @@ export interface components {
              */
             encouragements: number;
         };
+        KudosSender: {
+            handle: string;
+            icon: string;
+            id: string;
+            name: string;
+        };
         ListCalendarsOutputBody: {
             /**
              * Format: uri
@@ -6373,6 +6379,7 @@ export interface components {
             content: string;
             /** Format: date-time */
             deadline?: string;
+            encouragements?: components["schemas"]["TaskKudos"][];
             flexInfo?: components["schemas"]["FlexInstanceInfo"];
             id: string;
             integration?: string;
@@ -6455,6 +6462,13 @@ export interface components {
              * @description Filter tasks with start date on or before this time (ISO8601)
              */
             startTimeTo?: string;
+        };
+        TaskKudos: {
+            encouragementId: string;
+            message: string;
+            sender: components["schemas"]["KudosSender"];
+            timestamp: string;
+            type: string;
         };
         TemplateTaskDocument: {
             /**

@@ -10183,6 +10183,23 @@ components:
             required:
                 - encouragements
                 - congratulations
+        KudosSender:
+            type: object
+            additionalProperties: false
+            properties:
+                handle:
+                    type: string
+                icon:
+                    type: string
+                id:
+                    type: string
+                name:
+                    type: string
+            required:
+                - id
+                - handle
+                - name
+                - icon
         ListCalendarsOutputBody:
             type: object
             additionalProperties: false
@@ -12060,6 +12077,10 @@ components:
                 deadline:
                     type: string
                     format: date-time
+                encouragements:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskKudos'
                 flexInfo:
                     $ref: '#/components/schemas/FlexInstanceInfo'
                 id:
@@ -12190,6 +12211,26 @@ components:
                     type: string
                     description: Filter tasks with start date on or before this time (ISO8601)
                     format: date-time
+        TaskKudos:
+            type: object
+            additionalProperties: false
+            properties:
+                encouragementId:
+                    type: string
+                message:
+                    type: string
+                sender:
+                    $ref: '#/components/schemas/KudosSender'
+                timestamp:
+                    type: string
+                type:
+                    type: string
+            required:
+                - encouragementId
+                - sender
+                - message
+                - timestamp
+                - type
         TemplateTaskDocument:
             type: object
             additionalProperties: false
