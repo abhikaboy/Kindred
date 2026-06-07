@@ -342,6 +342,70 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskScope_Record
 	s.Equal(4, balance)
 }
 
+func (s *EncouragementServiceTestSuite) TestCreateEncouragement_TaskDeleted_StillSucceeds() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	missingTaskID := primitive.NewObjectID() // no category seeded for this task
+	s.setUserEncouragementBalance(sender.ID, 5)
+
+	senderInfo, err := s.service.GetSenderInfo(sender.ID)
+	s.Require().NoError(err)
+
+	newEnc := &encouragement.EncouragementDocumentInternal{
+		Sender:       *senderInfo,
+		Receiver:     receiver.ID,
+		Message:      "Still counts",
+		Scope:        "task",
+		CategoryName: "Health",
+		TaskName:     "Ghost task",
+		TaskID:       missingTaskID,
+		Type:         "message",
+	}
+
+	result, err := s.service.CreateEncouragement(newEnc)
+	s.NoError(err)
+	s.NotNil(result)
+
+	// Balance decremented and encouragement persisted despite no task to push to.
+	balance, err := s.service.GetUserBalance(sender.ID)
+	s.NoError(err)
+	s.Equal(4, balance)
+
+	encID, _ := primitive.ObjectIDFromHex(result.ID)
+	var found encouragement.EncouragementDocumentInternal
+	err = s.Collections["encouragements"].FindOne(s.Ctx, bson.M{"_id": encID}).Decode(&found)
+	s.NoError(err)
+}
+
+func (s *EncouragementServiceTestSuite) TestCreateEncouragement_RepeatAppends() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	taskID := primitive.NewObjectID()
+	s.seedCategoryWithTask(receiver.ID, taskID, "Read a book")
+	s.setUserEncouragementBalance(sender.ID, 5)
+
+	senderInfo, err := s.service.GetSenderInfo(sender.ID)
+	s.Require().NoError(err)
+
+	mk := func(msg string) *encouragement.EncouragementDocumentInternal {
+		return &encouragement.EncouragementDocumentInternal{
+			Sender: *senderInfo, Receiver: receiver.ID, Message: msg,
+			Scope: "task", CategoryName: "Health", TaskName: "Read a book",
+			TaskID: taskID, Type: "message",
+		}
+	}
+
+	_, err = s.service.CreateEncouragement(mk("first"))
+	s.Require().NoError(err)
+	_, err = s.service.CreateEncouragement(mk("second"))
+	s.Require().NoError(err)
+
+	task := s.findTask(receiver.ID, taskID)
+	s.Require().Len(task.Encouragements, 2)
+	s.Equal("first", task.Encouragements[0].Message)
+	s.Equal("second", task.Encouragements[1].Message)
+}
+
 // ========================================
 // UpdatePartialEncouragement Tests
 // ========================================
