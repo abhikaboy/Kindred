@@ -175,7 +175,10 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 			Encouragements int `bson:"encouragements"`
 		}
 		if err := s.Users.FindOne(sessCtx, bson.M{"_id": r.Sender.ID}).Decode(&u); err != nil {
-			return nil, err
+			if err == mongo.ErrNoDocuments {
+				return nil, fmt.Errorf("sender not found")
+			}
+			return nil, fmt.Errorf("failed to read sender balance: %w", err)
 		}
 		if u.Encouragements <= 0 {
 			return nil, fmt.Errorf("insufficient encouragement balance: user has %d encouragements remaining", u.Encouragements)
@@ -199,6 +202,9 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 
 		// 4. Task scope: push a self-contained kudos onto the embedded task.
 		//    Missing task (matchedCount == 0) is logged and skipped, not fatal.
+		if encouragement.Scope == "task" && !encouragement.TaskID.IsZero() && s.Categories == nil {
+			slog.Warn("categories collection unavailable; task kudos not recorded", "taskId", encouragement.TaskID.Hex())
+		}
 		if encouragement.Scope == "task" && !encouragement.TaskID.IsZero() && s.Categories != nil {
 			kudos := types.TaskKudos{
 				EncouragementID: encouragement.ID,

@@ -84,7 +84,6 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 
 	// Create internal document for database operations
 	internalDoc := EncouragementDocumentInternal{
-		ID:           primitive.NewObjectID(),
 		Sender:       *senderInfo,
 		Receiver:     receiverID,
 		Message:      input.Body.Message,
