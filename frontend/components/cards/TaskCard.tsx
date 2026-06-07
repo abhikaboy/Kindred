@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import EditPost from "../modals/edit/EditPost";
 import { Task } from "@/api/types";
+import { isTaskEncouraged, encouragedCardColors } from "./encouragedTask";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
 import { useTasks } from "@/contexts/tasksContext";
@@ -93,6 +94,8 @@ const TaskCard = ({
     const [showEncourageModal, setShowEncourageModal] = useState(false);
     const [showCongratulateModal, setShowCongratulateModal] = useState(false);
     const ThemedColor = useThemeColor();
+    const encouraged = isTaskEncouraged(task);
+    const encColors = encouragedCardColors(ThemedColor.primary);
     const { setTask, updateTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
@@ -443,14 +446,21 @@ const TaskCard = ({
         <TouchableOpacity
             style={[
                 styles.container,
-                {
-                    backgroundColor: ThemedColor.lightenedCard,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                    ...(task?.isPhantom
-                        ? { opacity: 0.45, borderStyle: "dashed" as const }
-                        : null),
-                },
+                encouraged
+                    ? {
+                          backgroundColor: encColors.background,
+                          borderWidth: 1,
+                          borderColor: encColors.background,
+                          ...encColors.glow,
+                      }
+                    : {
+                          backgroundColor: ThemedColor.lightenedCard,
+                          borderWidth: 1,
+                          borderColor: ThemedColor.tertiary,
+                      },
+                task?.isPhantom
+                    ? { opacity: 0.45, borderStyle: "dashed" as const }
+                    : null,
             ]}
             disabled={
                 Boolean(task?.isPhantom) ||
@@ -471,7 +481,7 @@ const TaskCard = ({
             <View style={styles.row}>
                 <View style={styles.contentContainer}>
                     {highlightContent ? (
-                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={[styles.content, encouraged ? { color: encColors.text } : null]} type="default">
                             {content}
                             {dateDisplay && (
                                 <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
@@ -480,10 +490,10 @@ const TaskCard = ({
                             )}
                         </ThemedText>
                     ) : (
-                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={styles.content} type="default">
+                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={[styles.content, encouraged ? { color: encColors.text } : null]} type="default">
                             {content}
                             {task?.workingOnSince && (
-                                <ThemedText type="default" style={{ color: ThemedColor.primary }}>
+                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor.primary }}>
                                     {" "}(active)
                                 </ThemedText>
                             )}
@@ -516,7 +526,7 @@ const TaskCard = ({
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                                 <Repeat size={20} color={ThemedColor.caption} weight="regular" />
                                 {task?.flexInfo && (
-                                    <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
+                                    <ThemedText type="caption" style={{ color: encouraged ? encColors.secondaryText : ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
                                         {task.flexInfo.instanceNumber}/{task.flexInfo.target}
                                     </ThemedText>
                                 )}
