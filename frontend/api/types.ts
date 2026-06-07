@@ -63,6 +63,21 @@ export interface RecurDetails {
     flex?: FlexDetails;
 }
 
+export interface KudosSender {
+    id: string;
+    handle: string;
+    name: string;
+    icon: string;
+}
+
+export interface TaskKudos {
+    encouragementId: string;
+    sender: KudosSender;
+    message: string;
+    timestamp: string;
+    type: string; // "message" | "image"
+}
+
 export interface Task {
     id: string;
     priority: number;
@@ -98,6 +113,7 @@ export interface Task {
     timeCompleted?: string;
     timeTaken?: string;
     posted?: boolean; // Whether a post has been created for this task
+    encouragements?: TaskKudos[];
     isPhantom?: boolean;
     nextGenerated?: string;
 }
