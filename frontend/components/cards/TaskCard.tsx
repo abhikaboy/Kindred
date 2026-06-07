@@ -6,6 +6,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import EditPost from "../modals/edit/EditPost";
 import { Task } from "@/api/types";
 import { isTaskEncouraged, encouragedCardColors } from "./encouragedTask";
+import EncouragerAvatars from "./EncouragerAvatars";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
 import { useTasks } from "@/contexts/tasksContext";
@@ -449,7 +450,7 @@ const TaskCard = ({
                 encouraged
                     ? {
                           backgroundColor: encColors.background,
-                          borderWidth: 1.5,
+                          borderWidth: 1,
                           borderColor: encColors.border,
                           ...encColors.glow,
                       }
@@ -507,6 +508,13 @@ const TaskCard = ({
                     {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                 </View>
                 <View style={styles.iconRow}>
+                    <ConditionalView condition={encouraged}>
+                        <EncouragerAvatars
+                            encouragements={task?.encouragements ?? []}
+                            ringColor={ThemedColor.background}
+                            placeholderColor={ThemedColor.primary}
+                        />
+                    </ConditionalView>
                     {onPostPress && (
                         <TouchableOpacity
                             testID="task-card-post-button"
@@ -539,10 +547,14 @@ const TaskCard = ({
                         {value}
                     </ThemedText> */}
 
-                        {/* Show priority dot — purple when actively working */}
-                        <View
-                            style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
-                        />
+                        {/* Encouraged tasks show a sparkle in place of the priority dot */}
+                        {encouraged ? (
+                            <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
+                        ) : (
+                            <View
+                                style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                            />
+                        )}
                     </ConditionalView>
                     <ConditionalView condition={encourage}>
                         <Sparkle
