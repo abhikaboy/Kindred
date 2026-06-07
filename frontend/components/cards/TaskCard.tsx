@@ -449,8 +449,8 @@ const TaskCard = ({
                 encouraged
                     ? {
                           backgroundColor: encColors.background,
-                          borderWidth: 1,
-                          borderColor: encColors.background,
+                          borderWidth: 1.5,
+                          borderColor: encColors.border,
                           ...encColors.glow,
                       }
                     : {
@@ -484,7 +484,7 @@ const TaskCard = ({
                         <ThemedText numberOfLines={2} ellipsizeMode="tail" style={[styles.content, encouraged ? { color: encColors.text } : null]} type="default">
                             {content}
                             {dateDisplay && (
-                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor[dateDisplay.color] }}>
                                     {" "}{dateDisplay.text}
                                 </ThemedText>
                             )}
@@ -498,7 +498,7 @@ const TaskCard = ({
                                 </ThemedText>
                             )}
                             {dateDisplay && (
-                                <ThemedText type="default" style={{ color: ThemedColor[dateDisplay.color] }}>
+                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor[dateDisplay.color] }}>
                                     {" "}{dateDisplay.text}
                                 </ThemedText>
                             )}
