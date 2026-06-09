@@ -8,7 +8,7 @@ import type { PostKudos } from "@/api/types";
 // glow (the encouraged-task accent, scoped to the icons). The glow lives on a
 // wrapping View, not the image: expo-image doesn't reliably render shadow
 // props, and iOS needs an opaque surface to cast from.
-const SIZE = 22;
+const SIZE = 28;
 const MAX = 3;
 
 type Props = {
