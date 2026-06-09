@@ -7,12 +7,15 @@ import {
     Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { SpeakerHigh, SpeakerSlash } from "phosphor-react-native";
 import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Carousel from "react-native-reanimated-carousel";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { components } from "@/api/generated/types";
+import type { MediaItem } from "@/api/media";
 
 type ImageSize = components["schemas"]["ImageSize"];
 
@@ -42,8 +45,88 @@ const SimpleImage = ({
     </TouchableOpacity>
 );
 
+// Instagram-style video: autoplay muted + loop, tap toggles sound, pauses when
+// the slide is not the active/visible one.
+const VideoSlide = ({
+    item,
+    width,
+    height,
+    active,
+}: {
+    item: MediaItem;
+    width: number;
+    height: number;
+    active: boolean;
+}) => {
+    const [muted, setMuted] = useState(true);
+    const player = useVideoPlayer(item.url, (p) => {
+        p.loop = true;
+        p.muted = true;
+    });
+
+    React.useEffect(() => {
+        if (active) {
+            player.play();
+        } else {
+            player.pause();
+        }
+    }, [active, player]);
+
+    const toggleMute = () => {
+        const next = !muted;
+        setMuted(next);
+        player.muted = next;
+    };
+
+    return (
+        <View style={{ width, height }}>
+            <VideoView
+                player={player}
+                style={{ width, height, backgroundColor: "#000" }}
+                contentFit="cover"
+                nativeControls={false}
+            />
+            <TouchableOpacity onPress={toggleMute} activeOpacity={0.8} style={styles.muteBadge}>
+                {muted ? (
+                    <SpeakerSlash size={16} color="#fff" weight="fill" />
+                ) : (
+                    <SpeakerHigh size={16} color="#fff" weight="fill" />
+                )}
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+const MediaSlide = ({
+    item,
+    width,
+    height,
+    active,
+    onLongPress,
+}: {
+    item: MediaItem;
+    width: number;
+    height: number;
+    active: boolean;
+    onLongPress?: () => void;
+}) => {
+    if (item.type === "video") {
+        return <VideoSlide item={item} width={width} height={height} active={active} />;
+    }
+    return (
+        <SimpleImage
+            source={{ uri: item.url }}
+            style={[styles.image, { width, height }]}
+            onLongPress={onLongPress}
+        />
+    );
+};
+
 export type PostCardMediaProps = {
     images: string[];
+    media?: MediaItem[];
+    /** When true, videos pause (e.g. card scrolled off-screen in the feed). */
+    videoPaused?: boolean;
     dual?: string | null;
     size?: ImageSize;
     /** Called when the user long-presses an image (opens fullscreen modal in real card) */
@@ -59,6 +142,8 @@ export type PostCardMediaProps = {
 
 const PostCardMedia = ({
     images,
+    media,
+    videoPaused = false,
     dual,
     size,
     onImageLongPress,
@@ -73,6 +158,15 @@ const PostCardMedia = ({
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [derivedImageHeight, setDerivedImageHeight] = useState<number | null>(null);
 
+    // Prefer media[]; fall back to images[] for older callers.
+    const items: MediaItem[] = useMemo(
+        () =>
+            media && media.length > 0
+                ? media
+                : images.map((url) => ({ type: "image", url, width: 0, height: 0 }) as MediaItem),
+        [media, images]
+    );
+
     const imageHeight = imageHeightProp ?? derivedImageHeight ?? containerWidth * 0.75;
 
     const computeHeight = React.useCallback((w: number, imgW: number, imgH: number) => {
@@ -84,7 +178,7 @@ const PostCardMedia = ({
     // Derive height from size metadata when no override is provided
     React.useEffect(() => {
         if (imageHeightProp !== undefined) return;
-        if (images.length === 0) {
+        if (items.length === 0) {
             setDerivedImageHeight(containerWidth * 0.75);
             onImageHeightChange?.(containerWidth * 0.75);
             return;
@@ -93,9 +187,13 @@ const PostCardMedia = ({
             const constrained = computeHeight(containerWidth, size.width, size.height);
             setDerivedImageHeight(constrained);
             onImageHeightChange?.(constrained);
-        } else {
+        } else if (items[0].width > 0 && items[0].height > 0) {
+            const constrained = computeHeight(containerWidth, items[0].width, items[0].height);
+            setDerivedImageHeight(constrained);
+            onImageHeightChange?.(constrained);
+        } else if (items[0].type === "image") {
             RNImage.getSize(
-                images[0],
+                items[0].url,
                 (w, h) => {
                     const constrained = computeHeight(containerWidth, w, h);
                     setDerivedImageHeight(constrained);
@@ -107,10 +205,14 @@ const PostCardMedia = ({
                     onImageHeightChange?.(fallback);
                 }
             );
+        } else {
+            const fallback = containerWidth * 0.75;
+            setDerivedImageHeight(fallback);
+            onImageHeightChange?.(fallback);
         }
-    }, [images.join(","), size?.width, size?.height, containerWidth, imageHeightProp]);
+    }, [items.map((m) => m.url).join(","), size?.width, size?.height, containerWidth, imageHeightProp]);
 
-    if (!images || images.length === 0) return null;
+    if (items.length === 0) return null;
 
     const renderDualOverlay = () => {
         if (!dual) return null;
@@ -145,11 +247,13 @@ const PostCardMedia = ({
             style={styles.imageContainer}
             onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
         >
-            {images.length === 1 ? (
+            {items.length === 1 ? (
                 <View style={{ width: containerWidth, height: imageHeight }}>
-                    <SimpleImage
-                        source={{ uri: images[0] }}
-                        style={[styles.image, { width: containerWidth, height: imageHeight }]}
+                    <MediaSlide
+                        item={items[0]}
+                        width={containerWidth}
+                        height={imageHeight}
+                        active={!videoPaused}
                         onLongPress={onImageLongPress ? () => onImageLongPress(0) : undefined}
                     />
                     {renderDualOverlay()}
@@ -162,10 +266,10 @@ const PostCardMedia = ({
                         width={containerWidth}
                         height={imageHeight}
                         style={[styles.carousel, { width: containerWidth }]}
-                        data={images}
+                        data={items}
                         onSnapToItem={(index) => setCurrentImageIndex(index)}
                         scrollAnimationDuration={300}
-                        enabled={images.length > 1}
+                        enabled={items.length > 1}
                         windowSize={2}
                         onConfigurePanGesture={(panGesture) => {
                             panGesture
@@ -175,9 +279,11 @@ const PostCardMedia = ({
                         }}
                         renderItem={({ item, index }) => (
                             <View style={{ width: containerWidth, height: imageHeight }}>
-                                <SimpleImage
-                                    source={{ uri: item }}
-                                    style={[styles.image, { width: containerWidth, height: imageHeight }]}
+                                <MediaSlide
+                                    item={item}
+                                    width={containerWidth}
+                                    height={imageHeight}
+                                    active={!videoPaused && index === currentImageIndex}
                                     onLongPress={onImageLongPress ? () => onImageLongPress(index) : undefined}
                                 />
                                 {renderDualOverlay()}
@@ -188,13 +294,13 @@ const PostCardMedia = ({
                     <View style={styles.imageCounter}>
                         <View style={styles.imageCounterBackground}>
                             <ThemedText style={styles.imageCounterText}>
-                                {currentImageIndex + 1}/{images.length}
+                                {currentImageIndex + 1}/{items.length}
                             </ThemedText>
                         </View>
                     </View>
 
                     <View style={styles.dotIndicators}>
-                        {images.map((_, index) => (
+                        {items.map((_, index) => (
                             <View
                                 key={index}
                                 style={[
@@ -283,6 +389,18 @@ const styles = StyleSheet.create({
     dualImage: {
         width: "100%",
         height: "100%",
+    },
+    muteBadge: {
+        position: "absolute",
+        bottom: 12,
+        right: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 10,
     },
     dualRemoveButton: {
         position: "absolute",
