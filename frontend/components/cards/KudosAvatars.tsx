@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
         width: SIZE,
         height: SIZE,
         borderRadius: SIZE / 2,
-        shadowOpacity: 0.6,
+        shadowOpacity: 0.45,
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 0 },
-        elevation: 6,
+        elevation: 5,
     },
     avatar: {
         width: SIZE,

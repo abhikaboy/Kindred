@@ -14,10 +14,10 @@ import {
     User,
     FileText,
     Archive,
+    Plus,
 } from "phosphor-react-native";
-import * as PhosphorIcons from "phosphor-react-native";
 import { router, usePathname, type Href } from "expo-router";
-import Feather from "@expo/vector-icons/Feather";
+import { WorkspaceDrawerItem } from "./WorkspaceDrawerItem";
 import {
     House,
     Calendar,
@@ -159,7 +159,8 @@ const DrawerContent = ({
                 <ThemedText type="subtitle_subtle">v1.0.4</ThemedText>
                 {/* <Image source={require("@/assets/images/Checkmark.png")} style={{ width: 32, height: 26 }} /> */}
             </View>
-            <TouchableOpacity
+
+            {/* <TouchableOpacity
                 style={{
                     paddingTop: 12,
                     width: "100%",
@@ -175,28 +176,35 @@ const DrawerContent = ({
                 }}>
                 <ThemedText type="default">Settings</ThemedText>
                 <Gear size={20} color={ThemedColor.text} weight="regular" />
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={{
-                    paddingTop: 4,
-                    width: "100%",
-                    paddingBottom: 16,
-                    marginBottom: Dimensions.get("screen").height * 0.01,
-                    paddingHorizontal: HORIZONTAL_PADDING,
-                    borderTopWidth: 0,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                }}
-                onPress={() => setCreating(true)}>
-                <ThemedText type="default">+ New Workspace</ThemedText>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
+            <DrawerItem
+                    title="Home"
+                    selected={currentSelected}
+                    icon={<House size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", "")}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
+                    title="Settings"
+                    selected={currentSelected}
+                    icon={<Gear size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(profile)/settings")}
+                    onLongPress={() => {}}
+                />
+                <DrawerItem
+                    title="New Workspace"
+                    selected={currentSelected}
+                    icon={<Plus size={20} color={ThemedColor.primary} weight="regular" />}
+                    onPress={() => setCreating(true)}
+                    onLongPress={() => {}}
+                />
 
             <ScrollView
                 ref={drawerScrollRef}
                 style={{ width: "100%" }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.2 }}>
-                <View
+                {/* <View
                     style={{
                         paddingHorizontal: HORIZONTAL_PADDING,
                         flexDirection: "row",
@@ -205,15 +213,8 @@ const DrawerContent = ({
                     }}>
                     <House size={16} color={ThemedColor.caption} weight="regular" />
                     <ThemedText type="subtitle_subtle">HOME</ThemedText>
-                </View>
-                <DrawerItem
-                    title="Home"
-                    selected={currentSelected}
-                    icon={<House size={20} color={ThemedColor.primary} weight="regular" />}
-                    onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", "")}
-                    onLongPress={() => {}}
-                />
-                <DrawerItem
+                </View> */}
+                {/* <DrawerItem
                     title="Today"
                     selected={currentSelected}
                     icon={<CalendarBlank size={20} color={ThemedColor.primary} weight="regular" />}
@@ -227,7 +228,7 @@ const DrawerContent = ({
                     icon={<ChatTeardropText size={20} color={ThemedColor.primary} weight="regular" />}
                     onPress={() => handlePush("/text-dump")}
                     onLongPress={() => {}}
-                />
+                /> */}
                 {/* <DrawerItem
                     title="Import"
                     selected={currentSelected}
@@ -397,52 +398,6 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
     );
 });
 
-const WorkspaceDrawerItem = (props: DrawerItemProps & { taskCount?: number; workspaceIcon?: string; workspaceColor?: string }) => {
-    const ThemedColor = useThemeColor();
-    const isSelected = props.selected === props.title;
-    const accentColor = props.workspaceColor ?? ThemedColor.tertiary;
-
-    const IconComponent = props.workspaceIcon
-        ? ((PhosphorIcons as any)[props.workspaceIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
-        : undefined;
-
-    return (
-        <TouchableOpacity
-            style={[
-                {
-                    flexDirection: "row",
-                    alignItems: "center",
-                    width: "100%",
-                    paddingVertical: 12,
-                    paddingHorizontal: HORIZONTAL_PADDING,
-                    gap: 8,
-                },
-                isSelected ? { backgroundColor: ThemedColor.tertiary } : undefined,
-            ]}
-            onPress={props.onPress}
-            onLongPress={props.onLongPress}>
-            {/* Full-height accent so consecutive rows form one connected rail. */}
-            <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, width: 3, backgroundColor: accentColor }} />
-            {/* Fixed-width icon column so text aligns with the other drawer items. */}
-            <View style={{ width: 24, marginLeft: 12, alignItems: "center" }}>
-                {IconComponent ? (
-                    <IconComponent size={18} color={props.workspaceColor ?? ThemedColor.primary} weight="regular" />
-                ) : (
-                    <Feather name="grid" size={16} color={ThemedColor.caption} />
-                )}
-            </View>
-            <ThemedText type="default" style={{ flexShrink: 1, fontWeight: "600" }} numberOfLines={2}>
-                {props.title}
-            </ThemedText>
-            {props.taskCount !== undefined && (
-                <ThemedText type="default" style={{ color: ThemedColor.caption, marginLeft: "auto", flexShrink: 0 }}>
-                    {props.taskCount}
-                </ThemedText>
-            )}
-        </TouchableOpacity>
-    );
-};
-
 // Convert styles to a function to properly access ThemedColor
 const styles = (ThemedColor) =>
     StyleSheet.create({
@@ -453,7 +408,9 @@ const styles = (ThemedColor) =>
             alignItems: "flex-start",
             paddingTop: 64,
             backgroundColor: ThemedColor.background,
-            width: Dimensions.get("screen").width * 0.85,
+            // Fill the DrawerLayout panel (DRAWER_WIDTH) exactly so the 85% drawer
+            // neither peeks past the panel nor leaves a gap inside it.
+            width: "100%",
             zIndex: 80,
         },
         bottomSheetContent: {

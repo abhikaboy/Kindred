@@ -14,7 +14,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditWorkspace from "@/components/modals/edit/EditWorkspace";
@@ -207,7 +207,7 @@ const WorkspaceContent = ({
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"

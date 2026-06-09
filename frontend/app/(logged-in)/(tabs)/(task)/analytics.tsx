@@ -5,7 +5,7 @@ import { Drawer } from "@/components/home/Drawer";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Feather } from "@expo/vector-icons";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Entry from "@/components/daily/Entry";
 import PagerView from "react-native-pager-view";
@@ -113,7 +113,7 @@ const Daily = (props: Props) => {
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"

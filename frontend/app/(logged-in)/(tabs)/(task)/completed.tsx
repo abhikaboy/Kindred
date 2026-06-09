@@ -6,7 +6,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useDrawer } from "@/contexts/drawerContext";
 import { getCompletedTasksAPI, PaginatedCompletedTasksResponse } from "@/api/task";
 import TaskCard from "@/components/cards/TaskCard";
@@ -191,7 +191,7 @@ const CompletedTasks = () => {
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"

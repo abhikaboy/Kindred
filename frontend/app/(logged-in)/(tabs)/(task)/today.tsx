@@ -8,7 +8,7 @@ import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useDrawer } from "@/contexts/drawerContext";
 
 const Today = () => {
@@ -30,7 +30,7 @@ const Today = () => {
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, Animated } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
-import { WorkspaceGrid } from "./WorkspaceGrid";
+import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
@@ -333,29 +333,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 ) : undefined
             }
         >
-            <MotiView style={{ gap: 16, marginTop: 12 }}>
-                {/* Focus - always visible at the top */}
-                {/* <BasicCard>
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                        }}>
-                        <ThemedText type="default">Focus</ThemedText>
-                        <Switch
-                            value={focusMode}
-                            onValueChange={toggleFocusMode}
-                            trackColor={{
-                                false: ThemedColor.caption + "40",
-                                true: ThemedColor.primary,
-                            }}
-                            thumbColor={focusMode ? ThemedColor.tint : "#f4f3f4"}
-                            ios_backgroundColor={ThemedColor.caption + "40"}
-                        />
-                    </View>
-                </BasicCard> */}
-
+            <MotiView style={{ gap: 16, marginTop: 0 }}>
 
                 {/* Dashboard Stats - always visible */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
@@ -425,15 +403,15 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 )}
 
-                {/* Recent Workspaces Section */}
+                {/* Personal Workspaces Section (replaces Recent Workspaces; WorkspaceGrid kept but unused) */}
                 <View
                     style={{
                         marginHorizontal: HORIZONTAL_PADDING,
                         gap: 16,
                     }}>
-                    <View style={{ marginBottom: 2 }}>
+                    <View style={{ marginBottom: 8 }}>
                         <SectionHeader
-                            title="RECENT WORKSPACES"
+                            title="PERSONAL WORKSPACES"
                             visible={dashboardConfig.recent_workspaces}
                             onToggleVisibility={() => toggleSection("recent_workspaces")}
                             right={
@@ -449,20 +427,27 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 108 }}>
                     {dashboardConfig.recent_workspaces && (
-                        <View
-                            style={{
-                                marginHorizontal: HORIZONTAL_PADDING,
-                                gap: 16,
-                                marginBottom: 18,
-                            }}>
-                            {/* Workspace Grid */}
-                            <WorkspaceGrid
-                                workspaces={workspaces}
-                                displayWorkspaces={displayWorkspaces}
-                                fetchingWorkspaces={fetchingWorkspaces}
-                                onWorkspacePress={onWorkspaceSelect}
-                                ThemedColor={ThemedColor}
-                            />
+                        <View style={{ marginBottom: 18 }}>
+                            {workspaces
+                                .filter((workspace: any) => !workspace.isBlueprint)
+                                .map((workspace: any) => {
+                                    const taskCount = workspace.categories.reduce(
+                                        (total: number, category: any) =>
+                                            total + (category.tasks?.filter((task: any) => task.active !== false).length || 0),
+                                        0
+                                    );
+                                    return (
+                                        <WorkspaceDrawerItem
+                                            key={workspace.name}
+                                            title={workspace.name}
+                                            selected=""
+                                            taskCount={taskCount}
+                                            workspaceIcon={workspace.icon ?? undefined}
+                                            workspaceColor={workspace.color ?? undefined}
+                                            onPress={() => onWorkspaceSelect(workspace.name)}
+                                        />
+                                    );
+                                })}
                         </View>
                     )}
                 {/* Recently Completed Tasks */}

@@ -1,4 +1,5 @@
-import { Dimensions, StyleSheet, View, InteractionManager } from "react-native";
+import { StyleSheet, View, InteractionManager } from "react-native";
+import { DRAWER_WIDTH } from "@/constants/spacing";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
@@ -160,7 +161,7 @@ const Daily = (props: Props) => {
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"

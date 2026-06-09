@@ -11,6 +11,7 @@ import { Category } from "@/components/category";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { Task } from "@/api/types";
 import ConditionalView from "@/components/ui/ConditionalView";
+import IconPickerOverlay from "@/components/ui/IconPickerOverlay";
 import SlidingText from "@/components/ui/SlidingText";
 import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -91,7 +92,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     workspaceName,
 }) => {
     const ThemedColor = useThemeColor();
-    const { workspaces, categories: globalCategories, selected: globalSelected, getWorkspace } = useTasks();
+    const { workspaces, categories: globalCategories, selected: globalSelected, getWorkspace, updateWorkspaceIconColor } = useTasks();
     // Use prop if provided, otherwise fall back to global selected
     const selected = workspaceName || globalSelected;
     const currentWorkspace = selected ? getWorkspace(selected) : undefined;
@@ -110,6 +111,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
+    const [showIconPicker, setShowIconPicker] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
     const [workspaceAction, setWorkspaceAction] = useState<"sort" | "filter" | "group" | null>(null);
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
@@ -257,8 +259,31 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                 onActionHandled={() => setWorkspaceAction(null)}
                 skipMenu={workspaceAction !== null}
             />
+            <IconPickerOverlay
+                visible={showIconPicker}
+                onClose={() => setShowIconPicker(false)}
+                onSelect={(name, color) => {
+                    if (selected) updateWorkspaceIconColor(selected, name, color);
+                    setShowIconPicker(false);
+                }}
+            />
 
             <ThemedView style={{ flex: 1 }}>
+                {/* Workspace color trim — 3px bar pinned to the very top edge. */}
+                {currentWorkspace?.color && (
+                    <View
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: 3,
+                            backgroundColor: currentWorkspace.color,
+                            zIndex: 10,
+                        }}
+                    />
+                )}
+
                 {/* Scrollable Content */}
                 <ScrollView
                     ref={scrollViewRef}
@@ -283,15 +308,25 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         paddingBottom: 16,
                                         width: "100%",
                                     }}>
-                                    <TouchableOpacity
-                                        style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, alignSelf: "flex-start" }}
-                                        onLongPress={reopenWorkspaceSettings}
-                                        activeOpacity={1}
-                                    >
-                                        <ThemedText type="title" style={styles.title}>
-                                            {selected || "Good Morning! ☀"}
-                                        </ThemedText>
-                                    </TouchableOpacity>
+                                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, alignSelf: "flex-start" }}>
+                                        {/* Icon — tap to open the picker and update the workspace's icon/color. */}
+                                        <TouchableOpacity onPress={() => setShowIconPicker(true)} activeOpacity={0.7} hitSlop={8}>
+                                            {WorkspaceIconComponent ? (
+                                                <WorkspaceIconComponent size={28} color={currentWorkspace?.color ?? ThemedColor.primary} weight="regular" />
+                                            ) : (
+                                                <Feather name="grid" size={24} color={ThemedColor.caption} />
+                                            )}
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={{ flex: 1, alignSelf: "flex-start" }}
+                                            onLongPress={reopenWorkspaceSettings}
+                                            activeOpacity={1}
+                                        >
+                                            <ThemedText type="title" style={styles.title}>
+                                                {selected || "Good Morning! ☀"}
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                                     <ThemedText type="lightBody" style={{ color: ThemedColor.caption, flex: 1 }}>

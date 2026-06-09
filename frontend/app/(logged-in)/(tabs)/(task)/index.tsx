@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet, View, TouchableOpacity, Animated } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Animated } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
@@ -9,7 +9,7 @@ import { DrawerLayout } from "react-native-gesture-handler";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ConditionalView from "@/components/ui/ConditionalView";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { TodayContent } from "@/components/task/TodayContent";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -294,7 +294,7 @@ const HomeContent = ({
             ref={drawerRef}
             hideStatusBar
             edgeWidth={50}
-            drawerWidth={Dimensions.get("screen").width * 0.75}
+            drawerWidth={DRAWER_WIDTH}
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"
