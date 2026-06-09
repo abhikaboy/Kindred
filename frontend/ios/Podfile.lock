@@ -324,6 +324,10 @@ PODS:
   - ExpoUI (55.0.11):
     - ExpoModulesCore
     - React-RCTFabric
+  - ExpoVideo (55.0.17):
+    - ExpoModulesCore
+  - ExpoVideoThumbnails (55.0.15):
+    - ExpoModulesCore
   - ExpoWebBrowser (55.0.14):
     - ExpoModulesCore
   - ExpoWidgets (55.0.13):
@@ -1770,6 +1774,28 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-compressor (1.19.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-get-random-values (1.11.0):
     - React-Core
   - react-native-pager-view (8.0.0):
@@ -2786,6 +2812,8 @@ DEPENDENCIES:
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - "ExpoUI (from `../node_modules/@expo/ui/ios`)"
+  - ExpoVideo (from `../node_modules/expo-video/ios`)
+  - ExpoVideoThumbnails (from `../node_modules/expo-video-thumbnails/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - ExpoWidgets (from `../node_modules/expo-widgets/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
@@ -2828,6 +2856,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-compressor (from `../node_modules/react-native-compressor`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
   - react-native-performance (from `../node_modules/react-native-performance`)
@@ -3002,6 +3031,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-system-ui/ios"
   ExpoUI:
     :path: "../node_modules/@expo/ui/ios"
+  ExpoVideo:
+    :path: "../node_modules/expo-video/ios"
+  ExpoVideoThumbnails:
+    :path: "../node_modules/expo-video-thumbnails/ios"
   ExpoWebBrowser:
     :path: "../node_modules/expo-web-browser/ios"
   ExpoWidgets:
@@ -3085,6 +3118,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-compressor:
+    :path: "../node_modules/react-native-compressor"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
   react-native-pager-view:
@@ -3242,6 +3277,8 @@ SPEC CHECKSUMS:
   ExpoSymbols: 8b63e859ba013df1f2fc666f535fddb3d5270569
   ExpoSystemUI: 709410d6e473378d568e5df28fe409cade0ba530
   ExpoUI: 5e98fba91241cd4bdd976729be965ab71d7f761d
+  ExpoVideo: 5e7aee124df2f7d9ffe1bd4dbf63119417b340a3
+  ExpoVideoThumbnails: 0264f7a30d0a28b950ccb39c5b2be14fca5eccac
   ExpoWebBrowser: f88a3ba50a025b673236a46d2654a49b985953d6
   ExpoWidgets: aaff7ba384c779790dfd7a53dfad574e25f017d0
   EXUpdatesInterface: 39d05400a9226c438565dbaaa8447b5f0672ba45
@@ -3294,6 +3331,7 @@ SPEC CHECKSUMS:
   React-logger: d0632d799fbd3507cdd5406f72489a83ed5f9163
   React-Mapbuffer: 274cb203819492f7fb594bbb3a1f3f5061fa794d
   React-microtasksnativemodule: 563b4dcc8b8570814d6de4fc1196f48d2944acd4
+  react-native-compressor: 8ff19b4c424d1e52004b470410e11f538b4717d0
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
   react-native-pager-view: adc7d78123fb395e03a70d19e8d75805b49838b5
   react-native-performance: 23f81dc28408c06b4af1f6060cf7afa0e5eef013
