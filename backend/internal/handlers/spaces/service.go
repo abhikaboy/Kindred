@@ -146,6 +146,10 @@ func getFileExtension(contentType string) string {
 		return ".gif"
 	case "image/webp":
 		return ".webp"
+	case "video/mp4":
+		return ".mp4"
+	case "video/quicktime":
+		return ".mov"
 	default:
 		return ".jpg" // Default to jpg
 	}
@@ -167,4 +171,19 @@ func ValidateImageType(contentType string) bool {
 		}
 	}
 	return false
+}
+
+// ValidateVideoType checks if the content type is a supported video type.
+func ValidateVideoType(contentType string) bool {
+	switch contentType {
+	case "video/mp4", "video/quicktime":
+		return true
+	default:
+		return false
+	}
+}
+
+// ValidateMediaType accepts any supported image or video type.
+func ValidateMediaType(contentType string) bool {
+	return ValidateImageType(contentType) || ValidateVideoType(contentType)
 }

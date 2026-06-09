@@ -88,9 +88,9 @@ func (h *Handler) CreatePresignedUrlHuma(ctx context.Context, input *CreatePresi
 }
 
 func (h *Handler) GenerateImageUploadURL(ctx context.Context, input *GenerateImageUploadURLInput) (*GenerateImageUploadURLOutput, error) {
-	// Validate file type
-	if !ValidateImageType(input.FileType) {
-		return nil, huma.Error400BadRequest("Invalid file type. Supported types: image/jpeg, image/png, image/gif, image/webp", nil)
+	// Validate file type (image or video)
+	if !ValidateMediaType(input.FileType) {
+		return nil, huma.Error400BadRequest("Invalid file type. Supported: image/jpeg, image/png, image/gif, image/webp, video/mp4, video/quicktime", nil)
 	}
 
 	// Get bucket name from configuration
