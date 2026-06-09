@@ -51,9 +51,18 @@ export default function CongratulatorsBottomSheetModal({ visible, setVisible, ku
                                     {item.sender.name}
                                 </ThemedText>
                                 {item.message ? (
-                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }} numberOfLines={2}>
-                                        {item.message}
-                                    </ThemedText>
+                                    item.type === "image" ? (
+                                        <CachedImage
+                                            source={{ uri: item.message }}
+                                            contentFit="cover"
+                                            cachePolicy="memory-disk"
+                                            style={styles.kudosImage}
+                                        />
+                                    ) : (
+                                        <ThemedText type="caption" style={{ color: ThemedColor.caption }} numberOfLines={2}>
+                                            {item.message}
+                                        </ThemedText>
+                                    )
                                 ) : null}
                             </View>
                         </TouchableOpacity>
@@ -70,4 +79,5 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         title: { marginBottom: 4 },
         row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
         avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: ThemedColor.tertiary },
+        kudosImage: { width: 120, height: 120, borderRadius: 10, marginTop: 4 },
     });

@@ -5785,6 +5785,7 @@ export interface components {
             sender: components["schemas"]["KudosSender"];
             /** Format: date-time */
             timestamp: string;
+            type: string;
         };
         PostMetadata: {
             /** Format: date-time */

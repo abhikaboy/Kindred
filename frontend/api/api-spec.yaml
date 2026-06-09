@@ -10957,11 +10957,14 @@ components:
                 timestamp:
                     type: string
                     format: date-time
+                type:
+                    type: string
             required:
                 - congratulationId
                 - sender
                 - message
                 - timestamp
+                - type
         PostMetadata:
             type: object
             additionalProperties: false

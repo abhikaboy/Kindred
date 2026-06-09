@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Confetti } from "phosphor-react-native";
 import { ThemedText } from "../ThemedText";
 import PreviewIcon from "../profile/PreviewIcon";
+import CachedImage from "../CachedImage";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {
@@ -10,12 +11,15 @@ type Props = {
     message: string;
     icon: string;
     time?: string;
+    // "image" => message holds an image/GIF URL; otherwise it's text.
+    type?: string;
 };
 
 // A congratulation rendered inline in a post's comment thread. Distinct from a
 // normal comment: confetti accent + primary "congratulated" label, no reply.
-const CongratulationCommentRow = ({ name, message, icon, time }: Props) => {
+const CongratulationCommentRow = ({ name, message, icon, time, type }: Props) => {
     const ThemedColor = useThemeColor();
+    const isImage = type === "image";
 
     return (
         <View style={styles.container}>
@@ -35,9 +39,18 @@ const CongratulationCommentRow = ({ name, message, icon, time }: Props) => {
                     )}
                 </View>
                 {message ? (
-                    <ThemedText type="default" style={[styles.message, { color: ThemedColor.text }]}>
-                        {message}
-                    </ThemedText>
+                    isImage ? (
+                        <CachedImage
+                            source={{ uri: message }}
+                            style={styles.image}
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                        />
+                    ) : (
+                        <ThemedText type="default" style={[styles.message, { color: ThemedColor.text }]}>
+                            {message}
+                        </ThemedText>
+                    )
                 ) : null}
             </View>
         </View>
@@ -58,5 +71,11 @@ const styles = StyleSheet.create({
         width: "100%",
         flexShrink: 1,
         lineHeight: 20,
+    },
+    image: {
+        width: 160,
+        height: 160,
+        borderRadius: 12,
+        marginTop: 2,
     },
 });

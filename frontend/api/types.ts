@@ -83,6 +83,7 @@ export interface PostKudos {
     sender: KudosSender;
     message: string;
     timestamp: string;
+    type?: string; // "message" | "image" (image => message holds the URL/GIF)
 }
 
 export interface Task {

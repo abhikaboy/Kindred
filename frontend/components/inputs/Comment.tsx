@@ -33,6 +33,7 @@ export type CommentProps = {
     };
     // Set on synthetic rows derived from post kudos; rendered as a congratulation.
     isKudos?: boolean;
+    kudosType?: string; // "message" | "image" for kudos rows
 };
 
 export type PopupProp = {
@@ -165,6 +166,7 @@ const Comment = ({
             (kudos ?? []).map((k) => ({
                 id: k.congratulationId,
                 isKudos: true,
+                kudosType: k.type,
                 user: {
                     _id: k.sender.id,
                     display_name: k.sender.name,
@@ -390,6 +392,7 @@ const Comment = ({
                             message={comment.content}
                             icon={comment.user.profile_picture}
                             time={getTimeAgo(comment.metadata.createdAt)}
+                            type={comment.kudosType}
                         />
                     </TouchableOpacity>
                 );

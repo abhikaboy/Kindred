@@ -456,6 +456,7 @@ type PostKudos struct {
 	Sender           KudosSender        `bson:"sender" json:"sender"`
 	Message          string             `bson:"message" json:"message"`
 	Timestamp        time.Time          `bson:"timestamp" json:"timestamp"`
+	Type             string             `bson:"type" json:"type"` // "message" | "image" (image => message holds the URL)
 }
 
 type CommentDocument struct {
