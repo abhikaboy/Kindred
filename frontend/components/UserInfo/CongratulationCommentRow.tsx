@@ -26,7 +26,7 @@ const CongratulationCommentRow = ({ name, message, icon, time }: Props) => {
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                     <Confetti size={14} weight="fill" color={ThemedColor.primary} />
                     <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                        {name || "Someone"} congratulated you
+                        {name || "Someone"} sent a congratulations
                     </ThemedText>
                     {time !== undefined && (
                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
