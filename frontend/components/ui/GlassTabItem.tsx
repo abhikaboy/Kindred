@@ -13,6 +13,8 @@ type Props = {
     renderIcon?: IconRenderer;
     accessibilityLabel?: string;
     badge?: number;
+    // Badge background; defaults to brand primary. Use a red for alerts.
+    badgeColor?: string;
     // When true, inactive icons invert against the backdrop (difference blend)
     // so they stay legible over any content behind the glass. Off for avatars.
     invert?: boolean;
@@ -22,7 +24,7 @@ type Props = {
 // tabBarIcon option) with a light haptic on press and an optional count badge.
 // Forwards a ref to its Pressable so callers can anchor a popover to the tab.
 export const GlassTabItem = React.forwardRef<View, Props>(function GlassTabItem(
-    { focused, onPress, onLongPress, renderIcon, accessibilityLabel, badge, invert = true },
+    { focused, onPress, onLongPress, renderIcon, accessibilityLabel, badge, badgeColor, invert = true },
     ref
 ) {
     const ThemedColor = useThemeColor();
@@ -89,7 +91,7 @@ export const GlassTabItem = React.forwardRef<View, Props>(function GlassTabItem(
                             height: 18,
                             paddingHorizontal: 5,
                             borderRadius: 9,
-                            backgroundColor: ThemedColor.primary,
+                            backgroundColor: badgeColor ?? ThemedColor.primary,
                             alignItems: "center",
                             justifyContent: "center",
                         }}>

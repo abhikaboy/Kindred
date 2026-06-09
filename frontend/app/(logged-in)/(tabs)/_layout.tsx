@@ -7,6 +7,7 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { useTasks } from "@/contexts/tasksContext";
+import { useFriendRequestCount } from "@/hooks/useFriendRequests";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 import { LiquidGlassTabBar } from "@/components/ui/LiquidGlassTabBar";
 import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
@@ -63,6 +64,9 @@ export default function TabLayout() {
         return startTodayTasks.length + dueTodayTasks.length + windowTasks.length;
     }, [startTodayTasks, dueTodayTasks, windowTasks]);
 
+    // Pending friend requests (red badge on the Search tab)
+    const friendRequestCount = useFriendRequestCount();
+
     // Screens where the whole tab bar hides
     const hideTabBarScreens = ["/blueprint/create", "/voice", "/review"];
     // Screens where only the FAB hides (tab bar stays visible)
@@ -83,7 +87,11 @@ export default function TabLayout() {
                 tabBar={(props) => (
                     <LiquidGlassTabBar
                         {...props}
-                        badges={{ "(task)": todayTaskCount > 0 ? todayTaskCount : undefined }}
+                        badges={{
+                            "(task)": todayTaskCount > 0 ? todayTaskCount : undefined,
+                            "(search)": friendRequestCount > 0 ? friendRequestCount : undefined,
+                        }}
+                        badgeColors={{ "(search)": ThemedColor.error }}
                         visible={!shouldHideTabBar}
                         switcherTabName="(task)"
                     />

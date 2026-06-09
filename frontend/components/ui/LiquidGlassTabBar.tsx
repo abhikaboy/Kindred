@@ -25,6 +25,8 @@ const CAPSULE_INSET = 8;
 
 type Props = BottomTabBarProps & {
     badges?: Record<string, number | undefined>;
+    // Per-route badge background override (defaults to brand primary).
+    badgeColors?: Record<string, string>;
     visible?: boolean;
     // Long-pressing this tab opens the workspace switcher anchored to it.
     switcherTabName?: string;
@@ -32,7 +34,7 @@ type Props = BottomTabBarProps & {
 
 // Floating "liquid glass" tab bar: a detached blurred pill with a highlight
 // capsule that springs between tabs. Reuses each screen's tabBarIcon option.
-export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visible = true, switcherTabName }: Props) {
+export function LiquidGlassTabBar({ state, descriptors, navigation, badges, badgeColors, visible = true, switcherTabName }: Props) {
     const ThemedColor = useThemeColor();
     const scheme = useColorScheme();
     const insets = useSafeAreaInsets();
@@ -199,6 +201,7 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, visi
                                     renderIcon={options.tabBarIcon}
                                     accessibilityLabel={options.tabBarAccessibilityLabel}
                                     badge={badges?.[route.name]}
+                                    badgeColor={badgeColors?.[route.name]}
                                     invert={route.name !== "(profile)"}
                                 />
                             );

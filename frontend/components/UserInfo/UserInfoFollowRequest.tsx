@@ -9,6 +9,8 @@ import { acceptConnectionAPI, deleteConnectionAPI } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { useQueryClient } from "@tanstack/react-query";
+import { FRIEND_REQUESTS_KEY } from "@/hooks/useFriendRequests";
 
 type Props = {
     name: string;
@@ -24,6 +26,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
 
     const animateOut = (callback: () => void) => {
         Animated.parallel([
@@ -47,6 +50,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
             setIsLoading(true);
             await acceptConnectionAPI(connectionID);
             capture(AnalyticsEvents.FOLLOW_REQUEST_ACCEPTED, {});
+            queryClient.invalidateQueries({ queryKey: FRIEND_REQUESTS_KEY });
             showToast(`Accepted ${name}'s friend request`, 'success');
 
             // Only remove from state if API call was successful
@@ -66,6 +70,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
             setIsLoading(true);
             await deleteConnectionAPI(connectionID);
             capture(AnalyticsEvents.FOLLOW_REQUEST_REJECTED, {});
+            queryClient.invalidateQueries({ queryKey: FRIEND_REQUESTS_KEY });
             showToast(`Denied ${name}'s friend request`, 'success');
 
             // Only remove from state if API call was successful
