@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity, Platform, Keyboard, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
+import CongratulationCommentRow from "../UserInfo/CongratulationCommentRow";
+import type { PostKudos } from "@/api/types";
 import { ThemedText } from "../ThemedText";
 import SendButton from "./SendButton";
 import CommentInput from "./CommentInput";
@@ -29,10 +31,13 @@ export type CommentProps = {
         isDeleted: boolean;
         lastEdited: string;
     };
+    // Set on synthetic rows derived from post kudos; rendered as a congratulation.
+    isKudos?: boolean;
 };
 
 export type PopupProp = {
     comments: CommentProps[];
+    kudos?: PostKudos[];
     postId?: string;
     ref: React.RefObject<BottomSheetModal>;
     onClose: () => void;
@@ -44,6 +49,7 @@ export type PopupProp = {
 
 const Comment = ({
     comments,
+    kudos,
     postId,
     onCommentAdded,
     onCommentDeleted,
@@ -151,6 +157,32 @@ const Comment = ({
     const sortedComments = useMemo(() => {
         return sortCommentsHierarchically(localComments.filter((comment) => !deletingComments.has(comment.id)));
     }, [localComments, deletingComments]);
+
+    // Kudos rendered as synthetic root "comments" so they interleave with real
+    // comments by timestamp. They never have a parentId, so they sort as roots.
+    const kudosItems = useMemo<CommentProps[]>(
+        () =>
+            (kudos ?? []).map((k) => ({
+                id: k.congratulationId,
+                isKudos: true,
+                user: {
+                    _id: k.sender.id,
+                    display_name: k.sender.name,
+                    handle: k.sender.handle ?? "",
+                    profile_picture: k.sender.icon,
+                },
+                content: k.message,
+                metadata: { createdAt: k.timestamp, isDeleted: false, lastEdited: k.timestamp },
+            })),
+        [kudos]
+    );
+
+    // Merged list (comments + kudos) that the thread renders. The visible
+    // "Comments (N)" count below stays comments-only on purpose.
+    const feedItems = useMemo(() => {
+        const comments = localComments.filter((comment) => !deletingComments.has(comment.id));
+        return sortCommentsHierarchically([...comments, ...kudosItems]);
+    }, [localComments, deletingComments, kudosItems]);
 
     // gets the time to show in how long ago a comment was made - memoized
     const getTimeAgo = useCallback((createdAt: string): string => {
@@ -344,6 +376,25 @@ const Comment = ({
     // Render comment item - memoized
     const renderCommentItem = useCallback(
         ({ item: comment }: { item: CommentProps }) => {
+            if (comment.isKudos) {
+                return (
+                    <TouchableOpacity
+                        style={styles.commentItem}
+                        onPress={() => {
+                            onClose();
+                            if (comment.user._id) router.push(`/account/${comment.user._id}`);
+                        }}
+                        activeOpacity={0.7}>
+                        <CongratulationCommentRow
+                            name={comment.user.display_name}
+                            message={comment.content}
+                            icon={comment.user.profile_picture}
+                            time={getTimeAgo(comment.metadata.createdAt)}
+                        />
+                    </TouchableOpacity>
+                );
+            }
+
             const canDelete = canDeleteComment(comment.user._id);
             const isDeleting = deletingComments.has(comment.id);
 
@@ -396,7 +447,7 @@ const Comment = ({
                 <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
             </View>
             <BottomSheetFlatList
-                data={sortedComments}
+                data={feedItems}
                 renderItem={renderCommentItem}
                 keyExtractor={(item) => item.id}
                 ListEmptyComponent={ListEmptyComponent}

@@ -5645,6 +5645,7 @@ export interface components {
             dual?: string;
             groups?: string[];
             images: string[];
+            kudos?: components["schemas"]["PostKudos"][];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
                 [key: string]: string[];
@@ -5653,6 +5654,13 @@ export interface components {
             taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
+        };
+        PostKudos: {
+            congratulationId: string;
+            message: string;
+            sender: components["schemas"]["KudosSender"];
+            /** Format: date-time */
+            timestamp: string;
         };
         PostMetadata: {
             /** Format: date-time */

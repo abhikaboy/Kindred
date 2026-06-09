@@ -31,6 +31,8 @@ import PostCardFooter from "./PostCardFooter";
 import { getUsersByIds, type UserExtendedReference } from "@/api/profile";
 import { buildReactionGroups, type ReactionGroup } from "@/utils/reactions";
 import ReactionsBottomSheetModal from "@/components/modals/ReactionsBottomSheetModal";
+import CongratulatorsBottomSheetModal from "@/components/modals/CongratulatorsBottomSheetModal";
+import type { PostKudos } from "@/api/types";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useRouter } from "expo-router";
@@ -60,6 +62,7 @@ type Props = {
     dual?: string;
     id?: string;
     comments?: CommentProps[];
+    kudos?: PostKudos[];
     category?: string;
     taskName?: string;
     size?: ImageSize;
@@ -84,6 +87,7 @@ const PostCard = React.memo(({
     images,
     dual,
     comments,
+    kudos = [],
     category,
     taskName,
     id,
@@ -101,6 +105,7 @@ const PostCard = React.memo(({
     const [imageHeight, setImageHeight] = useState<number>(512);
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
     const [reactionsSheetVisible, setReactionsSheetVisible] = useState(false);
+    const [congratulatorsSheetVisible, setCongratulatorsSheetVisible] = useState(false);
     const [reactionGroups, setReactionGroups] = useState<ReactionGroup[]>([]);
     const [reactionsLoading, setReactionsLoading] = useState(false);
     const [reactionsError, setReactionsError] = useState<string | null>(null);
@@ -647,12 +652,14 @@ const PostCard = React.memo(({
                         category={category}
                         taskName={taskName}
                         reactions={localReactions}
+                        kudos={kudos}
                         userId={userId}
                         currentUserId={user?._id}
                         onReaction={handleReaction}
                         hasUserReacted={hasUserReacted}
                         onCongratulatePress={handleCongratulatePress}
                         onOpenComments={handleOpenComments}
+                        onKudosPress={() => setCongratulatorsSheetVisible(true)}
                         commentCount={currentComments.length}
                         onLongPressReaction={handleLongPressReaction}
                     />
@@ -713,6 +720,7 @@ const PostCard = React.memo(({
                     }}>
                     <Comment
                         comments={currentComments}
+                        kudos={kudos}
                         postId={id}
                         ref={bottomSheetModalRef}
                         onClose={handleClose}
@@ -750,6 +758,13 @@ const PostCard = React.memo(({
                     loading={reactionsLoading}
                     error={reactionsError}
                     onRetry={() => loadReactionViewers(localReactions)}
+                />
+
+                {/* Congratulators bottom sheet */}
+                <CongratulatorsBottomSheetModal
+                    visible={congratulatorsSheetVisible}
+                    setVisible={setCongratulatorsSheetVisible}
+                    kudos={kudos}
                 />
         </View>
     );

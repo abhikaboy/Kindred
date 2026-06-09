@@ -6,6 +6,7 @@ import PagerView from "react-native-pager-view";
 import NotificationsView from "@/components/notifications/NotificationsView";
 import PostCard from "@/components/cards/PostCard";
 import type { TaggedUser } from "@/components/cards/types";
+import type { PostKudos } from "@/api/types";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
@@ -67,6 +68,7 @@ type PostData = {
     };
     reactions: { [emoji: string]: string[] } | {};
     comments: any[] | null;
+    kudos?: PostKudos[];
     metadata: {
         createdAt: string;
         updatedAt: string;
@@ -533,6 +535,7 @@ export default function Feed() {
                         time={postTime}
                         reactions={postReactions}
                         comments={post.comments}
+                        kudos={post.kudos}
                         category={post.task?.category?.name}
                         taskName={post.task?.content}
                         onHide={handleHidePost}
@@ -572,6 +575,7 @@ export default function Feed() {
                     taskName={post.task?.content}
                     reactions={postReactions}
                     comments={post.comments || []}
+                    kudos={post.kudos}
                     images={post.images || []}
                     size={post.size}
                     onReactionUpdate={() => refreshSinglePost(post._id)}

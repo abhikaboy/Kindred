@@ -10668,6 +10668,10 @@ components:
                     type: array
                     items:
                         type: string
+                kudos:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PostKudos'
                 metadata:
                     $ref: '#/components/schemas/PostMetadata'
                 reactions:
@@ -10694,6 +10698,24 @@ components:
                 - reactions
                 - comments
                 - metadata
+        PostKudos:
+            type: object
+            additionalProperties: false
+            properties:
+                congratulationId:
+                    type: string
+                message:
+                    type: string
+                sender:
+                    $ref: '#/components/schemas/KudosSender'
+                timestamp:
+                    type: string
+                    format: date-time
+            required:
+                - congratulationId
+                - sender
+                - message
+                - timestamp
         PostMetadata:
             type: object
             additionalProperties: false
