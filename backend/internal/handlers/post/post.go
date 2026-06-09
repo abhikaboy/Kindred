@@ -65,6 +65,15 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		Metadata:  types.NewPostMetadata(),
 	}
 
+	// Prefer the unified media[] when provided; keep Images in sync for back-compat.
+	if len(input.Body.Media) > 0 {
+		doc.Media = ToMediaItems(input.Body.Media)
+		doc.Images = DeriveImagesFromMedia(doc.Media)
+		if doc.Size == nil {
+			doc.Size = PrimarySizeFromMedia(doc.Media)
+		}
+	}
+
 	// Handle blueprint with isPublic flag
 	if input.Body.BlueprintID != nil {
 		blueprintID, err := primitive.ObjectIDFromHex(*input.Body.BlueprintID)

@@ -25,8 +25,19 @@ type CreatePostOutput struct {
 	} `json:"user_stats"`
 }
 
+type MediaItemInput struct {
+	Type         string  `json:"type" validate:"required,oneof=image video"`
+	URL          string  `json:"url" validate:"required,url"`
+	ThumbnailURL *string `json:"thumbnailUrl,omitempty" validate:"omitempty,url"`
+	Width        int     `json:"width"`
+	Height       int     `json:"height"`
+	DurationMs   *int    `json:"durationMs,omitempty"`
+	Bytes        int     `json:"bytes,omitempty"`
+}
+
 type CreatePostParams struct {
 	Images            []string                         `json:"images" validate:"omitempty,dive,url"`
+	Media             []MediaItemInput                 `json:"media,omitempty" validate:"omitempty,max=10,dive"`
 	Dual              *string                          `json:"dual,omitempty" validate:"omitempty,url"`
 	Caption           string                           `json:"caption" validate:"required"`
 	Size              *types.ImageSize                 `json:"size,omitempty"`
