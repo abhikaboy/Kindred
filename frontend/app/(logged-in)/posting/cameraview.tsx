@@ -11,7 +11,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
-import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
+import { assetsToPickedMedia } from "@/api/media";
+import { Play } from "phosphor-react-native";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
@@ -25,6 +27,8 @@ export default function Posting() {
     const [permission, requestPermission] = useCameraPermissions();
     const camera = useRef<CameraView>(null);
     const [photos, setPhotos] = useState<string[]>([]);
+    // Tracks which picked URIs are videos (camera captures are always images).
+    const [mediaTypesByUri, setMediaTypesByUri] = useState<Record<string, "image" | "video">>({});
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
     const [flash, setFlash] = useState<FlashMode>("off");
     const [viewMode, setViewMode] = useState<"camera" | "preview">("camera");
@@ -115,14 +119,25 @@ export default function Posting() {
     const pickImage = async () => {
         capture(AnalyticsEvents.POSTING_GALLERY_SELECTED, {});
         const result = await pickImageFromLibrary({
+            mediaTypes: IMAGE_AND_VIDEO_TYPES,
             allowsMultipleSelection: true,
+            videoMaxDuration: 60,
             quality: 0.5,
         });
 
         if (result && !result.canceled && result.assets && result.assets.length > 0) {
-            const newPhotos = result.assets.map((asset) => asset.uri);
+            const picked = assetsToPickedMedia(
+                result.assets.map((asset) => ({ uri: asset.uri, type: asset.type as "image" | "video" }))
+            );
             const previousLength = photos.length;
-            setPhotos([...photos, ...newPhotos]);
+            setPhotos([...photos, ...picked.map((p) => p.uri)]);
+            setMediaTypesByUri((prev) => {
+                const next = { ...prev };
+                picked.forEach((p) => {
+                    next[p.uri] = p.type;
+                });
+                return next;
+            });
             setCurrentPhotoIndex(previousLength);
             setViewMode("preview");
         }
@@ -276,6 +291,7 @@ export default function Posting() {
             pathname: "/posting/caption",
             params: {
                 photos: JSON.stringify(photos),
+                mediaTypes: JSON.stringify(mediaTypesByUri),
                 dualPhoto: dualPhoto || "",
                 taskInfo: taskInfo ? JSON.stringify(taskInfo) : null,
             },
@@ -308,10 +324,25 @@ export default function Posting() {
                         width: 60,
                         height: 60,
                         borderRadius: 8,
+                        backgroundColor: "#000",
                         borderWidth: currentPhotoIndex === index && viewMode === "preview" ? 2 : 0,
                         borderColor: ThemedColor.tint || "#9333ea",
                     }}
                 />
+                {mediaTypesByUri[item] === "video" && (
+                    <View
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            justifyContent: "center",
+                            alignItems: "center",
+                        }}>
+                        <Play size={20} color="#fff" weight="fill" />
+                    </View>
+                )}
                 <TouchableOpacity
                     onPress={(e) => {
                         e.stopPropagation();
@@ -394,6 +425,15 @@ export default function Posting() {
                                                 />
                                                 <PostCardMedia
                                                     images={[item]}
+                                                    media={[
+                                                        {
+                                                            type: mediaTypesByUri[item] ?? "image",
+                                                            url: item,
+                                                            thumbnailUrl: item,
+                                                            width: 0,
+                                                            height: 0,
+                                                        },
+                                                    ]}
                                                     dual={dualPhoto}
                                                     onDualPress={swapPhotos}
                                                     onDualRemove={removeDualPhoto}
