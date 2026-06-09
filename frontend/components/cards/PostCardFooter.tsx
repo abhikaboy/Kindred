@@ -6,8 +6,10 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { Confetti } from "phosphor-react-native";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
+import KudosAvatars from "./KudosAvatars";
 import type { SlackReaction } from "./PostCard";
 import type { TaggedUser } from "./types";
+import type { PostKudos } from "@/api/types";
 import PostCardCaption from "./PostCardCaption";
 
 export type PostCardFooterProps = {
@@ -16,6 +18,7 @@ export type PostCardFooterProps = {
     category?: string;
     taskName?: string;
     reactions?: SlackReaction[];
+    kudos?: PostKudos[];
     /** Read-only mode: disables all interactions (used in preview) */
     readOnly?: boolean;
     // Interactive-mode props (ignored when readOnly)
@@ -25,6 +28,7 @@ export type PostCardFooterProps = {
     hasUserReacted?: (emoji: string) => boolean;
     onCongratulatePress?: () => void;
     onOpenComments?: () => void;
+    onKudosPress?: () => void;
     commentCount?: number;
     onLongPressReaction?: (reaction: SlackReaction) => void;
 };
@@ -35,6 +39,7 @@ const PostCardFooter = ({
     category,
     taskName,
     reactions = [],
+    kudos = [],
     readOnly = false,
     userId,
     currentUserId,
@@ -42,6 +47,7 @@ const PostCardFooter = ({
     hasUserReacted,
     onCongratulatePress,
     onOpenComments,
+    onKudosPress,
     commentCount = 0,
     onLongPressReaction,
 }: PostCardFooterProps) => {
@@ -95,6 +101,16 @@ const PostCardFooter = ({
 
                 {!readOnly && (
                     <View style={styles.reactionsRow}>
+                        {kudos.length > 0 && (
+                            <TouchableOpacity onPress={onKudosPress} activeOpacity={0.7} style={styles.kudosCluster}>
+                                <KudosAvatars
+                                    kudos={kudos}
+                                    ringColor={ThemedColor.background}
+                                    placeholderColor={ThemedColor.primary}
+                                    glowColor={ThemedColor.primary}
+                                />
+                            </TouchableOpacity>
+                        )}
                         {reactions.map((react, index) => (
                             <ReactPills
                                 key={`${react.emoji}-${index}`}
@@ -176,6 +192,11 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 8,
         flexWrap: "wrap",
+        alignItems: "center",
+    },
+    kudosCluster: {
+        justifyContent: "center",
+        marginRight: 2,
     },
     commentButton: {
         paddingTop: 4,

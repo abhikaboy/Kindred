@@ -431,7 +431,19 @@ type PostDocument struct {
 	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
 	Comments  []CommentDocument               `bson:"comments" json:"comments"`
 
+	// Kudos recorded on this post (denormalized when a congratulation is sent).
+	Kudos []PostKudos `bson:"kudos,omitempty" json:"kudos,omitempty"`
+
 	Metadata PostMetadata `bson:"metadata" json:"metadata"`
+}
+
+// PostKudos is one congratulation recorded on a post. Denormalized (mirrors
+// TaskKudos) so the card can render the congratulator cluster without a join.
+type PostKudos struct {
+	CongratulationID primitive.ObjectID `bson:"congratulationId" json:"congratulationId"`
+	Sender           KudosSender        `bson:"sender" json:"sender"`
+	Message          string             `bson:"message" json:"message"`
+	Timestamp        time.Time          `bson:"timestamp" json:"timestamp"`
 }
 
 type CommentDocument struct {
@@ -642,6 +654,7 @@ type PostDocumentAPI struct {
 
 	Reactions map[string][]string  `json:"reactions"`
 	Comments  []CommentDocumentAPI `json:"comments"`
+	Kudos     []PostKudos          `json:"kudos,omitempty"`
 
 	Metadata PostMetadata `json:"metadata"`
 }
@@ -681,6 +694,7 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		TaggedUsers: p.TaggedUsers,
 		Reactions:   apiReactions,
 		Comments:    apiComments,
+		Kudos:       p.Kudos,
 		Metadata:    p.Metadata,
 	}
 }

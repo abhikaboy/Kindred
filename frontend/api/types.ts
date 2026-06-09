@@ -78,6 +78,13 @@ export interface TaskKudos {
     type: string; // "message" | "image"
 }
 
+export interface PostKudos {
+    congratulationId: string;
+    sender: KudosSender;
+    message: string;
+    timestamp: string;
+}
+
 export interface Task {
     id: string;
     priority: number;

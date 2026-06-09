@@ -295,6 +295,16 @@ func (s *CongratulationServiceTestSuite) TestCreateCongratulation_WithPostID() {
 	s.NoError(err)
 	s.NotNil(result)
 	s.Equal("Amazing post!", result.Message)
+
+	// The congratulation should have been appended as a kudos on the post.
+	var updatedPost types.PostDocument
+	err = s.Collections["posts"].FindOne(s.Ctx, bson.M{"_id": postID}).Decode(&updatedPost)
+	s.NoError(err)
+	s.Len(updatedPost.Kudos, 1)
+	s.Equal("Amazing post!", updatedPost.Kudos[0].Message)
+	s.Equal(user1.ID, updatedPost.Kudos[0].Sender.ID)
+	s.Equal(user1.DisplayName, updatedPost.Kudos[0].Sender.Name)
+	s.Equal(user1.ProfilePicture, updatedPost.Kudos[0].Sender.Icon)
 }
 
 func (s *CongratulationServiceTestSuite) TestCreateCongratulation_InsufficientBalance() {

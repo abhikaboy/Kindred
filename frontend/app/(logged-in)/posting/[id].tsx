@@ -165,6 +165,7 @@ export default function PostDetail() {
                             : []
                     }
                     comments={post.comments || []}
+                    kudos={post.kudos}
                     images={post.images || []}
                     size={post.size}
                     onReactionUpdate={refreshPost}
