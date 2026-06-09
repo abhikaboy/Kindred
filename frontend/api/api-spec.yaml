@@ -5157,34 +5157,6 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
-    /v1/user/setup-default-workspace:
-        post:
-            tags:
-                - categories
-                - workspaces
-                - onboarding
-            summary: Setup default workspace
-            description: Create the Kindred Guide workspace with starter tasks for new users
-            operationId: setup-default-workspace
-            parameters:
-                - name: Authorization
-                  in: header
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CategoryDocument'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tags:
         get:
             tags:

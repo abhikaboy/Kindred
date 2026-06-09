@@ -309,9 +309,22 @@ Setup default workspace with starter tasks for a new user
 */
 
 func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.ObjectID) error {
-	// Import the task package to create tasks
 	workspaceName := "🌺 Kindred Guide"
 	now := time.Now().UTC()
+
+	// Idempotency guard: if the user already has this workspace, don't seed it
+	// again. Prevents duplicate categories if setup ever runs more than once.
+	existing, err := s.categories.CountDocuments(ctx, bson.M{"user": userID, "workspaceName": workspaceName})
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelError, "Failed to check for existing default workspace",
+			slog.String("userId", userID.Hex()),
+			slog.String("error", err.Error()))
+	} else if existing > 0 {
+		slog.LogAttrs(ctx, slog.LevelInfo, "Default workspace already exists, skipping setup",
+			slog.String("userId", userID.Hex()),
+			slog.String("workspace", workspaceName))
+		return nil
+	}
 
 	// Define categories with their respective tasks
 	categoriesData := []struct {
