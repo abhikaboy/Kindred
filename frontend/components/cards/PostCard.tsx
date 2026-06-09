@@ -36,6 +36,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { useRouter } from "expo-router";
 
 type ImageSize = components["schemas"]["ImageSize"];
+type MediaItem = components["schemas"]["MediaItem"];
 
 
 export type SlackReaction = {
@@ -57,6 +58,7 @@ type Props = {
     timeTaken?: number;
     reactions?: SlackReaction[];
     images?: string[];
+    media?: MediaItem[];
     dual?: string;
     id?: string;
     comments?: CommentProps[];
@@ -82,6 +84,7 @@ const PostCard = React.memo(({
     timeTaken,
     reactions = [],
     images,
+    media,
     dual,
     comments,
     category,
@@ -128,6 +131,10 @@ const PostCard = React.memo(({
     // Memoize the first image URL for calculations
     const firstImageUrl = useMemo(() => memoizedImages?.[0], [memoizedImages]);
 
+    // Unified media (videos + images); falls back to images for legacy posts.
+    const memoizedMedia = useMemo(() => media, [media?.map((m) => m.url).join(",")]);
+    const hasMediaContent = (memoizedMedia?.length ?? 0) > 0 || (memoizedImages?.length ?? 0) > 0;
+
     useEffect(() => {
         // Only update localReactions if the reactions prop has genuinely changed
         // and we don't have pending local changes that would be overwritten
@@ -156,7 +163,7 @@ const PostCard = React.memo(({
 
     // Calculate image height when images or size data changes
     useEffect(() => {
-        if (memoizedImages && memoizedImages.length > 0) {
+        if (hasMediaContent) {
             // Check if we have valid size information
             if (memoizedSize && memoizedSize.width > 0 && memoizedSize.height > 0) {
                 // Use the provided size information to calculate height
@@ -170,18 +177,22 @@ const PostCard = React.memo(({
 
                 setImageHeight(constrainedHeight);
                 onHeightChange?.(constrainedHeight);
-            } else {
+            } else if (firstImageUrl) {
                 // Fallback to blocking image size calculation only when size data is missing/invalid
                 const timeoutId = setTimeout(() => {
                     calculateImageHeight(firstImageUrl);
                 }, 0);
                 return () => clearTimeout(timeoutId);
+            } else {
+                // Video-only post without size data — use a sensible default.
+                setImageHeight(512);
+                onHeightChange?.(512);
             }
         } else {
             setImageHeight(512);
             onHeightChange?.(512);
         }
-    }, [memoizedImages, memoizedSize, screenWidth, firstImageUrl]);
+    }, [memoizedImages, memoizedMedia, memoizedSize, screenWidth, firstImageUrl, hasMediaContent]);
 
     const calculateImageHeight = useCallback((imageUri: string) => {
         if (!imageUri) {
@@ -632,9 +643,10 @@ const PostCard = React.memo(({
                         timeLabel={formatTime(time)}
                         onOptionsPress={showPostOptions}
                     />
-                    {memoizedImages && memoizedImages.length > 0 && (
+                    {hasMediaContent && (
                         <PostCardMedia
-                            images={memoizedImages}
+                            images={memoizedImages ?? []}
+                            media={memoizedMedia}
                             dual={dual}
                             size={memoizedSize}
                             imageHeight={imageHeight}

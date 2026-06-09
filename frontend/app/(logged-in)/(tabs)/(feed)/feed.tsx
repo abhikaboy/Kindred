@@ -526,6 +526,7 @@ export default function Feed() {
                         userId={post.user?._id || ""}
                         id={post._id}
                         images={post.images}
+                        media={post.media}
                         dual={post.dual}
                         caption={post.caption}
                         taggedUsers={post.taggedUsers ?? []}
@@ -573,6 +574,7 @@ export default function Feed() {
                     reactions={postReactions}
                     comments={post.comments || []}
                     images={post.images || []}
+                    media={post.media}
                     size={post.size}
                     onReactionUpdate={() => refreshSinglePost(post._id)}
                     id={post._id}
