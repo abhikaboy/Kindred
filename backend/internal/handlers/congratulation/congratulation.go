@@ -74,6 +74,7 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		Read:         false,
 		Type:         congratulationType,
 		PostID:       postID,
+		Private:      input.Body.Private,
 	}
 
 	congratulation, err := h.service.CreateCongratulation(&internalDoc)

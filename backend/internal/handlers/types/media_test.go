@@ -21,7 +21,7 @@ func TestToAPI_DerivesMediaFromLegacyImages(t *testing.T) {
 	p := basePost()
 	p.Images = []string{"https://cdn/a.jpg", "https://cdn/b.jpg"}
 
-	api := p.ToAPI()
+	api := p.ToAPI(p.User.ID)
 
 	if len(api.Media) != 2 {
 		t.Fatalf("expected 2 media items, got %d", len(api.Media))
@@ -35,6 +35,40 @@ func TestToAPI_DerivesMediaFromLegacyImages(t *testing.T) {
 	}
 }
 
+func TestToAPI_AnonymizesPrivateKudosForNonOwner(t *testing.T) {
+	p := basePost()
+	sender := KudosSender{ID: primitive.NewObjectID(), Name: "Beaker", Icon: "https://cdn/beak.jpg"}
+	p.Kudos = []PostKudos{
+		{CongratulationID: primitive.NewObjectID(), Sender: sender, Message: "public one", Type: "message"},
+		{CongratulationID: primitive.NewObjectID(), Sender: sender, Message: "secret", Type: "message", Private: true},
+	}
+
+	// Owner sees everything, including the private sender + message.
+	ownerView := p.ToAPI(p.User.ID)
+	if len(ownerView.Kudos) != 2 {
+		t.Fatalf("owner: expected 2 kudos, got %d", len(ownerView.Kudos))
+	}
+	if ownerView.Kudos[1].Sender.Name != "Beaker" || ownerView.Kudos[1].Message != "secret" {
+		t.Fatalf("owner should see private kudos identity + message: %+v", ownerView.Kudos[1])
+	}
+
+	// A non-owner gets the private kudos anonymized: no sender, no message.
+	otherView := p.ToAPI(primitive.NewObjectID())
+	if len(otherView.Kudos) != 2 {
+		t.Fatalf("other: expected 2 kudos, got %d", len(otherView.Kudos))
+	}
+	if otherView.Kudos[0].Sender.Name != "Beaker" || otherView.Kudos[0].Message != "public one" {
+		t.Fatalf("public kudos should be intact for non-owner: %+v", otherView.Kudos[0])
+	}
+	priv := otherView.Kudos[1]
+	if !priv.Private {
+		t.Fatalf("expected private flag preserved")
+	}
+	if priv.Sender.Name != "" || !priv.Sender.ID.IsZero() || priv.Message != "" {
+		t.Fatalf("private kudos should be anonymized for non-owner: %+v", priv)
+	}
+}
+
 func TestToAPI_CarriesStoredMediaThrough(t *testing.T) {
 	p := basePost()
 	thumb := "https://cdn/thumb.jpg"
@@ -43,7 +77,7 @@ func TestToAPI_CarriesStoredMediaThrough(t *testing.T) {
 		{Type: "video", URL: "https://cdn/v.mp4", ThumbnailURL: &thumb, Width: 720, Height: 1280},
 	}
 
-	api := p.ToAPI()
+	api := p.ToAPI(p.User.ID)
 
 	if len(api.Media) != 2 {
 		t.Fatalf("expected 2 media items, got %d", len(api.Media))

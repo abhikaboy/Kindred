@@ -173,7 +173,7 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	// Prepare response with user stats
 	response := &CreatePostOutput{}
-	response.Body.PostDocumentAPI = *createdPost.ToAPI()
+	response.Body.PostDocumentAPI = *createdPost.ToAPI(userObjID)
 	response.Body.RingDelta = ringDelta
 
 	// Include user stats if available
@@ -202,9 +202,10 @@ func (h *Handler) GetPostsHuma(ctx context.Context, input *GetPostsInput) (*GetP
 		return nil, huma.Error500InternalServerError("Unable to get posts. Please try again.", err)
 	}
 
+	// Public endpoint (no auth): anonymize all private kudos by using a nil viewer.
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
-		apiPosts = append(apiPosts, *post.ToAPI())
+		apiPosts = append(apiPosts, *post.ToAPI(primitive.NilObjectID))
 	}
 
 	output := &GetPostsOutput{}
@@ -246,7 +247,7 @@ func (h *Handler) GetFriendsPostsHuma(ctx context.Context, input *GetFriendsPost
 
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
-		apiPosts = append(apiPosts, *post.ToAPI())
+		apiPosts = append(apiPosts, *post.ToAPI(userID))
 	}
 
 	output := &GetFriendsPostsOutput{}
@@ -333,7 +334,7 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 	// Convert posts to API format
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
-		apiPosts = append(apiPosts, *post.ToAPI())
+		apiPosts = append(apiPosts, *post.ToAPI(userID))
 	}
 
 	// Convert tasks to FeedTaskData
@@ -500,9 +501,13 @@ func (h *Handler) GetUserGroupsHuma(ctx context.Context, input *GetUserGroupsInp
 
 func (h *Handler) GetPostsByBlueprintHuma(ctx context.Context, input *GetPostsByBlueprintInput) (*GetPostsByBlueprintOutput, error) {
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	viewerIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+	viewerID, err := primitive.ObjectIDFromHex(viewerIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	blueprintID, err := primitive.ObjectIDFromHex(input.BlueprintID)
@@ -518,7 +523,7 @@ func (h *Handler) GetPostsByBlueprintHuma(ctx context.Context, input *GetPostsBy
 
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
-		apiPosts = append(apiPosts, *post.ToAPI())
+		apiPosts = append(apiPosts, *post.ToAPI(viewerID))
 	}
 
 	output := &GetPostsByBlueprintOutput{}
@@ -529,9 +534,13 @@ func (h *Handler) GetPostsByBlueprintHuma(ctx context.Context, input *GetPostsBy
 
 func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPostOutput, error) {
 	// Extract user_id from context for authorization
-	_, err := auth.RequireAuth(ctx)
+	viewerIDStr, err := auth.RequireAuth(ctx)
 	if err != nil {
 		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+	viewerID, err := primitive.ObjectIDFromHex(viewerIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
 	id, err := primitive.ObjectIDFromHex(input.ID)
@@ -544,7 +553,7 @@ func (h *Handler) GetPostHuma(ctx context.Context, input *GetPostInput) (*GetPos
 		return nil, huma.Error404NotFound("Post not found", err)
 	}
 
-	return &GetPostOutput{Body: *post.ToAPI()}, nil
+	return &GetPostOutput{Body: *post.ToAPI(viewerID)}, nil
 }
 
 func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput) (*GetUserPostsOutput, error) {
@@ -601,7 +610,7 @@ func (h *Handler) GetUserPostsHuma(ctx context.Context, input *GetUserPostsInput
 
 	var apiPosts []types.PostDocumentAPI
 	for _, post := range posts {
-		apiPosts = append(apiPosts, *post.ToAPI())
+		apiPosts = append(apiPosts, *post.ToAPI(viewerID))
 	}
 
 	output := &GetUserPostsOutput{}

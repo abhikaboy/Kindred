@@ -457,6 +457,9 @@ type PostKudos struct {
 	Message          string             `bson:"message" json:"message"`
 	Timestamp        time.Time          `bson:"timestamp" json:"timestamp"`
 	Type             string             `bson:"type" json:"type"` // "message" | "image" (image => message holds the URL)
+	// Private kudos are anonymized (sender + message stripped) for everyone
+	// except the post owner. See PostDocument.ToAPI.
+	Private bool `bson:"private,omitempty" json:"private,omitempty"`
 }
 
 type CommentDocument struct {
@@ -673,10 +676,29 @@ type PostDocumentAPI struct {
 	Metadata PostMetadata `json:"metadata"`
 }
 
-func (p *PostDocument) ToAPI() *PostDocumentAPI {
+// ToAPI serializes the post for a given viewer. Private kudos are anonymized
+// (sender + message stripped) for everyone except the post owner, so a
+// non-owner never receives the private congratulator's identity or message.
+func (p *PostDocument) ToAPI(viewerID primitive.ObjectID) *PostDocumentAPI {
 	var apiComments []CommentDocumentAPI
 	for _, comment := range p.Comments {
 		apiComments = append(apiComments, *comment.ToAPI())
+	}
+
+	isOwner := p.User.ID == viewerID
+	var apiKudos []PostKudos
+	for _, k := range p.Kudos {
+		if k.Private && !isOwner {
+			// Strip identity + content; keep the (anonymous) marker so the
+			// client still renders a placeholder and counts it.
+			apiKudos = append(apiKudos, PostKudos{
+				CongratulationID: k.CongratulationID,
+				Timestamp:        k.Timestamp,
+				Private:          true,
+			})
+			continue
+		}
+		apiKudos = append(apiKudos, k)
 	}
 
 	apiReactions := make(map[string][]string)
@@ -717,7 +739,7 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		TaggedUsers: p.TaggedUsers,
 		Reactions:   apiReactions,
 		Comments:    apiComments,
-		Kudos:       p.Kudos,
+		Kudos:       apiKudos,
 		Metadata:    p.Metadata,
 	}
 }

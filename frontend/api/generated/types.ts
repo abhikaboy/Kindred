@@ -4169,6 +4169,8 @@ export interface components {
              * @example 507f1f77bcf86cd799439013
              */
             postId?: string;
+            /** @description If true, the sender is anonymized to everyone except the receiver */
+            private?: boolean;
             /**
              * @description Receiver user ID
              * @example 507f1f77bcf86cd799439012
@@ -5762,6 +5764,7 @@ export interface components {
         PostKudos: {
             congratulationId: string;
             message: string;
+            private?: boolean;
             sender: components["schemas"]["KudosSender"];
             /** Format: date-time */
             timestamp: string;

@@ -144,6 +144,7 @@ type CreateCongratulationParams struct {
 	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
 	Type         string `json:"type" example:"message" doc:"Type of congratulation (message or image)" validate:"omitempty,oneof=message image"`
 	PostID       string `json:"postId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Optional post ID associated with the congratulation"`
+	Private      bool   `json:"private,omitempty" doc:"If true, the sender is anonymized to everyone except the receiver"`
 }
 
 type CongratulationDocument struct {
@@ -170,6 +171,7 @@ type CongratulationDocumentInternal struct {
 	Read         bool                         `bson:"read"`
 	Type         string                       `bson:"type"`
 	PostID       *primitive.ObjectID          `bson:"postId,omitempty"`
+	Private      bool                         `bson:"private,omitempty"`
 }
 
 type UpdateCongratulationDocument struct {

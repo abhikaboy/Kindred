@@ -189,6 +189,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 			Message:   r.Message,
 			Timestamp: congratulation.Timestamp,
 			Type:      r.Type,
+			Private:   r.Private,
 		}
 		if _, err := s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, bson.M{"$push": bson.M{"kudos": kudos}}); err != nil {
 			slog.Error("Failed to append kudos to post", "error", err, "post_id", r.PostID.Hex())

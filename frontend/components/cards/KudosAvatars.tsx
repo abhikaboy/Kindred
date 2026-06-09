@@ -1,7 +1,11 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { User } from "phosphor-react-native";
 import CachedImage from "../CachedImage";
 import type { PostKudos } from "@/api/types";
+
+// Private congrats arrive without a sender for non-owners; render anonymously.
+const isAnon = (k: PostKudos) => !!k.private && !k.sender?.name;
 
 // An overlapping stack of the avatars of users who congratulated a post — the
 // post-side mirror of EncouragerAvatars. Each avatar carries a soft primary
@@ -34,7 +38,16 @@ const KudosAvatars = ({ kudos, ringColor, placeholderColor, glowColor }: Props) 
                             zIndex: shown.length - i,
                         },
                     ]}>
-                    {k.sender.icon ? (
+                    {isAnon(k) ? (
+                        <View
+                            style={[
+                                styles.avatar,
+                                styles.anon,
+                                { borderColor: ringColor, backgroundColor: placeholderColor },
+                            ]}>
+                            <User size={SIZE * 0.55} color={ringColor} weight="fill" />
+                        </View>
+                    ) : k.sender.icon ? (
                         <CachedImage
                             source={{ uri: k.sender.icon }}
                             style={[styles.avatar, { borderColor: ringColor }]}
@@ -70,6 +83,10 @@ const styles = StyleSheet.create({
         height: SIZE,
         borderRadius: SIZE / 2,
         borderWidth: 1.5,
+    },
+    anon: {
+        alignItems: "center",
+        justifyContent: "center",
     },
 });
 

@@ -8116,6 +8116,9 @@ components:
                     description: Optional post ID associated with the congratulation
                     examples:
                         - 507f1f77bcf86cd799439013
+                private:
+                    type: boolean
+                    description: If true, the sender is anonymized to everyone except the receiver
                 receiver:
                     type: string
                     description: Receiver user ID
@@ -10924,6 +10927,8 @@ components:
                     type: string
                 message:
                     type: string
+                private:
+                    type: boolean
                 sender:
                     $ref: '#/components/schemas/KudosSender'
                 timestamp:

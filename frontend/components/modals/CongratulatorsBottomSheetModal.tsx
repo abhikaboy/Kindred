@@ -2,11 +2,15 @@ import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { router, type Href } from "expo-router";
+import { User } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import CachedImage from "@/components/CachedImage";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { PostKudos } from "@/api/types";
+
+// Private congrats arrive without a sender for non-owners; render anonymously.
+const isAnon = (k: PostKudos) => !!k.private && !k.sender?.name;
 
 interface Props {
     visible: boolean;
@@ -29,44 +33,53 @@ export default function CongratulatorsBottomSheetModal({ visible, setVisible, ku
                 <BottomSheetFlatList
                     data={kudos}
                     keyExtractor={(k) => k.congratulationId}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.row}
-                            onPress={() => {
-                                setVisible(false);
-                                if (item.sender.id) router.push(`/account/${item.sender.id}` as Href);
-                            }}>
-                            {item.sender.icon ? (
-                                <CachedImage
-                                    source={{ uri: item.sender.icon }}
-                                    variant="thumbnail"
-                                    cachePolicy="memory-disk"
-                                    style={styles.avatar}
-                                />
-                            ) : (
-                                <View style={[styles.avatar, { backgroundColor: ThemedColor.tertiary }]} />
-                            )}
-                            <View style={{ flex: 1 }}>
-                                <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                                    {item.sender.name}
-                                </ThemedText>
-                                {item.message ? (
-                                    item.type === "image" ? (
-                                        <CachedImage
-                                            source={{ uri: item.message }}
-                                            contentFit="cover"
-                                            cachePolicy="memory-disk"
-                                            style={styles.kudosImage}
-                                        />
-                                    ) : (
-                                        <ThemedText type="caption" style={{ color: ThemedColor.caption }} numberOfLines={2}>
-                                            {item.message}
-                                        </ThemedText>
-                                    )
-                                ) : null}
-                            </View>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        const anon = isAnon(item);
+                        return (
+                            <TouchableOpacity
+                                style={styles.row}
+                                disabled={anon}
+                                onPress={() => {
+                                    if (anon) return;
+                                    setVisible(false);
+                                    if (item.sender.id) router.push(`/account/${item.sender.id}` as Href);
+                                }}>
+                                {anon ? (
+                                    <View style={[styles.avatar, styles.anon, { backgroundColor: ThemedColor.tertiary }]}>
+                                        <User size={22} color={ThemedColor.caption} weight="fill" />
+                                    </View>
+                                ) : item.sender.icon ? (
+                                    <CachedImage
+                                        source={{ uri: item.sender.icon }}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
+                                        style={styles.avatar}
+                                    />
+                                ) : (
+                                    <View style={[styles.avatar, { backgroundColor: ThemedColor.tertiary }]} />
+                                )}
+                                <View style={{ flex: 1 }}>
+                                    <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                        {anon ? "Anonymous" : item.sender.name}
+                                    </ThemedText>
+                                    {!anon && item.message ? (
+                                        item.type === "image" ? (
+                                            <CachedImage
+                                                source={{ uri: item.message }}
+                                                contentFit="cover"
+                                                cachePolicy="memory-disk"
+                                                style={styles.kudosImage}
+                                            />
+                                        ) : (
+                                            <ThemedText type="caption" style={{ color: ThemedColor.caption }} numberOfLines={2}>
+                                                {item.message}
+                                            </ThemedText>
+                                        )
+                                    ) : null}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
         </DefaultModal>
@@ -79,5 +92,6 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         title: { marginBottom: 4 },
         row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
         avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: ThemedColor.tertiary },
+        anon: { alignItems: "center", justifyContent: "center" },
         kudosImage: { width: 120, height: 120, borderRadius: 10, marginTop: 4 },
     });

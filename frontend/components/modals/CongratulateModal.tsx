@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform, Switch } from "react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -51,6 +51,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const [isUploading, setIsUploading] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [isPrivate, setIsPrivate] = useState(false);
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
     const confettiRef = useRef<any>(null);
@@ -114,6 +115,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             setSelectedImage(null);
             setIsUploading(false);
             setShowGifPicker(false);
+            setIsPrivate(false);
             // Don't reset showConfetti immediately - let it finish animation
         }
         return () => {
@@ -221,6 +223,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 categoryName: congratulationConfig.categoryName,
                 taskName: task.content,
                 type: congratulationType,
+                private: isPrivate,
                 ...(congratulationConfig.postId && { postId: congratulationConfig.postId }), // Include postId if available
             };
 
@@ -418,6 +421,23 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     </TouchableOpacity>
                 )}
 
+                {/* Privacy toggle */}
+                <View style={styles.privacyRow}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                        <ThemedText type="defaultSemiBold">{isPrivate ? "Private" : "Public"}</ThemedText>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                            {isPrivate
+                                ? "Only they'll see it's you — everyone else sees an anonymous congrats."
+                                : "They'll see you congratulated them."}
+                        </ThemedText>
+                    </View>
+                    <Switch
+                        value={isPrivate}
+                        onValueChange={setIsPrivate}
+                        trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
+                    />
+                </View>
+
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
@@ -546,6 +566,12 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderColor: ThemedColor.tertiary,
             borderBottomLeftRadius: 12,
             borderBottomRightRadius: 12,
+        },
+        privacyRow: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingVertical: 12,
         },
         buttonContainer: {
             gap: 12,

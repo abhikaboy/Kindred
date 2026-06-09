@@ -84,6 +84,9 @@ export interface PostKudos {
     message: string;
     timestamp: string;
     type?: string; // "message" | "image" (image => message holds the URL/GIF)
+    // Private congrats are anonymized for non-owners: backend strips sender +
+    // message, leaving private=true. Owner still receives the real sender.
+    private?: boolean;
 }
 
 export interface Task {
