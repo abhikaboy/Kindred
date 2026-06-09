@@ -37,6 +37,7 @@ export const createPost = async (
     groups?: string[],
     dual?: string,
     taggedUsers?: Array<{ id: string; handle: string }>,
+    media?: import("./media").MediaItem[],
 ): Promise<{
     post: PostDocumentAPI;
     userStats: { posts_made: number; points: number } | null;
@@ -46,6 +47,7 @@ export const createPost = async (
         params: withAuthHeaders({}),
         body: {
             images,
+            media,
             caption,
             task: taskReference,
             blueprintId,
@@ -457,13 +459,14 @@ export const createPostToBackend = async (
     groups?: string[],
     dual?: string,
     taggedUsers?: Array<{ id: string; handle: string }>,
+    media?: import("./media").MediaItem[],
 ): Promise<{
     post: PostDocumentAPI;
     userStats: { posts_made: number; points: number } | null;
     ringDelta?: RingDelta;
 }> => {
     try {
-        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual, taggedUsers);
+        const result = await createPost(images, caption, taskReference, blueprintId, isPublic, size, groups, dual, taggedUsers, media);
         return result;
     } catch (error) {
         logger.error("Failed to create post to backend", error);
