@@ -4349,6 +4349,7 @@ export interface components {
             dual?: string;
             groups?: string[];
             images: string[];
+            kudos?: components["schemas"]["PostKudos"][];
             media: components["schemas"]["MediaItem"][];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
@@ -5767,6 +5768,7 @@ export interface components {
             dual?: string;
             groups?: string[];
             images: string[];
+            kudos?: components["schemas"]["PostKudos"][];
             media: components["schemas"]["MediaItem"][];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
@@ -5776,6 +5778,13 @@ export interface components {
             taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
+        };
+        PostKudos: {
+            congratulationId: string;
+            message: string;
+            sender: components["schemas"]["KudosSender"];
+            /** Format: date-time */
+            timestamp: string;
         };
         PostMetadata: {
             /** Format: date-time */

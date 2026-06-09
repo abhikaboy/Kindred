@@ -165,6 +165,7 @@ export default function PostDetail() {
                             : []
                     }
                     comments={post.comments || []}
+                    kudos={post.kudos}
                     images={post.images || []}
                     media={post.media}
                     size={post.size}

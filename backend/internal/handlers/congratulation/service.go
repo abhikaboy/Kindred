@@ -175,6 +175,25 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		}
 	}
 
+	// Append a denormalized kudos onto the post so cards can render the
+	// congratulator cluster (and the in-thread kudos) without a join.
+	// Best-effort: a missing post or failed update is logged, not fatal.
+	if r.PostID != nil && !r.PostID.IsZero() && s.Posts != nil {
+		kudos := types.PostKudos{
+			CongratulationID: id,
+			Sender: types.KudosSender{
+				ID:   r.Sender.ID,
+				Name: r.Sender.Name,
+				Icon: r.Sender.Picture,
+			},
+			Message:   r.Message,
+			Timestamp: congratulation.Timestamp,
+		}
+		if _, err := s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, bson.M{"$push": bson.M{"kudos": kudos}}); err != nil {
+			slog.Error("Failed to append kudos to post", "error", err, "post_id", r.PostID.Hex())
+		}
+	}
+
 	// ReferenceID points to the post the congratulation is on (if any) so tapping the notification
 	// opens that post. Congratulations without a post (no current backend path produces this,
 	// but the field is optional) get a zero referenceID and the frontend will fall back.
