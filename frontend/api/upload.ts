@@ -1,6 +1,9 @@
 import baseClient from "./client";
 import type { paths } from "./generated/types";
 import { createLogger } from "@/utils/logger";
+import { Video as VideoCompressor } from "react-native-compressor";
+import * as VideoThumbnails from "expo-video-thumbnails";
+import type { MediaItem } from "./media";
 
 const logger = createLogger('UploadAPI');
 
@@ -39,6 +42,11 @@ export function getMimeTypeFromUri(uri: string): string {
             return "image/gif";
         case "webp":
             return "image/webp";
+        case "mp4":
+            return "video/mp4";
+        case "mov":
+        case "qt":
+            return "video/quicktime";
         default:
             return "image/jpeg"; // default fallback
     }
@@ -378,4 +386,54 @@ export async function uploadImageSmart(
 export async function uploadBlueprintBanner(blueprintId: string, imageUri: string, fileType: string): Promise<string> {
     const result = await uploadImageSmart("blueprint", blueprintId, imageUri, { variant: "large" });
     return typeof result === 'string' ? result : result.public_url;
+}
+
+export const VIDEO_MAX_BYTES = 100 * 1024 * 1024; // 100MB
+export const VIDEO_MAX_DURATION_MS = 60_000; // 60s
+
+/**
+ * Compress a video on-device (~720p H.264), generate a thumbnail, and upload both.
+ * Returns a MediaItem for inclusion in a post's media[].
+ */
+export async function uploadVideo(
+    resourceType: string,
+    resourceId: string,
+    videoUri: string
+): Promise<MediaItem> {
+    // 1. Compress aggressively before upload.
+    const compressedUri = await VideoCompressor.compress(videoUri, {
+        compressionMethod: "manual",
+        maxSize: 720,
+        bitrate: 2_000_000, // ~2 Mbps, lightweight for phone-feed playback
+    });
+
+    // 2. Enforce size cap after compression.
+    const blob = await fetch(compressedUri).then((r) => r.blob());
+    if (blob.size > VIDEO_MAX_BYTES) {
+        throw new Error("Video is too large after compression. Please pick a shorter clip.");
+    }
+
+    // 3. Generate a thumbnail frame.
+    const { uri: thumbUri, width, height } = await VideoThumbnails.getThumbnailAsync(compressedUri, {
+        time: 0,
+        quality: 0.7,
+    });
+
+    // 4. Upload the thumbnail via the existing image flow.
+    const thumbResult = (await uploadImageSmart(resourceType, resourceId, thumbUri, {
+        variant: "large",
+        returnFullResult: true,
+    })) as ImageUploadResult;
+
+    // 5. Upload the compressed video via presigned PUT.
+    const videoUrl = await uploadImage(resourceType, resourceId, compressedUri, "video/mp4");
+
+    return {
+        type: "video",
+        url: videoUrl,
+        thumbnailUrl: thumbResult.public_url,
+        width: width || thumbResult.width || 0,
+        height: height || thumbResult.height || 0,
+        bytes: blob.size,
+    };
 }
