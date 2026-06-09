@@ -1,14 +1,14 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import CachedImage from "../CachedImage";
-import { encouragedCardColors } from "./encouragedTask";
 import type { PostKudos } from "@/api/types";
 
 // An overlapping stack of the avatars of users who congratulated a post — the
-// post-side mirror of EncouragerAvatars. The avatars carry the same soft
-// primary glow as the encouraged-task state (here scoped to the icons, not
-// the whole card). Caps at MAX to bound width.
-const SIZE = 22;
+// post-side mirror of EncouragerAvatars. Each avatar carries a soft primary
+// glow (the encouraged-task accent, scoped to the icons). The glow lives on a
+// wrapping View, not the image: expo-image doesn't reliably render shadow
+// props, and iOS needs an opaque surface to cast from.
+const SIZE = 28;
 const MAX = 3;
 
 type Props = {
@@ -20,31 +20,32 @@ type Props = {
 
 const KudosAvatars = ({ kudos, ringColor, placeholderColor, glowColor }: Props) => {
     const shown = kudos.slice(0, MAX);
-    const glow = encouragedCardColors(glowColor).glow;
     return (
         <View style={styles.row}>
-            {shown.map((k, i) => {
-                const style = [
-                    styles.avatar,
-                    glow,
-                    {
-                        borderColor: ringColor,
-                        marginLeft: i === 0 ? 0 : -SIZE / 2.5,
-                        zIndex: shown.length - i,
-                    },
-                ];
-                return k.sender.icon ? (
-                    <CachedImage
-                        key={k.congratulationId}
-                        source={{ uri: k.sender.icon }}
-                        style={style}
-                        variant="thumbnail"
-                        cachePolicy="memory-disk"
-                    />
-                ) : (
-                    <View key={k.congratulationId} style={[style, { backgroundColor: placeholderColor }]} />
-                );
-            })}
+            {shown.map((k, i) => (
+                <View
+                    key={k.congratulationId}
+                    style={[
+                        styles.glowWrap,
+                        {
+                            backgroundColor: ringColor,
+                            shadowColor: glowColor,
+                            marginLeft: i === 0 ? 0 : -SIZE / 2.5,
+                            zIndex: shown.length - i,
+                        },
+                    ]}>
+                    {k.sender.icon ? (
+                        <CachedImage
+                            source={{ uri: k.sender.icon }}
+                            style={[styles.avatar, { borderColor: ringColor }]}
+                            variant="thumbnail"
+                            cachePolicy="memory-disk"
+                        />
+                    ) : (
+                        <View style={[styles.avatar, { borderColor: ringColor, backgroundColor: placeholderColor }]} />
+                    )}
+                </View>
+            ))}
         </View>
     );
 };
@@ -53,6 +54,16 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "center",
+    },
+    // Carries the glow; sized to the avatar so the shadow halos the circle.
+    glowWrap: {
+        width: SIZE,
+        height: SIZE,
+        borderRadius: SIZE / 2,
+        shadowOpacity: 0.6,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: 6,
     },
     avatar: {
         width: SIZE,
