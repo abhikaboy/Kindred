@@ -413,14 +413,26 @@ type ImageSize struct {
 	Bytes  int `bson:"bytes" json:"bytes"`
 }
 
+// MediaItem is a single photo or video attached to a post.
+type MediaItem struct {
+	Type         string  `bson:"type" json:"type"` // "image" | "video"
+	URL          string  `bson:"url" json:"url"`
+	ThumbnailURL *string `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty"` // video only
+	Width        int     `bson:"width" json:"width"`
+	Height       int     `bson:"height" json:"height"`
+	DurationMs   *int    `bson:"durationMs,omitempty" json:"durationMs,omitempty"` // video only
+	Bytes        int     `bson:"bytes,omitempty" json:"bytes,omitempty"`
+}
+
 type PostDocument struct {
 	ID   primitive.ObjectID            `bson:"_id" json:"_id"`
 	User UserExtendedReferenceInternal `bson:"user" json:"user"`
 
-	Images  []string   `bson:"images" json:"images"`
-	Dual    *string    `bson:"dual,omitempty" json:"dual,omitempty"`
-	Caption string     `bson:"caption" json:"caption"`
-	Size    *ImageSize `bson:"size,omitempty" json:"size,omitempty"`
+	Images  []string    `bson:"images" json:"images"`
+	Media   []MediaItem `bson:"media,omitempty" json:"media,omitempty"`
+	Dual    *string     `bson:"dual,omitempty" json:"dual,omitempty"`
+	Caption string      `bson:"caption" json:"caption"`
+	Size    *ImageSize  `bson:"size,omitempty" json:"size,omitempty"`
 
 	Category    *CategoryExtendedReference  `bson:"category,omitempty" json:"category,omitempty"`
 	Task        *PostTaskExtendedReference  `bson:"task,omitempty" json:"task,omitempty"`
@@ -631,6 +643,7 @@ type PostDocumentAPI struct {
 	User UserExtendedReference `json:"user"`
 
 	Images      []string                    `json:"images"`
+	Media       []MediaItem                 `json:"media"`
 	Dual        *string                     `json:"dual,omitempty"`
 	Caption     string                      `json:"caption"`
 	Size        *ImageSize                  `json:"size,omitempty"`
@@ -667,10 +680,19 @@ func (p *PostDocument) ToAPI() *PostDocumentAPI {
 		groupStrings = append(groupStrings, groupID.Hex())
 	}
 
+	// Always return a populated media[] so clients only read `media`.
+	media := p.Media
+	if len(media) == 0 {
+		for _, img := range p.Images {
+			media = append(media, MediaItem{Type: "image", URL: img})
+		}
+	}
+
 	return &PostDocumentAPI{
 		ID:          p.ID,
 		User:        *p.User.ToAPI(),
 		Images:      p.Images,
+		Media:       media,
 		Dual:        p.Dual,
 		Caption:     p.Caption,
 		Size:        p.Size,
