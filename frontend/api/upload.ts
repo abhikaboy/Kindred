@@ -1,8 +1,6 @@
 import baseClient from "./client";
 import type { paths } from "./generated/types";
 import { createLogger } from "@/utils/logger";
-import { Video as VideoCompressor } from "react-native-compressor";
-import * as VideoThumbnails from "expo-video-thumbnails";
 import type { MediaItem } from "./media";
 
 const logger = createLogger('UploadAPI');
@@ -400,6 +398,11 @@ export async function uploadVideo(
     resourceId: string,
     videoUri: string
 ): Promise<MediaItem> {
+    // Lazy-load native modules so merely importing this file never crashes the
+    // app in a build that hasn't been prebuilt with these native deps.
+    const { Video: VideoCompressor } = require("react-native-compressor");
+    const VideoThumbnails = require("expo-video-thumbnails");
+
     // 1. Compress aggressively before upload.
     const compressedUri = await VideoCompressor.compress(videoUri, {
         compressionMethod: "manual",
