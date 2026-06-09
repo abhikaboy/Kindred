@@ -63,6 +63,8 @@
         "expo-symbols": "~55.0.7",
         "expo-system-ui": "~55.0.15",
         "expo-tenor-search": "^1.0.37",
+        "expo-video": "~55.0.17",
+        "expo-video-thumbnails": "~55.0.15",
         "expo-web-browser": "~55.0.14",
         "expo-widgets": "^55.0.13",
         "i": "^0.3.7",
@@ -77,6 +79,7 @@
         "react-dom": "19.2.0",
         "react-native": "0.83.4",
         "react-native-calendars": "^1.1313.0",
+        "react-native-compressor": "^1.19.0",
         "react-native-confetti-cannon": "^1.5.2",
         "react-native-country-codes-picker": "^2.3.5",
         "react-native-draggable-flatlist": "^4.0.3",
@@ -1396,6 +1399,10 @@
 
     "expo-updates-interface": ["expo-updates-interface@55.1.5", "", { "peerDependencies": { "expo": "*" } }, "sha512-YOk9vhplWi0djoeqxMlEQgcDFeOGhnj4dWU0v1QvF5RqpqwLGdx780E0k3zL85xw6LXljVN78d6g8z51qIZu5g=="],
 
+    "expo-video": ["expo-video@55.0.17", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-z2Fqg1WkctD2jpsUoMQU9y6jWYlV+Lwb7nIMB+3fOcKMVCiUwSWS9xq/MQnRImZe6t9gfRFVMvw2Xz8Lk/kUPw=="],
+
+    "expo-video-thumbnails": ["expo-video-thumbnails@55.0.15", "", { "peerDependencies": { "expo": "*" } }, "sha512-jZ4eLcd5vk3na8GOXAfBNHHPUVZB9E66UoPcbA5woDXigpfQdBDtBolC/W6uv6leNtuEMsk+L5FMeP0xm97K9g=="],
+
     "expo-web-browser": ["expo-web-browser@55.0.14", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-bTDkBSQBnrlnYcM7Aak72AOvJuvdgA3M8p//Lazrm0Nfa77T9cRXzQ6KhLrB08V39n1+00d1dvuTWznJslkmdg=="],
 
     "expo-widgets": ["expo-widgets@55.0.13", "", { "dependencies": { "@expo/plist": "^0.5.2", "@expo/ui": "~55.0.11" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-/VwNxtTy5nX4pY59iNYIZg88n5kctPgirKUWhpLxPtngw2GmtN9ONJI9tSNwSp4DjQASjH1nGP2xiWuBCW06BA=="],
@@ -2083,6 +2090,8 @@
     "react-native-animatable": ["react-native-animatable@1.4.0", "", { "dependencies": { "prop-types": "^15.8.1" } }, "sha512-DZwaDVWm2NBvBxf7I0wXKXLKb/TxDnkV53sWhCvei1pRyTX3MVFpkvdYBknNBqPrxYuAIlPxEp7gJOidIauUkw=="],
 
     "react-native-calendars": ["react-native-calendars@1.1314.0", "", { "dependencies": { "hoist-non-react-statics": "^3.3.1", "lodash": "^4.17.15", "memoize-one": "^5.2.1", "prop-types": "^15.5.10", "react-native-swipe-gestures": "^1.0.5", "recyclerlistview": "^4.0.0", "xdate": "^0.8.0" }, "optionalDependencies": { "moment": "^2.29.4" } }, "sha512-4DLAVto8Qo9L3ggL2vsY9Gk8FFpJWtne8F/3wN8yUb7Xha9/SKS4B+vs7xlhWjKeqZUHws/Vi/q/6IZ8s60kcQ=="],
+
+    "react-native-compressor": ["react-native-compressor@1.19.0", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-dzBydj1Sq+pkadHMnIafIXPmBRZNpim/ndrA/ym038VN6GZTn3WasMHabE247eJMg/wjKfSgEovQSawEt09C7w=="],
 
     "react-native-confetti-cannon": ["react-native-confetti-cannon@1.5.2", "", {}, "sha512-IZuWjlW7QsdxEGNnvpD6W+7iKCCQhnd5BvuNvMtirU7Nxm8WS2N6LPGMBz1ZYDuusG+GRZkoXXTNCdoAAGpCTg=="],
 

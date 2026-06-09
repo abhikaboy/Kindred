@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kindred",
     "slug": "Kindred",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "kindred",
@@ -86,9 +86,12 @@
       "expo-secure-store",
       "expo-font",
       "expo-web-browser",
-      ["@react-native-google-signin/google-signin", {
-        "iosUrlScheme": "com.googleusercontent.apps.955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6"
-      }],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.955300435674-4unacg9mbosj1sdf3gqb17lb6rasqmj6"
+        }
+      ],
       [
         "expo-speech-recognition",
         {
@@ -174,7 +177,8 @@
       ],
       "@sentry/react-native",
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
