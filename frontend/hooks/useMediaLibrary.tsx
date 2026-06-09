@@ -2,6 +2,9 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Linking, Platform } from 'react-native';
 
+// Media types accepted when a caller wants both photos and videos.
+export const IMAGE_AND_VIDEO_TYPES: ImagePicker.MediaType[] = ['images', 'videos'];
+
 interface UseMediaLibraryResult {
     pickImage: (options?: ImagePicker.ImagePickerOptions) => Promise<ImagePicker.ImagePickerResult | null>;
     requestPermission: () => Promise<boolean>;
