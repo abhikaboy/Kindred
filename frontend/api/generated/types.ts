@@ -1800,6 +1800,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/for-you/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss a For You card
+         * @description Records that the user dismissed a card so it no longer appears in their For You feed.
+         */
+        post: operations["dismiss-for-you-card"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/for-you/interactions": {
         parameters: {
             query?: never;
@@ -3188,6 +3208,26 @@ export interface paths {
         patch: operations["set-workspace-push-enabled"];
         trace?: never;
     };
+    "/v1/users/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get users by IDs
+         * @description Resolves a list of user IDs to public profile references in a single query.
+         */
+        post: operations["get-users-by-ids"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waitlist": {
         parameters: {
             query?: never;
@@ -4309,6 +4349,7 @@ export interface components {
             dual?: string;
             groups?: string[];
             images: string[];
+            media: components["schemas"]["MediaItem"][];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
                 [key: string]: string[];
@@ -4340,6 +4381,7 @@ export interface components {
             groups?: string[];
             images: string[];
             isPublic: boolean;
+            media?: components["schemas"]["MediaItemInput"][];
             size?: components["schemas"]["ImageSize"];
             taggedUsers?: components["schemas"]["MentionInput"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
@@ -4400,6 +4442,7 @@ export interface components {
             content: string;
             /** Format: date-time */
             deadline?: string;
+            encouragements?: components["schemas"]["TaskKudos"][];
             flexInfo?: components["schemas"]["FlexInstanceInfo"];
             id: string;
             integration?: string;
@@ -4641,6 +4684,29 @@ export interface components {
             readonly $schema?: string;
             message: string;
             success: boolean;
+        };
+        DismissCardOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DismissCardOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Card dismissed */
+            message: string;
+        };
+        DismissCardParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DismissCardParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description ID of the card to dismiss
+             * @example kudos-665f...
+             */
+            cardId: string;
         };
         DisplaySettings: {
             content_filter: boolean;
@@ -4908,6 +4974,8 @@ export interface components {
             displayMode: string;
             iconKind: string;
             id: string;
+            /** @description Structured value rows for weekly_recap cards */
+            metrics?: components["schemas"]["ForYouMetric"][];
             /** Format: int64 */
             priority: number;
             subject?: components["schemas"]["ForYouSubject"];
@@ -4933,7 +5001,7 @@ export interface components {
             targetUserId?: string;
             taskId?: string;
             /**
-             * @description navigate | send_kudos | send_encouragement | react
+             * @description navigate | send_kudos | send_encouragement | react | dismiss
              * @example navigate
              */
             type: string;
@@ -4951,6 +5019,15 @@ export interface components {
              * @description Number of catch_up cards driving the tab dot
              */
             unreadCount: number;
+        };
+        ForYouMetric: {
+            /** @example Kudos received */
+            label: string;
+            /**
+             * Format: int64
+             * @example 5
+             */
+            value: number;
         };
         ForYouSection: {
             cards: components["schemas"]["ForYouCard"][];
@@ -5308,6 +5385,25 @@ export interface components {
             readonly $schema?: string;
             templates: components["schemas"]["TemplateWithCategory"][];
         };
+        GetUsersByIDsInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUsersByIDsInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description List of user IDs to resolve to profile references */
+            userIds: string[];
+        };
+        GetUsersByIDsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetUsersByIDsOutputBody.json
+             */
+            readonly $schema?: string;
+            users: components["schemas"]["UserExtendedReference"][];
+        };
         GroupDocumentAPI: {
             /**
              * Format: uri
@@ -5560,6 +5656,32 @@ export interface components {
             /** @example Notifications marked as read successfully */
             message: string;
         };
+        MediaItem: {
+            /** Format: int64 */
+            bytes?: number;
+            /** Format: int64 */
+            durationMs?: number;
+            /** Format: int64 */
+            height: number;
+            thumbnailUrl?: string;
+            type: string;
+            url: string;
+            /** Format: int64 */
+            width: number;
+        };
+        MediaItemInput: {
+            /** Format: int64 */
+            bytes?: number;
+            /** Format: int64 */
+            durationMs?: number;
+            /** Format: int64 */
+            height: number;
+            thumbnailUrl?: string;
+            type: string;
+            url: string;
+            /** Format: int64 */
+            width: number;
+        };
         MentionInput: {
             handle: string;
             id: string;
@@ -5645,6 +5767,7 @@ export interface components {
             dual?: string;
             groups?: string[];
             images: string[];
+            media: components["schemas"]["MediaItem"][];
             metadata: components["schemas"]["PostMetadata"];
             reactions: {
                 [key: string]: string[];
@@ -6414,6 +6537,14 @@ export interface components {
             /** Format: date-time */
             workingOnSince?: string;
         };
+        TaskKudos: {
+            encouragementId: string;
+            message: string;
+            sender: components["schemas"]["KudosSender"];
+            /** Format: date-time */
+            timestamp: string;
+            type: string;
+        };
         TaskQueryFilters: {
             /**
              * Format: uri
@@ -6462,13 +6593,6 @@ export interface components {
              * @description Filter tasks with start date on or before this time (ISO8601)
              */
             startTimeTo?: string;
-        };
-        TaskKudos: {
-            encouragementId: string;
-            message: string;
-            sender: components["schemas"]["KudosSender"];
-            timestamp: string;
-            type: string;
         };
         TemplateTaskDocument: {
             /**
@@ -10914,6 +11038,42 @@ export interface operations {
             };
         };
     };
+    "dismiss-for-you-card": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissCardParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissCardOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "record-for-you-interaction": {
         parameters: {
             query?: never;
@@ -13719,6 +13879,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SetWorkspacePushEnabledOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-users-by-ids": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetUsersByIDsInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUsersByIDsOutputBody"];
                 };
             };
             /** @description Error */
