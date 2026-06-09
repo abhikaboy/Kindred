@@ -22,7 +22,6 @@ import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
-import { setupDefaultWorkspace } from "@/api/category";
 import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
@@ -113,7 +112,8 @@ export default function TutorialOnboarding() {
                 if (result?.token) sendPushTokenToBackend(result.token);
             });
 
-            try { await setupDefaultWorkspace(); } catch {}
+            // The Kindred Guide workspace is seeded server-side at registration
+            // (auth.SetupDefaultWorkspace); just load it here.
             await fetchWorkspaces(true);
         };
         init();

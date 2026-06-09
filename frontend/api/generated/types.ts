@@ -2492,26 +2492,6 @@ export interface paths {
         patch: operations["update-user-settings"];
         trace?: never;
     };
-    "/v1/user/setup-default-workspace": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Setup default workspace
-         * @description Create the Kindred Guide workspace with starter tasks for new users
-         */
-        post: operations["setup-default-workspace"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/user/tags": {
         parameters: {
             query?: never;
@@ -12346,37 +12326,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateUserSettingsOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
-    "setup-default-workspace": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CategoryDocument"];
                 };
             };
             /** @description Error */

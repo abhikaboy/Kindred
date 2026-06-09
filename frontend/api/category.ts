@@ -208,19 +208,3 @@ export const getUserTags = async (): Promise<string[]> => {
     }
     return data?.tags ?? [];
 };
-
-/**
- * Setup default workspace with starter tasks
- * Creates the "🌺 Kindred Guide" workspace with onboarding tasks for new users
- */
-export const setupDefaultWorkspace = async (): Promise<CategoryDocument> => {
-    const { data, error } = await (client.POST as any)("/v1/user/setup-default-workspace", {
-        params: withAuthHeaders({}),
-    });
-
-    if (error) {
-        throw new Error(`Failed to setup default workspace: ${JSON.stringify(error)}`);
-    }
-
-    return data;
-};
