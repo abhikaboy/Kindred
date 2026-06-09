@@ -10,7 +10,8 @@ import MentionTextInput from "@/components/inputs/MentionTextInput";
 import TaggedUsersChips, { TaggedUser } from "@/components/inputs/TaggedUsersChips";
 import { formatHandle } from "@/utils/handle";
 import { createPostToBackend } from "@/api/post";
-import { uploadImageSmart, ImageUploadResult } from "@/api/upload";
+import { uploadImageSmart, uploadVideo, ImageUploadResult } from "@/api/upload";
+import type { MediaItem } from "@/api/media";
 import { ObjectId } from "bson";
 import { useAuth } from "@/hooks/useAuth";
 import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
@@ -31,6 +32,9 @@ export default function Caption() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const photos = params.photos ? JSON.parse(params.photos as string) : [];
+    const mediaTypesByUri: Record<string, "image" | "video"> = params.mediaTypes
+        ? JSON.parse(params.mediaTypes as string)
+        : {};
     const dualPhoto = params.dualPhoto ? (params.dualPhoto as string) : null;
     const [data, setData] = useState({ caption: "" });
     const [isPosting, setIsPosting] = useState(false);
@@ -86,48 +90,54 @@ export default function Caption() {
         });
     };
 
-    const uploadPhotos = async (photoUris: string[], dualUri: string | null): Promise<{ urls: string[]; sizeInfo?: { width: number; height: number; bytes: number }; dualUrl?: string }> => {
-        if (!hasActualPhotos) {
-            return { urls: [] };
+    const uploadMedia = async (
+        uris: string[],
+        typeByUri: Record<string, "image" | "video">,
+        dualUri: string | null
+    ): Promise<{ media: MediaItem[]; sizeInfo?: { width: number; height: number; bytes: number }; dualUrl?: string }> => {
+        if (uris.length === 0) {
+            return { media: [] };
         }
-        const uploadedUrls = [];
-        let sizeInfo: { width: number; height: number; bytes: number } | undefined;
+        const resourceId = taskInfo?.id || new ObjectId().toString();
+        const media: MediaItem[] = [];
 
-        for (let i = 0; i < photoUris.length; i++) {
+        for (let i = 0; i < uris.length; i++) {
+            const uri = uris[i];
             try {
-                const result = await uploadImageSmart(
-                    "post",
-                    taskInfo?.id || new ObjectId().toString(),
-                    photoUris[i],
-                    { variant: "large", returnFullResult: true }
-                ) as ImageUploadResult;
-
-                uploadedUrls.push(result.public_url);
-
-                // Use the size info from the first image (primary image)
-                if (i === 0) {
-                    sizeInfo = {
+                if ((typeByUri[uri] ?? "image") === "video") {
+                    media.push(await uploadVideo("post", resourceId, uri));
+                } else {
+                    const result = (await uploadImageSmart("post", resourceId, uri, {
+                        variant: "large",
+                        returnFullResult: true,
+                    })) as ImageUploadResult;
+                    media.push({
+                        type: "image",
+                        url: result.public_url,
                         width: result.width,
                         height: result.height,
-                        bytes: result.size
-                    };
+                        bytes: result.size,
+                    });
                 }
             } catch (error) {
-                console.error(`Failed to upload photo ${i + 1}:`, error);
-                throw new Error(`Failed to upload photo ${i + 1}. Please try again.`);
+                console.error(`Failed to upload media ${i + 1}:`, error);
+                throw new Error(`Failed to upload item ${i + 1}. Please try again.`);
             }
         }
+
+        const first = media[0];
+        const sizeInfo = first
+            ? { width: first.width, height: first.height, bytes: first.bytes ?? 0 }
+            : undefined;
 
         // Upload dual photo if it exists
         let dualUrl: string | undefined;
         if (dualUri) {
             try {
-                const dualResult = await uploadImageSmart(
-                    "post",
-                    taskInfo?.id || new ObjectId().toString(),
-                    dualUri,
-                    { variant: "medium", returnFullResult: true }
-                ) as ImageUploadResult;
+                const dualResult = (await uploadImageSmart("post", resourceId, dualUri, {
+                    variant: "medium",
+                    returnFullResult: true,
+                })) as ImageUploadResult;
                 dualUrl = dualResult.public_url;
             } catch (error) {
                 console.error('Failed to upload dual photo:', error);
@@ -135,7 +145,7 @@ export default function Caption() {
             }
         }
 
-        return { urls: uploadedUrls, sizeInfo, dualUrl };
+        return { media, sizeInfo, dualUrl };
     };
     const handlePost = async () => {
         if (!data.caption.trim()) {
@@ -149,7 +159,8 @@ export default function Caption() {
         setIsPosting(true);
 
         try {
-            const uploadResult = await uploadPhotos(hasActualPhotos ? photos : [], dualPhoto);
+            const uploadResult = await uploadMedia(hasActualPhotos ? photos : [], mediaTypesByUri, dualPhoto);
+            const imageUrls = uploadResult.media.filter((m) => m.type === "image").map((m) => m.url);
             const taskReference = taskInfo
                 ? {
                       id: taskInfo.id,
@@ -164,7 +175,7 @@ export default function Caption() {
             const selectedGroups = getGroupIds();
 
             const result = await createPostToBackend(
-                uploadResult.urls,
+                imageUrls,
                 data.caption,
                 taskReference,
                 undefined,
@@ -173,6 +184,7 @@ export default function Caption() {
                 selectedGroups,
                 uploadResult.dualUrl,
                 taggedUsers.map((u) => ({ id: u.id, handle: u.handle })),
+                uploadResult.media,
             );
 
             // Update user stats locally if available
@@ -270,6 +282,13 @@ export default function Caption() {
                             {hasActualPhotos && (
                                 <PostCardMedia
                                     images={photos}
+                                    media={photos.map((uri: string) => ({
+                                        type: mediaTypesByUri[uri] ?? "image",
+                                        url: uri,
+                                        thumbnailUrl: uri,
+                                        width: 0,
+                                        height: 0,
+                                    }))}
                                     dual={dualPhoto}
                                 />
                             )}
