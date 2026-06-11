@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // TaggerInfo carries the denormalized display fields of the user who tagged a task.
@@ -187,4 +189,68 @@ func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTag
 		return nil, err
 	}
 	return results, nil
+}
+
+// RespondToTaskTag records the tagged user's response on the live task and
+// mirrors it to the template so future recurrences inherit it. The nested
+// array filter scopes the write to the responder's own entry, so a user can
+// never modify someone else's tag state.
+func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, status types.TagStatus) error {
+	if status != types.TagStatusWatching && status != types.TagStatusCopied && status != types.TagStatusUntagged {
+		return fmt.Errorf("invalid tag status: %q", status)
+	}
+	ctx := context.Background()
+
+	res, err := s.Tasks.UpdateOne(ctx,
+		bson.M{"tasks._id": taskID},
+		bson.M{"$set": bson.M{"tasks.$[t].taggedUsers.$[u].status": status}},
+		options.Update().SetArrayFilters(options.ArrayFilters{
+			Filters: bson.A{
+				bson.M{"t._id": taskID},
+				bson.M{"u.id": responderID},
+			},
+		}),
+	)
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+
+	// Mirror to template (cross-user fetch: responder doesn't own the category)
+	task, _ := s.lookupTaskAndOwner(taskID)
+	if task != nil && task.TemplateID != nil {
+		if _, err := s.TemplateTasks.UpdateOne(ctx,
+			bson.M{"_id": *task.TemplateID},
+			bson.M{"$set": bson.M{"taggedUsers.$[u].status": status}},
+			options.Update().SetArrayFilters(options.ArrayFilters{
+				Filters: bson.A{bson.M{"u.id": responderID}},
+			}),
+		); err != nil {
+			slog.Error("Failed to mirror tag response to template", "templateID", task.TemplateID.Hex(), "error", err)
+		}
+	}
+	return nil
+}
+
+// lookupTaskAndOwner fetches a task across all users' categories. Returns the
+// task and its owner's ID (zero ID when not found).
+func (s *Service) lookupTaskAndOwner(taskID primitive.ObjectID) (*TaskDocument, primitive.ObjectID) {
+	ctx := context.Background()
+	pipeline := append(
+		[]bson.D{{{Key: "$match", Value: bson.M{"tasks._id": taskID}}}},
+		getBaseTaskPipeline()...,
+	)
+	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{"_id": taskID}}})
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, primitive.NilObjectID
+	}
+	defer cursor.Close(ctx)
+	var tasks []TaskDocument
+	if err := cursor.All(ctx, &tasks); err != nil || len(tasks) == 0 {
+		return nil, primitive.NilObjectID
+	}
+	return &tasks[0], tasks[0].UserID
 }

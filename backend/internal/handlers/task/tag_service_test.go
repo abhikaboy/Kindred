@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TagServiceTestSuite struct {
@@ -422,4 +423,92 @@ func (s *TagServiceTestSuite) TestUpdateTaskTags_MirrorsToTemplate() {
 	s.Len(tmpl.TaggedUsers, 1)
 	s.Equal(friendA.ID, tmpl.TaggedUsers[0].ID)
 	s.Equal(types.TagStatusPending, tmpl.TaggedUsers[0].Status)
+}
+
+func (s *TagServiceTestSuite) TestRespondToTaskTag_UpdatesStatusAndTemplate() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, _ := s.service.BuildTaggedUsers([]string{friend.ID.Hex()})
+
+	templateID := primitive.NewObjectID()
+	tmplDoc := &types.TemplateTaskDocument{
+		ID:          templateID,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Content:     "Read 30 mins",
+		Priority:    1,
+		Value:       2,
+		RecurType:   "OCCURRENCE",
+		TaggedUsers: tagged,
+	}
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, tmplDoc)
+	s.NoError(err)
+
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "Read 30 mins",
+		Priority:    1,
+		Value:       2,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Active:      true,
+		Recurring:   true,
+		TemplateID:  &templateID,
+		TaggedUsers: tagged,
+	}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	err = s.service.RespondToTaskTag(created.ID, friend.ID, types.TagStatusWatching)
+	s.NoError(err)
+
+	fetched, err := s.service.GetTaskByID(created.ID, owner.ID)
+	s.NoError(err)
+	s.Equal(types.TagStatusWatching, fetched.TaggedUsers[0].Status)
+
+	tmpl, err := s.service.GetTemplateByID(templateID)
+	s.NoError(err)
+	s.Equal(types.TagStatusWatching, tmpl.TaggedUsers[0].Status)
+}
+
+func (s *TagServiceTestSuite) TestRespondToTaskTag_RejectsInvalidStatus() {
+	err := s.service.RespondToTaskTag(primitive.NewObjectID(), primitive.NewObjectID(), "bogus")
+	s.Error(err)
+}
+
+func (s *TagServiceTestSuite) TestRespondToTaskTag_UnknownTaskReturnsNotFound() {
+	err := s.service.RespondToTaskTag(primitive.NewObjectID(), primitive.NewObjectID(), types.TagStatusWatching)
+	s.ErrorIs(err, mongo.ErrNoDocuments)
+}
+
+func (s *TagServiceTestSuite) TestNotifyTaskCopied_CreatesRecordAndSendsPush() {
+	owner := s.GetUser(0)
+	copier := s.GetUser(1)
+
+	taskID := primitive.NewObjectID()
+	taskName := "Read 30 mins"
+
+	s.service.notifyTaskCopied(taskID, owner.ID, copier.ID, taskName)
+
+	// Assert a TASK_COPIED notification record exists for the owner (receiver)
+	count := s.CountDocuments("notifications", bson.M{
+		"receiver":         owner.ID,
+		"notificationType": "TASK_COPIED",
+		"reference_id":     taskID,
+	})
+	s.Equal(int64(1), count, "expected one TASK_COPIED notification record for the task owner")
+
+	// Assert a push was sent to the owner's push token
+	s.AssertPushNotificationSent(owner.PushToken, "expected push notification sent to task owner")
 }

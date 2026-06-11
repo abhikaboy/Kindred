@@ -57,3 +57,36 @@ func (s *Service) NotifyTaggedUsers(task *TaskDocument, taggerID primitive.Objec
 		}
 	}
 }
+
+// notifyTaskCopied tells the task owner that a tagged friend copied the task.
+// Push + TASK_COPIED record; best-effort.
+func (s *Service) notifyTaskCopied(taskID, ownerID, copierID primitive.ObjectID, taskName string) {
+	ctx := context.Background()
+
+	copier, err := s.Users.GetUserByID(ctx, copierID)
+	if err != nil || copier == nil {
+		return
+	}
+
+	content := fmt.Sprintf("copied your task \"%s\" 💪", taskName)
+	if err := s.NotificationService.CreateNotification(
+		copierID, ownerID, content, notifications.NotificationTypeTaskCopied, taskID,
+	); err != nil {
+		slog.Error("Failed to create TASK_COPIED record", "owner", ownerID, "error", err)
+	}
+
+	owner, err := s.Users.GetUserByID(ctx, ownerID)
+	if err != nil || owner == nil || owner.PushToken == "" {
+		return
+	}
+	_ = xutils.SendNotification(xutils.Notification{
+		Token:   owner.PushToken,
+		Title:   "Your task caught on 💪",
+		Message: fmt.Sprintf("%s copied your task \"%s\"", copier.DisplayName, taskName),
+		Data: map[string]string{
+			"type":    "task_copied",
+			"task_id": taskID.Hex(),
+			"user_id": copierID.Hex(),
+		},
+	})
+}
