@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from "react";
-import { View, FlatList, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useFriendsForMention, MentionCandidate } from "@/hooks/useFriendsForMention";
+import { MentionCandidate } from "@/hooks/useFriendsForMention";
 import { usePostComposer } from "@/contexts/PostComposerContext";
 import { Ionicons } from "@expo/vector-icons";
-import ThemedInput from "@/components/inputs/ThemedInput";
 import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
-import { formatHandle } from "@/utils/handle";
+import FriendPicker from "@/components/inputs/FriendPicker";
 
 export default function TagPeople() {
     const insets = useSafeAreaInsets();
@@ -19,9 +18,6 @@ export default function TagPeople() {
     const [selected, setSelected] = useState<Map<string, TaggedUser>>(
         () => new Map(taggedUsers.map((u) => [u.id, u])),
     );
-    const [query, setQuery] = useState("");
-    const { filter } = useFriendsForMention();
-    const matches = useMemo(() => filter(query), [query, filter]);
 
     const toggle = (c: MentionCandidate) => {
         setSelected((prev) => {
@@ -37,6 +33,8 @@ export default function TagPeople() {
         router.back();
     };
 
+    const selectedIds = useMemo(() => new Set(selected.keys()), [selected]);
+
     return (
         <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
             <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -48,55 +46,9 @@ export default function TagPeople() {
                     <ThemedText style={{ color: ThemedColor.primary }}>Done</ThemedText>
                 </TouchableOpacity>
             </View>
-            <View style={{ marginHorizontal: 16 }}>
-                <ThemedInput
-                    value={query}
-                    setValue={setQuery}
-                    placeHolder="Search friends"
-                />
+            <View style={{ flex: 1, marginHorizontal: 16 }}>
+                <FriendPicker selectedIds={selectedIds} onToggle={toggle} />
             </View>
-            <FlatList
-                data={matches}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                    const checked = selected.has(item.id);
-                    return (
-                        <FriendRow
-                            item={item}
-                            checked={checked}
-                            onToggle={toggle}
-                            primaryColor={ThemedColor.primary}
-                            captionColor={ThemedColor.caption}
-                        />
-                    );
-                }}
-            />
         </ThemedView>
-    );
-}
-
-type FriendRowProps = {
-    item: MentionCandidate;
-    checked: boolean;
-    onToggle: (c: MentionCandidate) => void;
-    primaryColor: string;
-    captionColor: string;
-};
-
-function FriendRow({ item, checked, onToggle, primaryColor, captionColor }: FriendRowProps) {
-    return (
-        <TouchableOpacity
-            onPress={() => onToggle(item)}
-            style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 16, gap: 12 }}>
-            <View style={{ flex: 1 }}>
-                <ThemedText type="defaultSemiBold">{item.display_name}</ThemedText>
-                <ThemedText type="caption">{formatHandle(item.handle)}</ThemedText>
-            </View>
-            <Ionicons
-                name={checked ? "checkmark-circle" : "ellipse-outline"}
-                size={22}
-                color={checked ? primaryColor : captionColor}
-            />
-        </TouchableOpacity>
     );
 }
