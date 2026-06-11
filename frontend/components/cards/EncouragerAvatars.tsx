@@ -1,24 +1,46 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import CachedImage from "../CachedImage";
-import type { TaskKudos } from "@/api/types";
+import type { TaskKudos, TaggedTaskUser } from "@/api/types";
 
 // A small overlapping stack of the avatars of users who encouraged a task,
 // shown on the encouraged task card. Caps at MAX to bound width.
 const SIZE = 22;
 const MAX = 3;
 
+type AvatarEntry = { key: string; uri?: string };
+
 type Props = {
     encouragements: TaskKudos[];
+    taggedUsers?: TaggedTaskUser[];
     ringColor: string;
     placeholderColor: string;
 };
 
-const EncouragerAvatars = ({ encouragements, ringColor, placeholderColor }: Props) => {
-    const shown = encouragements.slice(0, MAX);
+const EncouragerAvatars = ({ encouragements, taggedUsers = [], ringColor, placeholderColor }: Props) => {
+    // Build a merged, de-duplicated avatar list. Kudos senders win on conflict.
+    const seenIds = new Set<string>();
+    const merged: AvatarEntry[] = [];
+
+    for (const k of encouragements) {
+        const id = k.sender.id;
+        if (!seenIds.has(id)) {
+            seenIds.add(id);
+            merged.push({ key: k.encouragementId, uri: k.sender.icon ?? undefined });
+        }
+    }
+
+    for (const t of taggedUsers) {
+        if ((t.status === "pending" || t.status === "watching") && !seenIds.has(t.id)) {
+            seenIds.add(t.id);
+            merged.push({ key: t.id, uri: t.profile_picture ?? undefined });
+        }
+    }
+
+    const shown = merged.slice(0, MAX);
     return (
         <View style={styles.row}>
-            {shown.map((k, i) => {
+            {shown.map((entry, i) => {
                 const style = [
                     styles.avatar,
                     {
@@ -27,16 +49,16 @@ const EncouragerAvatars = ({ encouragements, ringColor, placeholderColor }: Prop
                         zIndex: shown.length - i,
                     },
                 ];
-                return k.sender.icon ? (
+                return entry.uri ? (
                     <CachedImage
-                        key={k.encouragementId}
-                        source={{ uri: k.sender.icon }}
+                        key={entry.key}
+                        source={{ uri: entry.uri }}
                         style={style}
                         variant="thumbnail"
                         cachePolicy="memory-disk"
                     />
                 ) : (
-                    <View key={k.encouragementId} style={[style, { backgroundColor: placeholderColor }]} />
+                    <View key={entry.key} style={[style, { backgroundColor: placeholderColor }]} />
                 );
             })}
         </View>
