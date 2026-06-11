@@ -297,31 +297,9 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 	}
 
 	// Get friends' public tasks (with user data from aggregation pipeline)
-	tasks, tasksTotal, err := h.service.GetFriendsPublicTasks(userID, tasksNeeded, offset)
+	tasks, tasksTotal, err := h.service.GetFriendsPublicTasks(userID, tasksNeeded)
 	if err != nil {
 		tasks = []bson.M{} // Empty tasks if there's an error
-	}
-
-	// Adaptive fetching: if we got fewer posts than expected, fetch more tasks to fill the feed
-	if len(posts) < postsNeeded && len(tasks) < limit {
-		additionalTasksNeeded := limit - len(posts) - len(tasks)
-		if additionalTasksNeeded > 0 {
-			moreTasks, _, err := h.service.GetFriendsPublicTasks(userID, additionalTasksNeeded, len(tasks))
-			if err == nil {
-				tasks = append(tasks, moreTasks...)
-			}
-		}
-	}
-
-	// Adaptive fetching: if we got fewer tasks than expected, fetch more posts to fill the feed
-	if len(tasks) < tasksNeeded && len(posts) < limit {
-		additionalPostsNeeded := limit - len(posts) - len(tasks)
-		if additionalPostsNeeded > 0 {
-			morePosts, _, err := h.service.GetFriendsPosts(userID, additionalPostsNeeded, len(posts))
-			if err == nil {
-				posts = append(posts, morePosts...)
-			}
-		}
 	}
 
 	// Get friends' ring closure events

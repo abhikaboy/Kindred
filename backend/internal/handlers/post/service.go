@@ -653,16 +653,20 @@ func (s *Service) GetUserGroups(userID primitive.ObjectID) ([]types.GroupDocumen
 	return results, nil
 }
 
-// GetFriendsPublicTasks fetches public tasks from the user's friends using aggregation pipeline
-func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset int) ([]bson.M, int, error) {
+// defaultTaskPoolSize caps how many candidate tasks the feed scorer considers.
+const defaultTaskPoolSize = 200
+
+// GetFriendsPublicTasks fetches a pool of friends' public, active, incomplete
+// tasks (newest first) for the feed scorer. The handler scores and samples
+// from this pool, so no offset is taken — pagination of sampled tasks is
+// inherently approximate.
+func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit int) ([]bson.M, int, error) {
 	ctx := context.Background()
 
-	// Set default limit if not provided
 	if limit <= 0 {
-		limit = 20
+		limit = defaultTaskPoolSize
 	}
 
-	// Build aggregation pipeline to get friends' public tasks
 	pipeline := mongo.Pipeline{
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
@@ -693,23 +697,30 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 				}}},
 				// Unwind tasks array to work with individual tasks
 				{{Key: "$unwind", Value: "$tasks"}},
-				// Match only public tasks (field is "public" not "isPublic")
+				// Only public, active, not-yet-completed tasks are worth
+				// encouraging. $ne false tolerates older docs missing "active".
 				{{Key: "$match", Value: bson.M{
-					"tasks.public": true,
+					"tasks.public":        true,
+					"tasks.active":        bson.M{"$ne": false},
+					"tasks.timeCompleted": bson.M{"$exists": false},
 				}}},
-				// Project the fields we need
+				// Project the fields we need (incl. scoring fields)
 				{{Key: "$project", Value: bson.M{
-					"_id":           "$tasks._id",
-					"content":       "$tasks.content",
-					"priority":      "$tasks.priority",
-					"value":         "$tasks.value",
-					"public":        "$tasks.public",
-					"timestamp":     "$tasks.timestamp",
-					"lastEdited":    "$tasks.lastEdited",
-					"categoryId":    "$_id",
-					"categoryName":  "$name",
-					"workspaceName": "$workspaceName",
-					"userId":        "$user",
+					"_id":            "$tasks._id",
+					"content":        "$tasks.content",
+					"priority":       "$tasks.priority",
+					"value":          "$tasks.value",
+					"public":         "$tasks.public",
+					"timestamp":      "$tasks.timestamp",
+					"lastEdited":     "$tasks.lastEdited",
+					"deadline":       "$tasks.deadline",
+					"startTime":      "$tasks.startTime",
+					"startDate":      "$tasks.startDate",
+					"workingOnSince": "$tasks.workingOnSince",
+					"categoryId":     "$_id",
+					"categoryName":   "$name",
+					"workspaceName":  "$workspaceName",
+					"userId":         "$user",
 				}}},
 			},
 			"as": "friendsTasks",
@@ -723,45 +734,29 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 			"newRoot": "$friendsTasks",
 		}}},
 
-		// Stage 7: Lookup user information for the task owner
-		{{Key: "$lookup", Value: bson.M{
-			"from":         "users",
-			"localField":   "userId",
-			"foreignField": "_id",
-			"as":           "userData",
-		}}},
+		// Stage 7: Newest first so the pool cap keeps recent tasks
+		{{Key: "$sort", Value: bson.M{"timestamp": -1}}},
 
-		// Stage 8: Add user object to the task document
-		{{Key: "$addFields", Value: bson.M{
-			"user": bson.M{
-				"$arrayElemAt": []interface{}{"$userData", 0},
-			},
-		}}},
-
-		// Stage 9: Remove temporary userData field
-		{{Key: "$project", Value: bson.M{
-			"userData": 0,
-		}}},
-
-		// Stage 10: Add random field for sampling
-		{{Key: "$addFields", Value: bson.M{
-			"randomSort": bson.M{"$rand": bson.M{}},
-		}}},
-
-		// Stage 11: Sort by random field first, then timestamp for consistency
-		{{Key: "$sort", Value: bson.M{
-			"randomSort": 1,
-			"timestamp":  -1,
-		}}},
-
-		// Stage 12: Apply pagination
+		// Stage 8: Count the full stream; cap the pool and attach user data
+		// only for the capped pool (bounds the per-task user lookups).
 		{{Key: "$facet", Value: bson.M{
 			"metadata": []bson.M{
 				{"$count": "total"},
 			},
 			"data": []bson.M{
-				{"$skip": offset},
 				{"$limit": limit},
+				{"$lookup": bson.M{
+					"from":         "users",
+					"localField":   "userId",
+					"foreignField": "_id",
+					"as":           "userData",
+				}},
+				{"$addFields": bson.M{
+					"user": bson.M{
+						"$arrayElemAt": []interface{}{"$userData", 0},
+					},
+				}},
+				{"$project": bson.M{"userData": 0}},
 			},
 		}}},
 	}
@@ -801,12 +796,11 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit, offset
 		}
 	}
 
-	slog.Info("Friends public tasks fetched with random sampling",
+	slog.Info("Friends public task pool fetched",
 		"userId", userID.Hex(),
 		"count", len(tasks),
 		"total", total,
 		"limit", limit,
-		"offset", offset,
 	)
 
 	return tasks, total, nil

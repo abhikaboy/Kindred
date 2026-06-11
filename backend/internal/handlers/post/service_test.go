@@ -1233,15 +1233,14 @@ func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_NoFriends() {
 	})
 	s.NoError(err)
 
-	// Get friends public tasks
-	tasks, total, err := s.service.GetFriendsPublicTasks(user.ID, 10, 0)
+	tasks, total, err := s.service.GetFriendsPublicTasks(user.ID, 10)
 
 	s.NoError(err)
 	s.Equal(0, total)
 	s.Empty(tasks)
 }
 
-func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_WithFriends() {
+func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_FiltersAndProjections() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
 
@@ -1251,19 +1250,58 @@ func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_WithFriends() {
 	})
 	s.NoError(err)
 
-	// Create a category for user2 with public tasks
+	now := time.Now()
+	deadline := primitive.NewDateTimeFromTime(now.Add(24 * time.Hour))
+	startTime := primitive.NewDateTimeFromTime(now.Add(2 * time.Hour))
+
 	category := bson.M{
-		"_id":  primitive.NewObjectID(),
-		"name": "Fitness",
-		"user": user2.ID,
+		"_id":           primitive.NewObjectID(),
+		"name":          "Fitness",
+		"workspaceName": "Personal",
+		"user":          user2.ID,
 		"tasks": []bson.M{
 			{
+				// Eligible: public, active, not completed — must appear
 				"_id":       primitive.NewObjectID(),
-				"content":   "Morning workout",
+				"content":   "eligible task",
 				"priority":  1,
 				"value":     10.0,
 				"public":    true,
-				"timestamp": primitive.NewDateTimeFromTime(time.Now()),
+				"active":    true,
+				"timestamp": primitive.NewDateTimeFromTime(now),
+				"deadline":  deadline,
+				"startTime": startTime,
+			},
+			{
+				// Completed — must be excluded
+				"_id":           primitive.NewObjectID(),
+				"content":       "completed task",
+				"priority":      1,
+				"value":         10.0,
+				"public":        true,
+				"active":        false,
+				"timeCompleted": primitive.NewDateTimeFromTime(now),
+				"timestamp":     primitive.NewDateTimeFromTime(now),
+			},
+			{
+				// Inactive — must be excluded
+				"_id":       primitive.NewObjectID(),
+				"content":   "inactive task",
+				"priority":  1,
+				"value":     10.0,
+				"public":    true,
+				"active":    false,
+				"timestamp": primitive.NewDateTimeFromTime(now),
+			},
+			{
+				// Private — must be excluded
+				"_id":       primitive.NewObjectID(),
+				"content":   "private task",
+				"priority":  1,
+				"value":     10.0,
+				"public":    false,
+				"active":    true,
+				"timestamp": primitive.NewDateTimeFromTime(now),
 			},
 		},
 	}
@@ -1271,23 +1309,79 @@ func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_WithFriends() {
 	_, err = s.Collections["categories"].InsertOne(s.Ctx, category)
 	s.NoError(err)
 
-	// Get friends public tasks
-	tasks, total, err := s.service.GetFriendsPublicTasks(user1.ID, 10, 0)
-
+	tasks, total, err := s.service.GetFriendsPublicTasks(user1.ID, 50)
 	s.NoError(err)
-	s.GreaterOrEqual(total, 0)
-	s.NotNil(tasks)
+	s.GreaterOrEqual(total, 1)
+
+	contents := make(map[string]bson.M)
+	for _, task := range tasks {
+		if content, ok := task["content"].(string); ok {
+			contents[content] = task
+		}
+	}
+
+	s.Contains(contents, "eligible task")
+	s.NotContains(contents, "completed task")
+	s.NotContains(contents, "inactive task")
+	s.NotContains(contents, "private task")
+
+	// Scoring fields must be projected through the pipeline
+	eligible := contents["eligible task"]
+	s.Equal(deadline, eligible["deadline"])
+	s.Equal(startTime, eligible["startTime"])
+
+	// User data must still be attached (lookup moved inside $facet)
+	s.NotNil(eligible["user"])
+}
+
+func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_MissingActiveTreatedAsActive() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user1.ID}, bson.M{
+		"$set": bson.M{"friends": []primitive.ObjectID{user2.ID}},
+	})
+	s.NoError(err)
+
+	// Older docs may lack the active field entirely — they must still appear.
+	category := bson.M{
+		"_id":  primitive.NewObjectID(),
+		"name": "Legacy",
+		"user": user2.ID,
+		"tasks": []bson.M{
+			{
+				"_id":       primitive.NewObjectID(),
+				"content":   "legacy task without active field",
+				"priority":  1,
+				"value":     5.0,
+				"public":    true,
+				"timestamp": primitive.NewDateTimeFromTime(time.Now()),
+			},
+		},
+	}
+	_, err = s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tasks, _, err := s.service.GetFriendsPublicTasks(user1.ID, 50)
+	s.NoError(err)
+
+	found := false
+	for _, task := range tasks {
+		if content, ok := task["content"].(string); ok && content == "legacy task without active field" {
+			found = true
+		}
+	}
+	s.True(found, "task missing the active field should be treated as active")
 }
 
 func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_DefaultLimit() {
 	user := s.GetUser(0)
 
-	// Get with limit 0 (should use default of 20)
-	tasks, total, err := s.service.GetFriendsPublicTasks(user.ID, 0, 0)
+	// Limit 0 should fall back to the default pool size
+	tasks, total, err := s.service.GetFriendsPublicTasks(user.ID, 0)
 
 	s.NoError(err)
 	s.GreaterOrEqual(total, 0)
-	// tasks can be empty slice or nil, both are valid
 	if tasks != nil {
 		s.GreaterOrEqual(len(tasks), 0)
 	}
