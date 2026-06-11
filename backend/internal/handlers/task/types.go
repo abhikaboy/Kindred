@@ -37,6 +37,8 @@ type CreateTaskParams struct {
 	Checklist   []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
+
+	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
 
 type SortParams struct {
@@ -52,6 +54,7 @@ type Reminder = types.Reminder
 type FlexDetails = types.FlexDetails
 type FlexTemplateState = types.FlexTemplateState
 type FlexInstanceInfo = types.FlexInstanceInfo
+type TaggedTaskUser = types.TaggedTaskUser
 
 type UpdateTaskDocument struct {
 	Priority       int           `bson:"priority" json:"priority"`
