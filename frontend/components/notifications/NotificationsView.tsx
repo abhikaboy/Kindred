@@ -10,6 +10,7 @@ import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFr
 import UserInfoPostTagNotification from "@/components/UserInfo/UserInfoPostTagNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
 import UserInfoTaskTaggedNotification from "@/components/UserInfo/UserInfoTaskTaggedNotification";
+import UserInfoTaskCopiedNotification from "@/components/UserInfo/UserInfoTaskCopiedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -270,12 +271,13 @@ const NotificationItem = ({
                     image={notification.thumbnail}
                 />
             ) : notification.type === "task_copied" ? (
-                <UserInfoFriendAcceptedNotification
+                <UserInfoTaskCopiedNotification
                     name={notification.name}
                     userId={notification.userId}
                     content={notification.content}
                     icon={notification.icon}
                     time={notification.time}
+                    referenceId={notification.referenceId}
                 />
             ) : null}
         </TouchableOpacity>
