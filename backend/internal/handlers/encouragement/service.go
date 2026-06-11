@@ -297,13 +297,23 @@ func (s *Service) ToggleReaction(id, receiverID primitive.ObjectID, emoji string
 	return &emoji, nil
 }
 
-// sendReactionNotification pushes to the kudos sender when the receiver reacts.
+// sendReactionNotification notifies the kudos sender when the receiver reacts: an
+// in-app row on the notifications page plus a push that deep-links there.
 func (s *Service) sendReactionNotification(enc *EncouragementDocumentInternal, emoji string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
 
 	ctx := context.Background()
+
+	// Image kudos carry a URL in Message — leave it out of the notification copy.
+	content := fmt.Sprintf("reacted %s to your encouragement", emoji)
+	if enc.Message != "" && enc.Type != "image" {
+		content = fmt.Sprintf("%s: %q", content, enc.Message)
+	}
+	if err := s.NotificationService.CreateNotification(enc.Receiver, enc.Sender.ID, content, notifications.NotificationTypeKudosReaction, enc.ID); err != nil {
+		slog.Error("Failed to create kudos reaction notification", "error", err, "encouragement_id", enc.ID.Hex())
+	}
 
 	var sender types.User
 	if err := s.Users.FindOne(ctx, bson.M{"_id": enc.Sender.ID}).Decode(&sender); err != nil {
@@ -326,6 +336,7 @@ func (s *Service) sendReactionNotification(enc *EncouragementDocumentInternal, e
 			"type":       "kudos_reaction",
 			"kudos_type": "encouragement",
 			"reaction":   emoji,
+			"url":        "/feed?page=notifications",
 		},
 	})
 }

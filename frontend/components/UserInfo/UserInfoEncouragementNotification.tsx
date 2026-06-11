@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import KudosItem from "@/components/cards/KudosItem";
+import { useKudosOptional } from "@/contexts/kudosContext";
 import { getNotificationTimeLabel } from "./notificationTime";
 
 type Props = {
@@ -31,6 +32,7 @@ const UserInfoEncouragementNotification = ({
     type = "encouragement",
 }: Props) => {
     const ThemedColor = useThemeColor();
+    const kudosCtx = useKudosOptional();
     const isCongrats = type === "congratulation";
     // Notification content carries no kudos type, so an image/GIF kudos arrives
     // as its URL in `message`. Detect it so KudosItem renders the image, not the URL.
@@ -40,12 +42,32 @@ const UserInfoEncouragementNotification = ({
     // instead of an empty category/task row when we pass scope: "profile".
     const isProfileScope = !referenceId && !taskName;
 
+    // The notification row doesn't carry the kudos document ID, so match it back to the
+    // received kudos (sender + message, nearest in time) to enable reacting in place.
+    const pool = isCongrats ? kudosCtx?.congratulations : kudosCtx?.encouragements;
+    const matched = useMemo(() => {
+        if (!pool) return undefined;
+        const candidates = pool.filter((k) => k.sender.id === userId && (!message || k.message === message));
+        if (candidates.length === 0) return undefined;
+        return candidates.reduce((best, k) =>
+            Math.abs(new Date(k.timestamp).getTime() - time) < Math.abs(new Date(best.timestamp).getTime() - time)
+                ? k
+                : best,
+        );
+    }, [pool, userId, message, time]);
+
     const handlePress = () => {
         router.push(`/account/${userId}` as never);
     };
 
+    const handleReact = useMemo(() => {
+        if (!matched || !kudosCtx) return undefined;
+        return (id: string, emoji: string) =>
+            isCongrats ? kudosCtx.reactToCongratulation(id, emoji) : kudosCtx.reactToEncouragement(id, emoji);
+    }, [matched, kudosCtx, isCongrats]);
+
     const kudos = {
-        id: `${type}-${time}`,
+        id: matched?.id ?? `${type}-${time}`,
         sender: { name, picture: icon, id: userId },
         message: message || (isCongrats ? "Congratulated you!" : "Sent you an encouragement"),
         scope: isProfileScope ? "profile" : "task",
@@ -54,6 +76,7 @@ const UserInfoEncouragementNotification = ({
         timestamp: new Date(time).toISOString(),
         read: true,
         type: isImage ? "image" : "message",
+        reaction: matched?.reaction,
     };
 
     return (
@@ -61,6 +84,7 @@ const UserInfoEncouragementNotification = ({
             kudos={kudos}
             formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
             visible
+            onReact={handleReact}
             footerSlot={
                 <TouchableOpacity
                     onPress={handlePress}

@@ -6,6 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
+import UserInfoKudosReactionNotification from "@/components/UserInfo/UserInfoKudosReactionNotification";
 import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFriendAcceptedNotification";
 import UserInfoPostTagNotification from "@/components/UserInfo/UserInfoPostTagNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
@@ -235,6 +236,14 @@ const NotificationItem = ({
                     referenceId={notification.referenceId}
                     type="congratulation"
                 />
+            ) : notification.type === "kudos_reaction" ? (
+                <UserInfoKudosReactionNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    content={notification.content}
+                    icon={notification.icon}
+                    time={notification.time}
+                />
             ) : notification.type === "friend_request_accepted" ? (
                 <UserInfoFriendAcceptedNotification
                     name={notification.name}
@@ -373,6 +382,9 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
                 }
                 break;
+            case "kudos_reaction":
+                router.push(`/account/${notification.userId}`);
+                break;
             case "friend_request_accepted":
                 break;
             case "comment":
@@ -465,6 +477,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     | "comment"
                     | "encouragement"
                     | "congratulation"
+                    | "kudos_reaction"
                     | "friend_request"
                     | "friend_request_accepted"
                     | "post_tag"
