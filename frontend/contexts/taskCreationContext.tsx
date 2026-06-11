@@ -73,7 +73,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [value, setValue] = useState(1);
     const [recurring, setRecurring] = useState(false);
     const [recurFrequency, setRecurFrequency] = useState("");
-    const [recurDetails, setRecurDetails] = useState({
+    const [recurDetails, setRecurDetails] = useState<TaskCreationContextType["recurDetails"]>({
         every: 1,
         daysOfWeek: [0, 0, 0, 0, 0, 0, 0],
         behavior: "ROLLING",
@@ -231,6 +231,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
             setRecurDetails({
                 every: taskData.recurDetails.every || 1,
                 daysOfWeek: taskData.recurDetails.daysOfWeek || [0, 0, 0, 0, 0, 0, 0],
+                daysOfMonth: taskData.recurDetails.daysOfMonth,
+                months: taskData.recurDetails.months,
                 behavior: (taskData.recurDetails?.behavior as "BUILDUP" | "ROLLING") || "ROLLING",
             });
         } else {
