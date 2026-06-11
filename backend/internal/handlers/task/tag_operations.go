@@ -2,12 +2,15 @@ package task
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UpdateTaskTagsInput struct {
@@ -45,15 +48,22 @@ func (h *Handler) UpdateTaskTags(ctx context.Context, input *UpdateTaskTagsInput
 
 	added, err := h.service.UpdateTaskTags(userObjID, categoryID, taskID, input.Body.TaggedUserIDs)
 	if err != nil {
-		return nil, huma.Error500InternalServerError("Unable to update tags", err)
-	}
-
-	// Notify only newly added friends (best-effort)
-	if len(added) > 0 {
-		if task, err := h.service.findTaskInCategory(ctx, categoryID, taskID); err == nil {
-			notifyTask := *task
-			notifyTask.TaggedUsers = added
-			go h.service.NotifyTaggedUsers(&notifyTask, userObjID)
+		switch {
+		case errors.Is(err, ErrTaskNotFound):
+			return nil, huma.Error404NotFound("Task not found in this category", err)
+		// verifyCategoryOwnership returns raw mongo.ErrNoDocuments when the
+		// category is missing or not owned by the caller — treat as 404
+		case errors.Is(err, ErrCategoryNotFound), errors.Is(err, mongo.ErrNoDocuments):
+			return nil, huma.Error404NotFound("Category not found", err)
+		case errors.Is(err, ErrNotCategoryOwner):
+			return nil, huma.Error403Forbidden("You do not have access to this category", err)
+		default:
+			slog.Error("Failed to update task tags",
+				"taskId", taskID.Hex(),
+				"categoryId", categoryID.Hex(),
+				"userId", userObjID.Hex(),
+				"error", err)
+			return nil, huma.Error500InternalServerError("Unable to update tags", err)
 		}
 	}
 
@@ -61,6 +71,14 @@ func (h *Handler) UpdateTaskTags(ctx context.Context, input *UpdateTaskTagsInput
 	if err != nil {
 		return nil, huma.Error500InternalServerError("Unable to fetch updated task", err)
 	}
+
+	// Notify only newly added friends (best-effort)
+	if len(added) > 0 {
+		notifyTask := *task
+		notifyTask.TaggedUsers = added
+		go h.service.NotifyTaggedUsers(&notifyTask, userObjID)
+	}
+
 	resp := &UpdateTaskTagsOutput{}
 	resp.Body.TaggedUsers = task.TaggedUsers
 	return resp, nil

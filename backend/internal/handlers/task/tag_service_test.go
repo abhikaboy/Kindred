@@ -263,3 +263,97 @@ func (s *TagServiceTestSuite) TestUpdateTaskTags_RemovesPendingEntry() {
 	s.NoError(err)
 	s.Len(fetched.TaggedUsers, 0)
 }
+
+func (s *TagServiceTestSuite) TestUpdateTaskTags_RespondedUserResuppliedKeepsStatus() {
+	owner := s.GetUser(0)
+	friendA := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// Seed: A already responded (watching)
+	tagged, _ := s.service.BuildTaggedUsers([]string{friendA.ID.Hex()})
+	tagged[0].Status = types.TagStatusWatching
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "x",
+		Priority:    1,
+		Value:       1,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Active:      true,
+		TaggedUsers: tagged,
+	}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	// Re-supplying A must not duplicate the entry or reset it to pending
+	added, err := s.service.UpdateTaskTags(owner.ID, category.ID, created.ID, []string{friendA.ID.Hex()})
+	s.NoError(err)
+	s.Len(added, 0)
+
+	fetched, err := s.service.GetTaskByID(created.ID, owner.ID)
+	s.NoError(err)
+	s.Len(fetched.TaggedUsers, 1)
+	s.Equal(friendA.ID, fetched.TaggedUsers[0].ID)
+	s.Equal(types.TagStatusWatching, fetched.TaggedUsers[0].Status)
+}
+
+func (s *TagServiceTestSuite) TestUpdateTaskTags_MirrorsToTemplate() {
+	owner := s.GetUser(0)
+	friendA := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	templateID := primitive.NewObjectID()
+	template := &types.TemplateTaskDocument{
+		ID:         templateID,
+		UserID:     owner.ID,
+		CategoryID: category.ID,
+		Content:    "x",
+		Priority:   1,
+		Value:      1,
+		RecurType:  "Occurrence",
+	}
+	_, err = s.Collections["template-tasks"].InsertOne(s.Ctx, template)
+	s.NoError(err)
+
+	task := TaskDocument{
+		ID:         primitive.NewObjectID(),
+		Content:    "x",
+		Priority:   1,
+		Value:      1,
+		UserID:     owner.ID,
+		CategoryID: category.ID,
+		Active:     true,
+		Recurring:  true,
+		TemplateID: &templateID,
+	}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	_, err = s.service.UpdateTaskTags(owner.ID, category.ID, created.ID, []string{friendA.ID.Hex()})
+	s.NoError(err)
+
+	var tmpl types.TemplateTaskDocument
+	err = s.Collections["template-tasks"].FindOne(s.Ctx, bson.M{"_id": templateID}).Decode(&tmpl)
+	s.NoError(err)
+	s.Len(tmpl.TaggedUsers, 1)
+	s.Equal(friendA.ID, tmpl.TaggedUsers[0].ID)
+	s.Equal(types.TagStatusPending, tmpl.TaggedUsers[0].Status)
+}
