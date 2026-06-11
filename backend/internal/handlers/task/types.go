@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/repository"
@@ -152,6 +153,7 @@ type Service struct {
 	EncouragementHelper EncouragementServiceInterface
 	RingService         *rings.RingService
 	PushEnqueuer        PushEnqueuer // optional; nil disables push hooks
+	NotificationService *notifications.Service
 }
 
 // EncouragementServiceInterface defines the methods we need from the encouragement service

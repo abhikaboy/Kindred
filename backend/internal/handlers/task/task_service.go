@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
@@ -67,6 +68,7 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 		TemplateTasks:       collections["template-tasks"],
 		EncouragementHelper: encouragement.NewEncouragementService(collections),
 		RingService:         ringService,
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 

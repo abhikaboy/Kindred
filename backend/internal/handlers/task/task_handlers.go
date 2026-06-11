@@ -227,6 +227,10 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		return nil, huma.Error500InternalServerError("Unable to create task due to a database error. Please try again.", err)
 	}
 
+	if len(doc.TaggedUsers) > 0 {
+		go h.service.NotifyTaggedUsers(doc, userObjID)
+	}
+
 	// Increment Plan ring synchronously so the response carries the delta.
 	// NotifyAllRingsClosed is already async (2-minute delayed).
 	var ringDelta *rings.RingDelta

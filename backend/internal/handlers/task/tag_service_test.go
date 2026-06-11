@@ -6,6 +6,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
 	"github.com/stretchr/testify/suite"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -51,6 +52,94 @@ func (s *TagServiceTestSuite) TestBuildTaggedUsers_DeduplicatesRepeatedIDs() {
 	s.NoError(err)
 	s.Len(tagged, 1)
 	s.Equal(friend.ID, tagged[0].ID)
+}
+
+func (s *TagServiceTestSuite) TestNotifyTaggedUsers_CreatesNotificationRecordAndSendsPush() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	// Create a category for the owner
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, err := s.service.BuildTaggedUsers([]string{friend.ID.Hex()})
+	s.NoError(err)
+
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "Read 30 mins",
+		Priority:    1,
+		Value:       2,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Active:      true,
+		TaggedUsers: tagged,
+	}
+
+	s.service.NotifyTaggedUsers(&task, owner.ID)
+
+	// Assert a TASK_TAGGED notification record exists for friend (receiver)
+	count := s.CountDocuments("notifications", bson.M{
+		"receiver":         friend.ID,
+		"notificationType": "TASK_TAGGED",
+		"reference_id":     task.ID,
+	})
+	s.Equal(int64(1), count, "expected one TASK_TAGGED notification record for the tagged friend")
+
+	// Assert a push was sent to friend's push token
+	s.AssertPushNotificationSent(friend.PushToken, "expected push notification sent to tagged friend")
+}
+
+func (s *TagServiceTestSuite) TestNotifyTaggedUsers_SkipsNonPendingUsers() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// Build tagged user but set status to accepted — should be skipped
+	tagged := []types.TaggedTaskUser{
+		{
+			ID:          friend.ID,
+			Handle:      friend.Handle,
+			DisplayName: friend.DisplayName,
+			Status:      types.TagStatusWatching,
+		},
+	}
+
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "Read 30 mins",
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		TaggedUsers: tagged,
+	}
+
+	s.service.NotifyTaggedUsers(&task, owner.ID)
+
+	// No notification record should exist
+	count := s.CountDocuments("notifications", bson.M{
+		"receiver":         friend.ID,
+		"notificationType": "TASK_TAGGED",
+	})
+	s.Equal(int64(0), count, "non-pending tagged users should not receive notifications")
+
+	// No push should have been sent
+	s.AssertPushNotificationNotSent(friend.PushToken, "non-pending tagged users should not receive push")
 }
 
 func (s *TagServiceTestSuite) TestCreateTask_PersistsTaggedUsers() {
