@@ -5157,6 +5157,74 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tagged-tasks:
+        get:
+            tags:
+                - tasks
+            summary: Get pending tagged tasks
+            description: Tasks the signed-in user has been tagged in and not yet responded to
+            operationId: get-pending-tagged-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/PendingTaggedTask'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tagged-tasks/{id}/respond:
+        post:
+            tags:
+                - tasks
+            summary: Respond to a task tag
+            description: Watch, copy, or untag yourself from a task you were tagged in
+            operationId: respond-to-task-tag
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RespondToTaskTagInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RespondToTaskTagOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tags:
         get:
             tags:
@@ -5515,6 +5583,54 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateTaskNotesOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/tags:
+        patch:
+            tags:
+                - tasks
+            summary: Update task tags
+            description: Replace the set of friends tagged on a task
+            operationId: update-task-tags
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskTagsInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskTagsOutputBody'
                 default:
                     description: Error
                     content:
@@ -8573,6 +8689,10 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 templateID:
                     type: string
                 timeCompleted:
@@ -8650,6 +8770,10 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                taggedUserIds:
+                    type: array
+                    items:
+                        type: string
                 value:
                     type: number
                     format: double
@@ -10851,6 +10975,48 @@ components:
                 - encouragements
                 - congratulations
                 - friend_requests
+        PendingTaggedTask:
+            type: object
+            additionalProperties: false
+            properties:
+                checklist:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChecklistItem'
+                content:
+                    type: string
+                deadline:
+                    type: string
+                    format: date-time
+                notes:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                recurDetails:
+                    $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurring:
+                    type: boolean
+                tagger:
+                    $ref: '#/components/schemas/TaggerInfo'
+                taskId:
+                    type: string
+                timestamp:
+                    type: string
+                    format: date-time
+                value:
+                    type: number
+                    format: double
+            required:
+                - taskId
+                - content
+                - value
+                - priority
+                - recurring
+                - timestamp
+                - tagger
         PostDocumentAPI:
             type: object
             additionalProperties: false
@@ -11780,6 +11946,42 @@ components:
                         - Template metrics reset successfully
             required:
                 - message
+        RespondToTaskTagInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RespondToTaskTagInputBody.json
+                    readOnly: true
+                status:
+                    type: string
+                    enum:
+                        - watching
+                        - copied
+                        - untagged
+            required:
+                - status
+        RespondToTaskTagOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RespondToTaskTagOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Response recorded
+            required:
+                - message
         RevenueCatEvent:
             type: object
             additionalProperties: false
@@ -12299,6 +12501,43 @@ components:
                 - events_total
                 - categories_synced
                 - workspace_name
+        TaggedTaskUser:
+            type: object
+            additionalProperties: false
+            properties:
+                display_name:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profile_picture:
+                    type: string
+                status:
+                    type: string
+            required:
+                - id
+                - handle
+                - display_name
+                - profile_picture
+                - status
+        TaggerInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                display_name:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profile_picture:
+                    type: string
+            required:
+                - id
+                - display_name
+                - handle
+                - profile_picture
         TaskDocument:
             type: object
             additionalProperties: false
@@ -12371,6 +12610,10 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 templateID:
                     type: string
                 timeCompleted:
@@ -12557,6 +12800,10 @@ components:
                 streak:
                     type: integer
                     format: int64
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 timesCompleted:
                     type: integer
                     format: int64
@@ -12661,6 +12908,10 @@ components:
                 streak:
                     type: integer
                     format: int64
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 timesCompleted:
                     type: integer
                     format: int64
@@ -13481,6 +13732,40 @@ components:
                         - Task start date/time updated successfully
             required:
                 - message
+        UpdateTaskTagsInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskTagsInputBody.json
+                    readOnly: true
+                taggedUserIds:
+                    type: array
+                    items:
+                        type: string
+            required:
+                - taggedUserIds
+        UpdateTaskTagsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskTagsOutputBody.json
+                    readOnly: true
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
+            required:
+                - taggedUsers
         UpdateTemplateDocument:
             type: object
             additionalProperties: false
