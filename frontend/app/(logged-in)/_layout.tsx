@@ -54,6 +54,9 @@ type NotificationType =
     | "comment"
     | "post_tag"
     | "rings_closed"
+    | "task_tagged"
+    | "task_copied"
+    | "task_completed_watcher"
     | "TASK_MISSED"
     | "TASK_REGENERATED"
     | "ABSOLUTE"
@@ -135,6 +138,19 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
                 return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.user_id}`;
             }
             return "/(logged-in)/(tabs)/(profile)/profile";
+        case "task_tagged":
+            // Response banner lives on the home screen
+            return "/(logged-in)/(tabs)/(task)";
+        case "task_copied":
+            if (data.task_id) {
+                return `/(logged-in)/(tabs)/(task)/task/${data.task_id}`;
+            }
+            return "/(logged-in)/(tabs)/(task)";
+        case "task_completed_watcher":
+            if (data.user_id) {
+                return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.user_id}`;
+            }
+            return "/(logged-in)/(tabs)/(task)";
         case "TASK_MISSED":
         case "TASK_REGENERATED":
         case "ABSOLUTE":
