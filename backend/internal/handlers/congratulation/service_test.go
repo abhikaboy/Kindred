@@ -369,6 +369,39 @@ func (s *CongratulationServiceTestSuite) TestCreateCongratulation_ImageType() {
 	s.Equal("https://example.com/congrats-image.jpg", result.Message)
 }
 
+func (s *CongratulationServiceTestSuite) TestCreateCongratulation_VideoType() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	thumb := "https://example.com/congrats-thumb.jpg"
+	duration := 20_000
+	newCongratulation := &CongratulationDocumentInternal{
+		Sender: CongratulationSenderInternal{
+			ID:      user1.ID,
+			Name:    user1.DisplayName,
+			Picture: user1.ProfilePicture,
+		},
+		Receiver:     user2.ID,
+		Message:      "https://example.com/congrats.mp4",
+		CategoryName: "Personal",
+		TaskName:     "Achievement",
+		Type:         "video",
+		ThumbnailURL: &thumb,
+		DurationMs:   &duration,
+	}
+
+	result, err := s.service.CreateCongratulation(newCongratulation)
+
+	s.NoError(err)
+	s.NotNil(result)
+	s.Equal("video", result.Type)
+	s.Equal("https://example.com/congrats.mp4", result.Message)
+	s.NotNil(result.ThumbnailURL)
+	s.Equal(thumb, *result.ThumbnailURL)
+	s.NotNil(result.DurationMs)
+	s.Equal(duration, *result.DurationMs)
+}
+
 // ========================================
 // UpdatePartialCongratulation Tests
 // ========================================
