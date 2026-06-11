@@ -41,18 +41,19 @@ the next evening.
 
 Lives in `backend/internal/handlers/task/` alongside `BulkCompleteTask`.
 
-**Input body** (`LogTasksInputBody` — name must not collide with types in other handler
-packages; verify with `make generate-api`):
+**Input body** (types must not collide with names in other handler packages; verify with
+`make generate-api`):
 
 ```json
 {
-  "workspaceId": "<id>",
+  "workspaceName": "Personal",
   "tasks": [{ "content": "gym" }, { "content": "called mom" }]
 }
 ```
 
-- `workspaceId` required (categories are workspace-scoped; server must know where the
-  Logged category lives).
+- `workspaceName` required — workspaces are identified by name in this codebase (categories
+  carry a `workspaceName` string; there is no workspace ID). The server must know where
+  the Logged category lives.
 - `tasks`: 1–50 entries; `content` non-empty after trim.
 
 **Behavior:**
