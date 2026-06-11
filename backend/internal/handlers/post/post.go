@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -281,47 +282,19 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		offset = 0
 	}
 
-	// Fetch more items than requested to account for interleaving
-	// We want to interleave 1 task per 5 posts, so we need roughly 83% posts and 17% tasks
-	postsNeeded := int(float64(limit) * 0.83)
-	if postsNeeded < 1 {
-		postsNeeded = 1
-	}
-	tasksNeeded := limit - postsNeeded
-
-	// Get friends posts
-	posts, postsTotal, err := h.service.GetFriendsPosts(userID, postsNeeded, offset)
+	// Posts fill the page; sampled tasks displace a few at reserved slots.
+	posts, postsTotal, err := h.service.GetFriendsPosts(userID, limit, offset)
 	if err != nil {
 		slog.Error("failed to get feed posts", "userId", userIDStr, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to get feed. Please try again.", err)
 	}
 
-	// Get friends' public tasks (with user data from aggregation pipeline)
-	tasks, tasksTotal, err := h.service.GetFriendsPublicTasks(userID, tasksNeeded, offset)
+	// Fetch the task candidate pool; scoring + sampling happens below.
+	// Errors degrade to a posts-only feed.
+	taskDocs, tasksTotal, err := h.service.GetFriendsPublicTasks(userID, defaultTaskPoolSize)
 	if err != nil {
-		tasks = []bson.M{} // Empty tasks if there's an error
-	}
-
-	// Adaptive fetching: if we got fewer posts than expected, fetch more tasks to fill the feed
-	if len(posts) < postsNeeded && len(tasks) < limit {
-		additionalTasksNeeded := limit - len(posts) - len(tasks)
-		if additionalTasksNeeded > 0 {
-			moreTasks, _, err := h.service.GetFriendsPublicTasks(userID, additionalTasksNeeded, len(tasks))
-			if err == nil {
-				tasks = append(tasks, moreTasks...)
-			}
-		}
-	}
-
-	// Adaptive fetching: if we got fewer tasks than expected, fetch more posts to fill the feed
-	if len(tasks) < tasksNeeded && len(posts) < limit {
-		additionalPostsNeeded := limit - len(posts) - len(tasks)
-		if additionalPostsNeeded > 0 {
-			morePosts, _, err := h.service.GetFriendsPosts(userID, additionalPostsNeeded, len(posts))
-			if err == nil {
-				posts = append(posts, morePosts...)
-			}
-		}
+		taskDocs = nil
+		tasksTotal = 0
 	}
 
 	// Get friends' ring closure events
@@ -337,82 +310,20 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		apiPosts = append(apiPosts, *post.ToAPI(userID))
 	}
 
-	// Convert tasks to FeedTaskData
-	var feedTasks []FeedTaskData
-	for _, task := range tasks {
-		// Extract user data from the task document
-		var taskUser *types.UserExtendedReference
-		if userDoc, ok := task["user"].(bson.M); ok {
-			if id, ok := userDoc["_id"].(primitive.ObjectID); ok {
-				if handle, ok := userDoc["handle"].(string); ok {
-					if displayName, ok := userDoc["display_name"].(string); ok {
-						if profilePicture, ok := userDoc["profile_picture"].(string); ok {
-							taskUser = &types.UserExtendedReference{
-								ID:             id.Hex(),
-								Handle:         handle,
-								DisplayName:    displayName,
-								ProfilePicture: profilePicture,
-							}
-						}
-					}
-				}
-			}
+	// Score the candidate pool and sample the page's task slots
+	candidates := make([]taskCandidate, 0, len(taskDocs))
+	for _, doc := range taskDocs {
+		if c, ok := parseTaskCandidate(doc); ok {
+			candidates = append(candidates, *c)
 		}
-
-		// Extract task fields with type assertions
-		taskID, ok := task["_id"].(primitive.ObjectID)
-		if !ok {
-			continue
-		}
-		content, ok := task["content"].(string)
-		if !ok {
-			continue
-		}
-		priority, ok := task["priority"].(int32)
-		if !ok {
-			continue
-		}
-		value, ok := task["value"].(float64)
-		if !ok {
-			continue
-		}
-		public, ok := task["public"].(bool)
-		if !ok {
-			continue
-		}
-		timestamp, ok := task["timestamp"].(primitive.DateTime)
-		if !ok {
-			continue
-		}
-		categoryID, ok := task["categoryId"].(primitive.ObjectID)
-		if !ok {
-			continue
-		}
-		categoryName, ok := task["categoryName"].(string)
-		if !ok {
-			continue
-		}
-		workspaceName, ok := task["workspaceName"].(string)
-		if !ok {
-			continue
-		}
-
-		feedTask := FeedTaskData{
-			ID:            taskID.Hex(),
-			Content:       content,
-			Priority:      int(priority),
-			Value:         value,
-			Public:        public,
-			Timestamp:     timestamp.Time().Format(time.RFC3339),
-			CategoryID:    categoryID.Hex(),
-			CategoryName:  categoryName,
-			WorkspaceName: workspaceName,
-			User:          taskUser,
-		}
-		feedTasks = append(feedTasks, feedTask)
 	}
+	now := time.Now()
+	rng := rand.New(rand.NewSource(now.UnixNano()))
+	tasksNeeded := limit / taskSlotInterval
+	sampledTasks := sampleTasks(candidates, tasksNeeded, defaultTaskScoring, now, rng)
 
-	// Build timestamped items for chronological merge
+	// Build timestamped items for chronological merge (posts + ring closures;
+	// tasks are placed by slot, not by timestamp)
 	type timestampedItem struct {
 		feedItem FeedItem
 		time     time.Time
@@ -425,15 +336,6 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		allItems = append(allItems, timestampedItem{
 			feedItem: FeedItem{Type: "post", Post: &post},
 			time:     post.Metadata.CreatedAt,
-		})
-	}
-
-	for i := range feedTasks {
-		task := feedTasks[i]
-		t, _ := time.Parse(time.RFC3339, task.Timestamp)
-		allItems = append(allItems, timestampedItem{
-			feedItem: FeedItem{Type: "task", Task: &task},
-			time:     t,
 		})
 	}
 
@@ -451,11 +353,12 @@ func (h *Handler) GetFeedHuma(ctx context.Context, input *GetFeedInput) (*GetFee
 		return allItems[i].time.After(allItems[j].time)
 	})
 
-	// Take up to limit items
-	var feedItems []FeedItem
-	for i := 0; i < len(allItems) && i < limit; i++ {
-		feedItems = append(feedItems, allItems[i].feedItem)
+	chronological := make([]FeedItem, len(allItems))
+	for i, item := range allItems {
+		chronological[i] = item.feedItem
 	}
+
+	feedItems := interleaveFeedItems(chronological, sampledTasks, limit)
 
 	// Calculate total items and pagination
 	totalItems := postsTotal + tasksTotal + ringsTotal
