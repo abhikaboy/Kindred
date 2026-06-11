@@ -17,7 +17,7 @@ import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs 
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
-import { updateTaskAPI, updateTemplateAPI } from "@/api/task";
+import { updateTaskAPI, updateTemplateAPI, respondToTaskTagAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
 import { combineDateAndTime } from "@/utils/timeUtils";
@@ -260,7 +260,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             removeFromCategory(selectedCategory.id, tempId);
             addToCategory(selectedCategory.id, response);
             if (copySourceTaskId) {
-                const { respondToTaskTagAPI } = await import("@/api/task");
                 respondToTaskTagAPI(copySourceTaskId, "copied").catch(() => {});
                 setCopySourceTaskId(null);
                 queryClient.invalidateQueries({ queryKey: ["taskTags", "pending"] });
