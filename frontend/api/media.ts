@@ -24,6 +24,14 @@ export function assetsToPickedMedia(
     }));
 }
 
+/** "m:ss" label for video duration pills (15000 -> "0:15"). */
+export function formatVideoDuration(durationMs: number): string {
+    const totalSec = Math.round(durationMs / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export type VideoThumb = { uri: string; width: number; height: number };
 
 /**

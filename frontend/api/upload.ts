@@ -389,6 +389,18 @@ export async function uploadBlueprintBanner(blueprintId: string, imageUri: strin
 export const VIDEO_MAX_BYTES = 100 * 1024 * 1024; // 100MB
 export const VIDEO_MAX_DURATION_MS = 60_000; // 60s
 
+// Kudos videos are quick cheers — half the post limits.
+// Must stay in sync with KudosVideoMaxDurationMs in backend/internal/handlers/types/types.go.
+export const KUDOS_VIDEO_MAX_BYTES = 50 * 1024 * 1024; // 50MB
+export const KUDOS_VIDEO_MAX_DURATION_MS = 30_000; // 30s
+
+export type UploadVideoOptions = {
+    /** Byte cap applied to the file actually uploaded. Defaults to the post limit. */
+    maxBytes?: number;
+    /** Known clip length, threaded onto the returned MediaItem. */
+    durationMs?: number;
+};
+
 /**
  * Compress a video on-device (~720p H.264), generate a thumbnail, and upload both.
  * Returns a MediaItem for inclusion in a post's media[].
@@ -396,7 +408,8 @@ export const VIDEO_MAX_DURATION_MS = 60_000; // 60s
 export async function uploadVideo(
     resourceType: string,
     resourceId: string,
-    videoUri: string
+    videoUri: string,
+    options: UploadVideoOptions = {}
 ): Promise<MediaItem> {
     // Lazy-load native modules so merely importing this file never crashes the
     // app in a build that hasn't been prebuilt with these native deps.
@@ -424,8 +437,9 @@ export async function uploadVideo(
     );
 
     // 3. Enforce size cap on the file we'll actually upload.
+    const maxBytes = options.maxBytes ?? VIDEO_MAX_BYTES;
     const blob = await fetch(uploadUri).then((r) => r.blob());
-    if (blob.size > VIDEO_MAX_BYTES) {
+    if (blob.size > maxBytes) {
         throw new Error("Video is too large after compression. Please pick a shorter clip.");
     }
 
@@ -449,5 +463,6 @@ export async function uploadVideo(
         width: thumb.width || thumbResult.width || 0,
         height: thumb.height || thumbResult.height || 0,
         bytes: blob.size,
+        durationMs: options.durationMs,
     };
 }
