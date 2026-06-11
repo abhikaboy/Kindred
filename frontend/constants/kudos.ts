@@ -4,3 +4,7 @@ export const KUDOS_CONSTANTS = {
   CONGRATULATIONS_MAX: 12,
 } as const;
 
+// Curated reaction set — must match backend types.KudosReactionEmojis byte-for-byte
+export const KUDOS_REACTION_EMOJIS = ["❤️", "🙌", "🔥", "😭"] as const;
+export type KudosReactionEmoji = (typeof KUDOS_REACTION_EMOJIS)[number];
+

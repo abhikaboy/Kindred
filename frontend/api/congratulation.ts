@@ -46,6 +46,46 @@ export const getCongratulationsAPI = async (): Promise<CongratulationDocument[]>
 };
 
 /**
+ * Get all congratulations sent by the authenticated user (with receiver info + reaction state)
+ * API: Makes GET request to retrieve sent congratulations
+ * Frontend: Used by the Sent view on the Kudos screen
+ */
+export const getSentCongratulationsAPI = async (): Promise<CongratulationDocument[]> => {
+    const { data, error } = await client.GET("/v1/user/congratulations/sent", {
+        params: withAuthHeaders(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get sent congratulations: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
+ * Toggle the receiver's emoji reaction on a congratulation
+ * API: Makes POST request to toggle the reaction
+ * Frontend: Used by the reaction bar on received kudos cards
+ * @param id - The congratulation ID
+ * @param emoji - One of KUDOS_REACTION_EMOJIS
+ */
+export const reactToCongratulationAPI = async (
+    id: string,
+    emoji: string
+): Promise<{ reaction: string | null; message: string }> => {
+    const { data, error } = await client.POST("/v1/user/congratulations/{id}/reaction", {
+        params: withAuthHeaders({ path: { id } }),
+        body: { emoji },
+    });
+
+    if (error) {
+        throw new Error(`Failed to react to congratulation: ${JSON.stringify(error)}`);
+    }
+
+    return data as { reaction: string | null; message: string };
+};
+
+/**
  * Mark multiple congratulations as read
  * API: Makes PATCH request to mark congratulations as read
  * Frontend: Used when user views their congratulations

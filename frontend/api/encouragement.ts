@@ -150,6 +150,46 @@ export const getEncouragementsByTask = async (taskId: string): Promise<Encourage
 };
 
 /**
+ * Get all encouragements sent by the authenticated user (with receiver info + reaction state)
+ * API: Makes GET request to retrieve sent encouragements
+ * Frontend: Used by the Sent view on the Kudos screen
+ */
+export const getSentEncouragementsAPI = async (): Promise<EncouragementDocument[]> => {
+    const { data, error } = await client.GET("/v1/user/encouragements/sent", {
+        params: withAuthHeaders(),
+    });
+
+    if (error) {
+        throw new Error(`Failed to get sent encouragements: ${JSON.stringify(error)}`);
+    }
+
+    return data || [];
+};
+
+/**
+ * Toggle the receiver's emoji reaction on an encouragement
+ * API: Makes POST request to toggle the reaction
+ * Frontend: Used by the reaction bar on received kudos cards
+ * @param id - The encouragement ID
+ * @param emoji - One of KUDOS_REACTION_EMOJIS
+ */
+export const reactToEncouragementAPI = async (
+    id: string,
+    emoji: string
+): Promise<{ reaction: string | null; message: string }> => {
+    const { data, error } = await client.POST("/v1/user/encouragements/{id}/reaction", {
+        params: withAuthHeaders({ path: { id } }),
+        body: { emoji },
+    });
+
+    if (error) {
+        throw new Error(`Failed to react to encouragement: ${JSON.stringify(error)}`);
+    }
+
+    return data as { reaction: string | null; message: string };
+};
+
+/**
  * Delete an encouragement message
  * API: Makes DELETE request to remove the encouragement
  * Frontend: Used to delete encouragement messages
