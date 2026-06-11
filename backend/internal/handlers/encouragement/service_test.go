@@ -276,6 +276,39 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_ImageType_Succes
 	s.Equal("https://example.com/encouragement-image.jpg", result.Message)
 }
 
+func (s *EncouragementServiceTestSuite) TestCreateEncouragement_VideoType_Success() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	s.setUserEncouragementBalance(user1.ID, 2)
+
+	senderInfo, err := s.service.GetSenderInfo(user1.ID)
+	s.NoError(err)
+
+	thumb := "https://example.com/cheer-thumb.jpg"
+	duration := 12_000
+	newEnc := &encouragement.EncouragementDocumentInternal{
+		Sender:       *senderInfo,
+		Receiver:     user2.ID,
+		Message:      "https://example.com/cheer.mp4",
+		Scope:        "profile",
+		Type:         "video",
+		ThumbnailURL: &thumb,
+		DurationMs:   &duration,
+	}
+
+	result, err := s.service.CreateEncouragement(newEnc)
+
+	s.NoError(err)
+	s.NotNil(result)
+	s.Equal("video", result.Type)
+	s.Equal("https://example.com/cheer.mp4", result.Message)
+	s.NotNil(result.ThumbnailURL)
+	s.Equal(thumb, *result.ThumbnailURL)
+	s.NotNil(result.DurationMs)
+	s.Equal(duration, *result.DurationMs)
+}
+
 func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBalance() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
