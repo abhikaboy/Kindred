@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/repository"
@@ -37,6 +38,8 @@ type CreateTaskParams struct {
 	Checklist   []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
+
+	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
 
 type SortParams struct {
@@ -52,6 +55,7 @@ type Reminder = types.Reminder
 type FlexDetails = types.FlexDetails
 type FlexTemplateState = types.FlexTemplateState
 type FlexInstanceInfo = types.FlexInstanceInfo
+type TaggedTaskUser = types.TaggedTaskUser
 
 type UpdateTaskDocument struct {
 	Priority       int           `bson:"priority" json:"priority"`
@@ -149,6 +153,7 @@ type Service struct {
 	EncouragementHelper EncouragementServiceInterface
 	RingService         *rings.RingService
 	PushEnqueuer        PushEnqueuer // optional; nil disables push hooks
+	NotificationService *notifications.Service
 }
 
 // EncouragementServiceInterface defines the methods we need from the encouragement service

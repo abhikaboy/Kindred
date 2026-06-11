@@ -88,6 +88,9 @@ type TaskDocument struct {
 
 	// Encouragements recorded on this task (denormalized at encourage time).
 	Encouragements []TaskKudos `bson:"encouragements,omitempty" json:"encouragements,omitempty"`
+
+	// Friends tagged on this task (denormalized at tag time).
+	TaggedUsers []TaggedTaskUser `bson:"taggedUsers,omitempty" json:"taggedUsers,omitempty"`
 }
 
 // KudosSender is an extended reference to the user who sent an encouragement,
@@ -107,6 +110,26 @@ type TaskKudos struct {
 	Message         string             `bson:"message" json:"message"`
 	Timestamp       time.Time          `bson:"timestamp" json:"timestamp"`
 	Type            string             `bson:"type" json:"type"` // "message" | "image"
+}
+
+// Tag status lifecycle: pending -> watching | copied | untagged.
+type TagStatus string
+
+const (
+	TagStatusPending  TagStatus = "pending"
+	TagStatusWatching TagStatus = "watching"
+	TagStatusCopied   TagStatus = "copied"
+	TagStatusUntagged TagStatus = "untagged"
+)
+
+// TaggedTaskUser is one friend tagged on a task, denormalized at tag time so
+// the client can render the watcher row without a join.
+type TaggedTaskUser struct {
+	ID             primitive.ObjectID `bson:"id" json:"id"`
+	Handle         string             `bson:"handle" json:"handle"`
+	DisplayName    string             `bson:"display_name" json:"display_name"`
+	ProfilePicture string             `bson:"profile_picture" json:"profile_picture"`
+	Status         TagStatus          `bson:"status" json:"status"`
 }
 
 /*
@@ -164,6 +187,9 @@ type TemplateTaskDocument struct {
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 
 	FlexState *FlexTemplateState `bson:"flexState,omitempty" json:"flexState,omitempty"`
+
+	// Mirrored from the live task so generated instances inherit tag state.
+	TaggedUsers []TaggedTaskUser `bson:"taggedUsers,omitempty" json:"taggedUsers,omitempty"`
 }
 
 type RecurDetails struct {

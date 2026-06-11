@@ -1,6 +1,8 @@
 package xutils
 
 import (
+	"sync"
+
 	expo "github.com/oliveroneill/exponent-server-sdk-golang/sdk"
 )
 
@@ -85,8 +87,10 @@ func (e *ExpoPushNotificationSender) SendBatchNotification(notifications []Notif
 	return err
 }
 
-// MockPushNotificationSender is a mock implementation for testing
+// MockPushNotificationSender is a mock implementation for testing.
+// Mutex-guarded so tests can poll it while service goroutines send pushes.
 type MockPushNotificationSender struct {
+	mu                         sync.Mutex
 	SentNotifications          []Notification
 	SendNotificationError      error
 	SendBatchNotificationError error
@@ -101,6 +105,8 @@ func NewMockPushNotificationSender() *MockPushNotificationSender {
 
 // SendNotification mocks sending a single push notification
 func (m *MockPushNotificationSender) SendNotification(notification Notification) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.SendNotificationError != nil {
 		return m.SendNotificationError
 	}
@@ -110,6 +116,8 @@ func (m *MockPushNotificationSender) SendNotification(notification Notification)
 
 // SendBatchNotification mocks sending multiple push notifications
 func (m *MockPushNotificationSender) SendBatchNotification(notifications []Notification) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.SendBatchNotificationError != nil {
 		return m.SendBatchNotificationError
 	}
@@ -117,13 +125,19 @@ func (m *MockPushNotificationSender) SendBatchNotification(notifications []Notif
 	return nil
 }
 
-// GetSentNotifications returns all sent notifications
+// GetSentNotifications returns a copy of all sent notifications
 func (m *MockPushNotificationSender) GetSentNotifications() []Notification {
-	return m.SentNotifications
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	result := make([]Notification, len(m.SentNotifications))
+	copy(result, m.SentNotifications)
+	return result
 }
 
 // GetSentNotificationsForToken returns all notifications sent to a specific token
 func (m *MockPushNotificationSender) GetSentNotificationsForToken(token string) []Notification {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	var result []Notification
 	for _, n := range m.SentNotifications {
 		if n.Token == token {
@@ -135,6 +149,8 @@ func (m *MockPushNotificationSender) GetSentNotificationsForToken(token string) 
 
 // GetSentNotificationsByType returns all notifications of a specific type
 func (m *MockPushNotificationSender) GetSentNotificationsByType(notificationType string) []Notification {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	var result []Notification
 	for _, n := range m.SentNotifications {
 		if n.Data != nil && n.Data["type"] == notificationType {
@@ -146,6 +162,8 @@ func (m *MockPushNotificationSender) GetSentNotificationsByType(notificationType
 
 // Reset clears all sent notifications
 func (m *MockPushNotificationSender) Reset() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.SentNotifications = make([]Notification, 0)
 	m.SendNotificationError = nil
 	m.SendBatchNotificationError = nil
@@ -158,5 +176,7 @@ func (m *MockPushNotificationSender) AssertNotificationSent(token string) bool {
 
 // AssertNotificationCount checks if the expected number of notifications were sent
 func (m *MockPushNotificationSender) AssertNotificationCount(expected int) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return len(m.SentNotifications) == expected
 }

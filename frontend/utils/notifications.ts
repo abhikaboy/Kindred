@@ -7,7 +7,9 @@ export type ProcessedNotification = {
         | "friend_request"
         | "friend_request_accepted"
         | "rings_closed"
-        | "post_tag";
+        | "post_tag"
+        | "task_tagged"
+        | "task_copied";
     name: string;
     handle: string;
     userId: string;
@@ -42,6 +44,8 @@ export const SUPPORTED_TYPES = new Set([
     "friend_request_accepted",
     "rings_closed",
     "post_tag",
+    "task_tagged",
+    "task_copied",
 ]);
 
 export const filterByActivityType = (

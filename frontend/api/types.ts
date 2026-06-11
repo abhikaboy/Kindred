@@ -89,6 +89,36 @@ export interface PostKudos {
     private?: boolean;
 }
 
+export type TagStatus = "pending" | "watching" | "copied" | "untagged";
+
+export interface TaggedTaskUser {
+    id: string;
+    handle: string;
+    display_name: string;
+    profile_picture?: string;
+    status: TagStatus;
+}
+
+export interface PendingTaggedTask {
+    taskId: string;
+    content: string;
+    value: number;
+    priority: number;
+    recurring: boolean;
+    recurFrequency?: string;
+    recurDetails?: RecurDetails;
+    deadline?: string;
+    notes?: string;
+    checklist?: ChecklistItem[];
+    timestamp?: string;
+    tagger: {
+        id: string;
+        display_name: string;
+        handle: string;
+        profile_picture?: string;
+    };
+}
+
 export interface Task {
     id: string;
     priority: number;
@@ -125,6 +155,7 @@ export interface Task {
     timeTaken?: string;
     posted?: boolean; // Whether a post has been created for this task
     encouragements?: TaskKudos[];
+    taggedUsers?: TaggedTaskUser[];
     isPhantom?: boolean;
     nextGenerated?: string;
 }

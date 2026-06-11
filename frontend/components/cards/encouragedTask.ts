@@ -4,6 +4,10 @@ import type { Task } from "@/api/types";
 export const isTaskEncouraged = (task?: Task | null): boolean =>
     (task?.encouragements?.length ?? 0) > 0;
 
+// A task is "watched" when a tagged friend is pending or actively watching.
+export const isTaskWatched = (task?: Task | null): boolean =>
+    (task?.taggedUsers ?? []).some((t) => t.status === "pending" || t.status === "watching");
+
 // Color overrides for the encouraged task-card state: a faint primary tint
 // fill with a solid primary border, purple text (never gray — too low
 // contrast on the light fill), and a soft static glow. `primary` is

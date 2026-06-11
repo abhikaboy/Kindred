@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import EditPost from "../modals/edit/EditPost";
 import { Task } from "@/api/types";
-import { isTaskEncouraged, encouragedCardColors } from "./encouragedTask";
+import { isTaskEncouraged, isTaskWatched, encouragedCardColors } from "./encouragedTask";
 import EncouragerAvatars from "./EncouragerAvatars";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
 import ConditionalView from "../ui/ConditionalView";
@@ -95,7 +95,7 @@ const TaskCard = ({
     const [showEncourageModal, setShowEncourageModal] = useState(false);
     const [showCongratulateModal, setShowCongratulateModal] = useState(false);
     const ThemedColor = useThemeColor();
-    const encouraged = isTaskEncouraged(task);
+    const encouraged = isTaskEncouraged(task) || isTaskWatched(task);
     const encColors = encouragedCardColors(ThemedColor.primary);
     const { setTask, updateTask } = useTasks();
     const [isRunningState, setIsRunningState] = useState(false);
@@ -511,6 +511,7 @@ const TaskCard = ({
                     <ConditionalView condition={encouraged}>
                         <EncouragerAvatars
                             encouragements={task?.encouragements ?? []}
+                            taggedUsers={task?.taggedUsers ?? []}
                             ringColor={ThemedColor.background}
                             placeholderColor={ThemedColor.primary}
                         />

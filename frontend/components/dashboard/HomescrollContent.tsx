@@ -27,6 +27,7 @@ import CalendarSetupBottomSheet from "@/components/modals/CalendarSetupBottomShe
 import { useUserSettings, useUpdateDashboardConfiguration, settingsKeys } from "@/hooks/useSettings";
 import type { DashboardConfiguration, UserSettings } from "@/api/settings";
 import { useQueryClient } from "@tanstack/react-query";
+import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -334,6 +335,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             }
         >
             <MotiView style={{ gap: 16, marginTop: 0 }}>
+
+                <TaggedTaskBanners />
 
                 {/* Dashboard Stats - always visible */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>

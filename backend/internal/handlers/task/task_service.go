@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
@@ -67,6 +68,7 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 		TemplateTasks:       collections["template-tasks"],
 		EncouragementHelper: encouragement.NewEncouragementService(collections),
 		RingService:         ringService,
+		NotificationService: notifications.NewNotificationService(collections),
 	}
 }
 
@@ -561,6 +563,15 @@ func (s *Service) CompleteTask(
 					"task_id", taskToComplete.ID,
 					"user_id", userId,
 					"error", err)
+			}
+		}()
+	}
+
+	if len(taskToComplete.TaggedUsers) > 0 {
+		tc := taskToComplete
+		go func() {
+			if err := s.NotifyTagWatchersOfCompletion(&tc, userId); err != nil {
+				slog.Error("Failed to notify tag watchers", "taskID", tc.ID.Hex(), "error", err)
 			}
 		}()
 	}
