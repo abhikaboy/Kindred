@@ -74,10 +74,13 @@ describe("UserInfoEncouragementNotification", () => {
             reactToCongratulation: jest.fn(),
         };
 
-        const { getByTestId } = render(
+        const { getByTestId, getByText } = render(
             <UserInfoEncouragementNotification {...base} message="you crushed it" />,
         );
+        // Tap opens the tray; the reaction only fires on tray selection
         fireEvent.press(getByTestId("kudos-reaction-button"));
+        expect(reactToEncouragement).not.toHaveBeenCalled();
+        fireEvent.press(getByText("❤️"));
         expect(reactToEncouragement).toHaveBeenCalledWith("enc1", "❤️");
     });
 

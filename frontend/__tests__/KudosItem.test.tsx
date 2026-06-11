@@ -1,5 +1,5 @@
 import React from "react";
-import { render } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import KudosItem from "@/components/cards/KudosItem";
 
 jest.mock("@/components/CachedImage", () => "CachedImage");
@@ -64,5 +64,28 @@ describe("KudosItem", () => {
         );
         getByTestId("bubble-video");
         expect(queryByText("https://x/cheer.mp4")).toBeNull();
+    });
+
+    test("tap opens the tray; the reaction only fires on tray selection", () => {
+        const onReact = jest.fn();
+        const { getByTestId, getByText, queryByText } = render(
+            <KudosItem kudos={{ ...base, scope: "profile" }} formatTime={() => "now"} onReact={onReact} />,
+        );
+        expect(queryByText("🔥")).toBeNull();
+        fireEvent.press(getByTestId("kudos-reaction-button"));
+        expect(onReact).not.toHaveBeenCalled();
+        fireEvent.press(getByText("🔥"));
+        expect(onReact).toHaveBeenCalledWith("k1", "🔥");
+    });
+
+    test("a reacted kudos renders its reaction emoji", () => {
+        const { getByText } = render(
+            <KudosItem
+                kudos={{ ...base, scope: "profile", reaction: "🙌" }}
+                formatTime={() => "now"}
+                onReact={jest.fn()}
+            />,
+        );
+        getByText("🙌");
     });
 });

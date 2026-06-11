@@ -3,7 +3,6 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
     withTiming,
 } from "react-native-reanimated";
 import { KUDOS_REACTION_EMOJIS, KudosReactionEmoji } from "@/constants/kudos";
@@ -30,7 +29,8 @@ export default function ReactionTray({
 
     useEffect(() => {
         if (visible) {
-            translateY.value = withSpring(0, { damping: 18, stiffness: 260 });
+            // Plain timing — a spring here overshoots and the tray visibly bounces
+            translateY.value = withTiming(0, { duration: 140 });
             opacity.value = withTiming(1, { duration: 120 });
         } else {
             translateY.value = withTiming(12, { duration: 100 });

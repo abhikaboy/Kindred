@@ -72,15 +72,11 @@ export default function KudosItem({
         scale.value = withSequence(withSpring(1.35, { damping: 10 }), withSpring(1, { damping: 14 }));
     };
 
+    // Tapping only opens the tray — the reaction is sent on tray selection,
+    // never on the tap itself.
     const handleTap = () => {
         if (!onReact) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        triggerPulse();
-        onReact(kudos.id, "❤️");
-    };
-
-    const handleLongPress = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setTrayOpen(true);
     };
 
@@ -93,7 +89,7 @@ export default function KudosItem({
 
     const reactionButton = onReact ? (
         <View style={styles.reactionRow}>
-            <Pressable testID="kudos-reaction-button" onPress={handleTap} onLongPress={handleLongPress} hitSlop={8}>
+            <Pressable testID="kudos-reaction-button" onPress={handleTap} hitSlop={8}>
                 <Animated.View style={animatedStyle}>
                     {hasReaction ? (
                         <Text style={styles.reactionEmoji}>{kudos.reaction}</Text>

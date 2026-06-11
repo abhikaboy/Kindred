@@ -44,9 +44,11 @@ interface CongratulateModalProps {
         categoryName: string; // Name of the category the task belongs to
         postId?: string; // Optional post ID for thumbnail
     };
+    /** Called after the congratulation is successfully sent. */
+    onSent?: () => void;
 }
 
-export default function CongratulateModal({ visible, setVisible, task, congratulationConfig }: CongratulateModalProps) {
+export default function CongratulateModal({ visible, setVisible, task, congratulationConfig, onSent }: CongratulateModalProps) {
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const { updateUser } = useAuth();
@@ -301,6 +303,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             if (Platform.OS === "ios") {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
+
+            onSent?.();
 
             // Close modal first, enable confetti, then trigger it
             setVisible(false);

@@ -116,10 +116,13 @@ const UserInfoEncouragementNotification = ({
 export default UserInfoEncouragementNotification;
 
 const styles = StyleSheet.create({
+    // alignSelf keeps the chip hugging its label — the footer slot's flex
+    // container otherwise stretches it across the full bubble width.
     ctaButton: {
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 10,
         borderWidth: 1,
+        alignSelf: "flex-start",
     },
 });
