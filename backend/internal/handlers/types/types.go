@@ -113,11 +113,13 @@ type TaskKudos struct {
 }
 
 // Tag status lifecycle: pending -> watching | copied | untagged.
+type TagStatus string
+
 const (
-	TagStatusPending  = "pending"
-	TagStatusWatching = "watching"
-	TagStatusCopied   = "copied"
-	TagStatusUntagged = "untagged"
+	TagStatusPending  TagStatus = "pending"
+	TagStatusWatching TagStatus = "watching"
+	TagStatusCopied   TagStatus = "copied"
+	TagStatusUntagged TagStatus = "untagged"
 )
 
 // TaggedTaskUser is one friend tagged on a task, denormalized at tag time so
@@ -127,7 +129,7 @@ type TaggedTaskUser struct {
 	Handle         string             `bson:"handle" json:"handle"`
 	DisplayName    string             `bson:"display_name" json:"display_name"`
 	ProfilePicture string             `bson:"profile_picture" json:"profile_picture"`
-	Status         string             `bson:"status" json:"status"` // pending | watching | copied | untagged
+	Status         TagStatus          `bson:"status" json:"status"`
 }
 
 /*
