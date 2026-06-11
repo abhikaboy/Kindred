@@ -29,8 +29,13 @@ func parseTaskCandidate(task bson.M) (*taskCandidate, bool) {
 	if !ok {
 		return nil, false
 	}
-	priority, ok := task["priority"].(int32)
-	if !ok {
+	var priority int
+	switch p := task["priority"].(type) {
+	case int32:
+		priority = int(p)
+	case int64:
+		priority = int(p)
+	default:
 		return nil, false
 	}
 	value, ok := task["value"].(float64)
@@ -81,7 +86,7 @@ func parseTaskCandidate(task bson.M) (*taskCandidate, bool) {
 		feedTask: FeedTaskData{
 			ID:            taskID.Hex(),
 			Content:       content,
-			Priority:      int(priority),
+			Priority:      priority,
 			Value:         value,
 			Public:        public,
 			Timestamp:     createdAt.Format(time.RFC3339),

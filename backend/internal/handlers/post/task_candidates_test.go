@@ -66,6 +66,18 @@ func TestParseTaskCandidate_OptionalFieldsAbsent(t *testing.T) {
 	}
 }
 
+func TestParseTaskCandidate_PriorityInt64(t *testing.T) {
+	doc := validTaskDoc()
+	doc["priority"] = int64(3)
+	c, ok := parseTaskCandidate(doc)
+	if !ok {
+		t.Fatal("expected parse to accept int64 priority")
+	}
+	if c.feedTask.Priority != 3 {
+		t.Fatalf("priority wrong: %d", c.feedTask.Priority)
+	}
+}
+
 func TestParseTaskCandidate_MissingRequiredField(t *testing.T) {
 	doc := validTaskDoc()
 	delete(doc, "content")
