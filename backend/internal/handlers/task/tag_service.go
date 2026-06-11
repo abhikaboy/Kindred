@@ -32,6 +32,7 @@ type PendingTaggedTask struct {
 	Deadline       *time.Time         `bson:"deadline,omitempty" json:"deadline,omitempty"`
 	Notes          string             `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist      []ChecklistItem    `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Timestamp      time.Time          `bson:"timestamp" json:"timestamp"`
 	Tagger         TaggerInfo         `bson:"tagger" json:"tagger"`
 }
 
@@ -139,7 +140,7 @@ func (s *Service) UpdateTaskTags(
 	return added, nil
 }
 
-// GetPendingTaggedTasks returns every active task where userID is tagged with
+// GetPendingTaggedTasks returns every task where userID is tagged with
 // status pending, joined with the tagger's display info.
 func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTaggedTask, error) {
 	ctx := context.Background()
@@ -164,6 +165,7 @@ func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTag
 			"deadline":       "$tasks.deadline",
 			"notes":          "$tasks.notes",
 			"checklist":      "$tasks.checklist",
+			"timestamp":      "$tasks.timestamp",
 			"tagger": bson.M{
 				"id":              "$taggerDoc._id",
 				"display_name":    "$taggerDoc.display_name",
@@ -171,7 +173,7 @@ func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTag
 				"profile_picture": "$taggerDoc.profile_picture",
 			},
 		}}},
-		{{Key: "$sort", Value: bson.M{"taskId": -1}}},
+		{{Key: "$sort", Value: bson.M{"timestamp": -1}}},
 	}
 
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
