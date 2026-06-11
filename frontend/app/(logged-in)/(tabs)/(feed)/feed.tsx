@@ -10,6 +10,7 @@ import type { PostKudos } from "@/api/types";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
+import EndOfDayCard from "@/components/cards/EndOfDayCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -618,6 +619,8 @@ export default function Feed() {
                         />
                     </View>
                 </View>
+
+                <EndOfDayCard />
             </View>
         );
     }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
