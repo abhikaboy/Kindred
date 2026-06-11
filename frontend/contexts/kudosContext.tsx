@@ -21,7 +21,7 @@ interface KudosUserRef {
     id: string;
 }
 
-interface Encouragement {
+export interface Encouragement {
     id: string;
     sender: KudosUserRef;
     message: string;
@@ -32,10 +32,12 @@ interface Encouragement {
     read: boolean;
     type?: string;
     reaction?: string | null;
+    reactedAt?: string;
+    /** Present only on sent kudos (the receiver's profile info). */
     receiverInfo?: KudosUserRef;
 }
 
-interface Congratulation {
+export interface Congratulation {
     id: string;
     sender: KudosUserRef;
     message: string;
@@ -45,6 +47,8 @@ interface Congratulation {
     read: boolean;
     type?: string;
     reaction?: string | null;
+    reactedAt?: string;
+    /** Present only on sent kudos (the receiver's profile info). */
     receiverInfo?: KudosUserRef;
 }
 
@@ -76,6 +80,9 @@ export const useKudos = () => {
     }
     return context;
 };
+
+/** Like useKudos, but safe outside the provider (returns undefined). */
+export const useKudosOptional = () => useContext(KudosContext);
 
 interface KudosProviderProps {
     children: ReactNode;

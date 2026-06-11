@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, FlatList, ViewToken, RefreshControl } from "react-native";
 import KudosItem from "@/components/cards/KudosItem";
+import SentKudosItem from "@/components/cards/SentKudosItem";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -8,21 +9,67 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatDistanceToNow } from "date-fns";
-import { useKudos } from "@/contexts/kudosContext";
+import { useKudos, Encouragement, Congratulation } from "@/contexts/kudosContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 
 const TABS = ["Encouragements", "Congratulations"];
+const VIEWS = ["Received", "Sent"];
+type KudosView = "Received" | "Sent";
 const KudosItemSeparator = () => <View style={{ height: 10 }} />;
 
+interface SentKudosListProps {
+    items: (Encouragement | Congratulation)[];
+    formatTime: (timestamp: string) => string;
+    refreshing: boolean;
+    onRefresh: () => void;
+    emptySubtext: string;
+    styles: ReturnType<typeof createStyles>;
+    tintColor: string;
+}
+
+function SentKudosList({ items, formatTime, refreshing, onRefresh, emptySubtext, styles, tintColor }: SentKudosListProps) {
+    if (items.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <ThemedText type="subtitle" style={styles.emptyText}>
+                    Nothing sent yet
+                </ThemedText>
+                <ThemedText type="lightBody" style={styles.emptySubtext}>
+                    {emptySubtext}
+                </ThemedText>
+            </View>
+        );
+    }
+
+    return (
+        <FlatList
+            data={items}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}
+            ItemSeparatorComponent={KudosItemSeparator}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tintColor} />}
+            renderItem={({ item, index }) => (
+                <SentKudosItem kudos={item} formatTime={formatTime} visible index={index} />
+            )}
+        />
+    );
+}
+
 export default function Kudos() {
-    const { tab } = useLocalSearchParams<{ tab?: string }>();
+    const { tab, view } = useLocalSearchParams<{ tab?: string; view?: string }>();
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const {
         encouragements,
         congratulations,
+        sentEncouragements,
+        sentCongratulations,
         loading,
         fetchKudosData,
+        fetchSentKudos,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
         reactToEncouragement,
@@ -30,14 +77,27 @@ export default function Kudos() {
     } = useKudos();
     const [refreshing, setRefreshing] = useState(false);
 
-    const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await fetchKudosData();
-        setRefreshing(false);
-    }, [fetchKudosData]);
-
     const initialTab = tab === "congratulations" ? 1 : 0;
     const [activeTab, setActiveTab] = useState(initialTab);
+
+    // The deep-link view applies to the deep-linked tab; the other starts on Received.
+    const initialView: KudosView = view === "sent" ? "Sent" : "Received";
+    const [encouragementView, setEncouragementView] = useState<KudosView>(initialTab === 0 ? initialView : "Received");
+    const [congratulationView, setCongratulationView] = useState<KudosView>(initialTab === 1 ? initialView : "Received");
+
+    const sentViewActive = encouragementView === "Sent" || congratulationView === "Sent";
+
+    useEffect(() => {
+        if (sentViewActive) {
+            fetchSentKudos();
+        }
+    }, [sentViewActive, fetchSentKudos]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([fetchKudosData(), ...(sentViewActive ? [fetchSentKudos()] : [])]);
+        setRefreshing(false);
+    }, [fetchKudosData, fetchSentKudos, sentViewActive]);
 
     const [encouragementVisibleIds, setEncouragementVisibleIds] = useState<Set<string>>(new Set());
     const [congratulationVisibleIds, setCongratulationVisibleIds] = useState<Set<string>>(new Set());
@@ -194,8 +254,52 @@ export default function Kudos() {
             <AnimatedTabs tabs={TABS} activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab} flex>
-                {renderEncouragementList()}
-                {renderCongratulationList()}
+                <View style={styles.tabBody}>
+                    <View style={styles.viewToggleRow}>
+                        <SegmentedControl
+                            options={VIEWS}
+                            selectedOption={encouragementView}
+                            onOptionPress={(option) => setEncouragementView(option as KudosView)}
+                            size="small"
+                        />
+                    </View>
+                    {encouragementView === "Received" ? (
+                        renderEncouragementList()
+                    ) : (
+                        <SentKudosList
+                            items={sentEncouragements}
+                            formatTime={formatTime}
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            emptySubtext="Encouragements you send will appear here, along with reactions"
+                            styles={styles}
+                            tintColor={ThemedColor.text}
+                        />
+                    )}
+                </View>
+                <View style={styles.tabBody}>
+                    <View style={styles.viewToggleRow}>
+                        <SegmentedControl
+                            options={VIEWS}
+                            selectedOption={congratulationView}
+                            onOptionPress={(option) => setCongratulationView(option as KudosView)}
+                            size="small"
+                        />
+                    </View>
+                    {congratulationView === "Received" ? (
+                        renderCongratulationList()
+                    ) : (
+                        <SentKudosList
+                            items={sentCongratulations}
+                            formatTime={formatTime}
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            emptySubtext="Congratulations you send will appear here, along with reactions"
+                            styles={styles}
+                            tintColor={ThemedColor.text}
+                        />
+                    )}
+                </View>
             </AnimatedTabContent>
         </ThemedView>
     );
@@ -224,6 +328,13 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         title: {
             fontSize: 24,
             color: ThemedColor.text,
+        },
+        tabBody: {
+            flex: 1,
+        },
+        viewToggleRow: {
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingBottom: 4,
         },
         scrollView: {
             flex: 1,

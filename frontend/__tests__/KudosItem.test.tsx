@@ -4,6 +4,9 @@ import KudosItem from "@/components/cards/KudosItem";
 
 jest.mock("@/components/CachedImage", () => "CachedImage");
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+// Reanimated v4 pulls in react-native-worklets at import time, which crashes under jest
+jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
+jest.mock("react-native-reanimated", () => require("react-native-reanimated/mock"));
 
 const base = {
     id: "k1",
