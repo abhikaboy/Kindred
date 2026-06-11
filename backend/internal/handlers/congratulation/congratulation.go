@@ -8,6 +8,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -267,4 +268,63 @@ func (h *Handler) MarkCongratulationsReadHuma(ctx context.Context, input *MarkCo
 	resp.Body.Message = "Congratulations marked as read successfully"
 	resp.Body.Count = int(count)
 	return resp, nil
+}
+
+func (h *Handler) ReactToCongratulationHuma(ctx context.Context, input *ReactToCongratulationInput) (*ReactToCongratulationOutput, error) {
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	receiverID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	if !types.KudosReactionEmojis[input.Body.Emoji] {
+		return nil, huma.Error400BadRequest("Invalid reaction emoji", fmt.Errorf("emoji %q is not a supported kudos reaction", input.Body.Emoji))
+	}
+
+	reaction, err := h.service.ToggleReaction(id, receiverID, input.Body.Emoji)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, huma.Error404NotFound("Congratulation not found", err)
+		}
+		slog.Error("failed to react to congratulation", "congratulationId", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to react to congratulation. Please try again.", err)
+	}
+
+	resp := &ReactToCongratulationOutput{}
+	resp.Body.Reaction = reaction
+	if reaction != nil {
+		resp.Body.Message = "Reaction added successfully"
+	} else {
+		resp.Body.Message = "Reaction removed successfully"
+	}
+	return resp, nil
+}
+
+func (h *Handler) GetSentCongratulationsHuma(ctx context.Context, input *GetSentCongratulationsInput) (*GetSentCongratulationsOutput, error) {
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	senderID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	congratulations, err := h.service.GetSentCongratulations(senderID)
+	if err != nil {
+		slog.Error("failed to get sent congratulations", "userId", user_id, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to get sent congratulations. Please try again.", err)
+	}
+
+	return &GetSentCongratulationsOutput{Body: congratulations}, nil
 }

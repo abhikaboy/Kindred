@@ -2673,6 +2673,55 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/congratulations/{id}/reaction:
+        post:
+            tags:
+                - congratulations
+            summary: React to a congratulation
+            description: Toggle the receiver's emoji reaction on a congratulation
+            operationId: react-to-congratulation
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CongratulationReactionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReactToCongratulationOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/congratulations/beak:
         post:
             tags:
@@ -2749,6 +2798,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MarkCongratulationsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/congratulations/sent:
+        get:
+            tags:
+                - congratulations
+            summary: Get sent congratulations
+            description: Retrieve all congratulations sent by the authenticated user, with reaction state
+            operationId: get-sent-congratulations
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/CongratulationDocument'
                 default:
                     description: Error
                     content:
@@ -3539,6 +3625,55 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/encouragements/{id}/reaction:
+        post:
+            tags:
+                - encouragements
+            summary: React to an encouragement
+            description: Toggle the receiver's emoji reaction on an encouragement
+            operationId: react-to-encouragement
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EncouragementReactionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReactToEncouragementOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/encouragements/mark-read:
         patch:
             tags:
@@ -3574,6 +3709,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MarkEncouragementsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/encouragements/sent:
+        get:
+            tags:
+                - encouragements
+            summary: Get sent encouragements
+            description: Retrieve all encouragements sent by the authenticated user, with reaction state
+            operationId: get-sent-encouragements
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/EncouragementDocument'
                 default:
                     description: Error
                     content:
@@ -5892,6 +6064,38 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/log:
+        post:
+            tags:
+                - tasks
+            summary: Log completed tasks
+            description: Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+            operationId: log-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogTasksInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language:
         post:
             tags:
@@ -7897,6 +8101,15 @@ components:
                     description: Congratulation message
                     examples:
                         - Congratulations on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - "\U0001F64C"
                 read:
                     type: boolean
                     description: Whether the congratulation has been read
@@ -7907,6 +8120,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/CongratulationSender'
                 sender:
                     description: Sender information
                     $ref: '#/components/schemas/CongratulationSender'
@@ -7936,6 +8152,24 @@ components:
                 - taskName
                 - read
                 - type
+        CongratulationReactionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CongratulationReactionParams.json
+                    readOnly: true
+                emoji:
+                    type: string
+                    description: Reaction emoji (one of the curated kudos reactions)
+                    examples:
+                        - "\U0001F64C"
+            required:
+                - emoji
         CongratulationSender:
             type: object
             additionalProperties: false
@@ -8164,6 +8398,15 @@ components:
                     description: Congratulation message
                     examples:
                         - Congratulations on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - "\U0001F64C"
                 read:
                     type: boolean
                     description: Whether the congratulation has been read
@@ -8174,6 +8417,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/CongratulationSender'
                 ringDelta:
                     description: Describes the Share ring increment triggered by this congratulation so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
@@ -8300,6 +8546,15 @@ components:
                     description: Encouragement message
                     examples:
                         - Great job on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - ❤️
                 read:
                     type: boolean
                     description: Whether the encouragement has been read
@@ -8310,6 +8565,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/EncouragementSender'
                 ringDelta:
                     description: Describes the Share ring increment triggered by this encouragement so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
@@ -9254,6 +9512,15 @@ components:
                     description: Encouragement message
                     examples:
                         - Great job on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - ❤️
                 read:
                     type: boolean
                     description: Whether the encouragement has been read
@@ -9264,6 +9531,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/EncouragementSender'
                 scope:
                     type: string
                     description: Scope of encouragement (task or profile)
@@ -9302,6 +9572,24 @@ components:
                 - scope
                 - read
                 - type
+        EncouragementReactionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/EncouragementReactionParams.json
+                    readOnly: true
+                emoji:
+                    type: string
+                    description: Reaction emoji (one of the curated kudos reactions)
+                    examples:
+                        - ❤️
+            required:
+                - emoji
         EncouragementSender:
             type: object
             additionalProperties: false
@@ -10503,6 +10791,80 @@ components:
                         $ref: '#/components/schemas/CalendarInfo'
             required:
                 - calendars
+        LogTaskEntry:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                    description: What the user got done
+                    examples:
+                        - Went to the gym
+            required:
+                - content
+        LogTasksInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Things the user did today
+                    items:
+                        $ref: '#/components/schemas/LogTaskEntry'
+                    minItems: 1
+                    maxItems: 50
+                workspaceName:
+                    type: string
+                    description: Workspace whose Logged category receives the tasks
+                    examples:
+                        - Personal
+            required:
+                - workspaceName
+                - tasks
+        LogTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksOutputBody.json
+                    readOnly: true
+                currentStreak:
+                    type: integer
+                    description: The user's current streak count
+                    format: int64
+                    examples:
+                        - 5
+                failedIndices:
+                    type: array
+                    description: Indices of entries that failed
+                    items:
+                        type: integer
+                        format: int64
+                message:
+                    type: string
+                    examples:
+                        - Tasks logged
+                tasksLogged:
+                    type: integer
+                    description: Number of entries created and completed
+                    format: int64
+                    examples:
+                        - 3
+            required:
+                - message
+                - tasksLogged
+                - currentStreak
         LoginRequest:
             type: object
             additionalProperties: false
@@ -11373,6 +11735,52 @@ components:
             required:
                 - tasks
                 - query
+        ReactToCongratulationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReactToCongratulationOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Reaction added successfully
+                reaction:
+                    type: string
+                    description: Reaction state after the toggle (null when removed)
+                    examples:
+                        - "\U0001F64C"
+            required:
+                - reaction
+                - message
+        ReactToEncouragementOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReactToEncouragementOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Reaction added successfully
+                reaction:
+                    type: string
+                    description: Reaction state after the toggle (null when removed)
+                    examples:
+                        - ❤️
+            required:
+                - reaction
+                - message
         RecordInteractionOutputBody:
             type: object
             additionalProperties: false

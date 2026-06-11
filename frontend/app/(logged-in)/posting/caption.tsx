@@ -201,8 +201,10 @@ export default function Caption() {
                 has_caption: !!data.caption?.trim(),
             });
 
+            // Replace the composer (not push on top) so "back" from the new post goes to
+            // the feed, never back into the posting flow — avoids confusing re-posts.
             router.dismissAll();
-            router.push(`/(logged-in)/posting/${result.post._id}`);
+            router.replace(`/(logged-in)/posting/${result.post._id}`);
         } catch (error) {
             console.error("Error creating post:", error);
 

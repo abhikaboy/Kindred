@@ -1432,6 +1432,26 @@ export interface paths {
         patch: operations["update-congratulation"];
         trace?: never;
     };
+    "/v1/user/congratulations/{id}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * React to a congratulation
+         * @description Toggle the receiver's emoji reaction on a congratulation
+         */
+        post: operations["react-to-congratulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/congratulations/beak": {
         parameters: {
             query?: never;
@@ -1470,6 +1490,26 @@ export interface paths {
          * @description Mark multiple congratulations as read
          */
         patch: operations["mark-congratulations-read"];
+        trace?: never;
+    };
+    "/v1/user/congratulations/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get sent congratulations
+         * @description Retrieve all congratulations sent by the authenticated user, with reaction state
+         */
+        get: operations["get-sent-congratulations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/connections": {
@@ -1740,6 +1780,26 @@ export interface paths {
         patch: operations["update-encouragement"];
         trace?: never;
     };
+    "/v1/user/encouragements/{id}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * React to an encouragement
+         * @description Toggle the receiver's emoji reaction on an encouragement
+         */
+        post: operations["react-to-encouragement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/encouragements/mark-read": {
         parameters: {
             query?: never;
@@ -1758,6 +1818,26 @@ export interface paths {
          * @description Mark multiple encouragements as read
          */
         patch: operations["mark-encouragements-read"];
+        trace?: never;
+    };
+    "/v1/user/encouragements/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get sent encouragements
+         * @description Retrieve all encouragements sent by the authenticated user, with reaction state
+         */
+        get: operations["get-sent-encouragements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/feed": {
@@ -2830,6 +2910,26 @@ export interface paths {
         get: operations["get-completed-tasks-by-date"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log completed tasks
+         * @description Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+         */
+        post: operations["log-tasks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3979,6 +4079,16 @@ export interface components {
              */
             message: string;
             /**
+             * Format: date-time
+             * @description When the receiver reacted
+             */
+            reactedAt?: string;
+            /**
+             * @description Receiver's emoji reaction
+             * @example 🙌
+             */
+            reaction?: string;
+            /**
              * @description Whether the congratulation has been read
              * @example false
              */
@@ -3988,6 +4098,8 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver: string;
+            /** @description Receiver's profile info (sent queries only) */
+            receiverInfo?: components["schemas"]["CongratulationSender"];
             /** @description Sender information */
             sender: components["schemas"]["CongratulationSender"];
             /**
@@ -4006,6 +4118,19 @@ export interface components {
              * @example message
              */
             type: string;
+        };
+        CongratulationReactionParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CongratulationReactionParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Reaction emoji (one of the curated kudos reactions)
+             * @example 🙌
+             */
+            emoji: string;
         };
         CongratulationSender: {
             /**
@@ -4177,6 +4302,16 @@ export interface components {
              */
             message: string;
             /**
+             * Format: date-time
+             * @description When the receiver reacted
+             */
+            reactedAt?: string;
+            /**
+             * @description Receiver's emoji reaction
+             * @example 🙌
+             */
+            reaction?: string;
+            /**
              * @description Whether the congratulation has been read
              * @example false
              */
@@ -4186,6 +4321,8 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver: string;
+            /** @description Receiver's profile info (sent queries only) */
+            receiverInfo?: components["schemas"]["CongratulationSender"];
             /** @description Describes the Share ring increment triggered by this congratulation so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
             /** @description Sender information */
@@ -4283,6 +4420,16 @@ export interface components {
              */
             message: string;
             /**
+             * Format: date-time
+             * @description When the receiver reacted
+             */
+            reactedAt?: string;
+            /**
+             * @description Receiver's emoji reaction
+             * @example ❤️
+             */
+            reaction?: string;
+            /**
              * @description Whether the encouragement has been read
              * @example false
              */
@@ -4292,6 +4439,8 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver: string;
+            /** @description Receiver's profile info (sent queries only) */
+            receiverInfo?: components["schemas"]["EncouragementSender"];
             /** @description Describes the Share ring increment triggered by this encouragement so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
             /**
@@ -4831,6 +4980,16 @@ export interface components {
              */
             message: string;
             /**
+             * Format: date-time
+             * @description When the receiver reacted
+             */
+            reactedAt?: string;
+            /**
+             * @description Receiver's emoji reaction
+             * @example ❤️
+             */
+            reaction?: string;
+            /**
              * @description Whether the encouragement has been read
              * @example false
              */
@@ -4840,6 +4999,8 @@ export interface components {
              * @example 507f1f77bcf86cd799439012
              */
             receiver: string;
+            /** @description Receiver's profile info (sent queries only) */
+            receiverInfo?: components["schemas"]["EncouragementSender"];
             /**
              * @description Scope of encouragement (task or profile)
              * @example task
@@ -4868,6 +5029,19 @@ export interface components {
              * @example message
              */
             type: string;
+        };
+        EncouragementReactionParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/EncouragementReactionParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description Reaction emoji (one of the curated kudos reactions)
+             * @example ❤️
+             */
+            emoji: string;
         };
         EncouragementSender: {
             /**
@@ -5552,6 +5726,52 @@ export interface components {
             readonly $schema?: string;
             calendars: components["schemas"]["CalendarInfo"][];
         };
+        LogTaskEntry: {
+            /**
+             * @description What the user got done
+             * @example Went to the gym
+             */
+            content: string;
+        };
+        LogTasksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Things the user did today */
+            tasks: components["schemas"]["LogTaskEntry"][];
+            /**
+             * @description Workspace whose Logged category receives the tasks
+             * @example Personal
+             */
+            workspaceName: string;
+        };
+        LogTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description The user's current streak count
+             * @example 5
+             */
+            currentStreak: number;
+            /** @description Indices of entries that failed */
+            failedIndices?: number[];
+            /** @example Tasks logged */
+            message: string;
+            /**
+             * Format: int64
+             * @description Number of entries created and completed
+             * @example 3
+             */
+            tasksLogged: number;
+        };
         LoginRequest: {
             /**
              * Format: uri
@@ -5993,6 +6213,36 @@ export interface components {
             query: components["schemas"]["TaskQueryFilters"];
             /** @description Matching tasks */
             tasks: components["schemas"]["TaskDocument"][];
+        };
+        ReactToCongratulationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReactToCongratulationOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Reaction added successfully */
+            message: string;
+            /**
+             * @description Reaction state after the toggle (null when removed)
+             * @example 🙌
+             */
+            reaction: string;
+        };
+        ReactToEncouragementOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReactToEncouragementOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Reaction added successfully */
+            message: string;
+            /**
+             * @description Reaction state after the toggle (null when removed)
+             * @example ❤️
+             */
+            reaction: string;
         };
         RecordInteractionOutputBody: {
             /**
@@ -10277,6 +10527,47 @@ export interface operations {
             };
         };
     };
+    "react-to-congratulation": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CongratulationReactionParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReactToCongratulationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "send-beak-congratulation": {
         parameters: {
             query?: never;
@@ -10340,6 +10631,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkCongratulationsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-sent-congratulations": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CongratulationDocument"][];
                 };
             };
             /** @description Error */
@@ -11055,6 +11380,47 @@ export interface operations {
             };
         };
     };
+    "react-to-encouragement": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EncouragementReactionParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReactToEncouragementOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "mark-encouragements-read": {
         parameters: {
             query?: never;
@@ -11080,6 +11446,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkEncouragementsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-sent-encouragements": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+                /** @description Refresh token for authentication */
+                refresh_token: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncouragementDocument"][];
                 };
             };
             /** @description Error */
@@ -13283,6 +13683,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "log-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogTasksInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogTasksOutputBody"];
                 };
             };
             /** @description Error */

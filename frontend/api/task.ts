@@ -166,6 +166,66 @@ export const markAsCompletedAPI = async (
     return data as unknown as TaskCompletionResult;
 };
 
+export interface LogTasksResult {
+    message: string;
+    tasksLogged: number;
+    currentStreak: number;
+    failedIndices?: number[];
+}
+
+/**
+ * Log untracked work: creates + completes one task per entry in the
+ * workspace's "Logged" category (end-of-day review card).
+ */
+export const logTasksAPI = async (workspaceName: string, contents: string[]): Promise<LogTasksResult> => {
+    const { data, error } = await client.POST("/v1/user/tasks/log", {
+        params: withAuthHeaders({}),
+        body: { workspaceName, tasks: contents.map((content) => ({ content })) },
+    });
+
+    if (error) {
+        throw new Error(`Failed to log tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as LogTasksResult;
+};
+
+export interface BulkCompleteItem {
+    taskId: string;
+    categoryId: string;
+}
+
+export interface BulkCompleteResult {
+    message: string;
+    totalCompleted: number;
+    totalFailed: number;
+    currentStreak: number;
+    failedTaskIds?: string[];
+}
+
+/**
+ * Complete several existing tasks in one request.
+ */
+export const bulkCompleteTasksAPI = async (items: BulkCompleteItem[]): Promise<BulkCompleteResult> => {
+    const timeCompleted = new Date().toISOString();
+    const { data, error } = await client.POST("/v1/user/tasks/bulk/complete", {
+        params: withAuthHeaders({}),
+        body: {
+            tasks: items.map(({ taskId, categoryId }) => ({
+                taskId,
+                categoryId,
+                completeData: { timeCompleted, timeTaken: "PT0S" },
+            })),
+        },
+    });
+
+    if (error) {
+        throw new Error(`Failed to bulk complete tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as BulkCompleteResult;
+};
+
 /**
  * Activate/deactivate a task
  * API: Makes POST request to change task active status
