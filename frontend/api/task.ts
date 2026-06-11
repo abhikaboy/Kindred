@@ -3,6 +3,8 @@ import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { logger } from "@/utils/logger";
 import { combineDateAndTime } from "@/utils/timeUtils";
+import { request } from "@/hooks/useRequest";
+import type { TaggedTaskUser, PendingTaggedTask, TagStatus } from "./types";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -766,5 +768,39 @@ export const moveTaskAPI = async (
 
     if (error) {
         throw new Error(`Failed to move task: ${JSON.stringify(error)}`);
+    }
+};
+
+export const updateTaskTagsAPI = async (
+    categoryId: string,
+    taskId: string,
+    taggedUserIds: string[]
+): Promise<{ taggedUsers: TaggedTaskUser[] }> => {
+    try {
+        return await request("PATCH", `/user/tasks/${categoryId}/${taskId}/tags`, { taggedUserIds });
+    } catch (error) {
+        logger.error("Error updating task tags", error);
+        throw new Error("Failed to update task tags. Please try again later.");
+    }
+};
+
+export const getPendingTaggedTasksAPI = async (): Promise<PendingTaggedTask[]> => {
+    try {
+        return await request("GET", "/user/tagged-tasks");
+    } catch (error) {
+        logger.error("Error fetching pending tagged tasks", error);
+        throw new Error("Failed to fetch pending tagged tasks. Please try again later.");
+    }
+};
+
+export const respondToTaskTagAPI = async (
+    taskId: string,
+    status: Exclude<TagStatus, "pending">
+): Promise<void> => {
+    try {
+        await request("POST", `/user/tagged-tasks/${taskId}/respond`, { status });
+    } catch (error) {
+        logger.error("Error responding to task tag", error);
+        throw new Error("Failed to respond to task tag. Please try again later.");
     }
 };
