@@ -21,7 +21,7 @@ const FriendPicker = ({ selectedIds, onToggle, lockedIds }: Props) => {
     const matches = useMemo(() => filter(query), [query, filter]);
 
     return (
-        <View style={{ flex: 1, gap: 12 }}>
+        <View style={{ flex: 1 }}>
             <ThemedInput value={query} setValue={setQuery} placeHolder="Search friends" />
             <FlatList
                 data={matches}
