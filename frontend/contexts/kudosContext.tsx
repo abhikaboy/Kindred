@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
-import { getEncouragementsAPI, markEncouragementsReadAPI } from "@/api/encouragement";
-import { getCongratulationsAPI, markCongratulationsReadAPI } from "@/api/congratulation";
+import { getEncouragementsAPI, markEncouragementsReadAPI, reactToEncouragementAPI } from "@/api/encouragement";
+import { getCongratulationsAPI, markCongratulationsReadAPI, reactToCongratulationAPI } from "@/api/congratulation";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger('KudosContext');
 
-interface Encouragement {
+export interface Encouragement {
     id: string;
     sender: {
         name: string;
@@ -19,9 +19,11 @@ interface Encouragement {
     timestamp: string;
     read: boolean;
     type?: string;
+    reaction?: string;
+    reactedAt?: string;
 }
 
-interface Congratulation {
+export interface Congratulation {
     id: string;
     sender: {
         name: string;
@@ -34,6 +36,8 @@ interface Congratulation {
     timestamp: string;
     read: boolean;
     type?: string;
+    reaction?: string;
+    reactedAt?: string;
 }
 
 interface KudosContextType {
@@ -47,6 +51,8 @@ interface KudosContextType {
     fetchKudosData: () => Promise<void>;
     markEncouragementsAsRead: () => Promise<void>;
     markCongratulationsAsRead: () => Promise<void>;
+    reactToEncouragement: (id: string, emoji: string) => Promise<void>;
+    reactToCongratulation: (id: string, emoji: string) => Promise<void>;
 }
 
 const KudosContext = createContext<KudosContextType | undefined>(undefined);
@@ -132,6 +138,32 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         }
     }, [congratulations]);
 
+    const reactToEncouragement = useCallback(async (id: string, emoji: string) => {
+        const prev = encouragements;
+        setEncouragements((enc) =>
+            enc.map((e) => e.id === id ? { ...e, reaction: e.reaction === emoji ? undefined : emoji } : e)
+        );
+        try {
+            await reactToEncouragementAPI(id, emoji);
+        } catch (error) {
+            logger.error("Error reacting to encouragement:", error);
+            setEncouragements(prev);
+        }
+    }, [encouragements]);
+
+    const reactToCongratulation = useCallback(async (id: string, emoji: string) => {
+        const prev = congratulations;
+        setCongratulations((con) =>
+            con.map((c) => c.id === id ? { ...c, reaction: c.reaction === emoji ? undefined : emoji } : c)
+        );
+        try {
+            await reactToCongratulationAPI(id, emoji);
+        } catch (error) {
+            logger.error("Error reacting to congratulation:", error);
+            setCongratulations(prev);
+        }
+    }, [congratulations]);
+
     useEffect(() => {
         fetchKudosData();
     }, [fetchKudosData]);
@@ -147,6 +179,8 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         fetchKudosData,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
+        reactToEncouragement,
+        reactToCongratulation,
     }), [
         encouragements,
         congratulations,
@@ -158,6 +192,8 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         fetchKudosData,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
+        reactToEncouragement,
+        reactToCongratulation,
     ]);
 
     return <KudosContext.Provider value={value}>{children}</KudosContext.Provider>;

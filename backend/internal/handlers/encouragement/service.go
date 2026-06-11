@@ -481,6 +481,79 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 	return xutils.SendNotification(notification)
 }
 
+var validReactionEmojis = map[string]bool{"❤️": true, "🙌": true, "🔥": true, "😭": true}
+
+// ReactToEncouragement toggles an emoji reaction on an encouragement from its receiver.
+// Returns the updated document, whether the sender should be notified, and any error.
+func (s *Service) ReactToEncouragement(id, reactorID primitive.ObjectID, emoji string) (*EncouragementDocument, bool, error) {
+	if s.Encouragements == nil {
+		return nil, false, fmt.Errorf("encouragements collection not available")
+	}
+	if !validReactionEmojis[emoji] {
+		return nil, false, fmt.Errorf("invalid emoji: must be one of ❤️ 🙌 🔥 😭")
+	}
+
+	ctx := context.Background()
+
+	var internal EncouragementDocumentInternal
+	if err := s.Encouragements.FindOne(ctx, bson.M{"_id": id}).Decode(&internal); err != nil {
+		return nil, false, err
+	}
+
+	if internal.Receiver != reactorID {
+		return nil, false, fmt.Errorf("unauthorized: only the receiver can react")
+	}
+
+	var update bson.M
+	notifySender := false
+
+	if internal.Reaction == emoji {
+		update = bson.M{"$unset": bson.M{"reaction": "", "reactedAt": ""}}
+	} else {
+		now := time.Now()
+		update = bson.M{"$set": bson.M{"reaction": emoji, "reactedAt": now}}
+		notifySender = true
+	}
+
+	if _, err := s.Encouragements.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
+		return nil, false, err
+	}
+
+	if err := s.Encouragements.FindOne(ctx, bson.M{"_id": id}).Decode(&internal); err != nil {
+		return nil, false, err
+	}
+
+	return internal.ToAPI(), notifySender, nil
+}
+
+// sendKudosReactionNotification notifies the original kudos sender that their kudos received a reaction.
+func (s *Service) sendKudosReactionNotification(senderID primitive.ObjectID, reactorName, emoji string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	var sender types.User
+	if err := s.Users.FindOne(ctx, bson.M{"_id": senderID}).Decode(&sender); err != nil {
+		return fmt.Errorf("failed to get sender: %w", err)
+	}
+
+	if sender.PushToken == "" {
+		return nil
+	}
+
+	return xutils.SendNotification(xutils.Notification{
+		Token:   sender.PushToken,
+		Title:   "Your kudos landed " + emoji,
+		Message: reactorName + " reacted " + emoji,
+		Data: map[string]string{
+			"type": "kudos_reaction",
+			"url":  "/kudos",
+		},
+	})
+}
+
 // NotifyEncouragersOfCompletion sends push notifications to all users who encouraged a specific task
 func (s *Service) NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.ObjectID, taskName string) error {
 	// Get all encouragements for this task

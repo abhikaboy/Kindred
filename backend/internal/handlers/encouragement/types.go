@@ -137,6 +137,8 @@ type EncouragementDocument struct {
 	TaskID       string              `bson:"taskId,omitempty" json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
 	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
+	Reaction     string              `bson:"reaction,omitempty" json:"reaction,omitempty" example:"❤️" doc:"Emoji reaction from the receiver"`
+	ReactedAt    *time.Time          `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"Timestamp when the receiver reacted"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -152,6 +154,8 @@ type EncouragementDocumentInternal struct {
 	TaskID       primitive.ObjectID          `bson:"taskId,omitempty"`
 	Read         bool                        `bson:"read"`
 	Type         string                      `bson:"type"`
+	Reaction     string                      `bson:"reaction,omitempty"`
+	ReactedAt    *time.Time                  `bson:"reactedAt,omitempty"`
 }
 
 type UpdateEncouragementDocument struct {
@@ -173,6 +177,8 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 		Scope:     e.Scope,
 		Read:      e.Read,
 		Type:      e.Type,
+		Reaction:  e.Reaction,
+		ReactedAt: e.ReactedAt,
 	}
 
 	// Include task fields for task-scoped encouragements
@@ -186,6 +192,22 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 	}
 
 	return doc
+}
+
+// React input/output types
+type ReactToEncouragementInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          ReactToKudosBody
+}
+
+type ReactToEncouragementOutput struct {
+	Body EncouragementDocument `json:"body"`
+}
+
+type ReactToKudosBody struct {
+	Emoji string `json:"emoji" validate:"required" doc:"Emoji reaction (one of ❤️ 🙌 🔥 😭)"`
 }
 
 /*

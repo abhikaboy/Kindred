@@ -2,6 +2,8 @@ import client from "@/api/client";
 import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import type { RingDelta } from "./types";
+import * as SecureStore from "expo-secure-store";
+import axios from "axios";
 
 // Extract the type definitions from the generated types
 type CongratulationDocument = components["schemas"]["CongratulationDocument"];
@@ -102,6 +104,32 @@ export const updateCongratulationAPI = async (id: string, message: string): Prom
     }
 
     return data;
+};
+
+/**
+ * React to (or toggle off) a congratulation with an emoji.
+ * Only the receiver can react. Sending the current emoji removes it.
+ */
+export const reactToCongratulationAPI = async (id: string, emoji: string): Promise<CongratulationDocument> => {
+    let headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+        const authData = await SecureStore.getItemAsync("auth_data");
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            if (parsed.access_token) headers["Authorization"] = `Bearer ${parsed.access_token}`;
+            if (parsed.refresh_token) headers["refresh_token"] = parsed.refresh_token;
+        }
+    } catch (error) {
+        console.error("Error getting auth data for react request", error);
+    }
+
+    const response = await axios({
+        url: process.env.EXPO_PUBLIC_URL + `/api/v1/user/congratulations/${id}/react`,
+        method: "POST",
+        headers,
+        data: { emoji },
+    });
+    return response.data;
 };
 
 /**

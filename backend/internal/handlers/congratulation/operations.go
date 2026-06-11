@@ -85,6 +85,17 @@ func RegisterSendBeakCongratulationOperation(api huma.API, handler *Handler) {
 	}, handler.SendBeakCongratulationHuma)
 }
 
+func RegisterReactToCongratulationOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "react-to-congratulation",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/congratulations/{id}/react",
+		Summary:     "React to a congratulation",
+		Description: "Add or toggle an emoji reaction on a received congratulation",
+		Tags:        []string{"congratulations"},
+	}, handler.ReactToCongratulationHuma)
+}
+
 // Register all congratulation operations
 func RegisterCongratulationOperations(api huma.API, handler *Handler) {
 	RegisterSendBeakCongratulationOperation(api, handler)
@@ -94,4 +105,5 @@ func RegisterCongratulationOperations(api huma.API, handler *Handler) {
 	RegisterGetCongratulationOperation(api, handler)
 	RegisterUpdateCongratulationOperation(api, handler)
 	RegisterDeleteCongratulationOperation(api, handler)
+	RegisterReactToCongratulationOperation(api, handler)
 }
