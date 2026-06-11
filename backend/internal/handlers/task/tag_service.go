@@ -203,9 +203,9 @@ func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, statu
 	}
 	ctx := context.Background()
 
-	task, ownerID := s.lookupTaskAndOwner(taskID)
-	if task == nil {
-		return mongo.ErrNoDocuments
+	task, ownerID, err := s.lookupTaskAndOwner(taskID)
+	if err != nil {
+		return err // mongo.ErrNoDocuments when the task doesn't exist
 	}
 	var prev types.TagStatus
 	found := false
@@ -258,9 +258,10 @@ func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, statu
 	return nil
 }
 
-// lookupTaskAndOwner fetches a task across all users' categories. Returns the
-// task and its owner's ID (zero ID when not found).
-func (s *Service) lookupTaskAndOwner(taskID primitive.ObjectID) (*TaskDocument, primitive.ObjectID) {
+// lookupTaskAndOwner fetches a task across all users' categories. Returns
+// mongo.ErrNoDocuments when the task doesn't exist; transient DB errors are
+// propagated so callers can map them to 500 rather than a misleading 404.
+func (s *Service) lookupTaskAndOwner(taskID primitive.ObjectID) (*TaskDocument, primitive.ObjectID, error) {
 	ctx := context.Background()
 	pipeline := append(
 		[]bson.D{{{Key: "$match", Value: bson.M{"tasks._id": taskID}}}},
@@ -269,12 +270,15 @@ func (s *Service) lookupTaskAndOwner(taskID primitive.ObjectID) (*TaskDocument, 
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{"_id": taskID}}})
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, primitive.NilObjectID
+		return nil, primitive.NilObjectID, err
 	}
 	defer cursor.Close(ctx)
 	var tasks []TaskDocument
-	if err := cursor.All(ctx, &tasks); err != nil || len(tasks) == 0 {
-		return nil, primitive.NilObjectID
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, primitive.NilObjectID, err
 	}
-	return &tasks[0], tasks[0].UserID
+	if len(tasks) == 0 {
+		return nil, primitive.NilObjectID, mongo.ErrNoDocuments
+	}
+	return &tasks[0], tasks[0].UserID, nil
 }

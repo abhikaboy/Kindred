@@ -569,10 +569,12 @@ func (s *TagServiceTestSuite) TestRespondToTaskTag_CopiedTwiceNotifiesOnce() {
 	err = s.service.RespondToTaskTag(created.ID, friend.ID, types.TagStatusCopied)
 	s.NoError(err)
 
-	// Notification fires in a goroutine; wait for the record to land
+	// Notification fires in a goroutine; the push is its LAST side effect, so
+	// waiting for both record and push guarantees it finished before teardown
 	s.Eventually(func() bool {
-		return s.CountDocuments("notifications", filter) == 1
-	}, 3*time.Second, 50*time.Millisecond, "expected TASK_COPIED record after first copied response")
+		return s.CountDocuments("notifications", filter) == 1 &&
+			s.MockPushSender.AssertNotificationSent(owner.PushToken)
+	}, 3*time.Second, 50*time.Millisecond, "expected TASK_COPIED record + push after first copied response")
 
 	// Idempotent re-respond: returns nil, fires no goroutine, so no second record
 	err = s.service.RespondToTaskTag(created.ID, friend.ID, types.TagStatusCopied)
