@@ -74,6 +74,17 @@ func RegisterMarkEncouragementsReadOperation(api huma.API, handler *Handler) {
 	}, handler.MarkEncouragementsReadHuma)
 }
 
+func RegisterReactToEncouragementOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "react-to-encouragement",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/encouragements/{id}/react",
+		Summary:     "React to an encouragement",
+		Description: "Add or toggle an emoji reaction on a received encouragement",
+		Tags:        []string{"encouragements"},
+	}, handler.ReactToEncouragementHuma)
+}
+
 // Register all encouragement operations
 func RegisterEncouragementOperations(api huma.API, handler *Handler) {
 	RegisterMarkEncouragementsReadOperation(api, handler)
@@ -82,4 +93,5 @@ func RegisterEncouragementOperations(api huma.API, handler *Handler) {
 	RegisterGetEncouragementOperation(api, handler)
 	RegisterUpdateEncouragementOperation(api, handler)
 	RegisterDeleteEncouragementOperation(api, handler)
+	RegisterReactToEncouragementOperation(api, handler)
 }

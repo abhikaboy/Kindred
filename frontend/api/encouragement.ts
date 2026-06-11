@@ -6,6 +6,9 @@ import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import { createLogger } from "@/utils/logger";
 
+export const REACTION_EMOJIS = ["❤️", "🙌", "🔥", "😭"] as const;
+export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
+
 const logger = createLogger('EncouragementAPI');
 
 // Extract the type definitions from the generated types
@@ -147,6 +150,32 @@ export const updateEncouragementAPI = async (id: string, message: string): Promi
 export const getEncouragementsByTask = async (taskId: string): Promise<EncouragementDocument[]> => {
     const all = await getEncouragementsAPI();
     return all.filter((e) => e.taskId === taskId);
+};
+
+/**
+ * React to (or toggle off) an encouragement with an emoji.
+ * Only the receiver can react. Sending the current emoji removes it.
+ */
+export const reactToEncouragementAPI = async (id: string, emoji: string): Promise<EncouragementDocument> => {
+    let headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+        const authData = await SecureStore.getItemAsync("auth_data");
+        if (authData) {
+            const parsed = JSON.parse(authData);
+            if (parsed.access_token) headers["Authorization"] = `Bearer ${parsed.access_token}`;
+            if (parsed.refresh_token) headers["refresh_token"] = parsed.refresh_token;
+        }
+    } catch (error) {
+        logger.error("Error getting auth data for react request", error);
+    }
+
+    const response = await axios({
+        url: process.env.EXPO_PUBLIC_URL + `/api/v1/user/encouragements/${id}/react`,
+        method: "POST",
+        headers,
+        data: { emoji },
+    });
+    return response.data;
 };
 
 /**

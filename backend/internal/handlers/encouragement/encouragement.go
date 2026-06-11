@@ -14,6 +14,52 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+func (h *Handler) ReactToEncouragementHuma(ctx context.Context, input *ReactToEncouragementInput) (*ReactToEncouragementOutput, error) {
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	reactorID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid ID format", err)
+	}
+
+	doc, notifySender, err := h.service.ReactToEncouragement(id, reactorID, input.Body.Emoji)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, huma.Error404NotFound("Encouragement not found", err)
+		}
+		if strings.Contains(err.Error(), "unauthorized") {
+			return nil, huma.Error403Forbidden("Only the receiver can react to this encouragement", err)
+		}
+		if strings.Contains(err.Error(), "invalid emoji") {
+			return nil, huma.Error400BadRequest(err.Error(), err)
+		}
+		slog.Error("failed to react to encouragement", "id", input.ID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to react to encouragement. Please try again.", err)
+	}
+
+	if notifySender {
+		senderID, err := primitive.ObjectIDFromHex(doc.Sender.ID)
+		if err == nil {
+			reactorInfo, err := h.service.GetSenderInfo(reactorID)
+			if err == nil {
+				if err := h.service.sendKudosReactionNotification(senderID, reactorInfo.Name, input.Body.Emoji); err != nil {
+					slog.Error("failed to send kudos reaction notification", "id", input.ID, "error", err)
+				}
+			}
+		}
+	}
+
+	return &ReactToEncouragementOutput{Body: *doc}, nil
+}
+
 type Handler struct {
 	service *Service
 }

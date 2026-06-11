@@ -157,6 +157,8 @@ type CongratulationDocument struct {
 	TaskName     string               `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                 `bson:"read" json:"read" example:"false" doc:"Whether the congratulation has been read"`
 	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message or image)"`
+	Reaction     string               `bson:"reaction,omitempty" json:"reaction,omitempty" example:"❤️" doc:"Emoji reaction from the receiver"`
+	ReactedAt    *time.Time           `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"Timestamp when the receiver reacted"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -172,6 +174,8 @@ type CongratulationDocumentInternal struct {
 	Type         string                       `bson:"type"`
 	PostID       *primitive.ObjectID          `bson:"postId,omitempty"`
 	Private      bool                         `bson:"private,omitempty"`
+	Reaction     string                       `bson:"reaction,omitempty"`
+	ReactedAt    *time.Time                   `bson:"reactedAt,omitempty"`
 }
 
 type UpdateCongratulationDocument struct {
@@ -194,7 +198,25 @@ func (c *CongratulationDocumentInternal) ToAPI() *CongratulationDocument {
 		TaskName:     c.TaskName,
 		Read:         c.Read,
 		Type:         c.Type,
+		Reaction:     c.Reaction,
+		ReactedAt:    c.ReactedAt,
 	}
+}
+
+// React input/output types
+type ReactToCongratulationInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          ReactToKudosBody
+}
+
+type ReactToCongratulationOutput struct {
+	Body CongratulationDocument `json:"body"`
+}
+
+type ReactToKudosBody struct {
+	Emoji string `json:"emoji" validate:"required" doc:"Emoji reaction (one of ❤️ 🙌 🔥 😭)"`
 }
 
 /*
