@@ -341,7 +341,7 @@ func (s *Service) CreateTemplateForTask(
 		return s.createFlexTemplateForTask(
 			userID, categoryID, templateID,
 			content, priority, value, public,
-			recurDetails, notes, checklist,
+			recurDetails, notes, checklist, taggedUsers,
 		)
 	}
 

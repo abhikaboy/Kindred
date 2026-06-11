@@ -43,6 +43,16 @@ func (s *TagServiceTestSuite) TestBuildTaggedUsers_SkipsInvalidAndUnknownIDs() {
 	s.Len(tagged, 0)
 }
 
+func (s *TagServiceTestSuite) TestBuildTaggedUsers_DeduplicatesRepeatedIDs() {
+	friend := s.GetUser(1)
+
+	tagged, err := s.service.BuildTaggedUsers([]string{friend.ID.Hex(), friend.ID.Hex()})
+
+	s.NoError(err)
+	s.Len(tagged, 1)
+	s.Equal(friend.ID, tagged[0].ID)
+}
+
 func (s *TagServiceTestSuite) TestCreateTask_PersistsTaggedUsers() {
 	owner := s.GetUser(0)
 	friend := s.GetUser(1)
