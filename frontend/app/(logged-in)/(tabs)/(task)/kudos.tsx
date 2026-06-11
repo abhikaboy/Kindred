@@ -25,6 +25,8 @@ export default function Kudos() {
         fetchKudosData,
         markEncouragementsAsRead,
         markCongratulationsAsRead,
+        reactToEncouragement,
+        reactToCongratulation,
     } = useKudos();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -125,6 +127,7 @@ export default function Kudos() {
                         formatTime={formatTime}
                         visible={encouragementVisibleIds.has(item.id)}
                         index={index}
+                        onReact={reactToEncouragement}
                     />
                 )}
             />
@@ -168,6 +171,7 @@ export default function Kudos() {
                         formatTime={formatTime}
                         visible={congratulationVisibleIds.has(item.id)}
                         index={index}
+                        onReact={reactToCongratulation}
                     />
                 )}
             />
