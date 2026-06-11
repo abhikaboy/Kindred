@@ -9,6 +9,7 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFriendAcceptedNotification";
 import UserInfoPostTagNotification from "@/components/UserInfo/UserInfoPostTagNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
+import UserInfoTaskTaggedNotification from "@/components/UserInfo/UserInfoTaskTaggedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -261,13 +262,12 @@ const NotificationItem = ({
                     referenceId={notification.referenceId}
                 />
             ) : notification.type === "task_tagged" ? (
-                <UserInfoPostTagNotification
+                <UserInfoTaskTaggedNotification
                     name={notification.name}
                     userId={notification.userId}
                     icon={notification.icon}
                     time={notification.time}
                     image={notification.thumbnail}
-                    referenceId={notification.referenceId}
                 />
             ) : notification.type === "task_copied" ? (
                 <UserInfoFriendAcceptedNotification
