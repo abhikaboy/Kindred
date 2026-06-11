@@ -608,3 +608,18 @@ func (s *TagServiceTestSuite) TestNotifyTagWatchersOfCompletion_OnlyPendingAndWa
 	s.Len(notifications, 1)
 	s.Equal("task_completed_watcher", notifications[0].Data["type"])
 }
+
+func (s *TagServiceTestSuite) TestConstructTaskFromTemplate_CopiesTaggedUsers() {
+	friend := s.GetUser(1)
+	tmpl := types.TemplateTaskDocument{
+		ID: primitive.NewObjectID(), Content: "Read 30 mins", RecurType: "OCCURRENCE",
+		TaggedUsers: []types.TaggedTaskUser{
+			{ID: friend.ID, Handle: friend.Handle, DisplayName: friend.DisplayName, Status: types.TagStatusWatching},
+		},
+	}
+
+	task := constructTaskFromTemplate(&tmpl)
+
+	s.Len(task.TaggedUsers, 1)
+	s.Equal(types.TagStatusWatching, task.TaggedUsers[0].Status)
+}
