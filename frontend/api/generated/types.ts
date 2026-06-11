@@ -2856,6 +2856,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log completed tasks
+         * @description Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+         */
+        post: operations["log-tasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/natural-language": {
         parameters: {
             query?: never;
@@ -5643,6 +5663,52 @@ export interface components {
              */
             readonly $schema?: string;
             calendars: components["schemas"]["CalendarInfo"][];
+        };
+        LogTaskEntry: {
+            /**
+             * @description What the user got done
+             * @example Went to the gym
+             */
+            content: string;
+        };
+        LogTasksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Things the user did today */
+            tasks: components["schemas"]["LogTaskEntry"][];
+            /**
+             * @description Workspace whose Logged category receives the tasks
+             * @example Personal
+             */
+            workspaceName: string;
+        };
+        LogTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description The user's current streak count
+             * @example 5
+             */
+            currentStreak: number;
+            /** @description Indices of entries that failed */
+            failedIndices?: number[];
+            /** @example Tasks logged */
+            message: string;
+            /**
+             * Format: int64
+             * @description Number of entries created and completed
+             * @example 3
+             */
+            tasksLogged: number;
         };
         LoginRequest: {
             /**
@@ -13374,6 +13440,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "log-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogTasksInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogTasksOutputBody"];
                 };
             };
             /** @description Error */

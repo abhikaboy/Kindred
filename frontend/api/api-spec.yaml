@@ -5948,6 +5948,38 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/log:
+        post:
+            tags:
+                - tasks
+            summary: Log completed tasks
+            description: Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+            operationId: log-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogTasksInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language:
         post:
             tags:
@@ -10635,6 +10667,80 @@ components:
                         $ref: '#/components/schemas/CalendarInfo'
             required:
                 - calendars
+        LogTaskEntry:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                    description: What the user got done
+                    examples:
+                        - Went to the gym
+            required:
+                - content
+        LogTasksInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Things the user did today
+                    items:
+                        $ref: '#/components/schemas/LogTaskEntry'
+                    minItems: 1
+                    maxItems: 50
+                workspaceName:
+                    type: string
+                    description: Workspace whose Logged category receives the tasks
+                    examples:
+                        - Personal
+            required:
+                - workspaceName
+                - tasks
+        LogTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksOutputBody.json
+                    readOnly: true
+                currentStreak:
+                    type: integer
+                    description: The user's current streak count
+                    format: int64
+                    examples:
+                        - 5
+                failedIndices:
+                    type: array
+                    description: Indices of entries that failed
+                    items:
+                        type: integer
+                        format: int64
+                message:
+                    type: string
+                    examples:
+                        - Tasks logged
+                tasksLogged:
+                    type: integer
+                    description: Number of entries created and completed
+                    format: int64
+                    examples:
+                        - 3
+            required:
+                - message
+                - tasksLogged
+                - currentStreak
         LoginRequest:
             type: object
             additionalProperties: false
