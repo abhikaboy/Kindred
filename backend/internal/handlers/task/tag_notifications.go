@@ -58,6 +58,42 @@ func (s *Service) NotifyTaggedUsers(task *TaskDocument, taggerID primitive.Objec
 	}
 }
 
+// NotifyTagWatchersOfCompletion pushes to every tagged user still in pending
+// or watching state. Push-only by design (spec: completion is a ping, not an
+// activity-feed event). copied/untagged users are never pinged.
+func (s *Service) NotifyTagWatchersOfCompletion(task *TaskDocument, ownerID primitive.ObjectID) error {
+	ctx := context.Background()
+
+	owner, err := s.Users.GetUserByID(ctx, ownerID)
+	if err != nil || owner == nil {
+		return err
+	}
+
+	for _, tu := range task.TaggedUsers {
+		if tu.Status != types.TagStatusPending && tu.Status != types.TagStatusWatching {
+			continue
+		}
+		receiver, err := s.Users.GetUserByID(ctx, tu.ID)
+		if err != nil || receiver == nil || receiver.PushToken == "" {
+			continue
+		}
+		notification := xutils.Notification{
+			Token:   receiver.PushToken,
+			Title:   "They did it! 🎉",
+			Message: fmt.Sprintf("%s completed \"%s\" 🎉", owner.DisplayName, task.Content),
+			Data: map[string]string{
+				"type":    "task_completed_watcher",
+				"user_id": ownerID.Hex(),
+				"task_id": task.ID.Hex(),
+			},
+		}
+		if err := xutils.SendNotification(notification); err != nil {
+			slog.Error("Failed to send watcher completion push", "receiver", tu.ID, "error", err)
+		}
+	}
+	return nil
+}
+
 // notifyTaskCopied tells the task owner that a tagged friend copied the task.
 // Push + TASK_COPIED record; best-effort.
 func (s *Service) notifyTaskCopied(taskID, ownerID, copierID primitive.ObjectID, taskName string) {

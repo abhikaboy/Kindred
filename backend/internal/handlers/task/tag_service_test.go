@@ -582,3 +582,29 @@ func (s *TagServiceTestSuite) TestRespondToTaskTag_CopiedTwiceNotifiesOnce() {
 	s.Equal(int64(1), s.CountDocuments("notifications", filter),
 		"re-responding copied must not duplicate the TASK_COPIED notification")
 }
+
+func (s *TagServiceTestSuite) TestNotifyTagWatchersOfCompletion_OnlyPendingAndWatching() {
+	owner := s.GetUser(0)
+	watcher := s.GetUser(1)
+	copier := s.GetUser(2)
+
+	task := TaskDocument{
+		ID: primitive.NewObjectID(), Content: "Read 30 mins", UserID: owner.ID,
+		TaggedUsers: []types.TaggedTaskUser{
+			{ID: watcher.ID, Handle: watcher.Handle, DisplayName: watcher.DisplayName, Status: types.TagStatusWatching},
+			{ID: copier.ID, Handle: copier.Handle, DisplayName: copier.DisplayName, Status: types.TagStatusCopied},
+		},
+	}
+
+	err := s.service.NotifyTagWatchersOfCompletion(&task, owner.ID)
+	s.NoError(err)
+
+	// Exactly one push sent — to watcher, NOT copier
+	s.AssertPushNotificationSent(watcher.PushToken, "watcher should receive completion push")
+	s.AssertPushNotificationNotSent(copier.PushToken, "copier must not receive completion push")
+
+	// Push data must carry the correct type
+	notifications := s.GetSentPushNotificationsForToken(watcher.PushToken)
+	s.Len(notifications, 1)
+	s.Equal("task_completed_watcher", notifications[0].Data["type"])
+}

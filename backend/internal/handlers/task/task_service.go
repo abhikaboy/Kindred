@@ -567,6 +567,15 @@ func (s *Service) CompleteTask(
 		}()
 	}
 
+	if len(taskToComplete.TaggedUsers) > 0 {
+		tc := taskToComplete
+		go func() {
+			if err := s.NotifyTagWatchersOfCompletion(&tc, userId); err != nil {
+				slog.Error("Failed to notify tag watchers", "taskID", tc.ID.Hex(), "error", err)
+			}
+		}()
+	}
+
 	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
 
 	return &TaskCompletionResult{
