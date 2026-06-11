@@ -1,7 +1,7 @@
 import baseClient from "./client";
 import type { paths } from "./generated/types";
 import { createLogger } from "@/utils/logger";
-import type { MediaItem } from "./media";
+import { resolvePlayableVideo, type MediaItem } from "./media";
 
 const logger = createLogger('UploadAPI');
 
@@ -403,40 +403,51 @@ export async function uploadVideo(
     const { Video: VideoCompressor } = require("react-native-compressor");
     const VideoThumbnails = require("expo-video-thumbnails");
 
-    // 1. Compress aggressively before upload.
-    const compressedUri = await VideoCompressor.compress(videoUri, {
-        compressionMethod: "manual",
-        maxSize: 720,
-        bitrate: 2_000_000, // ~2 Mbps, lightweight for phone-feed playback
-    });
+    // 1. Compress aggressively before upload. If compression itself fails, keep the original.
+    let compressedUri = videoUri;
+    try {
+        compressedUri = await VideoCompressor.compress(videoUri, {
+            compressionMethod: "manual",
+            maxSize: 720,
+            bitrate: 2_000_000, // ~2 Mbps, lightweight for phone-feed playback
+        });
+    } catch (err) {
+        logger.warn("Video compression failed; uploading original", err);
+    }
 
-    // 2. Enforce size cap after compression.
-    const blob = await fetch(compressedUri).then((r) => r.blob());
+    // 2. Pick the file we can actually play. The iOS Simulator has no real H.264 encoder,
+    //    so the compressed output can be unopenable; thumbnail generation validates it and
+    //    falls back to the original (valid) file when needed. On a real device the
+    //    compressed file is valid and is used.
+    const { uploadUri, thumb } = await resolvePlayableVideo(videoUri, compressedUri, (uri) =>
+        VideoThumbnails.getThumbnailAsync(uri, { time: 0, quality: 0.7 })
+    );
+
+    // 3. Enforce size cap on the file we'll actually upload.
+    const blob = await fetch(uploadUri).then((r) => r.blob());
     if (blob.size > VIDEO_MAX_BYTES) {
         throw new Error("Video is too large after compression. Please pick a shorter clip.");
     }
 
-    // 3. Generate a thumbnail frame.
-    const { uri: thumbUri, width, height } = await VideoThumbnails.getThumbnailAsync(compressedUri, {
-        time: 0,
-        quality: 0.7,
-    });
-
     // 4. Upload the thumbnail via the existing image flow.
-    const thumbResult = (await uploadImageSmart(resourceType, resourceId, thumbUri, {
+    const thumbResult = (await uploadImageSmart(resourceType, resourceId, thumb.uri, {
         variant: "large",
         returnFullResult: true,
     })) as ImageUploadResult;
 
-    // 5. Upload the compressed video via presigned PUT.
-    const videoUrl = await uploadImage(resourceType, resourceId, compressedUri, "video/mp4");
+    // 5. Upload the validated video via presigned PUT (mp4 from the compressor, or the
+    //    original's type — e.g. video/quicktime — when we fell back to it). Default to
+    //    video/mp4 if the uri has no recognizable video extension.
+    const detectedType = getMimeTypeFromUri(uploadUri);
+    const videoType = detectedType.startsWith("video/") ? detectedType : "video/mp4";
+    const videoUrl = await uploadImage(resourceType, resourceId, uploadUri, videoType);
 
     return {
         type: "video",
         url: videoUrl,
         thumbnailUrl: thumbResult.public_url,
-        width: width || thumbResult.width || 0,
-        height: height || thumbResult.height || 0,
+        width: thumb.width || thumbResult.width || 0,
+        height: thumb.height || thumbResult.height || 0,
         bytes: blob.size,
     };
 }
