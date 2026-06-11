@@ -94,3 +94,39 @@ func RegisterUpdateTaskTagsOperation(api huma.API, handler *Handler) {
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTaskTags)
 }
+
+type GetPendingTaggedTasksInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+}
+
+type GetPendingTaggedTasksOutput struct {
+	Body []PendingTaggedTask `json:"body"`
+}
+
+func (h *Handler) GetPendingTaggedTasks(ctx context.Context, input *GetPendingTaggedTasksInput) (*GetPendingTaggedTasksOutput, error) {
+	contextID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+	userObjID, err := primitive.ObjectIDFromHex(contextID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	pending, err := h.service.GetPendingTaggedTasks(userObjID)
+	if err != nil {
+		return nil, huma.Error500InternalServerError("Unable to fetch pending tags", err)
+	}
+	return &GetPendingTaggedTasksOutput{Body: pending}, nil
+}
+
+func RegisterGetPendingTaggedTasksOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-pending-tagged-tasks",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tagged-tasks",
+		Summary:     "Get pending tagged tasks",
+		Description: "Tasks the signed-in user has been tagged in and not yet responded to",
+		Tags:        []string{"tasks"},
+	}, handler.GetPendingTaggedTasks)
+}

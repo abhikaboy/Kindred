@@ -306,6 +306,72 @@ func (s *TagServiceTestSuite) TestUpdateTaskTags_RespondedUserResuppliedKeepsSta
 	s.Equal(types.TagStatusWatching, fetched.TaggedUsers[0].Status)
 }
 
+func (s *TagServiceTestSuite) TestGetPendingTaggedTasks_ReturnsTaskAndTagger() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, _ := s.service.BuildTaggedUsers([]string{friend.ID.Hex()})
+	task := TaskDocument{ID: primitive.NewObjectID(), Content: "Read 30 mins", Priority: 1, Value: 2,
+		UserID: owner.ID, CategoryID: category.ID, Active: true, TaggedUsers: tagged}
+	_, err = s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	pending, err := s.service.GetPendingTaggedTasks(friend.ID)
+	s.NoError(err)
+	s.Len(pending, 1)
+	s.Equal("Read 30 mins", pending[0].Content)
+	s.Equal(owner.ID, pending[0].Tagger.ID)
+	s.Equal(owner.DisplayName, pending[0].Tagger.DisplayName)
+
+	// Owner themselves has no pending tags
+	none, err := s.service.GetPendingTaggedTasks(owner.ID)
+	s.NoError(err)
+	s.Len(none, 0)
+}
+
+func (s *TagServiceTestSuite) TestGetPendingTaggedTasks_ExcludesNonPendingStatus() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// Task where friend already responded (watching) — must NOT appear
+	tagged := []types.TaggedTaskUser{
+		{
+			ID:          friend.ID,
+			Handle:      friend.Handle,
+			DisplayName: friend.DisplayName,
+			Status:      types.TagStatusWatching,
+		},
+	}
+	task := TaskDocument{ID: primitive.NewObjectID(), Content: "Watched task", Priority: 1, Value: 1,
+		UserID: owner.ID, CategoryID: category.ID, Active: true, TaggedUsers: tagged}
+	_, err = s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	none, err := s.service.GetPendingTaggedTasks(friend.ID)
+	s.NoError(err)
+	s.Len(none, 0, "watching-status entry must not appear in pending results")
+}
+
 func (s *TagServiceTestSuite) TestUpdateTaskTags_MirrorsToTemplate() {
 	owner := s.GetUser(0)
 	friendA := s.GetUser(1)

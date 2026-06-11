@@ -58,4 +58,5 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterGetCompletedTasksOperation(api, handler)
 	RegisterGetCompletedTasksByDateOperation(api, handler)
 	RegisterUpdateTaskTagsOperation(api, handler)
+	RegisterGetPendingTaggedTasksOperation(api, handler)
 }

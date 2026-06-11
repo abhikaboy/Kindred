@@ -3,11 +3,37 @@ package task
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+// TaggerInfo carries the denormalized display fields of the user who tagged a task.
+type TaggerInfo struct {
+	ID             primitive.ObjectID `bson:"id" json:"id"`
+	DisplayName    string             `bson:"display_name" json:"display_name"`
+	Handle         string             `bson:"handle" json:"handle"`
+	ProfilePicture string             `bson:"profile_picture" json:"profile_picture"`
+}
+
+// PendingTaggedTask carries everything the home banner and the Copy prefill
+// need in one payload.
+type PendingTaggedTask struct {
+	TaskID         primitive.ObjectID `bson:"taskId" json:"taskId"`
+	Content        string             `bson:"content" json:"content"`
+	Value          float64            `bson:"value" json:"value"`
+	Priority       int                `bson:"priority" json:"priority"`
+	Recurring      bool               `bson:"recurring" json:"recurring"`
+	RecurFrequency string             `bson:"recurFrequency,omitempty" json:"recurFrequency,omitempty"`
+	RecurDetails   *RecurDetails      `bson:"recurDetails,omitempty" json:"recurDetails,omitempty"`
+	Deadline       *time.Time         `bson:"deadline,omitempty" json:"deadline,omitempty"`
+	Notes          string             `bson:"notes,omitempty" json:"notes,omitempty"`
+	Checklist      []ChecklistItem    `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Tagger         TaggerInfo         `bson:"tagger" json:"tagger"`
+}
 
 // BuildTaggedUsers resolves raw user IDs to denormalized pending tag entries.
 // Invalid or unknown IDs are skipped rather than failing the whole create.
@@ -111,4 +137,52 @@ func (s *Service) UpdateTaskTags(
 	}
 
 	return added, nil
+}
+
+// GetPendingTaggedTasks returns every active task where userID is tagged with
+// status pending, joined with the tagger's display info.
+func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTaggedTask, error) {
+	ctx := context.Background()
+	elem := bson.M{"$elemMatch": bson.M{"id": userID, "status": types.TagStatusPending}}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"tasks.taggedUsers": elem}}},
+		{{Key: "$unwind", Value: "$tasks"}},
+		{{Key: "$match", Value: bson.M{"tasks.taggedUsers": elem}}},
+		{{Key: "$lookup", Value: bson.M{
+			"from": "users", "localField": "user", "foreignField": "_id", "as": "taggerDoc",
+		}}},
+		{{Key: "$unwind", Value: "$taggerDoc"}},
+		{{Key: "$project", Value: bson.M{
+			"taskId":         "$tasks._id",
+			"content":        "$tasks.content",
+			"value":          "$tasks.value",
+			"priority":       "$tasks.priority",
+			"recurring":      "$tasks.recurring",
+			"recurFrequency": "$tasks.recurFrequency",
+			"recurDetails":   "$tasks.recurDetails",
+			"deadline":       "$tasks.deadline",
+			"notes":          "$tasks.notes",
+			"checklist":      "$tasks.checklist",
+			"tagger": bson.M{
+				"id":              "$taggerDoc._id",
+				"display_name":    "$taggerDoc.display_name",
+				"handle":          "$taggerDoc.handle",
+				"profile_picture": "$taggerDoc.profile_picture",
+			},
+		}}},
+		{{Key: "$sort", Value: bson.M{"taskId": -1}}},
+	}
+
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	results := make([]PendingTaggedTask, 0)
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
