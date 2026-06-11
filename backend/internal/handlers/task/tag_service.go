@@ -194,12 +194,33 @@ func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTag
 // RespondToTaskTag records the tagged user's response on the live task and
 // mirrors it to the template so future recurrences inherit it. The nested
 // array filter scopes the write to the responder's own entry, so a user can
-// never modify someone else's tag state.
+// never modify someone else's tag state. Read-then-write (accepted TOCTOU):
+// the pre-read gives a real 404 for non-tagged responders and makes copied
+// re-responds idempotent (no duplicate owner notification).
 func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, status types.TagStatus) error {
 	if status != types.TagStatusWatching && status != types.TagStatusCopied && status != types.TagStatusUntagged {
 		return fmt.Errorf("invalid tag status: %q", status)
 	}
 	ctx := context.Background()
+
+	task, ownerID := s.lookupTaskAndOwner(taskID)
+	if task == nil {
+		return mongo.ErrNoDocuments
+	}
+	var prev types.TagStatus
+	found := false
+	for _, tu := range task.TaggedUsers {
+		if tu.ID == responderID {
+			prev, found = tu.Status, true
+			break
+		}
+	}
+	if !found {
+		return mongo.ErrNoDocuments // task exists but responder isn't tagged
+	}
+	if prev == status {
+		return nil // idempotent re-respond: no write, no notification
+	}
 
 	res, err := s.Tasks.UpdateOne(ctx,
 		bson.M{"tasks._id": taskID},
@@ -218,9 +239,8 @@ func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, statu
 		return mongo.ErrNoDocuments
 	}
 
-	// Mirror to template (cross-user fetch: responder doesn't own the category)
-	task, _ := s.lookupTaskAndOwner(taskID)
-	if task != nil && task.TemplateID != nil {
+	// Mirror to template so future recurrences inherit the response
+	if task.TemplateID != nil {
 		if _, err := s.TemplateTasks.UpdateOne(ctx,
 			bson.M{"_id": *task.TemplateID},
 			bson.M{"$set": bson.M{"taggedUsers.$[u].status": status}},
@@ -230,6 +250,10 @@ func (s *Service) RespondToTaskTag(taskID, responderID primitive.ObjectID, statu
 		); err != nil {
 			slog.Error("Failed to mirror tag response to template", "templateID", task.TemplateID.Hex(), "error", err)
 		}
+	}
+
+	if status == types.TagStatusCopied {
+		go s.notifyTaskCopied(taskID, ownerID, responderID, task.Content)
 	}
 	return nil
 }

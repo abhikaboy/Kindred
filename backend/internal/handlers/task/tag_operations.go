@@ -178,12 +178,6 @@ func (h *Handler) RespondToTaskTag(ctx context.Context, input *RespondToTaskTagI
 		}
 	}
 
-	if status == types.TagStatusCopied {
-		if task, ownerID := h.service.lookupTaskAndOwner(taskID); task != nil {
-			go h.service.notifyTaskCopied(taskID, ownerID, responderID, task.Content)
-		}
-	}
-
 	resp := &RespondToTaskTagOutput{}
 	resp.Body.Message = "Response recorded"
 	return resp, nil

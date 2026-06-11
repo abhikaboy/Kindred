@@ -2,6 +2,7 @@ package task
 
 import (
 	"testing"
+	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
@@ -511,4 +512,71 @@ func (s *TagServiceTestSuite) TestNotifyTaskCopied_CreatesRecordAndSendsPush() {
 
 	// Assert a push was sent to the owner's push token
 	s.AssertPushNotificationSent(owner.PushToken, "expected push notification sent to task owner")
+}
+
+func (s *TagServiceTestSuite) TestRespondToTaskTag_NonTaggedResponderReturnsNotFound() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+	stranger := s.GetUser(2)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, _ := s.service.BuildTaggedUsers([]string{friend.ID.Hex()})
+	task := TaskDocument{ID: primitive.NewObjectID(), Content: "Read 30 mins", Priority: 1, Value: 2,
+		UserID: owner.ID, CategoryID: category.ID, Active: true, TaggedUsers: tagged}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	// Task exists, but the stranger isn't tagged on it — must be a 404, not a silent 200
+	err = s.service.RespondToTaskTag(created.ID, stranger.ID, types.TagStatusWatching)
+	s.ErrorIs(err, mongo.ErrNoDocuments)
+}
+
+func (s *TagServiceTestSuite) TestRespondToTaskTag_CopiedTwiceNotifiesOnce() {
+	owner := s.GetUser(0)
+	friend := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, _ := s.service.BuildTaggedUsers([]string{friend.ID.Hex()})
+	task := TaskDocument{ID: primitive.NewObjectID(), Content: "Read 30 mins", Priority: 1, Value: 2,
+		UserID: owner.ID, CategoryID: category.ID, Active: true, TaggedUsers: tagged}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	filter := bson.M{
+		"receiver":         owner.ID,
+		"notificationType": "TASK_COPIED",
+		"reference_id":     created.ID,
+	}
+
+	err = s.service.RespondToTaskTag(created.ID, friend.ID, types.TagStatusCopied)
+	s.NoError(err)
+
+	// Notification fires in a goroutine; wait for the record to land
+	s.Eventually(func() bool {
+		return s.CountDocuments("notifications", filter) == 1
+	}, 3*time.Second, 50*time.Millisecond, "expected TASK_COPIED record after first copied response")
+
+	// Idempotent re-respond: returns nil, fires no goroutine, so no second record
+	err = s.service.RespondToTaskTag(created.ID, friend.ID, types.TagStatusCopied)
+	s.NoError(err)
+	s.Equal(int64(1), s.CountDocuments("notifications", filter),
+		"re-responding copied must not duplicate the TASK_COPIED notification")
 }
