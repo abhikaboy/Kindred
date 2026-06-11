@@ -11,7 +11,8 @@ interface KudosVideoPlayerModalProps {
 
 /**
  * Fullscreen playback for a video kudos. Deliberate viewing (unlike feed
- * autoplay): sound on, native controls. Mount only while open.
+ * autoplay): sound on, native controls. Mount only while open, or the player
+ * is never released.
  */
 export default function KudosVideoPlayerModal({ uri, onClose }: KudosVideoPlayerModalProps) {
     const insets = useSafeAreaInsets();
@@ -21,7 +22,7 @@ export default function KudosVideoPlayerModal({ uri, onClose }: KudosVideoPlayer
     });
 
     return (
-        <Modal visible animationType="fade" onRequestClose={onClose}>
+        <Modal visible animationType="fade" onRequestClose={onClose} statusBarTranslucent>
             <View style={styles.container}>
                 <VideoView player={player} style={styles.video} contentFit="contain" nativeControls />
                 <TouchableOpacity
