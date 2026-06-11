@@ -43,7 +43,7 @@ func (s *Service) NotifyTaggedUsers(task *TaskDocument, taggerID primitive.Objec
 		}
 		notification := xutils.Notification{
 			Token:   receiver.PushToken,
-			Title:   "You've been tagged",
+			Title:   "You've been tagged 👀",
 			Message: fmt.Sprintf("%s tagged you in \"%s\"", tagger.DisplayName, task.Content),
 			Data: map[string]string{
 				"type":      "task_tagged",
