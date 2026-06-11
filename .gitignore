@@ -25,3 +25,6 @@ coverage.html
 .superpowers/
 docs/superpowers/
 backend/task.test
+
+# Local build artifacts
+backend/delete_accounts

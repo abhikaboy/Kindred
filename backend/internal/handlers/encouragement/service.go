@@ -261,6 +261,133 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	return encouragement.ToAPI(), nil
 }
 
+// ToggleReaction sets, replaces, or removes the receiver's reaction on an encouragement.
+// The filter binds _id + receiver, so anyone but the receiver gets mongo.ErrNoDocuments.
+// Returns the reaction state after the toggle (nil when removed).
+func (s *Service) ToggleReaction(id, receiverID primitive.ObjectID, emoji string) (*string, error) {
+	if s.Encouragements == nil {
+		return nil, fmt.Errorf("encouragements collection not available")
+	}
+
+	ctx := context.Background()
+	filter := bson.M{"_id": id, "receiver": receiverID}
+
+	var current EncouragementDocumentInternal
+	if err := s.Encouragements.FindOne(ctx, filter).Decode(&current); err != nil {
+		return nil, err
+	}
+
+	// Same emoji again → toggle off. Removal never notifies.
+	if current.Reaction != nil && *current.Reaction == emoji {
+		if _, err := s.Encouragements.UpdateOne(ctx, filter, bson.M{"$unset": bson.M{"reaction": "", "reactedAt": ""}}); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	now := time.Now()
+	if _, err := s.Encouragements.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"reaction": emoji, "reactedAt": now}}); err != nil {
+		return nil, err
+	}
+
+	if err := s.sendReactionNotification(&current, emoji); err != nil {
+		slog.Error("Failed to send encouragement reaction notification", "error", err, "encouragement_id", id.Hex())
+	}
+
+	return &emoji, nil
+}
+
+// sendReactionNotification pushes to the kudos sender when the receiver reacts.
+func (s *Service) sendReactionNotification(enc *EncouragementDocumentInternal, emoji string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	var sender types.User
+	if err := s.Users.FindOne(ctx, bson.M{"_id": enc.Sender.ID}).Decode(&sender); err != nil {
+		return fmt.Errorf("failed to get kudos sender: %w", err)
+	}
+	if sender.PushToken == "" {
+		return nil
+	}
+
+	var receiver types.User
+	if err := s.Users.FindOne(ctx, bson.M{"_id": enc.Receiver}).Decode(&receiver); err != nil {
+		return fmt.Errorf("failed to get kudos receiver: %w", err)
+	}
+
+	return xutils.SendNotification(xutils.Notification{
+		Token:   sender.PushToken,
+		Title:   "Your encouragement landed",
+		Message: fmt.Sprintf("%s reacted %s", receiver.DisplayName, emoji),
+		Data: map[string]string{
+			"type":       "kudos_reaction",
+			"kudos_type": "encouragement",
+			"reaction":   emoji,
+		},
+	})
+}
+
+// receiverInfoRow is the projection of the joined receiver user document.
+type receiverInfoRow struct {
+	ID             primitive.ObjectID `bson:"_id"`
+	DisplayName    string             `bson:"display_name"`
+	ProfilePicture string             `bson:"profile_picture"`
+}
+
+type sentEncouragementRow struct {
+	EncouragementDocumentInternal `bson:",inline"`
+	ReceiverInfo                  []receiverInfoRow `bson:"receiverInfo"`
+}
+
+// GetSentEncouragements fetches encouragements sent by senderID, joining the receiver's
+// profile info (kudos documents denormalize the sender but only store the receiver's ID).
+func (s *Service) GetSentEncouragements(senderID primitive.ObjectID) ([]EncouragementDocument, error) {
+	if s.Encouragements == nil {
+		return nil, fmt.Errorf("encouragements collection not available")
+	}
+
+	ctx := context.Background()
+	pipeline := []bson.M{
+		{"$match": bson.M{"sender.id": senderID}},
+		{"$sort": bson.M{"timestamp": -1}},
+		{"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "receiver",
+			"foreignField": "_id",
+			"as":           "receiverInfo",
+		}},
+	}
+
+	cursor, err := s.Encouragements.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var rows []sentEncouragementRow
+	if err := cursor.All(ctx, &rows); err != nil {
+		return nil, err
+	}
+
+	results := make([]EncouragementDocument, len(rows))
+	for i, row := range rows {
+		doc := row.EncouragementDocumentInternal.ToAPI()
+		if len(row.ReceiverInfo) > 0 {
+			doc.ReceiverInfo = &EncouragementSender{
+				ID:      row.ReceiverInfo[0].ID.Hex(),
+				Name:    row.ReceiverInfo[0].DisplayName,
+				Picture: row.ReceiverInfo[0].ProfilePicture,
+			}
+		}
+		results[i] = *doc
+	}
+
+	return results, nil
+}
+
 // UpdatePartialEncouragement updates only specified fields of an Encouragement document by ObjectID.
 func (s *Service) UpdatePartialEncouragement(id primitive.ObjectID, updated UpdateEncouragementDocument) error {
 	if s.Encouragements == nil {

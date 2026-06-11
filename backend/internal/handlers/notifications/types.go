@@ -32,6 +32,7 @@ const (
 	NotificationTypePostTag               NotificationType = "POST_TAG"
 	NotificationTypeTaskTagged            NotificationType = "TASK_TAGGED"
 	NotificationTypeTaskCopied            NotificationType = "TASK_COPIED"
+	NotificationTypeKudosReaction         NotificationType = "KUDOS_REACTION"
 )
 
 // NotificationDocument represents a notification stored in the database

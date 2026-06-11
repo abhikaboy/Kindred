@@ -91,6 +91,35 @@ type MarkCongratulationsReadOutput struct {
 	}
 }
 
+// React to Congratulation
+type ReactToCongratulationInput struct {
+	Authorization string                       `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                       `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                       `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          CongratulationReactionParams `json:"body"`
+}
+
+type CongratulationReactionParams struct {
+	Emoji string `json:"emoji" example:"🙌" doc:"Reaction emoji (one of the curated kudos reactions)" validate:"required"`
+}
+
+type ReactToCongratulationOutput struct {
+	Body struct {
+		Reaction *string `json:"reaction" example:"🙌" doc:"Reaction state after the toggle (null when removed)"`
+		Message  string  `json:"message" example:"Reaction added successfully"`
+	} `json:"body"`
+}
+
+// Get Sent Congratulations
+type GetSentCongratulationsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type GetSentCongratulationsOutput struct {
+	Body []CongratulationDocument `json:"body"`
+}
+
 // Send Beak Congratulation (system congratulation from onboarding)
 type SendBeakCongratulationInput struct {
 	Authorization string                       `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
@@ -157,6 +186,10 @@ type CongratulationDocument struct {
 	TaskName     string               `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                 `bson:"read" json:"read" example:"false" doc:"Whether the congratulation has been read"`
 	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message or image)"`
+	Reaction     *string              `bson:"reaction,omitempty" json:"reaction,omitempty" example:"🙌" doc:"Receiver's emoji reaction"`
+	ReactedAt    *time.Time           `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"When the receiver reacted"`
+	// Populated only by sent queries (kudos documents store just the receiver's ID).
+	ReceiverInfo *CongratulationSender `bson:"receiverInfo,omitempty" json:"receiverInfo,omitempty" doc:"Receiver's profile info (sent queries only)"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -172,6 +205,8 @@ type CongratulationDocumentInternal struct {
 	Type         string                       `bson:"type"`
 	PostID       *primitive.ObjectID          `bson:"postId,omitempty"`
 	Private      bool                         `bson:"private,omitempty"`
+	Reaction     *string                      `bson:"reaction,omitempty"`
+	ReactedAt    *time.Time                   `bson:"reactedAt,omitempty"`
 }
 
 type UpdateCongratulationDocument struct {
@@ -194,6 +229,8 @@ func (c *CongratulationDocumentInternal) ToAPI() *CongratulationDocument {
 		TaskName:     c.TaskName,
 		Read:         c.Read,
 		Type:         c.Type,
+		Reaction:     c.Reaction,
+		ReactedAt:    c.ReactedAt,
 	}
 }
 

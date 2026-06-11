@@ -1,6 +1,7 @@
 package encouragement_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -690,6 +691,142 @@ func (s *EncouragementServiceTestSuite) TestNotifyEncouragersOfCompletion_Duplic
 
 	// Should not error
 	s.NoError(err)
+}
+
+// ========================================
+// ToggleReaction Tests
+// ========================================
+
+func (s *EncouragementServiceTestSuite) TestToggleReaction_SetSendsNotification() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	encID := s.createTestEncouragement(sender.ID, receiver.ID, "Great job!", "profile", "", "", primitive.NilObjectID)
+
+	reaction, err := s.service.ToggleReaction(encID, receiver.ID, "❤️")
+
+	s.NoError(err)
+	s.Require().NotNil(reaction)
+	s.Equal("❤️", *reaction)
+
+	var found encouragement.EncouragementDocumentInternal
+	s.FindOne("encouragements", bson.M{"_id": encID}, &found)
+	s.Require().NotNil(found.Reaction)
+	s.Equal("❤️", *found.Reaction)
+	s.NotNil(found.ReactedAt)
+
+	notifs := s.GetSentPushNotificationsByType("kudos_reaction")
+	s.Require().Len(notifs, 1)
+	s.Equal(sender.PushToken, notifs[0].Token)
+	s.Equal("Your encouragement landed", notifs[0].Title)
+	s.Equal(fmt.Sprintf("%s reacted ❤️", receiver.DisplayName), notifs[0].Message)
+	s.Equal("encouragement", notifs[0].Data["kudos_type"])
+	s.Equal("❤️", notifs[0].Data["reaction"])
+}
+
+func (s *EncouragementServiceTestSuite) TestToggleReaction_SameEmojiRemoves() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	encID := s.createTestEncouragement(sender.ID, receiver.ID, "Nice!", "profile", "", "", primitive.NilObjectID)
+
+	_, err := s.service.ToggleReaction(encID, receiver.ID, "🔥")
+	s.Require().NoError(err)
+	s.MockPushSender.Reset()
+
+	reaction, err := s.service.ToggleReaction(encID, receiver.ID, "🔥")
+
+	s.NoError(err)
+	s.Nil(reaction)
+
+	var found encouragement.EncouragementDocumentInternal
+	s.FindOne("encouragements", bson.M{"_id": encID}, &found)
+	s.Nil(found.Reaction)
+	s.Nil(found.ReactedAt)
+	s.AssertPushNotificationCount(0, "removing a reaction must not notify")
+}
+
+func (s *EncouragementServiceTestSuite) TestToggleReaction_DifferentEmojiReplaces() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	encID := s.createTestEncouragement(sender.ID, receiver.ID, "Nice!", "profile", "", "", primitive.NilObjectID)
+
+	_, err := s.service.ToggleReaction(encID, receiver.ID, "❤️")
+	s.Require().NoError(err)
+	s.MockPushSender.Reset()
+
+	reaction, err := s.service.ToggleReaction(encID, receiver.ID, "🙌")
+
+	s.NoError(err)
+	s.Require().NotNil(reaction)
+	s.Equal("🙌", *reaction)
+
+	var found encouragement.EncouragementDocumentInternal
+	s.FindOne("encouragements", bson.M{"_id": encID}, &found)
+	s.Require().NotNil(found.Reaction)
+	s.Equal("🙌", *found.Reaction)
+
+	notifs := s.GetSentPushNotificationsByType("kudos_reaction")
+	s.Require().Len(notifs, 1)
+	s.Equal("🙌", notifs[0].Data["reaction"])
+}
+
+func (s *EncouragementServiceTestSuite) TestToggleReaction_NonReceiverRejected() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	other := s.GetUser(2)
+	encID := s.createTestEncouragement(sender.ID, receiver.ID, "Nice!", "profile", "", "", primitive.NilObjectID)
+
+	// Neither the sender nor a third party may react — only the receiver.
+	for _, uid := range []primitive.ObjectID{sender.ID, other.ID} {
+		reaction, err := s.service.ToggleReaction(encID, uid, "❤️")
+		s.Equal(mongo.ErrNoDocuments, err)
+		s.Nil(reaction)
+	}
+
+	var found encouragement.EncouragementDocumentInternal
+	s.FindOne("encouragements", bson.M{"_id": encID}, &found)
+	s.Nil(found.Reaction)
+	s.AssertPushNotificationCount(0)
+}
+
+// ========================================
+// GetSentEncouragements Tests
+// ========================================
+
+func (s *EncouragementServiceTestSuite) TestGetSentEncouragements_OnlySendersKudosWithReceiverInfo() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+	user3 := s.GetUser(2)
+
+	sentID := s.createTestEncouragement(user1.ID, user2.ID, "From user1", "profile", "", "", primitive.NilObjectID)
+	s.createTestEncouragement(user3.ID, user2.ID, "From user3", "profile", "", "", primitive.NilObjectID)
+
+	results, err := s.service.GetSentEncouragements(user1.ID)
+
+	s.NoError(err)
+	s.Require().Len(results, 1)
+	s.Equal(sentID.Hex(), results[0].ID)
+	s.Equal("From user1", results[0].Message)
+	s.Require().NotNil(results[0].ReceiverInfo)
+	s.Equal(user2.ID.Hex(), results[0].ReceiverInfo.ID)
+	s.Equal(user2.DisplayName, results[0].ReceiverInfo.Name)
+	s.Equal(user2.ProfilePicture, results[0].ReceiverInfo.Picture)
+}
+
+func (s *EncouragementServiceTestSuite) TestGetSentEncouragements_IncludesReactionState() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	encID := s.createTestEncouragement(sender.ID, receiver.ID, "Nice!", "profile", "", "", primitive.NilObjectID)
+
+	_, err := s.service.ToggleReaction(encID, receiver.ID, "😭")
+	s.Require().NoError(err)
+
+	results, err := s.service.GetSentEncouragements(sender.ID)
+
+	s.NoError(err)
+	s.Require().Len(results, 1)
+	s.Require().NotNil(results[0].Reaction)
+	s.Equal("😭", *results[0].Reaction)
+	s.NotNil(results[0].ReactedAt)
 }
 
 // ========================================

@@ -213,6 +213,134 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	return congratulation.ToAPI(), nil
 }
 
+// ToggleReaction sets, replaces, or removes the receiver's reaction on a congratulation.
+// The filter binds _id + receiver, so anyone but the receiver gets mongo.ErrNoDocuments.
+// Returns the reaction state after the toggle (nil when removed).
+func (s *Service) ToggleReaction(id, receiverID primitive.ObjectID, emoji string) (*string, error) {
+	if s.Congratulations == nil {
+		return nil, fmt.Errorf("congratulations collection not available")
+	}
+
+	ctx := context.Background()
+	filter := bson.M{"_id": id, "receiver": receiverID}
+
+	var current CongratulationDocumentInternal
+	if err := s.Congratulations.FindOne(ctx, filter).Decode(&current); err != nil {
+		return nil, err
+	}
+
+	// Same emoji again → toggle off. Removal never notifies.
+	if current.Reaction != nil && *current.Reaction == emoji {
+		if _, err := s.Congratulations.UpdateOne(ctx, filter, bson.M{"$unset": bson.M{"reaction": "", "reactedAt": ""}}); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	now := time.Now()
+	if _, err := s.Congratulations.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"reaction": emoji, "reactedAt": now}}); err != nil {
+		return nil, err
+	}
+
+	if err := s.sendReactionNotification(&current, emoji); err != nil {
+		slog.Error("Failed to send congratulation reaction notification", "error", err, "congratulation_id", id.Hex())
+	}
+
+	return &emoji, nil
+}
+
+// sendReactionNotification pushes to the kudos sender when the receiver reacts.
+// Works for anonymous (private) congratulations too — the sender always knew they sent it.
+func (s *Service) sendReactionNotification(con *CongratulationDocumentInternal, emoji string) error {
+	if s.Users == nil {
+		return fmt.Errorf("users collection not available")
+	}
+
+	ctx := context.Background()
+
+	var sender types.User
+	if err := s.Users.FindOne(ctx, bson.M{"_id": con.Sender.ID}).Decode(&sender); err != nil {
+		return fmt.Errorf("failed to get kudos sender: %w", err)
+	}
+	if sender.PushToken == "" {
+		return nil
+	}
+
+	var receiver types.User
+	if err := s.Users.FindOne(ctx, bson.M{"_id": con.Receiver}).Decode(&receiver); err != nil {
+		return fmt.Errorf("failed to get kudos receiver: %w", err)
+	}
+
+	return xutils.SendNotification(xutils.Notification{
+		Token:   sender.PushToken,
+		Title:   "Your congratulations meant something",
+		Message: fmt.Sprintf("%s reacted %s", receiver.DisplayName, emoji),
+		Data: map[string]string{
+			"type":       "kudos_reaction",
+			"kudos_type": "congratulation",
+			"reaction":   emoji,
+		},
+	})
+}
+
+// receiverInfoRow is the projection of the joined receiver user document.
+type receiverInfoRow struct {
+	ID             primitive.ObjectID `bson:"_id"`
+	DisplayName    string             `bson:"display_name"`
+	ProfilePicture string             `bson:"profile_picture"`
+}
+
+type sentCongratulationRow struct {
+	CongratulationDocumentInternal `bson:",inline"`
+	ReceiverInfo                   []receiverInfoRow `bson:"receiverInfo"`
+}
+
+// GetSentCongratulations fetches congratulations sent by senderID, joining the receiver's
+// profile info (kudos documents denormalize the sender but only store the receiver's ID).
+func (s *Service) GetSentCongratulations(senderID primitive.ObjectID) ([]CongratulationDocument, error) {
+	if s.Congratulations == nil {
+		return nil, fmt.Errorf("congratulations collection not available")
+	}
+
+	ctx := context.Background()
+	pipeline := []bson.M{
+		{"$match": bson.M{"sender.id": senderID}},
+		{"$sort": bson.M{"timestamp": -1}},
+		{"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "receiver",
+			"foreignField": "_id",
+			"as":           "receiverInfo",
+		}},
+	}
+
+	cursor, err := s.Congratulations.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var rows []sentCongratulationRow
+	if err := cursor.All(ctx, &rows); err != nil {
+		return nil, err
+	}
+
+	results := make([]CongratulationDocument, len(rows))
+	for i, row := range rows {
+		doc := row.CongratulationDocumentInternal.ToAPI()
+		if len(row.ReceiverInfo) > 0 {
+			doc.ReceiverInfo = &CongratulationSender{
+				ID:      row.ReceiverInfo[0].ID.Hex(),
+				Name:    row.ReceiverInfo[0].DisplayName,
+				Picture: row.ReceiverInfo[0].ProfilePicture,
+			}
+		}
+		results[i] = *doc
+	}
+
+	return results, nil
+}
+
 // UpdatePartialCongratulation updates only specified fields of a Congratulation document by ObjectID.
 func (s *Service) UpdatePartialCongratulation(id primitive.ObjectID, updated UpdateCongratulationDocument) error {
 	if s.Congratulations == nil {
