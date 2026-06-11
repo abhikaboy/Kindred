@@ -118,7 +118,7 @@ expansion; text inputs inside FlashList cells fight keyboard avoidance and recyc
 - **Footer — "Log my day"** (disabled when nothing selected and no entries):
   1. `bulkCompleteTasksAPI(items)` → existing `POST /v1/user/tasks/bulk/complete` for
      checked tasks.
-  2. `logTasksAPI(workspaceId, entries)` → new `POST /v1/user/tasks/log` for typed
+  2. `logTasksAPI(workspaceName, entries)` → new `POST /v1/user/tasks/log` for typed
      entries.
   3. **Not optimistic**: await both, then `removeFromCategory` for each confirmed
      completion, invalidate `["rings", "today"]`, refetch workspaces (so the new Logged
