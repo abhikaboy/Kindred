@@ -73,6 +73,35 @@ type DeleteEncouragementOutput struct {
 	}
 }
 
+// React to Encouragement
+type ReactToEncouragementInput struct {
+	Authorization string                      `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string                      `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+	ID            string                      `path:"id" example:"507f1f77bcf86cd799439011"`
+	Body          EncouragementReactionParams `json:"body"`
+}
+
+type EncouragementReactionParams struct {
+	Emoji string `json:"emoji" example:"❤️" doc:"Reaction emoji (one of the curated kudos reactions)" validate:"required"`
+}
+
+type ReactToEncouragementOutput struct {
+	Body struct {
+		Reaction *string `json:"reaction" example:"❤️" doc:"Reaction state after the toggle (null when removed)"`
+		Message  string  `json:"message" example:"Reaction added successfully"`
+	} `json:"body"`
+}
+
+// Get Sent Encouragements
+type GetSentEncouragementsInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
+}
+
+type GetSentEncouragementsOutput struct {
+	Body []EncouragementDocument `json:"body"`
+}
+
 // Mark Encouragements as Read
 type MarkEncouragementsReadInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
@@ -137,6 +166,10 @@ type EncouragementDocument struct {
 	TaskID       string              `bson:"taskId,omitempty" json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
 	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
+	Reaction     *string             `bson:"reaction,omitempty" json:"reaction,omitempty" example:"❤️" doc:"Receiver's emoji reaction"`
+	ReactedAt    *time.Time          `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"When the receiver reacted"`
+	// Populated only by sent queries (kudos documents store just the receiver's ID).
+	ReceiverInfo *EncouragementSender `bson:"receiverInfo,omitempty" json:"receiverInfo,omitempty" doc:"Receiver's profile info (sent queries only)"`
 }
 
 // Internal struct for MongoDB operations (keeps primitive.ObjectID)
@@ -152,6 +185,8 @@ type EncouragementDocumentInternal struct {
 	TaskID       primitive.ObjectID          `bson:"taskId,omitempty"`
 	Read         bool                        `bson:"read"`
 	Type         string                      `bson:"type"`
+	Reaction     *string                     `bson:"reaction,omitempty"`
+	ReactedAt    *time.Time                  `bson:"reactedAt,omitempty"`
 }
 
 type UpdateEncouragementDocument struct {
@@ -173,6 +208,8 @@ func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 		Scope:     e.Scope,
 		Read:      e.Read,
 		Type:      e.Type,
+		Reaction:  e.Reaction,
+		ReactedAt: e.ReactedAt,
 	}
 
 	// Include task fields for task-scoped encouragements

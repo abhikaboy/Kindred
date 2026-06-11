@@ -108,6 +108,21 @@ var Indexes = []Index{
 			Keys: bson.D{{Key: "receiver", Value: 1}},
 		},
 	},
+	// Index for looking up kudos by sender (for the Sent view on the Kudos screen)
+	{
+		Collection: "encouragements",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "sender.id", Value: 1}},
+			Options: options.Index().SetName("sender_id_idx"),
+		},
+	},
+	{
+		Collection: "congratulations",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "sender.id", Value: 1}},
+			Options: options.Index().SetName("sender_id_idx"),
+		},
+	},
 	// For You exposure tracking — one document per (user_id, card_type). The
 	// unique compound index lets the service upsert exposure counts atomically.
 	{

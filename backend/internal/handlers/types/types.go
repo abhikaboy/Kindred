@@ -449,6 +449,15 @@ type PostDocument struct {
 	Metadata PostMetadata `bson:"metadata" json:"metadata"`
 }
 
+// KudosReactionEmojis is the curated set a kudos receiver can react with.
+// Must stay in sync with KUDOS_REACTION_EMOJIS in frontend/constants/kudos.ts.
+var KudosReactionEmojis = map[string]bool{
+	"❤️": true,
+	"🙌":  true,
+	"🔥":  true,
+	"😭":  true,
+}
+
 // PostKudos is one congratulation recorded on a post. Denormalized (mirrors
 // TaskKudos) so the card can render the congratulator cluster without a join.
 type PostKudos struct {

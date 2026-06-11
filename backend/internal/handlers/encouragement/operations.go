@@ -74,12 +74,37 @@ func RegisterMarkEncouragementsReadOperation(api huma.API, handler *Handler) {
 	}, handler.MarkEncouragementsReadHuma)
 }
 
+func RegisterGetSentEncouragementsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-sent-encouragements",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/encouragements/sent",
+		Summary:     "Get sent encouragements",
+		Description: "Retrieve all encouragements sent by the authenticated user, with reaction state",
+		Tags:        []string{"encouragements"},
+	}, handler.GetSentEncouragementsHuma)
+}
+
+func RegisterReactToEncouragementOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "react-to-encouragement",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/encouragements/{id}/reaction",
+		Summary:     "React to an encouragement",
+		Description: "Toggle the receiver's emoji reaction on an encouragement",
+		Tags:        []string{"encouragements"},
+	}, handler.ReactToEncouragementHuma)
+}
+
 // Register all encouragement operations
 func RegisterEncouragementOperations(api huma.API, handler *Handler) {
 	RegisterMarkEncouragementsReadOperation(api, handler)
+	// Static /sent must be registered before the /{id} routes.
+	RegisterGetSentEncouragementsOperation(api, handler)
 	RegisterCreateEncouragementOperation(api, handler)
 	RegisterGetEncouragementsOperation(api, handler)
 	RegisterGetEncouragementOperation(api, handler)
 	RegisterUpdateEncouragementOperation(api, handler)
 	RegisterDeleteEncouragementOperation(api, handler)
+	RegisterReactToEncouragementOperation(api, handler)
 }
