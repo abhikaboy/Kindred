@@ -326,6 +326,7 @@ func (s *Service) CreateTemplateForTask(
 	reminders []*Reminder,
 	notes string,
 	checklist []ChecklistItem,
+	taggedUsers []TaggedTaskUser,
 ) error {
 
 	if err := ValidateRecurDetails(recurFrequency, recurDetails); err != nil {
@@ -391,6 +392,7 @@ func (s *Service) CreateTemplateForTask(
 		Reminders:     relativeReminders,
 		Notes:         notes,
 		Checklist:     checklist,
+		TaggedUsers:   taggedUsers,
 
 		// Initialize analytics fields
 		TimesGenerated:  0,
