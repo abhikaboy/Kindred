@@ -111,7 +111,7 @@ func (s *TagServiceTestSuite) TestNotifyTaggedUsers_SkipsNonPendingUsers() {
 	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
 	s.NoError(err)
 
-	// Build tagged user but set status to accepted — should be skipped
+	// Build tagged user but set status to watching — should be skipped
 	tagged := []types.TaggedTaskUser{
 		{
 			ID:          friend.ID,
@@ -177,4 +177,89 @@ func (s *TagServiceTestSuite) TestCreateTask_PersistsTaggedUsers() {
 	s.NoError(err)
 	s.Len(fetched.TaggedUsers, 1)
 	s.Equal(types.TagStatusPending, fetched.TaggedUsers[0].Status)
+}
+
+func (s *TagServiceTestSuite) TestUpdateTaskTags_AddsAndRemovesPendingOnly() {
+	owner := s.GetUser(0)
+	friendA := s.GetUser(1)
+	friendB := s.GetUser(2)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	// Seed: task tagged with A (already watching) — responded entries must survive removal
+	tagged, _ := s.service.BuildTaggedUsers([]string{friendA.ID.Hex()})
+	tagged[0].Status = types.TagStatusWatching
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "x",
+		Priority:    1,
+		Value:       1,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Active:      true,
+		TaggedUsers: tagged,
+	}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	// Update to only B: A is watching so must remain; B added as pending
+	added, err := s.service.UpdateTaskTags(owner.ID, category.ID, created.ID, []string{friendB.ID.Hex()})
+	s.NoError(err)
+	s.Len(added, 1)
+	s.Equal(friendB.ID, added[0].ID)
+
+	fetched, err := s.service.GetTaskByID(created.ID, owner.ID)
+	s.NoError(err)
+	s.Len(fetched.TaggedUsers, 2)
+
+	byID := map[primitive.ObjectID]types.TagStatus{}
+	for _, tu := range fetched.TaggedUsers {
+		byID[tu.ID] = tu.Status
+	}
+	s.Equal(types.TagStatusWatching, byID[friendA.ID])
+	s.Equal(types.TagStatusPending, byID[friendB.ID])
+}
+
+func (s *TagServiceTestSuite) TestUpdateTaskTags_RemovesPendingEntry() {
+	owner := s.GetUser(0)
+	friendA := s.GetUser(1)
+
+	category := &types.CategoryDocument{
+		ID:            primitive.NewObjectID(),
+		Name:          "Test Category",
+		User:          owner.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	tagged, _ := s.service.BuildTaggedUsers([]string{friendA.ID.Hex()})
+	task := TaskDocument{
+		ID:          primitive.NewObjectID(),
+		Content:     "x",
+		Priority:    1,
+		Value:       1,
+		UserID:      owner.ID,
+		CategoryID:  category.ID,
+		Active:      true,
+		TaggedUsers: tagged,
+	}
+	created, err := s.service.CreateTask(category.ID, &task)
+	s.NoError(err)
+
+	_, err = s.service.UpdateTaskTags(owner.ID, category.ID, created.ID, []string{})
+	s.NoError(err)
+
+	fetched, err := s.service.GetTaskByID(created.ID, owner.ID)
+	s.NoError(err)
+	s.Len(fetched.TaggedUsers, 0)
 }
