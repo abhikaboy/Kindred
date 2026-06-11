@@ -671,20 +671,12 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit int) ([
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
 
-		// Stage 2: Lookup friends from users collection based on friends array
-		{{Key: "$lookup", Value: bson.M{
-			"from":         "users",
-			"localField":   "friends",
-			"foreignField": "_id",
-			"as":           "friendsData",
-		}}},
-
-		// Stage 3: Extract friend IDs
+		// Stage 2: Extract friend IDs (already on the user doc)
 		{{Key: "$project", Value: bson.M{
 			"friendIds": "$friends",
 		}}},
 
-		// Stage 4: Lookup categories owned by friends
+		// Stage 3: Lookup categories owned by friends
 		{{Key: "$lookup", Value: bson.M{
 			"from": "categories",
 			"let":  bson.M{"friendIds": "$friendIds"},
@@ -726,18 +718,18 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit int) ([
 			"as": "friendsTasks",
 		}}},
 
-		// Stage 5: Unwind the tasks array
+		// Stage 4: Unwind the tasks array
 		{{Key: "$unwind", Value: "$friendsTasks"}},
 
-		// Stage 6: Replace root with the task document
+		// Stage 5: Replace root with the task document
 		{{Key: "$replaceRoot", Value: bson.M{
 			"newRoot": "$friendsTasks",
 		}}},
 
-		// Stage 7: Newest first so the pool cap keeps recent tasks
+		// Stage 6: Newest first so the pool cap keeps recent tasks
 		{{Key: "$sort", Value: bson.M{"timestamp": -1}}},
 
-		// Stage 8: Count the full stream; cap the pool and attach user data
+		// Stage 7: Count the full stream; cap the pool and attach user data
 		// only for the capped pool (bounds the per-task user lookups).
 		{{Key: "$facet", Value: bson.M{
 			"metadata": []bson.M{
