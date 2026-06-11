@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useReminder, Reminder } from "@/hooks/useReminder";
-import { FlexDetails } from "@/api/types";
+import { FlexDetails, ChecklistItem } from "@/api/types";
+import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
 
 type TaskCreationContextType = {
     taskName: string;
@@ -50,6 +51,16 @@ type TaskCreationContextType = {
     setStartTime: (startTime: Date | null) => void;
     setStartDate: (startDate: Date | null) => void;
     addSmartStartReminders: (startDate: Date, startTime: Date | null) => void;
+    taggedUsers: TaggedUser[];
+    setTaggedUsers: (users: TaggedUser[]) => void;
+    /** Notes/checklist prefill — used by the tag Copy flow; create otherwise sends empty. */
+    notes: string;
+    setNotes: (notes: string) => void;
+    checklist: ChecklistItem[];
+    setChecklist: (items: ChecklistItem[]) => void;
+    /** When set, a successful create marks this original task's tag as "copied". */
+    copySourceTaskId: string | null;
+    setCopySourceTaskId: (id: string | null) => void;
 };
 
 const TaskCreationContext = createContext<TaskCreationContextType | undefined>(undefined);
@@ -75,6 +86,10 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [isBlueprint, setIsBlueprint] = useState(false);
     const [integration, setIntegration] = useState("");
     const [flexDetails, setFlexDetails] = useState<FlexDetails | null>(null);
+    const [taggedUsers, setTaggedUsers] = useState<TaggedUser[]>([]);
+    const [notes, setNotes] = useState("");
+    const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+    const [copySourceTaskId, setCopySourceTaskId] = useState<string | null>(null);
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
 
@@ -196,6 +211,10 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setIsPublic(true);
         setIntegration("");
         setFlexDetails(null);
+        setTaggedUsers([]);
+        setNotes("");
+        setChecklist([]);
+        setCopySourceTaskId(null);
         // Don't reset isBlueprint here as it should persist
         setShowAdvanced(false);
     };
@@ -240,6 +259,9 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setBlueprintStateInternal(taskData.isBlueprint || false);
         setIntegration(taskData.integration || "");
         setFlexDetails(taskData.recurDetails?.flex || null);
+        setNotes(taskData.notes || "");
+        setChecklist(taskData.checklist || []);
+        setTaggedUsers([]);
     }, []);
 
     const contextValue = useMemo(() => ({
@@ -278,11 +300,20 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setStartDate,
         setStartTime,
         addSmartStartReminders,
+        taggedUsers,
+        setTaggedUsers,
+        notes,
+        setNotes,
+        checklist,
+        setChecklist,
+        copySourceTaskId,
+        setCopySourceTaskId,
     }), [
         taskName, showAdvanced, suggestion, priority, value,
         recurring, recurFrequency, recurDetails, deadline,
         startTime, startDate, reminders, isPublic, isBlueprint,
         integration, flexDetails, loadTaskData,
+        taggedUsers, notes, checklist, copySourceTaskId,
     ]);
 
     return (

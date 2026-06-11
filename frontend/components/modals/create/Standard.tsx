@@ -76,6 +76,11 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         setIsPublic,
         isBlueprint: isBlueprintState,
         setIsBlueprint,
+        taggedUsers,
+        notes,
+        checklist,
+        copySourceTaskId,
+        setCopySourceTaskId,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const { capture } = useAnalytics();
@@ -155,8 +160,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 recurring: recurring,
                 public: isPublic,
                 active: false,
-                checklist: [],
-                notes: "",
+                checklist: checklist,
+                notes: notes,
                 startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
                 startTime: startTime?.toISOString(),
                 deadline: deadline?.toISOString(),
@@ -195,8 +200,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             recurring: recurring,
             public: isPublic,
             active: false,
-            checklist: [],
-            notes: "",
+            checklist: checklist,
+            notes: notes,
             startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
@@ -225,8 +230,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             recurring: recurring,
             public: isPublic,
             active: false,
-            checklist: [],
-            notes: "",
+            checklist: checklist,
+            notes: notes,
             startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
             startTime: startTime?.toISOString(),
             deadline: deadline?.toISOString(),
@@ -235,6 +240,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 triggerTime: reminder.triggerTime.toISOString(),
             })),
             integration: integration || undefined,
+            taggedUserIds: taggedUsers.length > 0 ? taggedUsers.map((u) => u.id) : undefined,
         };
         if (recurring || flexDetails) {
             postBody.recurFrequency = recurFrequency;
@@ -253,6 +259,12 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             // This ensures we don't have ID mismatches
             removeFromCategory(selectedCategory.id, tempId);
             addToCategory(selectedCategory.id, response);
+            if (copySourceTaskId) {
+                const { respondToTaskTagAPI } = await import("@/api/task");
+                respondToTaskTagAPI(copySourceTaskId, "copied").catch(() => {});
+                setCopySourceTaskId(null);
+                queryClient.invalidateQueries({ queryKey: ["taskTags", "pending"] });
+            }
             showRingUpdate((response as any)?.ringDelta);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_CREATED, {
@@ -512,7 +524,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 />
             </View>
             <PrimaryOptionRow goTo={goTo} />
-            <AdvancedOptionList goTo={goTo} showUnconfigured={false} />
+            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} />
             <TouchableOpacity
                 onPress={() => {
                     setShowAdvanced(!showAdvanced);
@@ -533,7 +545,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 )}
             </TouchableOpacity>
             <ConditionalView condition={showAdvanced}>
-                <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
+                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} />
             </ConditionalView>
 
             <CustomAlert
@@ -764,9 +776,11 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
 const AdvancedOptionList = ({
     goTo,
     showUnconfigured,
+    edit,
 }: {
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
+    edit?: boolean;
 }) => {
     const {
         startDate,
@@ -778,6 +792,7 @@ const AdvancedOptionList = ({
         flexDetails,
         isBlueprint: isBlueprintMode,
         integration,
+        taggedUsers,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
 
@@ -856,14 +871,20 @@ const AdvancedOptionList = ({
                 showUnconfigured={showUnconfigured}
                 configured={integration !== ""}
             />
-            {/* <AdvancedOption
-                icon="people"
-                label="Add Collaborators"
-                screen={Screen.COLLABORATORS}
-                goTo={goTo}
-                showUnconfigured={showUnconfigured}
-                configured={false}
-            /> */}
+            {!edit && (
+                <AdvancedOption
+                    icon="people"
+                    label={
+                        taggedUsers.length > 0
+                            ? `Tagged: ${taggedUsers.map((u) => u.handle).join(", ")}`
+                            : "Tag friends"
+                    }
+                    screen={Screen.COLLABORATORS}
+                    goTo={goTo}
+                    showUnconfigured={showUnconfigured}
+                    configured={taggedUsers.length > 0}
+                />
+            )}
         </View>
     );
 };
