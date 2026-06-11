@@ -307,6 +307,61 @@ func (s *EncouragementServiceTestSuite) TestCreateEncouragement_VideoType_Succes
 	s.Equal(thumb, *result.ThumbnailURL)
 	s.NotNil(result.DurationMs)
 	s.Equal(duration, *result.DurationMs)
+
+	// Round-trip: the persisted document must carry the video fields too.
+	encID, _ := primitive.ObjectIDFromHex(result.ID)
+	var found encouragement.EncouragementDocumentInternal
+	err = s.Collections["encouragements"].FindOne(s.Ctx, bson.M{"_id": encID}).Decode(&found)
+	s.NoError(err)
+	s.Equal("video", found.Type)
+	s.Require().NotNil(found.ThumbnailURL)
+	s.Equal(thumb, *found.ThumbnailURL)
+	s.Require().NotNil(found.DurationMs)
+	s.Equal(duration, *found.DurationMs)
+}
+
+func (s *EncouragementServiceTestSuite) TestCreateEncouragement_VideoType_TaskScope_RecordsKudosOnTask() {
+	sender := s.GetUser(0)
+	receiver := s.GetUser(1)
+	taskID := primitive.NewObjectID()
+	s.seedCategoryWithTask(receiver.ID, taskID, "Morning run")
+	s.setUserEncouragementBalance(sender.ID, 5)
+
+	senderInfo, err := s.service.GetSenderInfo(sender.ID)
+	s.Require().NoError(err)
+
+	thumb := "https://example.com/cheer-thumb.jpg"
+	duration := 12_000
+	newEnc := &encouragement.EncouragementDocumentInternal{
+		Sender:       *senderInfo,
+		Receiver:     receiver.ID,
+		Message:      "https://example.com/cheer.mp4",
+		Scope:        "task",
+		CategoryName: "Health",
+		TaskName:     "Morning run",
+		TaskID:       taskID,
+		Type:         "video",
+		ThumbnailURL: &thumb,
+		DurationMs:   &duration,
+	}
+
+	result, err := s.service.CreateEncouragement(newEnc)
+	s.NoError(err)
+	s.NotNil(result)
+
+	task := s.findTask(receiver.ID, taskID)
+	s.Require().Len(task.Encouragements, 1)
+	k := task.Encouragements[0]
+	s.Equal("https://example.com/cheer.mp4", k.Message)
+	s.Equal("video", k.Type)
+	s.Equal(sender.ID, k.Sender.ID)
+	s.Equal(sender.DisplayName, k.Sender.Name)
+	s.Require().NotNil(k.ThumbnailURL)
+	s.Equal(thumb, *k.ThumbnailURL)
+	s.Require().NotNil(k.DurationMs)
+	s.Equal(duration, *k.DurationMs)
+	encID, _ := primitive.ObjectIDFromHex(result.ID)
+	s.Equal(encID, k.EncouragementID)
 }
 
 func (s *EncouragementServiceTestSuite) TestCreateEncouragement_InsufficientBalance() {
