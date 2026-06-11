@@ -13,7 +13,7 @@ import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
+import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs, UserPlus } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
@@ -510,7 +510,12 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                         Keyboard.dismiss();
                     }}
                     onChangeText={(text) => {
-                        setTaskName(text);
+                        if (!edit && text.endsWith("@")) {
+                            setTaskName(text.slice(0, -1));
+                            goTo(Screen.COLLABORATORS);
+                        } else {
+                            setTaskName(text);
+                        }
                     }}
                     value={taskName}
                     setValue={setTaskName}
@@ -522,8 +527,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     }}
                 />
             </View>
-            <PrimaryOptionRow goTo={goTo} />
-            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} />
+            <PrimaryOptionRow goTo={goTo} edit={edit} />
+            <AdvancedOptionList goTo={goTo} showUnconfigured={false} />
             <TouchableOpacity
                 onPress={() => {
                     setShowAdvanced(!showAdvanced);
@@ -544,7 +549,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 )}
             </TouchableOpacity>
             <ConditionalView condition={showAdvanced}>
-                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} />
+                <AdvancedOptionList goTo={goTo} showUnconfigured={true} />
             </ConditionalView>
 
             <CustomAlert
@@ -562,7 +567,7 @@ export default Standard;
 
 const styles = StyleSheet.create({});
 
-const PrimaryOptionRow = ({ goTo }: { goTo: (screen: Screen) => void }) => {
+const PrimaryOptionRow = ({ goTo, edit }: { goTo: (screen: Screen) => void; edit?: boolean }) => {
     const ThemedColor = useThemeColor();
     const [showPriority, setShowPriority] = useState(false);
     const { priority, setPriority, value, setValue, isPublic, setIsPublic, deadline } = useTaskCreation();
@@ -604,6 +609,7 @@ const PrimaryOptionRow = ({ goTo }: { goTo: (screen: Screen) => void }) => {
                 )}
                 <ThemedText type="lightBody">{isPublic ? "Public" : "Private"}</ThemedText>
             </TouchableOpacity>
+            {!edit && <TagFriendsQuickAccess goTo={goTo} />}
             <DifficultyPopover value={value} setValue={setValue} />
         </ScrollView>
     );
@@ -772,14 +778,36 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
     );
 };
 
+const TagFriendsQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
+    const ThemedColor = useThemeColor();
+    const { taggedUsers } = useTaskCreation();
+
+    return (
+        <TouchableOpacity
+            onPress={() => goTo(Screen.COLLABORATORS)}
+            style={{
+                backgroundColor: ThemedColor.background,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: ThemedColor.tertiary,
+                flexDirection: "row",
+                gap: 4,
+                padding: 12,
+            }}>
+            <UserPlus size={20} color={ThemedColor.text} weight="regular" />
+            <ThemedText type="lightBody">{taggedUsers.length > 0 ? `${taggedUsers.length} tagged` : "Tag friends"}</ThemedText>
+        </TouchableOpacity>
+    );
+};
+
 const AdvancedOptionList = ({
     goTo,
     showUnconfigured,
-    edit,
 }: {
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
-    edit?: boolean;
 }) => {
     const {
         startDate,
@@ -791,7 +819,6 @@ const AdvancedOptionList = ({
         flexDetails,
         isBlueprint: isBlueprintMode,
         integration,
-        taggedUsers,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
 
@@ -870,20 +897,6 @@ const AdvancedOptionList = ({
                 showUnconfigured={showUnconfigured}
                 configured={integration !== ""}
             />
-            {!edit && (
-                <AdvancedOption
-                    icon="people"
-                    label={
-                        taggedUsers.length > 0
-                            ? `Tagged: ${taggedUsers.map((u) => u.handle).join(", ")}`
-                            : "Tag friends"
-                    }
-                    screen={Screen.COLLABORATORS}
-                    goTo={goTo}
-                    showUnconfigured={showUnconfigured}
-                    configured={taggedUsers.length > 0}
-                />
-            )}
         </View>
     );
 };
