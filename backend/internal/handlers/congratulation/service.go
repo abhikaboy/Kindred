@@ -249,7 +249,8 @@ func (s *Service) ToggleReaction(id, receiverID primitive.ObjectID, emoji string
 	return &emoji, nil
 }
 
-// sendReactionNotification pushes to the kudos sender when the receiver reacts.
+// sendReactionNotification notifies the kudos sender when the receiver reacts: an
+// in-app row on the notifications page plus a push that deep-links there.
 // Works for anonymous (private) congratulations too — the sender always knew they sent it.
 func (s *Service) sendReactionNotification(con *CongratulationDocumentInternal, emoji string) error {
 	if s.Users == nil {
@@ -257,6 +258,15 @@ func (s *Service) sendReactionNotification(con *CongratulationDocumentInternal, 
 	}
 
 	ctx := context.Background()
+
+	// Image kudos carry a URL in Message — leave it out of the notification copy.
+	content := fmt.Sprintf("reacted %s to your congratulations", emoji)
+	if con.Message != "" && con.Type != "image" {
+		content = fmt.Sprintf("%s: %q", content, con.Message)
+	}
+	if err := s.NotificationService.CreateNotification(con.Receiver, con.Sender.ID, content, notifications.NotificationTypeKudosReaction, con.ID); err != nil {
+		slog.Error("Failed to create kudos reaction notification", "error", err, "congratulation_id", con.ID.Hex())
+	}
 
 	var sender types.User
 	if err := s.Users.FindOne(ctx, bson.M{"_id": con.Sender.ID}).Decode(&sender); err != nil {
@@ -279,6 +289,7 @@ func (s *Service) sendReactionNotification(con *CongratulationDocumentInternal, 
 			"type":       "kudos_reaction",
 			"kudos_type": "congratulation",
 			"reaction":   emoji,
+			"url":        "/feed?page=notifications",
 		},
 	})
 }
