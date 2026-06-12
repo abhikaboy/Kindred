@@ -220,6 +220,7 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
+                    thumbnail={notification.thumbnail}
                     type="encouragement"
                 />
             ) : notification.type === "congratulation" ? (
@@ -231,6 +232,7 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     referenceId={notification.referenceId}
+                    thumbnail={notification.thumbnail}
                     type="congratulation"
                 />
             ) : notification.type === "friend_request_accepted" ? (
