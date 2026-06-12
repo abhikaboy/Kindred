@@ -400,6 +400,84 @@ func (s *CongratulationServiceTestSuite) TestCreateCongratulation_VideoType() {
 	s.Equal(thumb, *result.ThumbnailURL)
 	s.NotNil(result.DurationMs)
 	s.Equal(duration, *result.DurationMs)
+
+	// Read back the stored document so a bson-tag regression can't slip through.
+	congratulationID, err := primitive.ObjectIDFromHex(result.ID)
+	s.NoError(err)
+	var stored CongratulationDocumentInternal
+	err = s.Collections["congratulations"].FindOne(s.Ctx, bson.M{"_id": congratulationID}).Decode(&stored)
+	s.NoError(err)
+	s.Equal("video", stored.Type)
+	s.Require().NotNil(stored.ThumbnailURL)
+	s.Equal(thumb, *stored.ThumbnailURL)
+	s.Require().NotNil(stored.DurationMs)
+	s.Equal(duration, *stored.DurationMs)
+}
+
+func (s *CongratulationServiceTestSuite) TestCreateCongratulation_VideoType_WithPostID_DenormalizesKudos() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+	postID := primitive.NewObjectID()
+
+	// Create a post with images
+	post := types.PostDocument{
+		ID:      postID,
+		Caption: "Test post",
+		User: types.UserExtendedReferenceInternal{
+			ID:             user2.ID,
+			DisplayName:    user2.DisplayName,
+			Handle:         user2.Handle,
+			ProfilePicture: user2.ProfilePicture,
+		},
+		Images: []string{"https://example.com/image1.jpg", "https://example.com/image2.jpg"},
+		Metadata: types.PostMetadata{
+			CreatedAt: time.Now(),
+			IsDeleted: false,
+		},
+	}
+	s.InsertOne("posts", post)
+
+	// Create video congratulation with post reference
+	thumb := "https://example.com/congrats-thumb.jpg"
+	duration := 20_000
+	newCongratulation := &CongratulationDocumentInternal{
+		Sender: CongratulationSenderInternal{
+			ID:      user1.ID,
+			Name:    user1.DisplayName,
+			Picture: user1.ProfilePicture,
+		},
+		Receiver:     user2.ID,
+		Message:      "https://example.com/congrats.mp4",
+		CategoryName: "Social",
+		TaskName:     "Share photo",
+		Type:         "video",
+		ThumbnailURL: &thumb,
+		DurationMs:   &duration,
+		PostID:       &postID,
+	}
+
+	result, err := s.service.CreateCongratulation(newCongratulation)
+
+	// Assertions
+	s.NoError(err)
+	s.NotNil(result)
+	s.Equal("https://example.com/congrats.mp4", result.Message)
+
+	// The video congratulation should have been appended as a kudos on the
+	// post, carrying its thumbnail and duration through the denormalization.
+	var updatedPost types.PostDocument
+	err = s.Collections["posts"].FindOne(s.Ctx, bson.M{"_id": postID}).Decode(&updatedPost)
+	s.NoError(err)
+	s.Require().Len(updatedPost.Kudos, 1)
+	s.Equal("https://example.com/congrats.mp4", updatedPost.Kudos[0].Message)
+	s.Equal(user1.ID, updatedPost.Kudos[0].Sender.ID)
+	s.Equal(user1.DisplayName, updatedPost.Kudos[0].Sender.Name)
+	s.Equal(user1.ProfilePicture, updatedPost.Kudos[0].Sender.Icon)
+	s.Equal("video", updatedPost.Kudos[0].Type)
+	s.Require().NotNil(updatedPost.Kudos[0].ThumbnailURL)
+	s.Equal(thumb, *updatedPost.Kudos[0].ThumbnailURL)
+	s.Require().NotNil(updatedPost.Kudos[0].DurationMs)
+	s.Equal(duration, *updatedPost.Kudos[0].DurationMs)
 }
 
 // ========================================

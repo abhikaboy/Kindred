@@ -187,7 +187,7 @@ type CongratulationDocument struct {
 	CategoryName string               `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
 	TaskName     string               `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                 `bson:"read" json:"read" example:"false" doc:"Whether the congratulation has been read"`
-	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message or image)"`
+	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message, image, or video)"`
 	ThumbnailURL *string              `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty" example:"https://example.com/thumb.jpg" doc:"Video thumbnail URL (video type only)"`
 	DurationMs   *int                 `bson:"durationMs,omitempty" json:"durationMs,omitempty" example:"15000" doc:"Video duration in milliseconds (video type only)"`
 	Reaction     *string              `bson:"reaction,omitempty" json:"reaction,omitempty" example:"🙌" doc:"Receiver's emoji reaction"`
