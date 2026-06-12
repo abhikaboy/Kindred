@@ -1,8 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Dimensions, Image, TouchableOpacity, Animated } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import CachedImage from "@/components/CachedImage";
+import { Play } from "phosphor-react-native";
+import KudosVideoPlayerModal from "@/components/modals/KudosVideoPlayerModal";
+import { formatVideoDuration } from "@/api/media";
 
 export interface SpeechBubbleSender {
     name: string;
@@ -18,6 +21,12 @@ export interface SpeechBubbleCardProps {
     message?: string;
     /** Full-width inline image (image kudos). */
     imageUri?: string;
+    /** Video kudos: tappable thumbnail that opens fullscreen playback. */
+    videoUri?: string;
+    /** Poster shown for videoUri (full-width, like imageUri). */
+    videoThumbnailUri?: string;
+    /** Clip length for the duration pill. */
+    videoDurationMs?: number;
     /** Small rounded image in the bubble's top-right (e.g. comment post thumbnail). */
     thumbnailUri?: string;
     /** Pre-formatted time string — this component does not format time. */
@@ -39,6 +48,9 @@ export default function SpeechBubbleCard({
     header,
     message,
     imageUri,
+    videoUri,
+    videoThumbnailUri,
+    videoDurationMs,
     thumbnailUri,
     timeLabel,
     read = true,
@@ -50,6 +62,7 @@ export default function SpeechBubbleCard({
 }: SpeechBubbleCardProps) {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
+    const [playerOpen, setPlayerOpen] = useState(false);
 
     const bubbleTranslateX = useRef(new Animated.Value(-28)).current;
     const bubbleOpacity = useRef(new Animated.Value(0)).current;
@@ -123,7 +136,24 @@ export default function SpeechBubbleCard({
                     <View style={styles.bubbleBody}>
                         <View style={styles.contentRow}>
                             <View style={styles.contentMain}>
-                                {imageUri ? (
+                                {videoUri && videoThumbnailUri ? (
+                                    <TouchableOpacity
+                                        testID="bubble-video"
+                                        onPress={() => setPlayerOpen(true)}
+                                        activeOpacity={0.85}>
+                                        <Image source={{ uri: videoThumbnailUri }} style={styles.image} />
+                                        <View style={styles.playOverlay}>
+                                            <Play size={32} color="#fff" weight="fill" />
+                                        </View>
+                                        {videoDurationMs ? (
+                                            <View style={styles.durationPill}>
+                                                <ThemedText type="caption" style={styles.durationText}>
+                                                    {formatVideoDuration(videoDurationMs)}
+                                                </ThemedText>
+                                            </View>
+                                        ) : null}
+                                    </TouchableOpacity>
+                                ) : imageUri ? (
                                     <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
                                 ) : message ? (
                                     <ThemedText type="lightBody" style={styles.messageText}>
@@ -150,6 +180,9 @@ export default function SpeechBubbleCard({
                     </View>
                 </View>
             </CardContainer>
+            {playerOpen && videoUri ? (
+                <KudosVideoPlayerModal uri={videoUri} onClose={() => setPlayerOpen(false)} />
+            ) : null}
         </Animated.View>
     );
 }
@@ -210,4 +243,19 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             zIndex: 1,
         },
         footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8 },
+        playOverlay: {
+            ...StyleSheet.absoluteFillObject,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        durationPill: {
+            position: "absolute",
+            bottom: 16,
+            right: 8,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            borderRadius: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+        },
+        durationText: { color: "#fff", fontSize: 12 },
     });
