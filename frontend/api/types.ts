@@ -75,7 +75,9 @@ export interface TaskKudos {
     sender: KudosSender;
     message: string;
     timestamp: string;
-    type: string; // "message" | "image"
+    type: string; // "message" | "image" | "video"
+    thumbnailUrl?: string; // video kudos: poster frame URL
+    durationMs?: number;  // video kudos: clip length
 }
 
 export interface PostKudos {

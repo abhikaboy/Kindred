@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import KudosItem from "@/components/cards/KudosItem";
@@ -51,7 +51,7 @@ const UserInfoEncouragementNotification = ({
     const isProfileScope = !referenceId && !taskName;
 
     const handlePress = () => {
-        router.push(`/account/${userId}` as never);
+        router.push(`/account/${userId}` as Href);
     };
 
     const kudos = {

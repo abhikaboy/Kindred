@@ -8,6 +8,8 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import Octicons from "@expo/vector-icons/Octicons";
 import { createEncouragementAPI } from "@/api/encouragement";
+import type { components } from "@/api/generated/types";
+type CreateEncouragementParams = components["schemas"]["CreateEncouragementParams"];
 import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
@@ -275,7 +277,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             }
 
             // Create the encouragement data based on scope
-            const encouragementData = isProfileLevel
+            const encouragementData: CreateEncouragementParams = isProfileLevel
                 ? {
                     receiver: encouragementConfig.receiverId,
                     message: contentToSend,
@@ -297,7 +299,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 };
 
             // Make the API call
-            const encouragementResult = await createEncouragementAPI(encouragementData as any);
+            const encouragementResult = await createEncouragementAPI(encouragementData);
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
