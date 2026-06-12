@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Linking, Modal, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { CameraView, useCameraPermissions, useMicrophonePermissions, type CameraType } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowsClockwise, X } from "phosphor-react-native";
@@ -11,6 +11,7 @@ import { formatVideoDuration } from "@/api/media";
 interface KudosVideoRecorderProps {
     visible: boolean;
     onClose: () => void;
+    /** Called with the captured clip; the parent is responsible for closing the recorder (set visible=false). */
     onRecorded: (video: { uri: string; durationMs: number }) => void;
 }
 
@@ -32,8 +33,24 @@ export default function KudosVideoRecorder({ visible, onClose, onRecorded }: Kud
     const hasPermissions = cameraPermission?.granted && micPermission?.granted;
 
     const requestPermissions = async () => {
-        await requestCameraPermission();
-        await requestMicPermission();
+        const cam = await requestCameraPermission();
+        const mic = await requestMicPermission();
+        // Permanently denied — the system dialog won't show again, so guide to Settings.
+        if ([cam, mic].some((p) => !p.granted && !p.canAskAgain)) {
+            Alert.alert("Camera Access", "To record a video kudos, allow camera and microphone access in Settings.", [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Open Settings",
+                    onPress: () => {
+                        if (Platform.OS === "ios") {
+                            Linking.openURL("app-settings:");
+                        } else {
+                            Linking.openSettings();
+                        }
+                    },
+                },
+            ]);
+        }
     };
 
     const stopTimer = () => {
@@ -42,6 +59,18 @@ export default function KudosVideoRecorder({ visible, onClose, onRecorded }: Kud
             timerRef.current = null;
         }
     };
+
+    // Cleanup if the parent unmounts us mid-recording.
+    useEffect(() => () => stopTimer(), []);
+
+    // Parent closed us via the visible prop: stop the camera + timer, reset the pill.
+    useEffect(() => {
+        if (visible) return;
+        camera.current?.stopRecording();
+        stopTimer();
+        setIsRecording(false);
+        setElapsedMs(0);
+    }, [visible]);
 
     const startRecording = async () => {
         if (!camera.current || isRecording) return;
