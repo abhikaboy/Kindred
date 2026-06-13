@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Keyboard, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import React, { useRef, useState } from "react";
+import { StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { BottomSheetScrollView, BottomSheetTextInput, type BottomSheetScrollViewMethods } from "@gorhom/bottom-sheet";
 import { CheckCircleIcon, CircleIcon, PlusCircleIcon, XCircleIcon } from "phosphor-react-native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -83,18 +83,6 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const [entries, setEntries] = useState<string[]>([]);
     const [draft, setDraft] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [keyboardOpen, setKeyboardOpen] = useState(false);
-
-    // iOS overlays the keyboard; hide the submit button while typing so it
-    // isn't half-covered (Android adjustResize lifts the footer instead).
-    useEffect(() => {
-        const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardOpen(true));
-        const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardOpen(false));
-        return () => {
-            show.remove();
-            hide.remove();
-        };
-    }, []);
 
     const workspaceName = selected || workspaces.find((ws) => !ws.isBlueprint)?.name || workspaces[0]?.name;
 
@@ -208,6 +196,13 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
             </BottomSheetScrollView>
 
             <View style={[styles.footer, { borderTopColor: ThemedColor.tertiary }]}>
+                {/* Button above the input: the keyboard only lifts enough to reveal
+                    the focused (bottom-most) input, so the button stays uncovered. */}
+                <PrimaryButton
+                    title={submitting ? "Logging…" : "Log my day"}
+                    onPress={handleSubmit}
+                    disabled={!canSubmit}
+                />
                 <View style={styles.inputRow}>
                     <BottomSheetTextInput
                         style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
@@ -223,13 +218,6 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                         <PlusCircleIcon size={28} color={ThemedColor.primary} />
                     </TouchableOpacity>
                 </View>
-                {!keyboardOpen && (
-                    <PrimaryButton
-                        title={submitting ? "Logging…" : "Log my day"}
-                        onPress={handleSubmit}
-                        disabled={!canSubmit}
-                    />
-                )}
             </View>
         </DefaultModal>
     );

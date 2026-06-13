@@ -675,11 +675,9 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 			continue
 		}
 
-		// Verify the task belongs to the user
-		if task.UserID != userId {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, mapping.taskID.Hex())
-			continue
-		}
+		// Ownership is already enforced by getTasksByUserPipeline ($match user on
+		// the category). Don't re-check task.UserID — calendar-synced tasks don't
+		// store it on the task doc, so the check would wrongly fail them.
 
 		successfulTaskIDs = append(successfulTaskIDs, mapping.taskID)
 		tasksByCategory[mapping.categoryID] = append(tasksByCategory[mapping.categoryID], mapping.taskID)
@@ -979,13 +977,10 @@ func (s *Service) BulkDeleteTask(userId primitive.ObjectID, tasks []BulkDeleteTa
 	successfulTaskIDs := make([]primitive.ObjectID, 0)
 
 	for _, mapping := range validTasks {
-		// Verify the task exists and belongs to the user
-		task, exists := fetchedTaskMap[mapping.taskID]
-		if !exists {
-			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, mapping.taskID.Hex())
-			continue
-		}
-		if task.UserID != userId {
+		// Existence implies ownership here — getTasksByUserPipeline ($match user
+		// on the category) already scoped the fetch. Don't re-check task.UserID:
+		// calendar-synced tasks don't store it, so the check would wrongly fail them.
+		if _, exists := fetchedTaskMap[mapping.taskID]; !exists {
 			output.Body.FailedTaskIDs = append(output.Body.FailedTaskIDs, mapping.taskID.Hex())
 			continue
 		}
