@@ -22,6 +22,7 @@ import ProfileEdit from "@/components/profile/ProfileEdit";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
 import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
+import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
 import { useQuery } from "@tanstack/react-query";
@@ -123,6 +124,8 @@ export default function Profile() {
                 <View style={{ width: "100%" }}>
                     <ProfileEdit friendsCount={user?.friends.length || 0} />
                 </View>
+
+                <ProfileSongWidget />
 
                 <CompleteProfileCard />
 
