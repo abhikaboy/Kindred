@@ -30,13 +30,15 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterIntentTaskNaturalLanguageOperation(api, handler)
 	RegisterQueryTasksByUserOperation(api, handler)
 	RegisterGetTasksByUserOperation(api, handler)
+	// Static single-segment POSTs must be registered before /{category}: Fiber
+	// matches in registration order, so /{category} would otherwise shadow /log.
+	RegisterLogTasksOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)
 	RegisterGetTasksOperation(api, handler)
 	RegisterGetTaskOperation(api, handler)
 	RegisterUpdateTaskOperation(api, handler)
 	RegisterCompleteTaskOperation(api, handler)
 	RegisterBulkCompleteTaskOperation(api, handler)
-	RegisterLogTasksOperation(api, handler)
 	RegisterDeleteTaskOperation(api, handler)
 	RegisterBulkDeleteTaskOperation(api, handler)
 	RegisterActivateTaskOperation(api, handler)

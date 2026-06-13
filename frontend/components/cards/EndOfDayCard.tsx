@@ -32,7 +32,7 @@ export default function EndOfDayCard() {
                     <XIcon size={20} color={ThemedColor.caption} />
                 </TouchableOpacity>
             </View>
-            <ThemedText type="fancyFrauncesHeading">How did today go?</ThemedText>
+            <ThemedText type="fancyFrauncesSubheading">How did today go?</ThemedText>
             <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
                 {subtitle}
             </ThemedText>

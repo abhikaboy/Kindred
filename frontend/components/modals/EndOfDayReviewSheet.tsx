@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
+import React, { useEffect, useRef, useState } from "react";
+import { Keyboard, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { BottomSheetScrollView, BottomSheetTextInput, type BottomSheetScrollViewMethods } from "@gorhom/bottom-sheet";
 import { CheckCircleIcon, CircleIcon, PlusCircleIcon, XCircleIcon } from "phosphor-react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react-native";
@@ -76,11 +76,25 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const { workspaces, selected, removeFromCategory, fetchWorkspaces } = useTasks();
+    const { height: windowHeight } = useWindowDimensions();
+    const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
 
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [entries, setEntries] = useState<string[]>([]);
     const [draft, setDraft] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+    // iOS overlays the keyboard; hide the submit button while typing so it
+    // isn't half-covered (Android adjustResize lifts the footer instead).
+    useEffect(() => {
+        const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardOpen(true));
+        const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardOpen(false));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
 
     const workspaceName = selected || workspaces.find((ws) => !ws.isBlueprint)?.name || workspaces[0]?.name;
 
@@ -98,6 +112,8 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
         if (!content) return;
         setEntries((prev) => [...prev, content]);
         setDraft("");
+        // Reveal the just-added entry; keyboard stays up for the next one.
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     };
 
     const removeEntry = (index: number) => {
@@ -153,12 +169,18 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     };
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible}>
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <ThemedText type="fancyFrauncesHeading" style={styles.heading}>
-                    How did today go?
-                </ThemedText>
+        <DefaultModal visible={visible} setVisible={setVisible} enableContentPanningGesture={false}>
+            <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
+                How did today go?
+            </ThemedText>
 
+            <BottomSheetScrollView
+                ref={scrollRef}
+                style={{ maxHeight: windowHeight * 0.42 }}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag">
                 {openTasks.length > 0 && (
                     <View style={styles.section}>
                         <ThemedText type="defaultSemiBold">Did you finish these?</ThemedText>
@@ -182,29 +204,33 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                             onRemove={() => removeEntry(index)}
                         />
                     ))}
-                    <View style={styles.inputRow}>
-                        <BottomSheetTextInput
-                            style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
-                            placeholder="e.g. went to the gym"
-                            placeholderTextColor={ThemedColor.caption}
-                            value={draft}
-                            onChangeText={setDraft}
-                            onSubmitEditing={addEntry}
-                            returnKeyType="done"
-                            submitBehavior="submit"
-                        />
-                        <TouchableOpacity onPress={addEntry} hitSlop={8}>
-                            <PlusCircleIcon size={28} color={ThemedColor.primary} />
-                        </TouchableOpacity>
-                    </View>
                 </View>
+            </BottomSheetScrollView>
 
-                <PrimaryButton
-                    title={submitting ? "Logging…" : "Log my day"}
-                    onPress={handleSubmit}
-                    disabled={!canSubmit}
-                />
-            </ScrollView>
+            <View style={[styles.footer, { borderTopColor: ThemedColor.tertiary }]}>
+                <View style={styles.inputRow}>
+                    <BottomSheetTextInput
+                        style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
+                        placeholder="e.g. went to the gym"
+                        placeholderTextColor={ThemedColor.caption}
+                        value={draft}
+                        onChangeText={setDraft}
+                        onSubmitEditing={addEntry}
+                        returnKeyType="done"
+                        submitBehavior="submit"
+                    />
+                    <TouchableOpacity onPress={addEntry} hitSlop={8}>
+                        <PlusCircleIcon size={28} color={ThemedColor.primary} />
+                    </TouchableOpacity>
+                </View>
+                {!keyboardOpen && (
+                    <PrimaryButton
+                        title={submitting ? "Logging…" : "Log my day"}
+                        onPress={handleSubmit}
+                        disabled={!canSubmit}
+                    />
+                )}
+            </View>
         </DefaultModal>
     );
 }
@@ -212,6 +238,9 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
 const styles = StyleSheet.create({
     heading: {
         marginBottom: 16,
+    },
+    scrollContent: {
+        paddingBottom: 8,
     },
     section: {
         marginBottom: 24,
@@ -227,11 +256,15 @@ const styles = StyleSheet.create({
         flex: 1,
         gap: 2,
     },
+    footer: {
+        gap: 12,
+        paddingTop: 12,
+        borderTopWidth: StyleSheet.hairlineWidth,
+    },
     inputRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        marginTop: 4,
     },
     input: {
         flex: 1,
