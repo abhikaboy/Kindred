@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
+import { shouldLoadMoreFeed } from "@/utils/feedPagination";
 import PagerView from "react-native-pager-view";
 import NotificationsView from "@/components/notifications/NotificationsView";
 import PostCard from "@/components/cards/PostCard";
@@ -691,7 +692,8 @@ export default function Feed() {
             );
         }
 
-        if (!hasMore && posts.length > 0) {
+        const renderedCount = currentFeed.id === "feed" ? filteredFeedItems.length : sortedPosts.length;
+        if (!hasMore && renderedCount > 0) {
             return (
                 <View style={styles.endOfFeedContainer}>
                     <ThemedText style={styles.endOfFeedText}>You've reached the end! 🎉</ThemedText>
@@ -700,15 +702,24 @@ export default function Feed() {
         }
 
         return null;
-    }, [loadingMore, hasMore, posts.length]);
+    }, [loadingMore, hasMore, currentFeed.id, filteredFeedItems.length, sortedPosts.length]);
 
     const keyExtractor = useCallback((item: PostData) => item._id, []);
 
     const handleEndReached = useCallback(() => {
-        if (hasMore && !loadingMore && !loading && posts.length > 0) {
+        if (
+            shouldLoadMoreFeed({
+                feedId: currentFeed.id,
+                feedItemCount: filteredFeedItems.length,
+                postCount: sortedPosts.length,
+                hasMore,
+                loading,
+                loadingMore,
+            })
+        ) {
             loadMorePosts();
         }
-    }, [hasMore, loadingMore, loading, posts.length, loadMorePosts]);
+    }, [currentFeed.id, filteredFeedItems.length, sortedPosts.length, hasMore, loading, loadingMore, loadMorePosts]);
 
     return (
         <PagerView
