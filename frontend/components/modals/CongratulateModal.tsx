@@ -423,7 +423,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
                 {/* Privacy toggle */}
                 <View style={styles.privacyRow}>
-                    <View style={{ flex: 1, paddingRight: 12 }}>
+                    <View style={{ flex: 1, paddingRight: 12, gap: 4 }}>
                         <ThemedText type="defaultSemiBold">{isPrivate ? "Private" : "Public"}</ThemedText>
                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             {isPrivate
@@ -441,7 +441,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
-                        title={isUploading ? "Uploading..." : "Send Congratulation"}
+                        title={isUploading ? "Uploading..." : isPrivate ? "Send Private Congrats" : "Send Public Congrats"}
                         onPress={handleSendCongratulation}
                         disabled={(!congratulationMessage.trim() && !selectedImage) || congratulationsLeft === 0 || isUploading}
                         style={styles.sendButton}
@@ -571,7 +571,9 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingVertical: 12,
+            paddingVertical: 16,
+            marginTop: 8,
+            marginBottom: 16,
         },
         buttonContainer: {
             gap: 12,

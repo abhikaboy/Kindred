@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskDeadlineAPI } from "@/api/task";
 import Deadline from "./create/Deadline";
@@ -91,15 +91,18 @@ const DeadlineBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onD
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             enablePanDownToClose={true}>
-            <BottomSheetView
-                style={{
+            <BottomSheetScrollView
+                contentContainerStyle={{
                     paddingHorizontal: 20,
-                }}>
+                    paddingBottom: 40,
+                    flexGrow: 1,
+                }}
+                keyboardShouldPersistTaps="handled">
                 <Deadline
                     goToStandard={hideModal}
                     onSubmit={handleDeadlineSubmit}
                 />
-            </BottomSheetView>
+            </BottomSheetScrollView>
         </BottomSheetModal>
     );
 };
