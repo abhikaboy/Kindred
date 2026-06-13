@@ -2,18 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type WidgetId =
-    | "signals"
-    | "progress"
     | "categoryShare"
+    | "progress"
     | "habits"
     | "heatmap"
     | "categoryHealth"
     | "workspaceHealth";
 
 export const DEFAULT_WIDGET_ORDER: WidgetId[] = [
-    "signals",
-    "progress",
     "categoryShare",
+    "progress",
     "habits",
     "heatmap",
     "categoryHealth",
@@ -21,9 +19,8 @@ export const DEFAULT_WIDGET_ORDER: WidgetId[] = [
 ];
 
 export const WIDGET_TITLES: Record<WidgetId, string> = {
-    signals: "Signal strip",
-    progress: "Weekly progress",
-    categoryShare: "Category share",
+    categoryShare: "Where your time went",
+    progress: "Progress",
     habits: "Habits & recurring",
     heatmap: "Activity heatmap",
     categoryHealth: "Category health",
@@ -55,7 +52,9 @@ export function sanitizeOrder(order: unknown): WidgetId[] {
     return arr;
 }
 
-const keyFor = (userId?: string) => (userId ? `analytics_layout_${userId}` : null);
+// v2: dropped the signal strip and reordered (Category Share first). The key
+// bump resets stale persisted layouts to the new default.
+const keyFor = (userId?: string) => (userId ? `analytics_layout_v2_${userId}` : null);
 
 /**
  * Persisted, reorderable widget layout. Stored locally (AsyncStorage) for

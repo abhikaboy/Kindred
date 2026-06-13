@@ -13,7 +13,6 @@ import { WorkspaceSelector } from "./WorkspaceSelector";
 import { RangeSwitcher } from "./RangeSwitcher";
 import { FilterChips } from "./FilterChips";
 import { useAnalyticsLayout, WidgetId } from "./analyticsLayout";
-import { SignalStrip } from "./SignalStrip";
 import { WeeklyProgressWidget } from "./WeeklyProgressWidget";
 import { CategoryShareWidget } from "./CategoryShareWidget";
 import { ActivityHeatmapWidget } from "./ActivityHeatmapWidget";
@@ -115,8 +114,6 @@ interface WidgetRendererProps {
 /** Maps a widget id to its component — a proper component, not an inline helper. */
 function WidgetRenderer({ id, data, range, onSelectCategory }: WidgetRendererProps) {
     switch (id) {
-        case "signals":
-            return <SignalStrip signals={data.signals} />;
         case "progress":
             return <WeeklyProgressWidget progress={data.progress} range={range} />;
         case "categoryShare":
