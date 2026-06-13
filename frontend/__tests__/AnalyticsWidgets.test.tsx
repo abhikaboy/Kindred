@@ -47,8 +47,8 @@ describe("analyticsLayout", () => {
     });
 
     test("sanitizeOrder drops unknowns and appends new widgets", () => {
-        const result = sanitizeOrder(["heatmap", "bogus", "signals"]);
-        expect(result.slice(0, 2)).toEqual(["heatmap", "signals"]);
+        const result = sanitizeOrder(["heatmap", "bogus", "progress"]);
+        expect(result.slice(0, 2)).toEqual(["heatmap", "progress"]);
         // every default widget ends up present exactly once
         expect(new Set(result)).toEqual(new Set(DEFAULT_WIDGET_ORDER));
         expect(result).toHaveLength(DEFAULT_WIDGET_ORDER.length);
