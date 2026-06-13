@@ -7301,6 +7301,85 @@ components:
                     type: string
             required:
                 - emoji
+        AnalyticsAttention:
+            type: object
+            additionalProperties: false
+            properties:
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsAttentionTask'
+            required:
+                - tasks
+        AnalyticsAttentionTask:
+            type: object
+            additionalProperties: false
+            properties:
+                category:
+                    type: string
+                categoryId:
+                    type: string
+                daysOpen:
+                    type: integer
+                    format: int64
+                deadline:
+                    type: string
+                id:
+                    type: string
+                reasons:
+                    type: array
+                    items:
+                        type: string
+                title:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - id
+                - title
+                - workspace
+                - category
+                - categoryId
+                - daysOpen
+                - reasons
+        AnalyticsBestTime:
+            type: object
+            additionalProperties: false
+            properties:
+                cells:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsBestTimeCell'
+                maxCount:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+            required:
+                - cells
+                - maxCount
+                - takeaway
+        AnalyticsBestTimeCell:
+            type: object
+            additionalProperties: false
+            properties:
+                count:
+                    type: integer
+                    format: int64
+                hour:
+                    type: integer
+                    format: int64
+                level:
+                    type: integer
+                    format: int64
+                weekday:
+                    type: integer
+                    format: int64
+            required:
+                - weekday
+                - hour
+                - count
+                - level
         AnalyticsCategoryHealth:
             type: object
             additionalProperties: false
@@ -7548,6 +7627,10 @@ components:
                     examples:
                         - https://example.com/schemas/AnalyticsResponse.json
                     readOnly: true
+                attention:
+                    $ref: '#/components/schemas/AnalyticsAttention'
+                bestTime:
+                    $ref: '#/components/schemas/AnalyticsBestTime'
                 categoryFilter:
                     type: string
                 categoryHealth:
@@ -7581,6 +7664,8 @@ components:
                 - habits
                 - categoryHealth
                 - workspaceHealth
+                - bestTime
+                - attention
         AnalyticsShareBand:
             type: object
             additionalProperties: false

@@ -8,7 +8,13 @@ import { MonthHeatmap } from "./charts/MonthHeatmap";
 import { heatmapLevelColor } from "./analyticsColors";
 import CompletedTasksBottomSheetModal from "@/components/modals/CompletedTasksBottomSheetModal";
 
-export function ActivityHeatmapWidget({ heatmap }: { heatmap: AnalyticsHeatmap }) {
+export function ActivityHeatmapWidget({
+    heatmap,
+    onOpenDetail,
+}: {
+    heatmap: AnalyticsHeatmap;
+    onOpenDetail?: () => void;
+}) {
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -20,7 +26,10 @@ export function ActivityHeatmapWidget({ heatmap }: { heatmap: AnalyticsHeatmap }
     };
 
     return (
-        <WidgetCard title="Activity heatmap" takeaway={heatmap.takeaway}>
+        <WidgetCard
+            title="Activity heatmap"
+            takeaway={heatmap.takeaway}
+            cta={onOpenDetail ? { label: "Best times & active days", onPress: onOpenDetail } : undefined}>
             <MonthHeatmap days={heatmap.days} onSelectDay={onSelectDay} />
 
             <View style={styles.footer}>

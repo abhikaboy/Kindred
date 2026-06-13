@@ -3586,6 +3586,36 @@ export interface components {
             readonly $schema?: string;
             emoji: string;
         };
+        AnalyticsAttention: {
+            tasks: components["schemas"]["AnalyticsAttentionTask"][];
+        };
+        AnalyticsAttentionTask: {
+            category: string;
+            categoryId: string;
+            /** Format: int64 */
+            daysOpen: number;
+            deadline?: string;
+            id: string;
+            reasons: string[];
+            title: string;
+            workspace: string;
+        };
+        AnalyticsBestTime: {
+            cells: components["schemas"]["AnalyticsBestTimeCell"][];
+            /** Format: int64 */
+            maxCount: number;
+            takeaway: string;
+        };
+        AnalyticsBestTimeCell: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            hour: number;
+            /** Format: int64 */
+            level: number;
+            /** Format: int64 */
+            weekday: number;
+        };
         AnalyticsCategoryHealth: {
             rows: components["schemas"]["AnalyticsCategoryHealthRow"][];
         };
@@ -3678,6 +3708,8 @@ export interface components {
              * @example https://example.com/schemas/AnalyticsResponse.json
              */
             readonly $schema?: string;
+            attention: components["schemas"]["AnalyticsAttention"];
+            bestTime: components["schemas"]["AnalyticsBestTime"];
             categoryFilter?: string;
             categoryHealth: components["schemas"]["AnalyticsCategoryHealth"];
             categoryShare: components["schemas"]["AnalyticsCategoryShare"];

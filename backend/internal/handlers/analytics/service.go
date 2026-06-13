@@ -48,7 +48,7 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
-	categories, err := s.loadCategories(ctx, userID)
+	categories, openTasks, err := s.loadCategories(ctx, userID)
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
@@ -67,6 +67,7 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 		Completed:       completed,
 		Categories:      categories,
 		Habits:          habits,
+		OpenTasks:       openTasks,
 		SupportCurrent:  supportCur,
 		SupportPrev:     supportPrev,
 	}
@@ -111,30 +112,45 @@ func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, 
 	return out, cursor.Err()
 }
 
-func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, error) {
+// loadCategories returns both category metadata and the user's open (active)
+// tasks. Both come from the single categories query — open tasks are embedded
+// in the category documents, so there's no extra round trip.
+func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, []AnalyticsOpenTaskLite, error) {
 	if s.Categories == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	cursor, err := s.Categories.Find(ctx, bson.M{"user": userID})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer cursor.Close(ctx)
 
-	out := []AnalyticsCategoryMeta{}
+	meta := []AnalyticsCategoryMeta{}
+	open := []AnalyticsOpenTaskLite{}
 	for cursor.Next(ctx) {
 		var c types.CategoryDocument
 		if err := cursor.Decode(&c); err != nil {
 			slog.Warn("analytics: skipping undecodable category", "error", err)
 			continue
 		}
-		out = append(out, AnalyticsCategoryMeta{
-			ID:        c.ID.Hex(),
-			Name:      c.Name,
-			Workspace: c.WorkspaceName,
-		})
+		catID := c.ID.Hex()
+		meta = append(meta, AnalyticsCategoryMeta{ID: catID, Name: c.Name, Workspace: c.WorkspaceName})
+		for _, t := range c.Tasks {
+			if !t.Active {
+				continue
+			}
+			open = append(open, AnalyticsOpenTaskLite{
+				ID:         t.ID.Hex(),
+				Title:      t.Content,
+				CategoryID: catID,
+				CreatedAt:  t.Timestamp,
+				Deadline:   t.Deadline,
+				Priority:   t.Priority,
+				KudosCount: len(t.Encouragements),
+			})
+		}
 	}
-	return out, cursor.Err()
+	return meta, open, cursor.Err()
 }
 
 func (s *Service) loadHabits(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsHabitLite, error) {
