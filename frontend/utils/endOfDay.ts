@@ -5,7 +5,7 @@ import type { BulkCompleteResult, LogTasksResult } from "@/api/task";
 export const END_OF_DAY_HOUR = 20;
 
 export function isEndOfDayWindow(now: Date): boolean {
-    return now.getHours() >= END_OF_DAY_HOUR;
+    return true; // TEMP: force EOD card on for testing — revert to `now.getHours() >= END_OF_DAY_HOUR`
 }
 
 export function endOfDayDismissKey(now: Date): string {

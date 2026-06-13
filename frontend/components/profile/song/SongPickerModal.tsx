@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Modal, View, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { MagnifyingGlass, X } from "phosphor-react-native";
+import { MagnifyingGlass, MusicNote, X } from "phosphor-react-native";
 import { searchSongs, type Song } from "@/api/itunes";
 
 export default function SongPickerModal({
@@ -85,12 +86,25 @@ export default function SongPickerModal({
                             style={[styles.row, { borderBottomColor: ThemedColor.tertiary }]}
                             onPress={() => pick(item)}
                             activeOpacity={0.7}>
-                            <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                                {item.title}
-                            </ThemedText>
-                            <ThemedText type="caption" numberOfLines={1}>
-                                {item.artist}
-                            </ThemedText>
+                            <View style={[styles.rowArt, { backgroundColor: ThemedColor.lightened }]}>
+                                {item.artworkUrl ? (
+                                    <Image
+                                        source={{ uri: item.artworkUrl }}
+                                        style={StyleSheet.absoluteFill}
+                                        contentFit="cover"
+                                    />
+                                ) : (
+                                    <MusicNote size={18} color={ThemedColor.caption} weight="fill" />
+                                )}
+                            </View>
+                            <View style={styles.rowText}>
+                                <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                    {item.title}
+                                </ThemedText>
+                                <ThemedText type="caption" numberOfLines={1}>
+                                    {item.artist}
+                                </ThemedText>
+                            </View>
                         </TouchableOpacity>
                     )}
                     ListEmptyComponent={
@@ -110,7 +124,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingTop: 40,
     },
     header: {
         flexDirection: "row",
@@ -138,8 +152,22 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     row: {
-        paddingVertical: 14,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 10,
         borderBottomWidth: 0.5,
+    },
+    rowArt: {
+        width: 44,
+        height: 44,
+        borderRadius: 6,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    rowText: {
+        flex: 1,
         gap: 2,
     },
     empty: {

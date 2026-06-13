@@ -8788,6 +8788,8 @@ components:
                     $ref: '#/components/schemas/RingDelta'
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
                     type: array
                     items:
@@ -8853,6 +8855,8 @@ components:
                         $ref: '#/components/schemas/MediaItemInput'
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
                     type: array
                     items:
@@ -11496,6 +11500,8 @@ components:
                             type: string
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
                     type: array
                     items:
@@ -11738,6 +11744,8 @@ components:
                     $ref: '#/components/schemas/RelationshipInfo'
                 ring_state:
                     $ref: '#/components/schemas/RingState'
+                song:
+                    $ref: '#/components/schemas/Song'
                 streak:
                     type: integer
                     format: int64
@@ -12656,6 +12664,8 @@ components:
                         $ref: '#/components/schemas/ActivityDocument'
                 settings:
                     $ref: '#/components/schemas/UserSettings'
+                song:
+                    $ref: '#/components/schemas/Song'
                 streak:
                     type: integer
                     format: int64
@@ -12866,6 +12876,28 @@ components:
             required:
                 - success
                 - message
+        Song:
+            type: object
+            additionalProperties: false
+            properties:
+                appleMusicUrl:
+                    type: string
+                artist:
+                    type: string
+                artworkUrl:
+                    type: string
+                id:
+                    type: integer
+                    format: int64
+                previewUrl:
+                    type: string
+                title:
+                    type: string
+            required:
+                - id
+                - title
+                - artist
+                - previewUrl
         StartWorkingOutputBody:
             type: object
             additionalProperties: false
@@ -13922,6 +13954,8 @@ components:
                     type: string
                 profile_picture:
                     type: string
+                song:
+                    $ref: '#/components/schemas/Song'
         UpdateProfileOutputBody:
             type: object
             additionalProperties: false

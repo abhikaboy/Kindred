@@ -6,6 +6,7 @@ import ModalHead from "./ModalHead";
 import Standard from "./create/Standard";
 import ConditionalView from "../ui/ConditionalView";
 import NewCategory from "./create/NewCategory";
+import SelectWorkspace from "./create/SelectWorkspace";
 import Deadline from "./create/Deadline";
 import Recurring from "./create/Recurring";
 import StartDate from "./create/StartDate";
@@ -39,6 +40,7 @@ export enum Screen {
     REMINDER,
     COLLABORATORS,
     INTEGRATION,
+    SELECT_WORKSPACE,
 }
 
 const CreateModal = (props: Props) => {
@@ -54,8 +56,10 @@ const CreateModal = (props: Props) => {
     // Guard to prevent handleSheetChanges from interfering during presentation
     const isPresentingRef = useRef(false);
 
+    // NEW_CATEGORY needs enough height to clear the software keyboard for its
+    // autofocused input; the rest of the screens use the tall sheet.
     const snapPoints = useMemo(
-        () => (screen === Screen.NEW_CATEGORY ? ["20%"] : ["90%"]),
+        () => (screen === Screen.NEW_CATEGORY ? ["50%"] : ["90%"]),
         [screen]
     );
 
@@ -162,6 +166,8 @@ const CreateModal = (props: Props) => {
                 return (
                     <NewCategory {...screenProps} goToStandard={goToStandard} isBlueprint={props.isBlueprint} />
                 );
+            case Screen.SELECT_WORKSPACE:
+                return <SelectWorkspace goTo={goToScreen} />;
             case Screen.DEADLINE:
                 return <Deadline {...screenProps} />;
             case Screen.RECURRING:

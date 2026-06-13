@@ -25,6 +25,18 @@ describe("WorkspaceSwitcherList", () => {
         getByText("Calendar");
     });
 
+    test("omits the Calendar row when onSelectCalendar is not provided", () => {
+        const { queryByText, getByText } = render(
+            <WorkspaceSwitcherList
+                workspaces={[ws("Work")]}
+                selected=""
+                onSelectWorkspace={jest.fn()}
+            />
+        );
+        expect(queryByText("Calendar")).toBeNull();
+        getByText("Work");
+    });
+
     test("renders each non-blueprint workspace by name", () => {
         const { getByText, queryByText } = render(
             <WorkspaceSwitcherList

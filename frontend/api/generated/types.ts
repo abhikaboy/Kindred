@@ -4604,6 +4604,7 @@ export interface components {
             /** @description Describes the Share ring increment triggered by this post so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
             size?: components["schemas"]["ImageSize"];
+            song?: components["schemas"]["Song"];
             taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
@@ -4630,6 +4631,7 @@ export interface components {
             isPublic: boolean;
             media?: components["schemas"]["MediaItemInput"][];
             size?: components["schemas"]["ImageSize"];
+            song?: components["schemas"]["Song"];
             taggedUsers?: components["schemas"]["MentionInput"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
         };
@@ -6123,6 +6125,7 @@ export interface components {
                 [key: string]: string[];
             };
             size?: components["schemas"]["ImageSize"];
+            song?: components["schemas"]["Song"];
             taggedUsers?: components["schemas"]["MentionReference"][];
             task?: components["schemas"]["PostTaskExtendedReference"];
             user: components["schemas"]["UserExtendedReference"];
@@ -6247,6 +6250,7 @@ export interface components {
             profile_picture: string;
             relationship?: components["schemas"]["RelationshipInfo"];
             ring_state?: components["schemas"]["RingState"];
+            song?: components["schemas"]["Song"];
             /** Format: int64 */
             streak: number;
             tasks?: components["schemas"]["TaskDocument"][];
@@ -6720,6 +6724,7 @@ export interface components {
             profile_picture: string;
             recent_activity: components["schemas"]["ActivityDocument"][];
             settings: components["schemas"]["UserSettings"];
+            song?: components["schemas"]["Song"];
             /** Format: int64 */
             streak: number;
             streakEligible: boolean;
@@ -6836,6 +6841,15 @@ export interface components {
             readonly $schema?: string;
             message: string;
             success: boolean;
+        };
+        Song: {
+            appleMusicUrl?: string;
+            artist: string;
+            artworkUrl?: string;
+            /** Format: int64 */
+            id: number;
+            previewUrl: string;
+            title: string;
         };
         StartWorkingOutputBody: {
             /**
@@ -7467,6 +7481,7 @@ export interface components {
             display_name?: string;
             handle?: string;
             profile_picture?: string;
+            song?: components["schemas"]["Song"];
         };
         UpdateProfileOutputBody: {
             /**

@@ -9,7 +9,7 @@ import type { Workspace } from "@/api/types";
 type Props = {
     workspaces: Workspace[];
     selected: string;
-    onSelectCalendar: () => void;
+    onSelectCalendar?: () => void;
     onSelectWorkspace: (name: string) => void;
 };
 
@@ -27,13 +27,17 @@ export function WorkspaceSwitcherList({ workspaces, selected, onSelectCalendar, 
 
     return (
         <View>
-            <SwitcherRow
-                label="Calendar"
-                icon={<CalendarBlank size={18} color="#FFFFFF" weight="fill" />}
-                onPress={onSelectCalendar}
-                tint={ThemedColor.primary}
-            />
-            <View style={[styles.divider, { backgroundColor: ThemedColor.tertiary }]} />
+            {onSelectCalendar && (
+                <>
+                    <SwitcherRow
+                        label="Calendar"
+                        icon={<CalendarBlank size={18} color="#FFFFFF" weight="fill" />}
+                        onPress={onSelectCalendar}
+                        tint={ThemedColor.primary}
+                    />
+                    <View style={[styles.divider, { backgroundColor: ThemedColor.tertiary }]} />
+                </>
+            )}
             {workspaces
                 .filter((workspace) => !workspace.isBlueprint)
                 .map((workspace) => {

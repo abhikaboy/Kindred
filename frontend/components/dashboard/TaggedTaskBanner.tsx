@@ -5,6 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useCreateModal } from "@/contexts/createModalContext";
+import { Screen } from "@/components/modals/CreateModal";
 import { respondToTaskTagAPI } from "@/api/task";
 import { usePendingTaskTags, PENDING_TAGS_KEY } from "@/hooks/usePendingTaskTags";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -46,8 +47,8 @@ const TaggedTaskBannerRow = ({ tag }: { tag: PendingTaggedTask }) => {
         },
     });
 
-    // v1 scope: openModal() presents the create sheet scoped to the currently
-    // selected workspace; a pre-modal workspace picker is a deliberate fast-follow.
+    // Copy opens the create flow on the workspace picker so the user chooses a
+    // destination before the category-scoped Standard sheet.
     const handleCopy = () => {
         setCopySourceTaskId(tag.taskId);
         loadTaskData({
@@ -61,11 +62,11 @@ const TaggedTaskBannerRow = ({ tag }: { tag: PendingTaggedTask }) => {
             notes: tag.notes,
             checklist: tag.checklist,
         });
-        openModal();
+        openModal({ screen: Screen.SELECT_WORKSPACE });
     };
 
     return (
-        <View style={{ borderTopWidth: 1, borderTopColor: ThemedColor.primary, paddingTop: 10, paddingBottom: 6, gap: 9 }}>
+        <View style={{ borderLeftWidth: 2, borderLeftColor: ThemedColor.primary, paddingLeft: 12, paddingTop: 6, paddingBottom: 6, gap: 9 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                 {tag.tagger.profile_picture ? (
                     <CachedImage

@@ -3,12 +3,16 @@ import { Animated, View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } 
 import { ArrowLeft } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface Workspace {
     name: string;
     isBlueprint?: boolean;
+    icon?: string | null;
+    color?: string | null;
+    categories?: Array<{ tasks?: Array<{ active?: boolean }> }>;
 }
 
 interface WorkspaceSelectionViewProps {
@@ -62,25 +66,24 @@ export const WorkspaceSelectionView: React.FC<WorkspaceSelectionViewProps> = ({
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.workspaceListContent}
                 >
-                    {filteredWorkspaces.map((workspace) => (
-                        <TouchableOpacity
-                            key={workspace.name}
-                            style={[
-                                styles.workspaceItem,
-                                {
-                                    backgroundColor:
-                                        selectedWorkspace === workspace.name
-                                            ? ThemedColor.lightened
-                                            : "transparent",
-                                    borderWidth: 1,
-                                    borderColor: ThemedColor.lightened,
-                                },
-                            ]}
-                            onPress={() => onWorkspaceSelect(workspace.name)}
-                        >
-                            <ThemedText type="default">{workspace.name}</ThemedText>
-                        </TouchableOpacity>
-                    ))}
+                    {filteredWorkspaces.map((workspace) => {
+                        const taskCount = workspace.categories?.reduce(
+                            (total, category) =>
+                                total + (category.tasks?.filter((task) => task.active !== false).length || 0),
+                            0
+                        );
+                        return (
+                            <WorkspaceDrawerItem
+                                key={workspace.name}
+                                title={workspace.name}
+                                selected={selectedWorkspace}
+                                taskCount={taskCount}
+                                workspaceIcon={workspace.icon ?? undefined}
+                                workspaceColor={workspace.color ?? undefined}
+                                onPress={() => onWorkspaceSelect(workspace.name)}
+                            />
+                        );
+                    })}
                 </ScrollView>
             ) : (
                 <View style={styles.emptyState}>
@@ -121,7 +124,6 @@ const styles = StyleSheet.create({
     },
     workspaceList: {
         maxHeight: SCREEN_HEIGHT * 0.5,
-        paddingHorizontal: 8,
     },
     workspaceListContent: {
         paddingBottom: 8,
@@ -136,12 +138,5 @@ const styles = StyleSheet.create({
     },
     emptyCaption: {
         opacity: 0.6,
-    },
-    workspaceItem: {
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 4,
-        paddingVertical: 20,
-        gap: 4,
     },
 });
