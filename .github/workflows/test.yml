@@ -119,3 +119,39 @@ jobs:
       - name: Type check
         working-directory: frontend
         run: bun run tsc --noEmit || true
+
+  api-contract-drift:
+    name: API Contract Drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.6'
+          cache-dependency-path: backend/go.sum
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Regenerate OpenAPI spec from backend source
+        working-directory: backend
+        run: go run ./cmd/server --generate-openapi --openapi-output="../frontend/api/api-spec.yaml"
+
+      - name: Regenerate frontend types from spec
+        working-directory: frontend
+        run: |
+          bun install --frozen-lockfile
+          bun run generate-types
+
+      - name: Fail if committed spec or types are stale
+        run: |
+          if ! git diff --exit-code frontend/api/api-spec.yaml frontend/api/generated/types.ts; then
+            echo "::error::OpenAPI spec / frontend types are out of date with the backend. Run 'make generate-api' and commit the result."
+            exit 1
+          fi

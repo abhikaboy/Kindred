@@ -78,6 +78,9 @@ const DefaultModal = memo((props: Props) => {
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
+            keyboardBehavior="interactive"
+            keyboardBlurBehavior="restore"
+            android_keyboardInputMode="adjustResize"
             enableContentPanningGesture={props.enableContentPanningGesture}
             enablePanDownToClose={props.enablePanDownToClose !== false}>
             <BottomSheetView style={styles.contentContainer}>{props.children}</BottomSheetView>

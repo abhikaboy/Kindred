@@ -166,28 +166,29 @@ export const markAsCompletedAPI = async (
     return data as unknown as TaskCompletionResult;
 };
 
-export interface LogTasksResult {
-    message: string;
-    tasksLogged: number;
-    currentStreak: number;
-    failedIndices?: number[];
-}
+// Tied to the generated contract so it can't silently drift from the backend.
+export type LogTasksResult = components["schemas"]["LogTasksOutputBody"];
 
 /**
  * Log untracked work: creates + completes one task per entry in the
  * workspace's "Logged" category (end-of-day review card).
  */
 export const logTasksAPI = async (workspaceName: string, contents: string[]): Promise<LogTasksResult> => {
+    // Match the contract (workspaceName required, tasks minItems:1, non-empty
+    // content) so a malformed request fails loudly here instead of as an opaque 422.
+    const name = workspaceName?.trim();
+    const tasks = contents.map((c) => c.trim()).filter(Boolean).map((content) => ({ content }));
+    if (!name) throw new Error("logTasksAPI: workspaceName is required");
+    if (tasks.length === 0) throw new Error("logTasksAPI: at least one non-empty entry is required");
+
     const { data, error } = await client.POST("/v1/user/tasks/log", {
         params: withAuthHeaders({}),
-        body: { workspaceName, tasks: contents.map((content) => ({ content })) },
+        body: { workspaceName: name, tasks },
     });
 
-    if (error) {
-        throw new Error(`Failed to log tasks: ${JSON.stringify(error)}`);
-    }
-
-    return data as unknown as LogTasksResult;
+    if (error) throw new Error(`Failed to log tasks: ${JSON.stringify(error)}`);
+    if (!data) throw new Error("Failed to log tasks: empty response");
+    return data;
 };
 
 export interface BulkCompleteItem {

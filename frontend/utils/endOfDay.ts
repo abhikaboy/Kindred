@@ -73,12 +73,15 @@ export async function runEndOfDaySubmission(
         failedCount += res.totalFailed;
     }
 
-    if (entries.length > 0 && workspaceName) {
-        const res = await deps.logTasks(workspaceName, entries);
+    // Drop blank/whitespace entries: the backend rejects empty content, and an
+    // all-blank list must not fire a request that's guaranteed to 422.
+    const cleaned = entries.map((e) => e.trim()).filter(Boolean);
+    if (cleaned.length > 0 && workspaceName) {
+        const res = await deps.logTasks(workspaceName, cleaned);
         loggedCount = res.tasksLogged;
         const failedIdx = new Set(res.failedIndices ?? []);
         failedCount += failedIdx.size;
-        remainingEntries = entries.filter((_, i) => failedIdx.has(i));
+        remainingEntries = cleaned.filter((_, i) => failedIdx.has(i));
     }
 
     return { completedCount, loggedCount, failedCount, confirmedCompletions, remainingEntries };

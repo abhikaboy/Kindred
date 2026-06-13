@@ -114,4 +114,23 @@ describe("runEndOfDaySubmission", () => {
         expect(logTasks).not.toHaveBeenCalled();
         expect(result.failedCount).toBe(0);
     });
+
+    it("trims and drops blank entries before logging", async () => {
+        const bulkComplete = jest.fn();
+        const logTasks = jest.fn().mockResolvedValue({ message: "ok", tasksLogged: 1, currentStreak: 1 });
+
+        await runEndOfDaySubmission([], ["  gym  ", "   ", ""], "Personal", { bulkComplete, logTasks });
+
+        expect(logTasks).toHaveBeenCalledWith("Personal", ["gym"]);
+    });
+
+    it("never fires a log request when every entry is blank", async () => {
+        const bulkComplete = jest.fn();
+        const logTasks = jest.fn();
+
+        const result = await runEndOfDaySubmission([], ["  ", ""], "Personal", { bulkComplete, logTasks });
+
+        expect(logTasks).not.toHaveBeenCalled();
+        expect(result.loggedCount).toBe(0);
+    });
 });

@@ -81,8 +81,27 @@ func FiberMiddleware() fiber.Handler {
 			scope.SetContext("response", responseCtx)
 		})
 
+		// Huma writes validation failures (422) and handler 400s straight to the
+		// response — they never reach Fiber's ErrorHandler or slog.Error, so they'd
+		// be invisible otherwise. The scope above already carries the response body
+		// (field-level validation detail), user, and route.
+		if shouldReportClientError(statusCode) {
+			hub.WithScope(func(scope *sentry.Scope) {
+				scope.SetLevel(sentry.LevelWarning)
+				hub.CaptureMessage(fmt.Sprintf("HTTP %d: %s %s", statusCode, c.Method(), c.Route().Path))
+			})
+		}
+
 		return err
 	}
+}
+
+// shouldReportClientError picks the client errors that signal a frontend/backend
+// contract mismatch worth investigating — bad request and validation failures.
+// Auth (401), forbidden (403), not-found (404) and friends are expected client
+// conditions and stay quiet to keep the signal high.
+func shouldReportClientError(status int) bool {
+	return status == fiber.StatusBadRequest || status == fiber.StatusUnprocessableEntity
 }
 
 // GetHub retrieves the request-scoped Sentry hub from Fiber locals.

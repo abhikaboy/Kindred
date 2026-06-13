@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { CheckCircleIcon, CircleIcon, PlusCircleIcon, XCircleIcon } from "phosphor-react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react-native";
 import DefaultModal from "./DefaultModal";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -131,7 +133,19 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                 setVisible(false);
             }
         } catch (error) {
+            // Catches client-side failures the backend never sees (offline, DNS).
+            // Server-rejected requests (e.g. 422) are captured server-side in xsentry.
             console.error("End of day review failed:", error);
+            Sentry.captureException(error, {
+                tags: { feature: "end-of-day-log" },
+                contexts: {
+                    submission: {
+                        checkedTasks: checkedTasks.length,
+                        entries: pendingEntries.length,
+                        workspaceName: workspaceName ?? "(none)",
+                    },
+                },
+            });
             showToast("Couldn't log your day. Please try again.", "danger");
         } finally {
             setSubmitting(false);
@@ -169,7 +183,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                         />
                     ))}
                     <View style={styles.inputRow}>
-                        <TextInput
+                        <BottomSheetTextInput
                             style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
                             placeholder="e.g. went to the gym"
                             placeholderTextColor={ThemedColor.caption}
