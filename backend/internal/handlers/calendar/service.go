@@ -872,7 +872,9 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 				continue
 			}
 
-			// Create task document
+			// Create task document. userID/categoryID/timestamp/lastEdited mirror
+			// what task.CreateTask stores so calendar tasks aren't second-class
+			// (e.g. the bulk-complete/delete ownership lookups read task.userID).
 			taskDoc := bson.M{
 				"_id":         primitive.NewObjectID(),
 				"priority":    taskParams.Priority,
@@ -885,6 +887,10 @@ func (s *Service) SyncEventsToTasks(ctx context.Context, connectionID, userID pr
 				"integration": taskParams.Integration,
 				"checklist":   taskParams.Checklist,
 				"reminders":   taskParams.Reminders,
+				"userID":      userID,
+				"categoryID":  category.ID,
+				"timestamp":   time.Now(),
+				"lastEdited":  time.Now(),
 			}
 
 			// Add optional time fields
