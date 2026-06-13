@@ -1,8 +1,7 @@
 import React from "react";
 import { router } from "expo-router";
-import { ThemedText } from "../ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
+import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
 import { getNotificationTimeLabel } from "./notificationTime";
 
 type Props = {
@@ -15,17 +14,13 @@ type Props = {
 };
 
 const UserInfoTaskTaggedNotification = ({ name, userId, icon, time, image }: Props) => {
-    const ThemedColor = useThemeColor();
     const showThumbnail = !!image && image !== icon;
 
     return (
         <SpeechBubbleCard
             sender={{ name, picture: icon, id: userId }}
-            header={
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text, fontSize: 15 }}>
-                    tagged you in a task
-                </ThemedText>
-            }
+            badge={<NotificationBadgeIcon type="task_tagged" />}
+            title="tagged you in a task"
             thumbnailUri={showThumbnail ? image : undefined}
             timeLabel={getNotificationTimeLabel(time)}
             read

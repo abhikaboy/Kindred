@@ -18,19 +18,42 @@ jest.mock("react-native-safe-area-context", () => ({
 const sender = { name: "Sarah", picture: "https://x/a.png", id: "u1" };
 
 describe("SpeechBubbleCard", () => {
-    test("renders header, message and time", () => {
+    test("weaves the sender name into the title, with message and time", () => {
         const { getByText } = render(
             <SpeechBubbleCard
                 sender={sender}
-                header={<ThemedText>commented on your post</ThemedText>}
+                title="commented on your post"
                 message="great work!"
                 timeLabel="5m ago"
             />,
         );
+        // Name and phrase are separate nodes so the name can carry its own weight.
         getByText("Sarah");
-        getByText("commented on your post");
+        getByText(/commented on your post/);
         getByText("great work!");
         getByText("5m ago");
+    });
+
+    test("renders a namePrefix before the sender name", () => {
+        const { getByText } = render(
+            <SpeechBubbleCard sender={sender} namePrefix="To" timeLabel="now" />,
+        );
+        getByText(/To/);
+        getByText("Sarah");
+    });
+
+    test("renders a context line beneath the title", () => {
+        const { getByText } = render(
+            <SpeechBubbleCard
+                sender={sender}
+                title="sent you encouragement"
+                context={<ThemedText>Fitness · Morning run</ThemedText>}
+                message="keep going!"
+                timeLabel="now"
+            />,
+        );
+        getByText("Fitness · Morning run");
+        getByText(/sent you encouragement/);
     });
 
     test("fires onPress when the bubble is tapped", () => {
@@ -96,6 +119,16 @@ describe("SpeechBubbleCard", () => {
         expect(queryByTestId("kudos-video-close")).toBeNull();
         fireEvent.press(getByTestId("bubble-video"));
         getByTestId("kudos-video-close");
+    });
+
+    test("renders the avatar badge only when a badge is provided", () => {
+        const withBadge = render(
+            <SpeechBubbleCard sender={sender} message="hi" timeLabel="now" badge={<ThemedText>★</ThemedText>} />,
+        );
+        expect(withBadge.queryByTestId("speech-bubble-badge")).toBeTruthy();
+
+        const without = render(<SpeechBubbleCard sender={sender} message="hi" timeLabel="now" />);
+        expect(without.queryByTestId("speech-bubble-badge")).toBeNull();
     });
 
     test("renders footerSlot beside the time", () => {

@@ -4,6 +4,7 @@ import { router, type Href } from "expo-router";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import KudosItem from "@/components/cards/KudosItem";
+import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
 import { useKudosOptional } from "@/contexts/kudosContext";
 import { getNotificationTimeLabel } from "./notificationTime";
 import { mediaTypeFromUri } from "@/api/media";
@@ -81,7 +82,8 @@ const UserInfoEncouragementNotification = ({
         sender: { name, picture: icon, id: userId },
         message: message || (isCongrats ? "Congratulated you!" : "Sent you an encouragement"),
         scope: isProfileScope ? "profile" : "task",
-        categoryName: isProfileScope ? "" : isCongrats ? "Congratulations" : "Encouragement",
+        // The title carries the verb now, so the context line is just the task.
+        categoryName: "",
         taskName: isProfileScope ? "" : taskName,
         timestamp: new Date(time).toISOString(),
         read: true,
@@ -96,6 +98,8 @@ const UserInfoEncouragementNotification = ({
             kudos={kudos}
             formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
             visible
+            title={isCongrats ? "congratulated you" : "sent you encouragement"}
+            badge={<NotificationBadgeIcon type={type} />}
             onReact={handleReact}
             footerSlot={
                 <TouchableOpacity

@@ -187,6 +187,7 @@ export default function Kudos() {
                         formatTime={formatTime}
                         visible={encouragementVisibleIds.has(item.id)}
                         index={index}
+                        title="sent you encouragement"
                         onReact={reactToEncouragement}
                     />
                 )}
@@ -231,6 +232,7 @@ export default function Kudos() {
                         formatTime={formatTime}
                         visible={congratulationVisibleIds.has(item.id)}
                         index={index}
+                        title="congratulated you"
                         onReact={reactToCongratulation}
                     />
                 )}

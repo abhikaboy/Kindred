@@ -5,17 +5,22 @@ import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFr
 
 jest.mock("@/components/CachedImage", () => "CachedImage");
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
+// SpeechBubbleCard pulls in KudosVideoPlayerModal → expo-video at import.
+jest.mock("expo-video", () => ({ useVideoPlayer: () => ({}), VideoView: "VideoView" }));
+jest.mock("react-native-safe-area-context", () => ({
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 
 describe("UserInfoFriendAcceptedNotification", () => {
-    test("renders the friends-now header and message", () => {
+    test("weaves the name into an 'accepted your friend request' title", () => {
         const { getByText } = render(
             <UserInfoFriendAcceptedNotification
                 name="Sarah" userId="u1"
                 content="Sarah accepted your friend request" icon="https://x/a.png" time={Date.now()}
             />,
         );
-        getByText("Friends now");
-        getByText("accepted your friend request");
+        getByText("Sarah");
+        getByText(/accepted your friend request/);
     });
 
     test("taps through to the sender's profile", () => {

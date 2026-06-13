@@ -43,8 +43,12 @@ interface KudosItemProps {
     visible?: boolean;
     index?: number;
     onReact?: (id: string, emoji: string) => void;
+    /** Verb phrase woven after the sender's name ("sent you encouragement"). */
+    title?: string;
     /** Optional content rendered in the bubble footer (e.g. an action button). */
     footerSlot?: React.ReactNode;
+    /** Optional avatar-corner badge (notification type cue), passed through to the bubble. */
+    badge?: React.ReactNode;
 }
 
 export default function KudosItem({
@@ -53,7 +57,9 @@ export default function KudosItem({
     visible = false,
     index = 0,
     onReact,
+    title = "sent you encouragement",
     footerSlot,
+    badge,
 }: KudosItemProps) {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
@@ -120,21 +126,26 @@ export default function KudosItem({
         </View>
     ) : null;
 
-    const header = isProfileLevel ? (
-        <ThemedText type="defaultSemiBold" style={styles.categoryText}>
-            Profile Encouragement 🎉
-        </ThemedText>
-    ) : (
+    // category·task sits under the title as a secondary line; profile-scope kudos
+    // have neither, so they show just the woven title.
+    const hasContext = !isProfileLevel && (!!kudos.categoryName || !!kudos.taskName);
+    const context = hasContext ? (
         <>
-            <ThemedText type="defaultSemiBold" style={styles.categoryText} numberOfLines={1}>
-                {kudos.categoryName}
-            </ThemedText>
-            <View style={styles.dot} />
-            <ThemedText type="default" style={styles.taskName} numberOfLines={1}>
-                {kudos.taskName}
-            </ThemedText>
+            {kudos.categoryName ? (
+                <>
+                    <ThemedText type="defaultSemiBold" style={styles.categoryText} numberOfLines={1}>
+                        {kudos.categoryName}
+                    </ThemedText>
+                    {kudos.taskName ? <View style={styles.dot} /> : null}
+                </>
+            ) : null}
+            {kudos.taskName ? (
+                <ThemedText type="default" style={styles.taskName} numberOfLines={1}>
+                    {kudos.taskName}
+                </ThemedText>
+            ) : null}
         </>
-    );
+    ) : undefined;
 
     // A custom footer (e.g. "Send kudos back") and the reaction button can coexist.
     const footer =
@@ -150,7 +161,8 @@ export default function KudosItem({
     return (
         <SpeechBubbleCard
             sender={kudos.sender}
-            header={header}
+            title={title}
+            context={context}
             message={isImage || isVideo ? undefined : kudos.message}
             imageUri={isImage ? kudos.message : undefined}
             videoUri={isVideo ? kudos.message : undefined}
@@ -158,6 +170,7 @@ export default function KudosItem({
             videoDurationMs={isVideo ? kudos.durationMs ?? undefined : undefined}
             timeLabel={formatTime(kudos.timestamp)}
             read={kudos.read}
+            badge={badge}
             footerSlot={footer}
             onAvatarPress={() => router.push(`/account/${kudos.sender.id}`)}
             visible={visible}

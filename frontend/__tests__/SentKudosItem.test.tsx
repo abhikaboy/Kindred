@@ -29,7 +29,7 @@ describe("SentKudosItem", () => {
         const { getByText, getByTestId, queryByTestId } = render(
             <SentKudosItem kudos={base} formatTime={() => "5m ago"} />,
         );
-        getByText("To");
+        getByText(/To/);
         getByText("Sarah");
         getByText("you crushed it");
         getByText("5m ago");

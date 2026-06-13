@@ -43,33 +43,25 @@ export default function SentKudosItem({ kudos, formatTime, visible = false, inde
     const isProfileLevel = "scope" in kudos && kudos.scope === "profile";
     const receiver = kudos.receiverInfo ?? { name: "A friend", picture: "", id: "" };
 
-    const header = (
+    // The avatar is the recipient, so the name reads "To <receiver>"; the
+    // category·task sits beneath it as context (profile kudos have none).
+    const context = isProfileLevel ? undefined : (
         <>
-            <ThemedText type="caption" style={styles.toLabel}>
-                To
+            <ThemedText type="defaultSemiBold" style={styles.categoryText} numberOfLines={1}>
+                {kudos.categoryName}
             </ThemedText>
-            {isProfileLevel ? (
-                <ThemedText type="defaultSemiBold" style={styles.categoryText}>
-                    Profile Encouragement 🎉
-                </ThemedText>
-            ) : (
-                <>
-                    <ThemedText type="defaultSemiBold" style={styles.categoryText} numberOfLines={1}>
-                        {kudos.categoryName}
-                    </ThemedText>
-                    <View style={styles.dot} />
-                    <ThemedText type="default" style={styles.taskName} numberOfLines={1}>
-                        {kudos.taskName}
-                    </ThemedText>
-                </>
-            )}
+            <View style={styles.dot} />
+            <ThemedText type="default" style={styles.taskName} numberOfLines={1}>
+                {kudos.taskName}
+            </ThemedText>
         </>
     );
 
     return (
         <SpeechBubbleCard
             sender={receiver}
-            header={header}
+            namePrefix="To"
+            context={context}
             message={isImage ? undefined : kudos.message}
             imageUri={isImage ? kudos.message : undefined}
             timeLabel={formatTime(kudos.timestamp)}
@@ -88,7 +80,6 @@ export default function SentKudosItem({ kudos, formatTime, visible = false, inde
 
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
-        toLabel: { color: ThemedColor.caption, fontSize: 13, flexShrink: 0 },
         categoryText: { color: ThemedColor.text, fontSize: 15, flexShrink: 1 },
         dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: ThemedColor.caption, flexShrink: 0 },
         taskName: { color: ThemedColor.text, fontSize: 15, flexShrink: 1 },

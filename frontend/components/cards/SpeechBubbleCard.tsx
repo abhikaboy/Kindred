@@ -15,8 +15,12 @@ export interface SpeechBubbleSender {
 
 export interface SpeechBubbleCardProps {
     sender: SpeechBubbleSender;
-    /** Custom header row rendered at the top of the bubble (category·task, "commented on your post", …). */
-    header?: React.ReactNode;
+    /** Verb phrase woven after the bold name on the title line ("commented on your post"). */
+    title?: string;
+    /** Caption word before the name ("To" for sent kudos). */
+    namePrefix?: string;
+    /** Secondary line under the title (kudos category·task). */
+    context?: React.ReactNode;
     /** The "speech" text. Ignored when imageUri is set. */
     message?: string;
     /** Full-width inline image (image kudos). */
@@ -31,6 +35,8 @@ export interface SpeechBubbleCardProps {
     thumbnailUri?: string;
     /** Pre-formatted time string — this component does not format time. */
     timeLabel: string;
+    /** Small icon disc overlapping the avatar's bottom-right (notification type cue). */
+    badge?: React.ReactNode;
     read?: boolean;
     /** Rendered in the footer row beside the timestamp (e.g. an action button). */
     footerSlot?: React.ReactNode;
@@ -45,7 +51,9 @@ export interface SpeechBubbleCardProps {
 
 export default function SpeechBubbleCard({
     sender,
-    header,
+    title,
+    namePrefix,
+    context,
     message,
     imageUri,
     videoUri,
@@ -53,6 +61,7 @@ export default function SpeechBubbleCard({
     videoDurationMs,
     thumbnailUri,
     timeLabel,
+    badge,
     read = true,
     footerSlot,
     onPress,
@@ -90,23 +99,19 @@ export default function SpeechBubbleCard({
     }, [visible, index]);
 
     const CardContainer: React.ComponentType<any> = onPress ? TouchableOpacity : View;
+    const hasBody = !!((videoUri && videoThumbnailUri) || imageUri || message || thumbnailUri);
 
     return (
-        <Animated.View
-            style={[styles.row, { opacity: bubbleOpacity, transform: [{ translateX: bubbleTranslateX }] }]}>
+        <Animated.View style={[styles.row, { opacity: bubbleOpacity, transform: [{ translateX: bubbleTranslateX }] }]}>
             <CardContainer
                 testID="speech-bubble-card"
                 style={styles.card}
                 {...(onPress ? { onPress, activeOpacity: 0.85 } : {})}>
                 {!read ? <View testID="unread-dot" style={styles.unreadDot} /> : null}
 
-                {/* Row 1: avatar + title, vertically centered together */}
-                <View style={styles.topRow}>
+                <View style={styles.body}>
                     <Animated.View style={{ opacity: avatarOpacity }}>
-                        <TouchableOpacity
-                            onPress={onAvatarPress}
-                            disabled={!onAvatarPress}
-                            activeOpacity={0.7}>
+                        <TouchableOpacity onPress={onAvatarPress} disabled={!onAvatarPress} activeOpacity={0.7}>
                             <CachedImage
                                 source={{ uri: sender.picture }}
                                 fallbackSource={require("@/assets/images/head.png")}
@@ -114,63 +119,79 @@ export default function SpeechBubbleCard({
                                 cachePolicy="memory-disk"
                                 style={styles.userAvatar}
                             />
+                            {badge ? (
+                                <View testID="speech-bubble-badge" style={styles.badge}>
+                                    {badge}
+                                </View>
+                            ) : null}
                         </TouchableOpacity>
                     </Animated.View>
 
-                    <View style={styles.headerRow}>
-                        <View style={styles.headerContent}>{header}</View>
-                        <ThemedText type="caption" style={styles.timeTextTopRight}>
-                            {timeLabel}
-                        </ThemedText>
-                    </View>
-                </View>
-
-                {/* Row 2: name (under the avatar) + message, top-aligned */}
-                <View style={styles.bottomRow}>
-                    <View style={styles.nameCol}>
-                        <ThemedText type="default" style={styles.userName} numberOfLines={1}>
-                            {sender.name}
-                        </ThemedText>
-                    </View>
-
-                    <View style={styles.bubbleBody}>
-                        <View style={styles.contentRow}>
-                            <View style={styles.contentMain}>
-                                {videoUri && videoThumbnailUri ? (
-                                    <TouchableOpacity
-                                        testID="bubble-video"
-                                        onPress={() => setPlayerOpen(true)}
-                                        activeOpacity={0.85}>
-                                        <Image source={{ uri: videoThumbnailUri }} style={styles.image} />
-                                        <View style={styles.playOverlay}>
-                                            <Play size={32} color="#fff" weight="fill" />
-                                        </View>
-                                        {videoDurationMs ? (
-                                            <View style={styles.durationPill}>
-                                                <ThemedText type="caption" style={styles.durationText}>
-                                                    {formatVideoDuration(videoDurationMs)}
-                                                </ThemedText>
-                                            </View>
-                                        ) : null}
-                                    </TouchableOpacity>
-                                ) : imageUri ? (
-                                    <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
-                                ) : message ? (
-                                    <ThemedText type="lightBody" style={styles.messageText}>
-                                        {message}
+                    <View style={styles.textColumn}>
+                        {/* Title: bold name woven into the phrase, time pinned top-right. */}
+                        <View style={styles.titleRow}>
+                            <ThemedText type="default" style={styles.titleLine}>
+                                {namePrefix ? (
+                                    <ThemedText type="caption" style={styles.namePrefix}>
+                                        {namePrefix}{" "}
                                     </ThemedText>
                                 ) : null}
-                            </View>
-                            {thumbnailUri ? (
-                                <CachedImage
-                                    testID="bubble-thumbnail"
-                                    source={{ uri: thumbnailUri }}
-                                    variant="thumbnail"
-                                    cachePolicy="memory-disk"
-                                    style={styles.thumbnail}
-                                />
-                            ) : null}
+                                <ThemedText type="defaultSemiBold" style={styles.senderName}>
+                                    {sender.name}
+                                </ThemedText>
+                                {title ? (
+                                    <ThemedText type="default" style={styles.titlePhrase}>
+                                        {" "}
+                                        {title}
+                                    </ThemedText>
+                                ) : null}
+                            </ThemedText>
+                            <ThemedText type="caption" style={styles.timeText}>
+                                {timeLabel}
+                            </ThemedText>
                         </View>
+
+                        {context ? <View style={styles.contextRow}>{context}</View> : null}
+
+                        {hasBody ? (
+                            <View style={styles.contentRow}>
+                                <View style={styles.contentMain}>
+                                    {videoUri && videoThumbnailUri ? (
+                                        <TouchableOpacity
+                                            testID="bubble-video"
+                                            onPress={() => setPlayerOpen(true)}
+                                            activeOpacity={0.85}>
+                                            <Image source={{ uri: videoThumbnailUri }} style={styles.image} />
+                                            <View style={styles.playOverlay}>
+                                                <Play size={32} color="#fff" weight="fill" />
+                                            </View>
+                                            {videoDurationMs ? (
+                                                <View style={styles.durationPill}>
+                                                    <ThemedText type="caption" style={styles.durationText}>
+                                                        {formatVideoDuration(videoDurationMs)}
+                                                    </ThemedText>
+                                                </View>
+                                            ) : null}
+                                        </TouchableOpacity>
+                                    ) : imageUri ? (
+                                        <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.image} />
+                                    ) : message ? (
+                                        <ThemedText type="lightBody" style={styles.messageText}>
+                                            {message}
+                                        </ThemedText>
+                                    ) : null}
+                                </View>
+                                {thumbnailUri ? (
+                                    <CachedImage
+                                        testID="bubble-thumbnail"
+                                        source={{ uri: thumbnailUri }}
+                                        variant="thumbnail"
+                                        cachePolicy="memory-disk"
+                                        style={styles.thumbnail}
+                                    />
+                                ) : null}
+                            </View>
+                        ) : null}
 
                         {footerSlot ? (
                             <View style={styles.footerRow}>
@@ -191,12 +212,31 @@ export default function SpeechBubbleCard({
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         row: { flexDirection: "row", alignItems: "flex-start" },
-        topRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-        bottomRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginTop: 6 },
+        body: { flex: 1, flexDirection: "row", alignItems: "flex-start", gap: 12 },
+        textColumn: { flex: 1 },
         userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: ThemedColor.tertiary },
-        nameCol: { width: 44, alignItems: "center" },
-        userName: { color: ThemedColor.caption, fontSize: 11, textAlign: "center" },
-        bubbleBody: { flex: 1 },
+        badge: {
+            position: "absolute",
+            bottom: -3,
+            right: -3,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: ThemedColor.background,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.15,
+            shadowRadius: 2.5,
+            elevation: 3,
+        },
+        titleRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+        titleLine: { flex: 1, fontSize: 15, lineHeight: 20, color: ThemedColor.text },
+        senderName: { fontSize: 15, color: ThemedColor.text },
+        titlePhrase: { fontSize: 15, color: ThemedColor.text },
+        namePrefix: { fontSize: 15, color: ThemedColor.caption },
+        contextRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 2 },
         card: {
             flex: 1,
             backgroundColor: ThemedColor.background,
@@ -211,15 +251,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             shadowRadius: 2,
             elevation: 2,
         },
-        headerRow: {
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-        },
-        headerContent: { flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-        contentRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+        contentRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 4 },
         contentMain: { flex: 1 },
         thumbnail: { width: 40, height: 40, borderRadius: 6 },
         messageText: { color: ThemedColor.caption, fontSize: 15, lineHeight: 20 },
@@ -232,7 +264,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderRadius: 8,
             marginBottom: 8,
         },
-        timeTextTopRight: { color: ThemedColor.caption, fontSize: 12, flexShrink: 0, alignSelf: "flex-start" },
+        timeText: { color: ThemedColor.caption, fontSize: 12, flexShrink: 0, alignSelf: "flex-start" },
         unreadDot: {
             position: "absolute",
             top: 8,
@@ -243,7 +275,13 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             backgroundColor: ThemedColor.error,
             zIndex: 1,
         },
-        footerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 8 },
+        footerRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 10,
+            gap: 8,
+        },
         playOverlay: {
             ...StyleSheet.absoluteFillObject,
             alignItems: "center",

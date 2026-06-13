@@ -5,6 +5,7 @@ import { CheckCircle } from "phosphor-react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
+import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 import { getNotificationTimeLabel } from "./notificationTime";
 
@@ -13,7 +14,8 @@ type Props = {
     name: string;
     userId: string;
     handle?: string;
-    content: string;
+    /** Kept for caller compatibility; the title says it all, so it isn't rendered. */
+    content?: string;
     icon: string;
     time: number;
 };
@@ -27,14 +29,12 @@ const UserInfoRingsClosedNotification = ({
     name,
     userId,
     handle,
-    content,
     icon,
     time,
 }: Props) => {
     const ThemedColor = useThemeColor();
     const [showCongrats, setShowCongrats] = useState(false);
     const [congratsSent, setCongratsSent] = useState(sentCongratsIds.has(notificationId));
-    const message = content.startsWith(`${name} `) ? content.slice(name.length + 1) : content;
 
     const handleSent = () => {
         sentCongratsIds.add(notificationId);
@@ -45,12 +45,8 @@ const UserInfoRingsClosedNotification = ({
         <>
             <SpeechBubbleCard
                 sender={{ name, picture: icon, id: userId }}
-                header={
-                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text, fontSize: 15 }}>
-                        🎉 Closed all rings
-                    </ThemedText>
-                }
-                message={message}
+                badge={<NotificationBadgeIcon type="rings_closed" />}
+                title="closed all their rings 🎉"
                 timeLabel={getNotificationTimeLabel(time)}
                 read
                 onPress={() => router.push(`/account/${userId}`)}

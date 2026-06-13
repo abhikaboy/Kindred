@@ -39,11 +39,13 @@ describe("KudosItem", () => {
         getByText("5m ago");
     });
 
-    test("profile-scope kudos shows the profile header", () => {
-        const { getByText } = render(
+    test("profile-scope kudos shows just the woven title, no category/task", () => {
+        const { getByText, queryByText } = render(
             <KudosItem kudos={{ ...base, scope: "profile" }} formatTime={() => "now"} />,
         );
-        getByText("Profile Encouragement 🎉");
+        getByText("Sarah");
+        getByText(/sent you encouragement/);
+        expect(queryByText(/Profile Encouragement/)).toBeNull();
     });
 
     test("video kudos renders the thumbnail, not the raw URL", () => {

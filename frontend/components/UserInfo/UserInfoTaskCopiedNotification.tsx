@@ -1,8 +1,7 @@
 import React from "react";
 import { router } from "expo-router";
-import { ThemedText } from "../ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
+import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
 import { getNotificationTimeLabel } from "./notificationTime";
 
 type Props = {
@@ -16,18 +15,15 @@ type Props = {
 };
 
 const UserInfoTaskCopiedNotification = ({ name, userId, content, icon, time, referenceId }: Props) => {
-    const ThemedColor = useThemeColor();
-    const message = content.startsWith(`${name} `) ? content.slice(name.length + 1) : content;
+    // The title carries the verb; surface only the quoted task name as the body.
+    const taskName = content.match(/"([^"]+)"/)?.[1];
 
     return (
         <SpeechBubbleCard
             sender={{ name, picture: icon, id: userId }}
-            header={
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.text, fontSize: 15 }}>
-                    Task copied 💪
-                </ThemedText>
-            }
-            message={message}
+            badge={<NotificationBadgeIcon type="task_copied" />}
+            title="copied your task 💪"
+            message={taskName ? `"${taskName}"` : undefined}
             timeLabel={getNotificationTimeLabel(time)}
             read
             onPress={() => router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}`)}
