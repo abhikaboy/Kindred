@@ -64,3 +64,32 @@ func TestComputeAttention_RespectsWorkspaceScope(t *testing.T) {
 		t.Fatalf("workspace filter should keep only Internship task, got %+v", resp.Attention.Tasks)
 	}
 }
+
+func TestComputeAnalytics_ExcludesProxyCategories(t *testing.T) {
+	mon := time.Date(2025, 5, 12, 9, 0, 0, 0, time.UTC)
+	resp := computeAnalytics(computeInput{
+		Range:            RangeWeek,
+		Now:              fixedNow,
+		Categories:       baseCategories(),
+		ProxyCategoryIDs: map[string]bool{"proxy": true},
+		Completed: []AnalyticsTaskLite{
+			task("school", mon, nil, 0),
+			task("proxy", mon, nil, 0),
+			task("proxy", mon, nil, 0),
+		},
+		OpenTasks: []AnalyticsOpenTaskLite{
+			{ID: "p", Title: "Proxy old", CategoryID: "proxy", CreatedAt: fixedNow.AddDate(0, 0, -10)},
+		},
+	})
+	if resp.Progress.Total != 1 {
+		t.Errorf("progress total = %d, want 1 (proxy tasks excluded)", resp.Progress.Total)
+	}
+	for _, s := range resp.CategoryShare.Slices {
+		if s.CategoryID == "proxy" {
+			t.Errorf("proxy category should not appear in category share")
+		}
+	}
+	if len(resp.Attention.Tasks) != 0 {
+		t.Errorf("proxy open task should be excluded from attention, got %d", len(resp.Attention.Tasks))
+	}
+}

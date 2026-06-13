@@ -42,7 +42,8 @@ export function AnalyticsHome() {
         const source = workspace
             ? workspaces.find((w: any) => w.name === workspace)?.categories ?? []
             : workspaces.flatMap((w: any) => w.categories ?? []);
-        return source.map((c: any) => ({ id: c.id, name: c.name }));
+        // Drop sentinel "!-proxy-!" placeholder categories — they aren't real.
+        return source.filter((c: any) => c.name !== "!-proxy-!").map((c: any) => ({ id: c.id, name: c.name }));
     }, [workspaces, workspace]);
 
     const onSelectWorkspace = (ws?: string) => {

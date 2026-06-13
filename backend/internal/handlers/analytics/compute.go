@@ -46,16 +46,17 @@ type AnalyticsOpenTaskLite struct {
 }
 
 type computeInput struct {
-	Range           string
-	Now             time.Time
-	WorkspaceFilter string
-	CategoryFilter  string
-	Completed       []AnalyticsTaskLite // covers the heatmap window (>= 91 days) and both periods
-	Categories      []AnalyticsCategoryMeta
-	Habits          []AnalyticsHabitLite
-	OpenTasks       []AnalyticsOpenTaskLite
-	SupportCurrent  int // kudos received in the current period
-	SupportPrev     int // kudos received in the previous period
+	Range            string
+	Now              time.Time
+	WorkspaceFilter  string
+	CategoryFilter   string
+	Completed        []AnalyticsTaskLite // covers the heatmap window (>= 91 days) and both periods
+	Categories       []AnalyticsCategoryMeta
+	Habits           []AnalyticsHabitLite
+	OpenTasks        []AnalyticsOpenTaskLite
+	ProxyCategoryIDs map[string]bool // sentinel "!-proxy-!" categories — excluded everywhere
+	SupportCurrent   int             // kudos received in the current period
+	SupportPrev      int             // kudos received in the previous period
 }
 
 // --- palette / thresholds ----------------------------------------------------
@@ -334,6 +335,9 @@ func computeAnalytics(in computeInput) AnalyticsResponse {
 		return ""
 	}
 	inScope := func(catID string) bool {
+		if in.ProxyCategoryIDs[catID] {
+			return false // sentinel "!-proxy-!" categories are not real
+		}
 		if in.CategoryFilter != "" && catID != in.CategoryFilter {
 			return false
 		}
