@@ -42,8 +42,7 @@ export const WorkspaceDrawerItem = (props: Props) => {
             ]}
             onPress={props.onPress}
             onLongPress={props.onLongPress}>
-            {/* Full-height accent so consecutive rows form one connected rail. */}
-            <View style={{ position: "absolute", left: 20, top: 0, bottom: 0, width: 3, backgroundColor: accentColor }} />
+            <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 3, backgroundColor: accentColor }} />
             {/* Fixed-width icon column so text aligns with the other drawer items. */}
             <View style={{ width: 24, marginLeft: 12, alignItems: "center" }}>
                 {IconComponent ? (
