@@ -6,9 +6,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
+import UserInfoKudosReactionNotification from "@/components/UserInfo/UserInfoKudosReactionNotification";
 import UserInfoFriendAcceptedNotification from "@/components/UserInfo/UserInfoFriendAcceptedNotification";
 import UserInfoPostTagNotification from "@/components/UserInfo/UserInfoPostTagNotification";
 import UserInfoRingsClosedNotification from "@/components/UserInfo/UserInfoRingsClosedNotification";
+import UserInfoTaskTaggedNotification from "@/components/UserInfo/UserInfoTaskTaggedNotification";
+import UserInfoTaskCopiedNotification from "@/components/UserInfo/UserInfoTaskCopiedNotification";
 import { Icons } from "@/constants/Icons";
 import { router } from "expo-router";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -235,6 +238,14 @@ const NotificationItem = ({
                     thumbnail={notification.thumbnail}
                     type="congratulation"
                 />
+            ) : notification.type === "kudos_reaction" ? (
+                <UserInfoKudosReactionNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    content={notification.content}
+                    icon={notification.icon}
+                    time={notification.time}
+                />
             ) : notification.type === "friend_request_accepted" ? (
                 <UserInfoFriendAcceptedNotification
                     name={notification.name}
@@ -260,6 +271,23 @@ const NotificationItem = ({
                     icon={notification.icon}
                     time={notification.time}
                     image={notification.thumbnail}
+                    referenceId={notification.referenceId}
+                />
+            ) : notification.type === "task_tagged" ? (
+                <UserInfoTaskTaggedNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    icon={notification.icon}
+                    time={notification.time}
+                    image={notification.thumbnail}
+                />
+            ) : notification.type === "task_copied" ? (
+                <UserInfoTaskCopiedNotification
+                    name={notification.name}
+                    userId={notification.userId}
+                    content={notification.content}
+                    icon={notification.icon}
+                    time={notification.time}
                     referenceId={notification.referenceId}
                 />
             ) : null}
@@ -356,6 +384,9 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
                 }
                 break;
+            case "kudos_reaction":
+                router.push(`/account/${notification.userId}`);
+                break;
             case "friend_request_accepted":
                 break;
             case "comment":
@@ -363,6 +394,13 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                 if (notification.referenceId) {
                     router.push(`/(logged-in)/posting/${notification.referenceId}`);
                 }
+                break;
+            case "task_tagged":
+                // Response banner lives on home
+                router.push("/(logged-in)/(tabs)/(task)");
+                break;
+            case "task_copied":
+                router.push(`/(logged-in)/(tabs)/(task)/task/${notification.referenceId}`);
                 break;
         }
     };
@@ -441,9 +479,12 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     | "comment"
                     | "encouragement"
                     | "congratulation"
+                    | "kudos_reaction"
                     | "friend_request"
                     | "friend_request_accepted"
-                    | "post_tag",
+                    | "post_tag"
+                    | "task_tagged"
+                    | "task_copied",
                 name: notification.user.display_name,
                 handle: notification.user.handle ?? "",
                 userId: notification.user.id,

@@ -24,6 +24,7 @@ func (s *Service) createFlexTemplateForTask(
 	recurDetails *RecurDetails,
 	notes string,
 	checklist []ChecklistItem,
+	taggedUsers []TaggedTaskUser,
 ) error {
 	flex := recurDetails.Flex
 
@@ -52,6 +53,7 @@ func (s *Service) createFlexTemplateForTask(
 		NextGenerated:  &now,
 		Notes:          notes,
 		Checklist:      checklist,
+		TaggedUsers:    taggedUsers,
 		FlexState: &FlexTemplateState{
 			Target:            flex.Target,
 			Period:            flex.Period,

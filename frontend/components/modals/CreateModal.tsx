@@ -46,7 +46,7 @@ const CreateModal = (props: Props) => {
     const ThemedColor = useThemeColor();
 
     // Get task creation context values to include in memoization dependencies
-    const { taskName, startDate, startTime, deadline, reminders, recurring } = useTaskCreation();
+    const { taskName, startDate, startTime, deadline, reminders, recurring, setCopySourceTaskId } = useTaskCreation();
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -111,6 +111,8 @@ const CreateModal = (props: Props) => {
     useEffect(() => {
         if (!props.visible) {
             bottomSheetModalRef.current?.dismiss();
+            // Cancelled copy must not mark the tag "copied" on a later create
+            setCopySourceTaskId(null);
             const timer = setTimeout(() => {
                 setScreen(Screen.STANDARD);
             }, 300);

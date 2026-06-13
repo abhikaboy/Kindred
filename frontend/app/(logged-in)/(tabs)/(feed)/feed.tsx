@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
@@ -10,6 +10,7 @@ import type { PostKudos } from "@/api/types";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
+import EndOfDayCard from "@/components/cards/EndOfDayCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -80,13 +81,16 @@ type PostData = {
 
 export default function Feed() {
     const router = useRouter();
+    // Deep links (e.g. kudos reaction pushes) open straight onto the notifications page.
+    const { page } = useLocalSearchParams<{ page?: string }>();
+    const openOnNotifications = page === "notifications";
 
     // Feed ↔ Notifications live as the two pages of a horizontal pager so the other
     // side previews mid-swipe (Instagram-style). Page 0 = feed, page 1 = notifications.
     const pagerRef = useRef<PagerView>(null);
-    const [activePage, setActivePage] = useState(0);
+    const [activePage, setActivePage] = useState(openOnNotifications ? 1 : 0);
     // Lazily mount the notifications page on the first swipe toward it.
-    const [notificationsMounted, setNotificationsMounted] = useState(false);
+    const [notificationsMounted, setNotificationsMounted] = useState(openOnNotifications);
     // react-native-pager-view doesn't reliably honor `initialPage` on first layout
     // here (it can come up on page 1) — same reason DatePager sets the page
     // imperatively. Pin page 0 exactly once, after the pager has laid out.
@@ -618,6 +622,8 @@ export default function Feed() {
                         />
                     </View>
                 </View>
+
+                <EndOfDayCard />
             </View>
         );
     }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
@@ -712,7 +718,7 @@ export default function Feed() {
             onLayout={() => {
                 if (!didInitPage.current) {
                     didInitPage.current = true;
-                    pagerRef.current?.setPageWithoutAnimation(0);
+                    pagerRef.current?.setPageWithoutAnimation(openOnNotifications ? 1 : 0);
                 }
             }}
             onPageSelected={(e) => {

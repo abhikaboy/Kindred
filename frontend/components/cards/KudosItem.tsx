@@ -93,7 +93,7 @@ export default function KudosItem({
 
     const reactionButton = onReact ? (
         <View style={styles.reactionRow}>
-            <Pressable onPress={handleTap} onLongPress={handleLongPress} hitSlop={8}>
+            <Pressable testID="kudos-reaction-button" onPress={handleTap} onLongPress={handleLongPress} hitSlop={8}>
                 <Animated.View style={animatedStyle}>
                     {hasReaction ? (
                         <Text style={styles.reactionEmoji}>{kudos.reaction}</Text>
@@ -131,6 +131,17 @@ export default function KudosItem({
         </>
     );
 
+    // A custom footer (e.g. "Send kudos back") and the reaction button can coexist.
+    const footer =
+        footerSlot && reactionButton ? (
+            <View style={styles.footerSplit}>
+                <View>{footerSlot}</View>
+                {reactionButton}
+            </View>
+        ) : (
+            footerSlot ?? reactionButton
+        );
+
     return (
         <SpeechBubbleCard
             sender={kudos.sender}
@@ -142,7 +153,7 @@ export default function KudosItem({
             videoDurationMs={isVideo ? kudos.durationMs ?? undefined : undefined}
             timeLabel={formatTime(kudos.timestamp)}
             read={kudos.read}
-            footerSlot={footerSlot ?? reactionButton}
+            footerSlot={footer}
             onAvatarPress={() => router.push(`/account/${kudos.sender.id}`)}
             visible={visible}
             index={index}
@@ -161,5 +172,11 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         reactionEmoji: {
             fontSize: 18,
+        },
+        footerSplit: {
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
         },
     });

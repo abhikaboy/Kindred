@@ -4,10 +4,13 @@ export type ProcessedNotification = {
         | "comment"
         | "encouragement"
         | "congratulation"
+        | "kudos_reaction"
         | "friend_request"
         | "friend_request_accepted"
         | "rings_closed"
-        | "post_tag";
+        | "post_tag"
+        | "task_tagged"
+        | "task_copied";
     name: string;
     handle: string;
     userId: string;
@@ -39,9 +42,12 @@ export const SUPPORTED_TYPES = new Set([
     "comment",
     "encouragement",
     "congratulation",
+    "kudos_reaction",
     "friend_request_accepted",
     "rings_closed",
     "post_tag",
+    "task_tagged",
+    "task_copied",
 ]);
 
 export const filterByActivityType = (
@@ -52,7 +58,9 @@ export const filterByActivityType = (
         case "all":
             return notifications;
         case "encouragements":
-            return notifications.filter((n) => n.type === "encouragement" || n.type === "congratulation");
+            return notifications.filter(
+                (n) => n.type === "encouragement" || n.type === "congratulation" || n.type === "kudos_reaction",
+            );
         case "comments":
             return notifications.filter((n) => n.type === "comment");
         case "social":

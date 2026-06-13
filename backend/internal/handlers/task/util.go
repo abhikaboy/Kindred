@@ -379,6 +379,7 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		TemplateID:     &templateDoc.ID,
 		Notes:          templateDoc.Notes,
 		Checklist:      checklist,
+		TaggedUsers:    templateDoc.TaggedUsers,
 	}
 
 	if templateDoc.FlexState != nil {

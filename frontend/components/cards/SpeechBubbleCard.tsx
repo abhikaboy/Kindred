@@ -174,7 +174,8 @@ export default function SpeechBubbleCard({
 
                         {footerSlot ? (
                             <View style={styles.footerRow}>
-                                <View>{footerSlot}</View>
+                                {/* flex: 1 lets footers span the row (e.g. CTA left, reaction right) */}
+                                <View style={{ flex: 1 }}>{footerSlot}</View>
                             </View>
                         ) : null}
                     </View>

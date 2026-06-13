@@ -3,6 +3,8 @@ import type { paths, components } from "./generated/types";
 import { withAuthHeaders } from "./utils";
 import { logger } from "@/utils/logger";
 import { combineDateAndTime } from "@/utils/timeUtils";
+import { request } from "@/hooks/useRequest";
+import type { TaggedTaskUser, PendingTaggedTask, TagStatus } from "./types";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -162,6 +164,66 @@ export const markAsCompletedAPI = async (
 
     // Cast to TaskCompletionResult since the API schema may not be regenerated yet
     return data as unknown as TaskCompletionResult;
+};
+
+export interface LogTasksResult {
+    message: string;
+    tasksLogged: number;
+    currentStreak: number;
+    failedIndices?: number[];
+}
+
+/**
+ * Log untracked work: creates + completes one task per entry in the
+ * workspace's "Logged" category (end-of-day review card).
+ */
+export const logTasksAPI = async (workspaceName: string, contents: string[]): Promise<LogTasksResult> => {
+    const { data, error } = await client.POST("/v1/user/tasks/log", {
+        params: withAuthHeaders({}),
+        body: { workspaceName, tasks: contents.map((content) => ({ content })) },
+    });
+
+    if (error) {
+        throw new Error(`Failed to log tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as LogTasksResult;
+};
+
+export interface BulkCompleteItem {
+    taskId: string;
+    categoryId: string;
+}
+
+export interface BulkCompleteResult {
+    message: string;
+    totalCompleted: number;
+    totalFailed: number;
+    currentStreak: number;
+    failedTaskIds?: string[];
+}
+
+/**
+ * Complete several existing tasks in one request.
+ */
+export const bulkCompleteTasksAPI = async (items: BulkCompleteItem[]): Promise<BulkCompleteResult> => {
+    const timeCompleted = new Date().toISOString();
+    const { data, error } = await client.POST("/v1/user/tasks/bulk/complete", {
+        params: withAuthHeaders({}),
+        body: {
+            tasks: items.map(({ taskId, categoryId }) => ({
+                taskId,
+                categoryId,
+                completeData: { timeCompleted, timeTaken: "PT0S" },
+            })),
+        },
+    });
+
+    if (error) {
+        throw new Error(`Failed to bulk complete tasks: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as BulkCompleteResult;
 };
 
 /**
@@ -766,5 +828,39 @@ export const moveTaskAPI = async (
 
     if (error) {
         throw new Error(`Failed to move task: ${JSON.stringify(error)}`);
+    }
+};
+
+export const updateTaskTagsAPI = async (
+    categoryId: string,
+    taskId: string,
+    taggedUserIds: string[]
+): Promise<{ taggedUsers: TaggedTaskUser[] }> => {
+    try {
+        return await request("PATCH", `/user/tasks/${categoryId}/${taskId}/tags`, { taggedUserIds });
+    } catch (error) {
+        logger.error("Error updating task tags", error);
+        throw new Error("Failed to update task tags. Please try again later.");
+    }
+};
+
+export const getPendingTaggedTasksAPI = async (): Promise<PendingTaggedTask[]> => {
+    try {
+        return await request("GET", "/user/tagged-tasks");
+    } catch (error) {
+        logger.error("Error fetching pending tagged tasks", error);
+        throw new Error("Failed to fetch pending tagged tasks. Please try again later.");
+    }
+};
+
+export const respondToTaskTagAPI = async (
+    taskId: string,
+    status: Exclude<TagStatus, "pending">
+): Promise<void> => {
+    try {
+        await request("POST", `/user/tagged-tasks/${taskId}/respond`, { status });
+    } catch (error) {
+        logger.error("Error responding to task tag", error);
+        throw new Error("Failed to respond to task tag. Please try again later.");
     }
 };

@@ -2592,6 +2592,46 @@ export interface paths {
         patch: operations["update-user-settings"];
         trace?: never;
     };
+    "/v1/user/tagged-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get pending tagged tasks
+         * @description Tasks the signed-in user has been tagged in and not yet responded to
+         */
+        get: operations["get-pending-tagged-tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tagged-tasks/{id}/respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Respond to a task tag
+         * @description Watch, copy, or untag yourself from a task you were tagged in
+         */
+        post: operations["respond-to-task-tag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tags": {
         parameters: {
             query?: never;
@@ -2736,6 +2776,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update task tags
+         * @description Replace the set of friends tagged on a task
+         */
+        patch: operations["update-task-tags"];
+        trace?: never;
+    };
     "/v1/user/tasks/active/{category}/{id}": {
         parameters: {
             query?: never;
@@ -2850,6 +2910,26 @@ export interface paths {
         get: operations["get-completed-tasks-by-date"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log completed tasks
+         * @description Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+         */
+        post: operations["log-tasks"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4634,6 +4714,7 @@ export interface components {
             startDate: string;
             /** Format: date-time */
             startTime?: string;
+            taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             templateID?: string;
             /** Format: date-time */
             timeCompleted?: string;
@@ -4671,6 +4752,7 @@ export interface components {
             startDate?: string;
             /** Format: date-time */
             startTime?: string;
+            taggedUserIds?: string[];
             /** Format: double */
             value: number;
         };
@@ -5710,6 +5792,52 @@ export interface components {
             readonly $schema?: string;
             calendars: components["schemas"]["CalendarInfo"][];
         };
+        LogTaskEntry: {
+            /**
+             * @description What the user got done
+             * @example Went to the gym
+             */
+            content: string;
+        };
+        LogTasksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Things the user did today */
+            tasks: components["schemas"]["LogTaskEntry"][];
+            /**
+             * @description Workspace whose Logged category receives the tasks
+             * @example Personal
+             */
+            workspaceName: string;
+        };
+        LogTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description The user's current streak count
+             * @example 5
+             */
+            currentStreak: number;
+            /** @description Indices of entries that failed */
+            failedIndices?: number[];
+            /** @example Tasks logged */
+            message: string;
+            /**
+             * Format: int64
+             * @description Number of entries created and completed
+             * @example 3
+             */
+            tasksLogged: number;
+        };
         LoginRequest: {
             /**
              * Format: uri
@@ -5954,6 +6082,24 @@ export interface components {
             friend_requests: boolean;
             near_deadlines: boolean;
             reactions: boolean;
+        };
+        PendingTaggedTask: {
+            checklist?: components["schemas"]["ChecklistItem"][];
+            content: string;
+            /** Format: date-time */
+            deadline?: string;
+            notes?: string;
+            /** Format: int64 */
+            priority: number;
+            recurDetails?: components["schemas"]["RecurDetails"];
+            recurFrequency?: string;
+            recurring: boolean;
+            tagger: components["schemas"]["TaggerInfo"];
+            taskId: string;
+            /** Format: date-time */
+            timestamp: string;
+            /** Format: double */
+            value: number;
         };
         PostDocumentAPI: {
             /**
@@ -6470,6 +6616,26 @@ export interface components {
             /** @example Template metrics reset successfully */
             message: string;
         };
+        RespondToTaskTagInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RespondToTaskTagInputBody.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            status: "watching" | "copied" | "untagged";
+        };
+        RespondToTaskTagOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RespondToTaskTagOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Response recorded */
+            message: string;
+        };
         RevenueCatEvent: {
             app_user_id: string;
             currency: string;
@@ -6734,6 +6900,19 @@ export interface components {
             tasks_skipped: number;
             workspace_name: string;
         };
+        TaggedTaskUser: {
+            display_name: string;
+            handle: string;
+            id: string;
+            profile_picture: string;
+            status: string;
+        };
+        TaggerInfo: {
+            display_name: string;
+            handle: string;
+            id: string;
+            profile_picture: string;
+        };
         TaskDocument: {
             /**
              * Format: uri
@@ -6771,6 +6950,7 @@ export interface components {
             startDate: string;
             /** Format: date-time */
             startTime?: string;
+            taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             templateID?: string;
             /** Format: date-time */
             timeCompleted?: string;
@@ -6885,6 +7065,7 @@ export interface components {
             startTime?: string;
             /** Format: int64 */
             streak: number;
+            taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             /** Format: int64 */
             timesCompleted: number;
             /** Format: int64 */
@@ -6932,6 +7113,7 @@ export interface components {
             startTime?: string;
             /** Format: int64 */
             streak: number;
+            taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             /** Format: int64 */
             timesCompleted: number;
             /** Format: int64 */
@@ -7455,6 +7637,24 @@ export interface components {
             readonly $schema?: string;
             /** @example Task start date/time updated successfully */
             message: string;
+        };
+        UpdateTaskTagsInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskTagsInputBody.json
+             */
+            readonly $schema?: string;
+            taggedUserIds: string[];
+        };
+        UpdateTaskTagsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskTagsOutputBody.json
+             */
+            readonly $schema?: string;
+            taggedUsers: components["schemas"]["TaggedTaskUser"][];
         };
         UpdateTemplateDocument: {
             /**
@@ -12918,6 +13118,75 @@ export interface operations {
             };
         };
     };
+    "get-pending-tagged-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingTaggedTask"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "respond-to-task-tag": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RespondToTaskTagInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespondToTaskTagOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-user-tags": {
         parameters: {
             query?: never;
@@ -13232,6 +13501,46 @@ export interface operations {
             };
         };
     };
+    "update-task-tags": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskTagsInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskTagsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "activate-task": {
         parameters: {
             query?: {
@@ -13446,6 +13755,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "log-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogTasksInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogTasksOutputBody"];
                 };
             };
             /** @description Error */

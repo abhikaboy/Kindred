@@ -164,6 +164,13 @@ var Indexes = []Index{
 			Options: options.Index().SetSparse(true),
 		},
 	},
+	// Covers GetPendingTaggedTasks: 'tasks where user X is tagged' lookups
+	{
+		Collection: "categories",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "tasks.taggedUsers.id", Value: 1}},
+		},
+	},
 	// {
 	// 	Collection: "users",
 	// 	Model: mongo.IndexModel{Keys: bson.D{

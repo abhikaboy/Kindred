@@ -131,6 +131,16 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		LastEdited:     time.Now(),
 	}
 
+	// Resolve tagged friends to denormalized pending entries
+	if len(taskParams.TaggedUserIDs) > 0 {
+		tagged, err := h.service.BuildTaggedUsers(taskParams.TaggedUserIDs)
+		if err != nil {
+			slog.Error("Failed to resolve tagged users", "error", err)
+		} else {
+			task.TaggedUsers = tagged
+		}
+	}
+
 	// Auto-inject a FOLLOW_UP reminder if the task has a deadline or startTime
 	followUp := BuildFollowUpReminder(task.Deadline, task.StartTime)
 	if followUp != nil {
@@ -203,6 +213,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 			taskParams.Reminders,
 			taskParams.Notes,
 			taskParams.Checklist,
+			task.TaggedUsers,
 		)
 		if err != nil {
 			slog.Error("Failed to create recurring task template", "userId", userObjID.Hex(), "categoryId", categoryID.Hex(), "error", err)
@@ -214,6 +225,10 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 	if err != nil {
 		slog.Error("Failed to create task", "userId", userObjID.Hex(), "categoryId", categoryID.Hex(), "error", err)
 		return nil, huma.Error500InternalServerError("Unable to create task due to a database error. Please try again.", err)
+	}
+
+	if len(doc.TaggedUsers) > 0 {
+		go h.service.NotifyTaggedUsers(doc, userObjID)
 	}
 
 	// Increment Plan ring synchronously so the response carries the delta.
@@ -359,6 +374,7 @@ func (h *Handler) UpdateTask(ctx context.Context, input *UpdateTaskInput) (*Upda
 			updateData.Reminders,
 			updateData.Notes,
 			updateData.Checklist,
+			nil, // tagging during edit-to-recurring conversion is out of scope
 		)
 		if err != nil {
 			slog.Error("Failed to create recurring template during task update", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)

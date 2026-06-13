@@ -385,6 +385,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_WindowType_WeeklyTuesda
 		nil,        // reminders
 		"",         // notes
 		nil,        // checklist
+		nil,        // taggedUsers
 	)
 
 	s.NoError(err, "Creating a WINDOW-type recurring task should succeed")
@@ -1025,7 +1026,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Weekly_CreatesCorr
 			Behavior: "ROLLING",
 			Flex:     &FlexDetails{Target: 3, Period: "weekly"},
 		},
-		nil, nil, nil, nil, "", nil,
+		nil, nil, nil, nil, "", nil, nil,
 	)
 	s.NoError(err)
 
@@ -1070,7 +1071,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Daily_CreatesCorre
 		&RecurDetails{
 			Flex: &FlexDetails{Target: 2, Period: "daily"},
 		},
-		nil, nil, nil, nil, "", nil,
+		nil, nil, nil, nil, "", nil, nil,
 	)
 	s.NoError(err)
 
@@ -1112,7 +1113,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_Monthly_CreatesCor
 		&RecurDetails{
 			Flex: &FlexDetails{Target: 5, Period: "monthly"},
 		},
-		nil, nil, nil, nil, "some notes", nil,
+		nil, nil, nil, nil, "some notes", nil, nil,
 	)
 	s.NoError(err)
 
@@ -1155,7 +1156,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_InvalidPeriod_Retu
 		&RecurDetails{
 			Flex: &FlexDetails{Target: 3, Period: "biweekly"},
 		},
-		nil, nil, nil, nil, "", nil,
+		nil, nil, nil, nil, "", nil, nil,
 	)
 	s.Error(err, "Invalid flex period should return an error")
 }
@@ -1187,7 +1188,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_ZeroTarget_Returns
 		&RecurDetails{
 			Flex: &FlexDetails{Target: 0, Period: "weekly"},
 		},
-		nil, nil, nil, nil, "", nil,
+		nil, nil, nil, nil, "", nil, nil,
 	)
 	s.Error(err, "Zero target flex should return an error")
 }
@@ -1222,7 +1223,7 @@ func (s *TaskServiceTestSuite) TestCreateTemplateForTask_Flex_DoesNotPanic_WithN
 			&RecurDetails{
 				Flex: &FlexDetails{Target: 4, Period: "weekly"},
 			},
-			nil, nil, nil, nil, "", nil,
+			nil, nil, nil, nil, "", nil, nil,
 		)
 	}, "Creating a flex template should not panic even without DaysOfWeek")
 }

@@ -30,7 +30,8 @@ import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCateg
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus } from "phosphor-react-native";
+import TagFriendsModal from "@/components/modals/TagFriendsModal";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 // import PagerView from "react-native-pager-view"; // Removed - was causing modal issue
@@ -85,6 +86,8 @@ export default function Task() {
 
     // Query task from local context instead of relying on passed state
     const task = getTaskById(categoryId as string, id as string);
+
+    const [showTagModal, setShowTagModal] = useState(false);
 
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
@@ -578,9 +581,14 @@ export default function Task() {
                             {name}
                             {isRunning ? <MaterialIcons name="timer" size={24} color={ThemedColor.text} /> : ""}
                         </ThemedText>
-                        <TouchableOpacity onPress={handleEditPress}>
-                            <PencilSimple size={24} color={ThemedColor.text} weight="regular" />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+                            <TouchableOpacity onPress={() => setShowTagModal(true)}>
+                                <UserPlus size={24} color={ThemedColor.text} weight="regular" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleEditPress}>
+                                <PencilSimple size={24} color={ThemedColor.text} weight="regular" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                     <View style={{ paddingBottom: 16 }} />
                 </View>
@@ -818,6 +826,17 @@ export default function Task() {
                     </View>
                 </KeyboardAvoidingView>
             </ScrollView>
+
+            {task && (
+                <TagFriendsModal
+                    visible={showTagModal}
+                    onClose={() => setShowTagModal(false)}
+                    task={task}
+                    onTagsUpdated={(taggedUsers) =>
+                        updateTask(categoryId as string, id as string, { taggedUsers })
+                    }
+                />
+            )}
 
             {showDeadlineModal && (
                 <DeadlineBottomSheetModal

@@ -12,6 +12,9 @@ jest.mock("expo-video", () => ({
 jest.mock("react-native-safe-area-context", () => ({
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+// Reanimated v4 pulls in react-native-worklets at import time, which crashes under jest
+jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
+jest.mock("react-native-reanimated", () => require("react-native-reanimated/mock"));
 
 const base = {
     id: "k1",
