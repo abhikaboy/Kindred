@@ -1,13 +1,14 @@
-import { Redirect } from "expo-router";
-import { useAuth } from "@/hooks/useAuth";
+import React from "react";
 import { View, ActivityIndicator } from "react-native";
+import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { AnalyticsHome } from "@/components/analytics/AnalyticsHome";
 
 export default function ActivityIndex() {
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
 
-    // Show loading while user data is being fetched
+    // Wait for the user before rendering the dashboard (layout + queries key off it).
     if (!user) {
         return (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: ThemedColor.background }}>
@@ -16,6 +17,5 @@ export default function ActivityIndex() {
         );
     }
 
-    // Redirect to the user's activity page
-    return <Redirect href={`/(activity)/${user._id}`} />;
+    return <AnalyticsHome />;
 }

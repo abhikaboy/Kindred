@@ -7,6 +7,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/gemini"
 	activity "github.com/abhikaboy/Kindred/internal/handlers/activity"
+	analytics "github.com/abhikaboy/Kindred/internal/handlers/analytics"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	Blueprint "github.com/abhikaboy/Kindred/internal/handlers/blueprint"
 	"github.com/abhikaboy/Kindred/internal/handlers/calendar"
@@ -141,6 +142,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	auth.Routes(api, collections)
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
+	analytics.Routes(api, collections)
 	profile.Routes(api, collections, ringService)
 	taskService := task.Routes(api, collections, geminiService, ringService)
 
