@@ -8,3 +8,5 @@ export const KUDOS_CONSTANTS = {
 export const KUDOS_REACTION_EMOJIS = ["❤️", "🙌", "🔥", "😭"] as const;
 export type KudosReactionEmoji = (typeof KUDOS_REACTION_EMOJIS)[number];
 
+// The heart reaction is rendered as a filled Heart icon, not the emoji glyph.
+export const KUDOS_HEART_EMOJI: KudosReactionEmoji = "❤️";

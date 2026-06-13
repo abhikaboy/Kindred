@@ -4,7 +4,7 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withSequence,
-    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Heart } from "phosphor-react-native";
@@ -13,7 +13,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
 import ReactionTray from "@/components/cards/ReactionTray";
-import type { KudosReactionEmoji } from "@/constants/kudos";
+import { KUDOS_HEART_EMOJI, type KudosReactionEmoji } from "@/constants/kudos";
 
 interface KudosSender {
     name: string;
@@ -67,9 +67,11 @@ export default function KudosItem({
     const isVideo = kudos.type === "video" && !!kudos.thumbnailUrl;
     const isProfileLevel = kudos.scope === "profile";
     const hasReaction = Boolean(kudos.reaction);
+    const isHeartReaction = kudos.reaction === KUDOS_HEART_EMOJI;
 
     const triggerPulse = () => {
-        scale.value = withSequence(withSpring(1.35, { damping: 10 }), withSpring(1, { damping: 14 }));
+        // Plain timing — a spring overshoots and the icon visibly bounces (matches the tray)
+        scale.value = withSequence(withTiming(1.2, { duration: 120 }), withTiming(1, { duration: 130 }));
     };
 
     // Tapping only opens the tray — the reaction is sent on tray selection,
@@ -91,7 +93,14 @@ export default function KudosItem({
         <View style={styles.reactionRow}>
             <Pressable testID="kudos-reaction-button" onPress={handleTap} hitSlop={8}>
                 <Animated.View style={animatedStyle}>
-                    {hasReaction ? (
+                    {isHeartReaction ? (
+                        <Heart
+                            testID="kudos-reaction-heart-filled"
+                            size={18}
+                            color={ThemedColor.error}
+                            weight="fill"
+                        />
+                    ) : hasReaction ? (
                         <Text style={styles.reactionEmoji}>{kudos.reaction}</Text>
                     ) : (
                         <Heart

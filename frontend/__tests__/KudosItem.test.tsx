@@ -78,7 +78,7 @@ describe("KudosItem", () => {
         expect(onReact).toHaveBeenCalledWith("k1", "🔥");
     });
 
-    test("a reacted kudos renders its reaction emoji", () => {
+    test("a non-heart reaction renders its emoji glyph", () => {
         const { getByText } = render(
             <KudosItem
                 kudos={{ ...base, scope: "profile", reaction: "🙌" }}
@@ -87,5 +87,17 @@ describe("KudosItem", () => {
             />,
         );
         getByText("🙌");
+    });
+
+    test("a heart reaction fills the heart icon red instead of showing the emoji", () => {
+        const { getByTestId, queryByText } = render(
+            <KudosItem
+                kudos={{ ...base, scope: "profile", reaction: "❤️" }}
+                formatTime={() => "now"}
+                onReact={jest.fn()}
+            />,
+        );
+        getByTestId("kudos-reaction-heart-filled");
+        expect(queryByText("❤️")).toBeNull();
     });
 });
