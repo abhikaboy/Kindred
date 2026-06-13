@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
+import { feedActivePost } from "@/utils/feedSongPlayback";
 import { shouldLoadMoreFeed } from "@/utils/feedPagination";
 import PagerView from "react-native-pager-view";
 import NotificationsView from "@/components/notifications/NotificationsView";
@@ -532,6 +533,7 @@ export default function Feed() {
                         username={post.user?.handle || "unknown"}
                         userId={post.user?._id || ""}
                         id={post._id}
+                        song={post.song}
                         images={post.images}
                         media={post.media}
                         dual={post.dual}
@@ -587,6 +589,7 @@ export default function Feed() {
                     size={post.size}
                     onReactionUpdate={() => refreshSinglePost(post._id)}
                     id={post._id}
+                    song={(post as any).song}
                     onHide={handleHidePost}
                     onBlockUser={handleBlockUser}
                 />
@@ -594,6 +597,14 @@ export default function Feed() {
         },
         [refreshSinglePost, calculatePostTime, transformReactions, hiddenPostIds, handleHidePost, handleBlockUser, handleDismissHidden]
     );
+
+    // Track the primary on-screen post so its tagged song can autoplay.
+    const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+    const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: any }> }) => {
+        const firstPost = viewableItems.find((v) => v.item && (v.item._id || (v.item.type === "post" && v.item.post)));
+        const it: any = firstPost?.item;
+        feedActivePost.set(it?._id ?? it?.post?._id ?? null);
+    }).current;
 
     const renderHeader = useCallback(() => {
         return (
@@ -825,6 +836,8 @@ export default function Feed() {
                 ListFooterComponent={renderFooter}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
             />
             </View>
 

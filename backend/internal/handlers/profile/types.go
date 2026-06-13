@@ -29,6 +29,7 @@ type ProfileDocument struct {
 	Points            int                  `bson:"points" json:"points"`                         // Suppressed in API responses (always 0)
 	ProductivityScore int                  `bson:"productivity_score" json:"productivity_score"` // Public-facing score
 	PostsMade         int                  `bson:"posts_made" json:"posts_made"`                 // Stored field in users collection
+	Song              *types.Song          `bson:"song,omitempty" json:"song,omitempty"`
 	Friends           []primitive.ObjectID `bson:"friends" json:"friends"`
 	// Relationship information - only included when viewing another user's profile
 	Relationship   *RelationshipInfo    `bson:"-" json:"relationship,omitempty"`
@@ -55,9 +56,10 @@ func (p *ProfileDocument) sanitizeForResponse(isSelf bool) {
 }
 
 type UpdateProfileDocument struct {
-	DisplayName    string  `bson:"display_name,omitempty" json:"display_name,omitempty"`
-	Handle         string  `bson:"handle,omitempty" json:"handle,omitempty"`
-	ProfilePicture *string `bson:"profile_picture,omitempty" json:"profile_picture,omitempty"`
+	DisplayName    string      `bson:"display_name,omitempty" json:"display_name,omitempty"`
+	Handle         string      `bson:"handle,omitempty" json:"handle,omitempty"`
+	ProfilePicture *string     `bson:"profile_picture,omitempty" json:"profile_picture,omitempty"`
+	Song           *types.Song `bson:"song,omitempty" json:"song,omitempty"`
 }
 
 /*

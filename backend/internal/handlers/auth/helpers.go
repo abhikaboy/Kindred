@@ -61,5 +61,6 @@ func buildSafeUserResponse(user *User) types.SafeUser {
 		Points:          user.Points,
 		PostsMade:       user.PostsMade,
 		TermsAcceptedAt: user.TermsAcceptedAt,
+		Song:            user.Song,
 	}
 }

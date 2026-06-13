@@ -24,6 +24,8 @@ import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
 import { usePostComposer } from "@/contexts/PostComposerContext";
+import SongPickerModal from "@/components/profile/song/SongPickerModal";
+import { MusicNote, CaretRight } from "phosphor-react-native";
 import { getEncouragementsByTask } from "@/api/encouragement";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import type { Href } from "expo-router";
@@ -38,6 +40,7 @@ export default function Caption() {
     const dualPhoto = params.dualPhoto ? (params.dualPhoto as string) : null;
     const [data, setData] = useState({ caption: "" });
     const [isPosting, setIsPosting] = useState(false);
+    const [songPickerOpen, setSongPickerOpen] = useState(false);
     const taskInfo = params.taskInfo ? JSON.parse(params.taskInfo as string) : null;
 
     // Alert state
@@ -51,7 +54,7 @@ export default function Caption() {
     const { capture } = useAnalytics();
     const { showRingUpdate } = useRingUpdate();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
-    const { taggedUsers, setTaggedUsers } = usePostComposer();
+    const { taggedUsers, setTaggedUsers, song, setSong } = usePostComposer();
 
     // Compute display text based on state
     const groupDisplayText = selectedGroupId === null ? "All Friends" : (selectedGroupName || "Selected Group");
@@ -185,6 +188,7 @@ export default function Caption() {
                 uploadResult.dualUrl,
                 taggedUsers.map((u) => ({ id: u.id, handle: u.handle })),
                 uploadResult.media,
+                song ?? undefined,
             );
 
             // Update user stats locally if available
@@ -331,6 +335,32 @@ export default function Caption() {
                                 flexDirection: "row",
                                 alignItems: "center",
                             }}
+                            onPress={() => setSongPickerOpen(true)}
+                            activeOpacity={0.7}>
+                            <ThemedText>Add music</ThemedText>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+                                <ThemedText
+                                    style={{ color: ThemedColor.primary, flexShrink: 1 }}
+                                    numberOfLines={1}>
+                                    {song ? `${song.title} · ${song.artist}` : "None"}
+                                </ThemedText>
+                                {song ? (
+                                    <MusicNote size={16} color={ThemedColor.primary} weight="fill" />
+                                ) : (
+                                    <CaretRight size={16} color={ThemedColor.primary} />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{
+                                width: "100%",
+                                padding: 20,
+                                justifyContent: "space-between",
+                                backgroundColor: ThemedColor.lightened,
+                                borderRadius: 8,
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}
                             onPress={() => {
                                 router.push("/(logged-in)/posting/tag-people" as Href);
                             }}
@@ -375,6 +405,11 @@ export default function Caption() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <SongPickerModal
+                visible={songPickerOpen}
+                onClose={() => setSongPickerOpen(false)}
+                onSelect={(s) => setSong(s)}
+            />
             <CustomAlert
                 visible={alertVisible}
                 setVisible={setAlertVisible}

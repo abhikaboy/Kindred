@@ -292,6 +292,7 @@ func (s *Service) GetUser(user_id string) (*SafeUser, error) {
 		Settings:        user.Settings,
 		TermsAcceptedAt: user.TermsAcceptedAt,
 		TermsVersion:    user.TermsVersion,
+		Song:            user.Song,
 	}
 	return &safeUser, nil
 }

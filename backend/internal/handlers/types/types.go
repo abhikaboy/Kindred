@@ -321,6 +321,7 @@ type User struct {
 	TermsAcceptedAt       *time.Time   `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
 	TermsVersion          string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 	FirstAllRingsClosedAt *time.Time   `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
+	Song                  *Song        `bson:"song,omitempty" json:"song,omitempty"`
 }
 
 type SafeUser struct {
@@ -346,6 +347,7 @@ type SafeUser struct {
 	TermsAcceptedAt       *time.Time           `bson:"terms_accepted_at,omitempty" json:"terms_accepted_at,omitempty"`
 	TermsVersion          string               `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 	FirstAllRingsClosedAt *time.Time           `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
+	Song                  *Song                `bson:"song,omitempty" json:"song,omitempty"`
 }
 
 // UserSettings contains all user preference settings
@@ -454,6 +456,17 @@ type MediaItem struct {
 	Bytes        int     `bson:"bytes,omitempty" json:"bytes,omitempty"`
 }
 
+// Song is a track tagged on a post or profile. Sourced from the iTunes Search
+// API; previewUrl is a free ~30s preview clip played in-app.
+type Song struct {
+	ID            int64  `bson:"id" json:"id"`
+	Title         string `bson:"title" json:"title"`
+	Artist        string `bson:"artist" json:"artist"`
+	PreviewURL    string `bson:"previewUrl" json:"previewUrl"`
+	ArtworkURL    string `bson:"artworkUrl,omitempty" json:"artworkUrl,omitempty"`
+	AppleMusicURL string `bson:"appleMusicUrl,omitempty" json:"appleMusicUrl,omitempty"`
+}
+
 type PostDocument struct {
 	ID   primitive.ObjectID            `bson:"_id" json:"_id"`
 	User UserExtendedReferenceInternal `bson:"user" json:"user"`
@@ -469,6 +482,7 @@ type PostDocument struct {
 	Blueprint   *EnhancedBlueprintReference `bson:"blueprint,omitempty" json:"blueprint,omitempty"`
 	Groups      []primitive.ObjectID        `bson:"groups,omitempty" json:"groups,omitempty"`
 	TaggedUsers []MentionReference          `bson:"taggedUsers,omitempty" json:"taggedUsers,omitempty"`
+	Song        *Song                       `bson:"song,omitempty" json:"song,omitempty"`
 
 	Reactions map[string][]primitive.ObjectID `bson:"reactions" json:"reactions"`
 	Comments  []CommentDocument               `bson:"comments" json:"comments"`
@@ -731,6 +745,7 @@ type PostDocumentAPI struct {
 	Blueprint   *EnhancedBlueprintReference `json:"blueprint,omitempty"`
 	Groups      []string                    `json:"groups,omitempty"`
 	TaggedUsers []MentionReference          `json:"taggedUsers,omitempty"`
+	Song        *Song                       `json:"song,omitempty"`
 
 	Reactions map[string][]string  `json:"reactions"`
 	Comments  []CommentDocumentAPI `json:"comments"`
@@ -800,6 +815,7 @@ func (p *PostDocument) ToAPI(viewerID primitive.ObjectID) *PostDocumentAPI {
 		Blueprint:   p.Blueprint,
 		Groups:      groupStrings,
 		TaggedUsers: p.TaggedUsers,
+		Song:        p.Song,
 		Reactions:   apiReactions,
 		Comments:    apiComments,
 		Kudos:       apiKudos,

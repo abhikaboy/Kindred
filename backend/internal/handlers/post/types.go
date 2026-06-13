@@ -47,6 +47,7 @@ type CreatePostParams struct {
 	Groups            []string                         `json:"groups,omitempty" validate:"omitempty,dive,len=24"`
 	IsPublic          bool                             `json:"isPublic"`
 	TaggedUsers       []MentionInput                   `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
+	Song              *types.Song                      `json:"song,omitempty"`
 }
 
 // Get Posts (all)

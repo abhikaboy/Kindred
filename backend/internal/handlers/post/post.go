@@ -61,6 +61,7 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		Caption:   input.Body.Caption,
 		Size:      input.Body.Size,
 		Task:      input.Body.Task,
+		Song:      input.Body.Song,
 		Comments:  []types.CommentDocument{},
 		Reactions: make(map[string][]primitive.ObjectID),
 		Metadata:  types.NewPostMetadata(),
