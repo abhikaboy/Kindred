@@ -126,6 +126,8 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		TaskName:     r.TaskName,
 		Read:         false, // Default to unread
 		Type:         r.Type,
+		ThumbnailURL: r.ThumbnailURL,
+		DurationMs:   r.DurationMs,
 		PostID:       r.PostID,
 	}
 
@@ -152,7 +154,11 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	slog.LogAttrs(ctx, slog.LevelInfo, "Congratulation inserted", slog.String("id", id.Hex()))
 
 	// Send push notification to receiver
-	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.PostID)
+	videoThumb := ""
+	if r.Type == "video" && r.ThumbnailURL != nil {
+		videoThumb = *r.ThumbnailURL
+	}
+	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.PostID, videoThumb)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
@@ -175,6 +181,11 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		}
 	}
 
+	// A video kudos carries its own thumbnail; prefer it over the post image.
+	if r.Type == "video" && r.ThumbnailURL != nil {
+		thumbnail = *r.ThumbnailURL
+	}
+
 	// Append a denormalized kudos onto the post so cards can render the
 	// congratulator cluster (and the in-thread kudos) without a join.
 	// Best-effort: a missing post or failed update is logged, not fatal.
@@ -186,10 +197,12 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 				Name: r.Sender.Name,
 				Icon: r.Sender.Picture,
 			},
-			Message:   r.Message,
-			Timestamp: congratulation.Timestamp,
-			Type:      r.Type,
-			Private:   r.Private,
+			Message:      r.Message,
+			Timestamp:    congratulation.Timestamp,
+			Type:         r.Type,
+			ThumbnailURL: r.ThumbnailURL,
+			DurationMs:   r.DurationMs,
+			Private:      r.Private,
 		}
 		if _, err := s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, bson.M{"$push": bson.M{"kudos": kudos}}); err != nil {
 			slog.Error("Failed to append kudos to post", "error", err, "post_id", r.PostID.Hex())
@@ -488,7 +501,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 
 // sendCongratulationNotification sends a push notification when a congratulation is created.
 // postID may be nil — congratulations created outside the post flow (e.g. beak onboarding) won't carry one.
-func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string, postID *primitive.ObjectID) error {
+func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string, postID *primitive.ObjectID, videoThumbnailURL string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -520,8 +533,17 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 	var message string
 	var notification xutils.Notification
 
-	// Check if it's an image congratulation
-	if congratulationType == "image" {
+	// Check congratulation type
+	if congratulationType == "video" {
+		message = fmt.Sprintf("%s sent you a video cheer for \"%s\"!", senderName, taskName)
+		notification = xutils.Notification{
+			Token:    receiver.PushToken,
+			Title:    "You're killing it!",
+			Message:  message,
+			ImageURL: videoThumbnailURL, // push can't play video; show its thumbnail
+			Data:     data,
+		}
+	} else if congratulationType == "image" {
 		message = fmt.Sprintf("%s is celebrating your work on \"%s\"!", senderName, taskName)
 		notification = xutils.Notification{
 			Token:    receiver.PushToken,
@@ -579,7 +601,7 @@ func (s *Service) SendBeakCongratulation(receiverID primitive.ObjectID, message,
 	}
 
 	// Send push notification
-	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message", nil)
+	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message", nil, "")
 	if err != nil {
 		slog.Error("Failed to send beak congratulation notification", "error", err, "receiver_id", receiverID)
 	}

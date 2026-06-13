@@ -8,12 +8,17 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import Octicons from "@expo/vector-icons/Octicons";
 import { createEncouragementAPI } from "@/api/encouragement";
+import type { components } from "@/api/generated/types";
+type CreateEncouragementParams = components["schemas"]["CreateEncouragementParams"];
 import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
-import { useMediaLibrary } from "@/hooks/useMediaLibrary";
-import { uploadImageSmart } from "@/api/upload";
-import { Images, Gif, Sparkle } from "phosphor-react-native";
+import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
+import { uploadImageSmart, uploadVideo, KUDOS_VIDEO_MAX_BYTES, KUDOS_VIDEO_MAX_DURATION_MS } from "@/api/upload";
+import { Images, Gif, Sparkle, VideoCamera } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
+import KudosVideoRecorder from "./KudosVideoRecorder";
+import KudosVideoPreview from "./KudosVideoPreview";
+import { formatVideoDuration } from "@/api/media";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -22,6 +27,8 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+
+type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
 interface EncourageModalProps {
     visible: boolean;
@@ -49,7 +56,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
     const [encouragementMessage, setEncouragementMessage] = useState("");
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedMedia, setSelectedMedia] = useState<SelectedKudosMedia | null>(null);
+    const [showRecorder, setShowRecorder] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -120,7 +128,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
         } else {
             // Reset state when modal closes
             setEncouragementMessage("");
-            setSelectedImage(null);
+            setSelectedMedia(null);
+            setShowRecorder(false);
             setIsUploading(false);
             setShowGifPicker(false);
             // Don't reset showConfetti immediately - let it finish animation
@@ -132,30 +141,52 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
     const { encouragementsLeft, currentKudosRewards } = useUserKudos();
 
-    const handleImagePick = async () => {
+    const handleMediaPick = async () => {
         try {
             const result = await pickImage({
+                mediaTypes: IMAGE_AND_VIDEO_TYPES,
                 allowsEditing: true,
                 quality: 0.7,
+                videoMaxDuration: KUDOS_VIDEO_MAX_DURATION_MS / 1000,
             });
 
             if (result && !result.canceled && result.assets && result.assets[0]) {
-                const imageUri = result.assets[0].uri;
-                setSelectedImage(imageUri);
-                // Clear message when image is selected
+                const asset = result.assets[0];
+                if (asset.type === "video") {
+                    // iOS trims via allowsEditing; Android ignores videoMaxDuration
+                    // for library picks, so enforce the cap here. duration is ms.
+                    if (!asset.duration) {
+                        setAlertTitle("Error");
+                        setAlertMessage("Couldn't read the video's length. Please try a different video.");
+                        setAlertButtons([{ text: "OK", style: "default" }]);
+                        setAlertVisible(true);
+                        return;
+                    }
+                    if (asset.duration > KUDOS_VIDEO_MAX_DURATION_MS) {
+                        setAlertTitle("Video too long");
+                        setAlertMessage("Videos can be up to 30 seconds.");
+                        setAlertButtons([{ text: "OK", style: "default" }]);
+                        setAlertVisible(true);
+                        return;
+                    }
+                    setSelectedMedia({ uri: asset.uri, type: "video", durationMs: asset.duration });
+                } else {
+                    setSelectedMedia({ uri: asset.uri, type: "image" });
+                }
+                // Clear message when media is selected
                 setEncouragementMessage("");
             }
         } catch (error) {
-            console.error("Error picking image:", error);
+            console.error("Error picking media:", error);
             setAlertTitle("Error");
-            setAlertMessage("Failed to select image. Please try again.");
+            setAlertMessage("Failed to select media. Please try again.");
             setAlertButtons([{ text: "OK", style: "default" }]);
             setAlertVisible(true);
         }
     };
 
     const handleGifSelect = (gifUrl: string) => {
-        setSelectedImage(gifUrl);
+        setSelectedMedia({ uri: gifUrl, type: "image" });
         setEncouragementMessage("");
         setShowGifPicker(false);
     };
@@ -188,8 +219,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             return;
         }
 
-        // Check if either message or image is provided
-        if (!encouragementMessage.trim() && !selectedImage) {
+        // Check if either message or media is provided
+        if (!encouragementMessage.trim() && !selectedMedia) {
             setAlertTitle("Error");
             setAlertMessage("Please enter a message or select an image");
             setAlertButtons([{ text: "OK", style: "default" }]);
@@ -202,31 +233,43 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
             let contentToSend = encouragementMessage.trim();
             let encouragementType = "message";
+            let thumbnailUrl: string | undefined;
+            let durationMs: number | undefined;
 
-            // If image is selected, upload it first (unless it's a GIF URL)
-            if (selectedImage) {
+            if (selectedMedia) {
                 try {
-                    // Check if it's a URL (GIF from Tenor) or a local file (uploaded image)
-                    if (selectedImage.startsWith('http://') || selectedImage.startsWith('https://')) {
-                        // It's a GIF URL, use it directly
-                        contentToSend = selectedImage;
+                    if (selectedMedia.type === "video") {
+                        const tempId = `encouragement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        const media = await uploadVideo("encouragement", tempId, selectedMedia.uri, {
+                            maxBytes: KUDOS_VIDEO_MAX_BYTES,
+                            durationMs: selectedMedia.durationMs,
+                        });
+                        contentToSend = media.url;
+                        thumbnailUrl = media.thumbnailUrl ?? undefined;
+                        durationMs = media.durationMs ?? selectedMedia.durationMs;
+                        encouragementType = "video";
+                    } else if (selectedMedia.uri.startsWith("http://") || selectedMedia.uri.startsWith("https://")) {
+                        // GIF URL from Tenor — use it directly
+                        contentToSend = selectedMedia.uri;
                         encouragementType = "image";
                     } else {
-                        // It's a local image, upload it
+                        // Local image — upload it
                         const tempId = `encouragement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-                        const imageUrl = await uploadImageSmart("encouragement", tempId, selectedImage, {
+                        const imageUrl = await uploadImageSmart("encouragement", tempId, selectedMedia.uri, {
                             variant: "large",
                         });
-
-                        contentToSend = typeof imageUrl === 'string' ? imageUrl : imageUrl.public_url;
+                        contentToSend = typeof imageUrl === "string" ? imageUrl : imageUrl.public_url;
                         encouragementType = "image";
                     }
                 } catch (uploadError) {
-                    console.error("Error uploading image:", uploadError);
+                    console.error("Error uploading media:", uploadError);
                     setIsUploading(false);
                     setAlertTitle("Error");
-                    setAlertMessage("Failed to upload image. Please try again.");
+                    setAlertMessage(
+                        uploadError instanceof Error && uploadError.message.includes("too large")
+                            ? uploadError.message
+                            : "Failed to upload media. Please try again."
+                    );
                     setAlertButtons([{ text: "OK", style: "default" }]);
                     setAlertVisible(true);
                     return;
@@ -234,12 +277,14 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             }
 
             // Create the encouragement data based on scope
-            const encouragementData = isProfileLevel
+            const encouragementData: CreateEncouragementParams = isProfileLevel
                 ? {
                     receiver: encouragementConfig.receiverId,
                     message: contentToSend,
                     scope: "profile" as const,
                     type: encouragementType,
+                    ...(thumbnailUrl && { thumbnailUrl }),
+                    ...(durationMs && { durationMs }),
                 }
                 : {
                     receiver: encouragementConfig.receiverId,
@@ -249,10 +294,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     taskName: task!.content,
                     taskId: task!.id,
                     type: encouragementType,
+                    ...(thumbnailUrl && { thumbnailUrl }),
+                    ...(durationMs && { durationMs }),
                 };
 
             // Make the API call
-            const encouragementResult = await createEncouragementAPI(encouragementData as any);
+            const encouragementResult = await createEncouragementAPI(encouragementData);
 
             // Only update state if component is still mounted
             if (!isMountedRef.current) return;
@@ -263,7 +310,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
 
             capture(AnalyticsEvents.ENCOURAGEMENT_SENT, {
                 has_message: !!encouragementMessage?.trim(),
-                has_image: !!selectedImage,
+                has_image: selectedMedia?.type === "image",
+                has_video: selectedMedia?.type === "video",
             });
 
             // Update user's encouragement count locally
@@ -370,7 +418,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 </View>
             )}
 
-            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>
+            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Task Card - Only show for task-level encouragements */}
                 {!isProfileLevel && (
@@ -401,8 +449,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     A little goes a long way
                 </ThemedText>
 
-                {/* Text Input or Image Preview */}
-                {!selectedImage ? (
+                {/* Text Input or Media Preview */}
+                {!selectedMedia ? (
                     <View style={styles.inputContainer}>
                         <BottomSheetTextInput
                             placeholder="Write a message..."
@@ -416,7 +464,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         <View style={styles.mediaIconsRow}>
                             <TouchableOpacity
                                 style={styles.iconButton}
-                                onPress={handleImagePick}
+                                onPress={handleMediaPick}
                                 disabled={isUploading}
                             >
                                 <Images size={20} color={ThemedColor.caption} weight="regular" />
@@ -428,20 +476,46 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                             >
                                 <Gif size={20} color={ThemedColor.caption} weight="regular" />
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={() => setShowRecorder(true)}
+                                disabled={isUploading}
+                            >
+                                <VideoCamera size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
                         </View>
+                    </View>
+                ) : selectedMedia.type === "video" ? (
+                    <View style={styles.imagePreviewContainer}>
+                        <View style={styles.videoPreview}>
+                            <KudosVideoPreview uri={selectedMedia.uri} />
+                        </View>
+                        {selectedMedia.durationMs ? (
+                            <View style={styles.durationPill}>
+                                <ThemedText type="caption" style={{ color: "#fff", fontSize: 12 }}>
+                                    {formatVideoDuration(selectedMedia.durationMs)}
+                                </ThemedText>
+                            </View>
+                        ) : null}
+                        <TouchableOpacity
+                            style={styles.removeImageButton}
+                            onPress={() => setSelectedMedia(null)}
+                        >
+                            <Octicons name="x" size={20} color={ThemedColor.text} />
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <TouchableOpacity
                         style={styles.imagePreviewContainer}
-                        onPress={handleImagePick}
+                        onPress={handleMediaPick}
                         activeOpacity={0.9}
                     >
-                        <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="contain" />
+                        <Image source={{ uri: selectedMedia.uri }} style={styles.imagePreview} resizeMode="contain" />
                         <TouchableOpacity
                             style={styles.removeImageButton}
                             onPress={(e) => {
                                 e.stopPropagation();
-                                setSelectedImage(null);
+                                setSelectedMedia(null);
                             }}
                         >
                             <Octicons name="x" size={20} color={ThemedColor.text} />
@@ -454,7 +528,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     <PrimaryButton
                         title={isUploading ? "Uploading..." : "Send Encouragement"}
                         onPress={handleSendEncouragement}
-                        disabled={(!encouragementMessage.trim() && !selectedImage) || encouragementsLeft === 0 || isUploading}
+                        disabled={(!encouragementMessage.trim() && !selectedMedia) || encouragementsLeft === 0 || isUploading}
                         style={styles.sendButton}
                     />
                     <ThemedText type="caption" style={styles.counterStyled}>
@@ -481,6 +555,16 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                     <GifPicker onGifSelect={handleGifSelect} />
                 </View>
             </Modal>
+
+            <KudosVideoRecorder
+                visible={showRecorder}
+                onClose={() => setShowRecorder(false)}
+                onRecorded={({ uri, durationMs: recordedMs }) => {
+                    setSelectedMedia({ uri, type: "video", durationMs: recordedMs });
+                    setEncouragementMessage("");
+                    setShowRecorder(false);
+                }}
+            />
 
             <CustomAlert
                 visible={alertVisible}
@@ -651,6 +735,22 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             height: 32,
             alignItems: "center",
             justifyContent: "center",
+        },
+        videoPreview: {
+            width: "100%",
+            height: Dimensions.get("window").height * 0.3,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: "#000",
+        },
+        durationPill: {
+            position: "absolute",
+            bottom: 8,
+            left: 8,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            borderRadius: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
         },
         gifPickerContainer: {
             flex: 1,

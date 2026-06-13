@@ -31,6 +31,8 @@ interface KudosData {
     timestamp: string;
     read: boolean;
     type?: string;
+    thumbnailUrl?: string | null;
+    durationMs?: number | null;
     reaction?: string | null;
     reactedAt?: string;
 }
@@ -62,6 +64,7 @@ export default function KudosItem({
     const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
     const isImage = kudos.type === "image";
+    const isVideo = kudos.type === "video" && !!kudos.thumbnailUrl;
     const isProfileLevel = kudos.scope === "profile";
     const hasReaction = Boolean(kudos.reaction);
 
@@ -143,8 +146,11 @@ export default function KudosItem({
         <SpeechBubbleCard
             sender={kudos.sender}
             header={header}
-            message={isImage ? undefined : kudos.message}
+            message={isImage || isVideo ? undefined : kudos.message}
             imageUri={isImage ? kudos.message : undefined}
+            videoUri={isVideo ? kudos.message : undefined}
+            videoThumbnailUri={isVideo ? kudos.thumbnailUrl ?? undefined : undefined}
+            videoDurationMs={isVideo ? kudos.durationMs ?? undefined : undefined}
             timeLabel={formatTime(kudos.timestamp)}
             read={kudos.read}
             footerSlot={footer}

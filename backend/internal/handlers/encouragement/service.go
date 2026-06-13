@@ -160,6 +160,8 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		TaskID:       r.TaskID,
 		Read:         false, // Default to unread
 		Type:         r.Type,
+		ThumbnailURL: r.ThumbnailURL,
+		DurationMs:   r.DurationMs,
 	}
 
 	client := s.Encouragements.Database().Client()
@@ -214,9 +216,11 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 					Name:   r.Sender.Name,
 					Icon:   r.Sender.Picture,
 				},
-				Message:   encouragement.Message,
-				Timestamp: encouragement.Timestamp,
-				Type:      encouragement.Type,
+				Message:      encouragement.Message,
+				Timestamp:    encouragement.Timestamp,
+				Type:         encouragement.Type,
+				ThumbnailURL: encouragement.ThumbnailURL,
+				DurationMs:   encouragement.DurationMs,
 			}
 			res, err := s.Categories.UpdateOne(sessCtx,
 				bson.M{"tasks._id": encouragement.TaskID},
@@ -242,7 +246,11 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	slog.LogAttrs(ctx, slog.LevelInfo, "Encouragement inserted", slog.String("id", encouragement.ID.Hex()))
 
 	// Best-effort side effects after commit (unchanged behavior).
-	if err := s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID); err != nil {
+	videoThumb := ""
+	if r.Type == "video" && r.ThumbnailURL != nil {
+		videoThumb = *r.ThumbnailURL
+	}
+	if err := s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID, videoThumb); err != nil {
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
 	}
 
@@ -254,7 +262,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 		notificationContent = fmt.Sprintf("%s on \"%s\": \"%s\"", r.Sender.Name, r.TaskName, r.Message)
 		referenceID = r.TaskID
 	}
-	if err := s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, referenceID); err != nil {
+	if err := s.NotificationService.CreateNotification(r.Sender.ID, r.Receiver, notificationContent, notifications.NotificationTypeEncouragement, referenceID, videoThumb); err != nil {
 		slog.Error("Failed to create encouragement notification in database", "error", err, "receiver_id", r.Receiver)
 	}
 
@@ -535,7 +543,7 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 }
 
 // sendEncouragementNotification sends a push notification when an encouragement is created
-func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType, scope string, taskID primitive.ObjectID) error {
+func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType, scope string, taskID primitive.ObjectID, videoThumbnailURL string) error {
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -565,7 +573,16 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 			"sender_name":  senderName,
 			"message_text": encouragementText,
 		}
-		if encouragementType == "image" {
+		if encouragementType == "video" {
+			message = fmt.Sprintf("%s sent you a video cheer!", senderName)
+			notification = xutils.Notification{
+				Token:    receiver.PushToken,
+				Title:    "You've got a fan!",
+				Message:  message,
+				ImageURL: videoThumbnailURL, // push can't play video; show its thumbnail
+				Data:     data,
+			}
+		} else if encouragementType == "image" {
 			message = fmt.Sprintf("%s is rooting for you!", senderName)
 			notification = xutils.Notification{
 				Token:    receiver.PushToken,
@@ -595,7 +612,16 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 		if !taskID.IsZero() {
 			data["task_id"] = taskID.Hex()
 		}
-		if encouragementType == "image" {
+		if encouragementType == "video" {
+			message = fmt.Sprintf("%s sent you a video cheer for \"%s\"!", senderName, taskName)
+			notification = xutils.Notification{
+				Token:    receiver.PushToken,
+				Title:    "Someone believes in you!",
+				Message:  message,
+				ImageURL: videoThumbnailURL, // push can't play video; show its thumbnail
+				Data:     data,
+			}
+		} else if encouragementType == "image" {
 			message = fmt.Sprintf("%s is cheering you on for \"%s\"!", senderName, taskName)
 			notification = xutils.Notification{
 				Token:    receiver.PushToken,

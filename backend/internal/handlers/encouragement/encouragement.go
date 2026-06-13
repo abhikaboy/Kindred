@@ -83,6 +83,10 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		encouragementType = "message"
 	}
 
+	if err := types.ValidateVideoKudos(encouragementType, input.Body.ThumbnailURL, input.Body.DurationMs); err != nil {
+		return nil, huma.Error422UnprocessableEntity(err.Error())
+	}
+
 	// Create internal document for database operations
 	internalDoc := EncouragementDocumentInternal{
 		Sender:       *senderInfo,
@@ -94,6 +98,8 @@ func (h *Handler) CreateEncouragementHuma(ctx context.Context, input *CreateEnco
 		TaskID:       taskID,
 		Read:         false,
 		Type:         encouragementType,
+		ThumbnailURL: input.Body.ThumbnailURL,
+		DurationMs:   input.Body.DurationMs,
 	}
 
 	encouragement, err := h.service.CreateEncouragement(&internalDoc)

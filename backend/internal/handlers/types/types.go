@@ -1,6 +1,8 @@
 package types
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -109,7 +111,9 @@ type TaskKudos struct {
 	Sender          KudosSender        `bson:"sender" json:"sender"`
 	Message         string             `bson:"message" json:"message"`
 	Timestamp       time.Time          `bson:"timestamp" json:"timestamp"`
-	Type            string             `bson:"type" json:"type"` // "message" | "image"
+	Type            string             `bson:"type" json:"type"`                                     // "message" | "image" | "video" (image/video => message holds the URL)
+	ThumbnailURL    *string            `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty"` // video only
+	DurationMs      *int               `bson:"durationMs,omitempty" json:"durationMs,omitempty"`     // video only
 }
 
 // Tag status lifecycle: pending -> watching | copied | untagged.
@@ -491,10 +495,34 @@ type PostKudos struct {
 	Sender           KudosSender        `bson:"sender" json:"sender"`
 	Message          string             `bson:"message" json:"message"`
 	Timestamp        time.Time          `bson:"timestamp" json:"timestamp"`
-	Type             string             `bson:"type" json:"type"` // "message" | "image" (image => message holds the URL)
+	Type             string             `bson:"type" json:"type"`                                     // "message" | "image" | "video" (image/video => message holds the URL)
+	ThumbnailURL     *string            `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty"` // video only
+	DurationMs       *int               `bson:"durationMs,omitempty" json:"durationMs,omitempty"`     // video only
 	// Private kudos are anonymized (sender + message stripped) for everyone
 	// except the post owner. See PostDocument.ToAPI.
 	Private bool `bson:"private,omitempty" json:"private,omitempty"`
+}
+
+// KudosVideoMaxDurationMs caps video kudos length (30s — half the post limit).
+// Must stay in sync with KUDOS_VIDEO_MAX_DURATION_MS in frontend/api/upload.ts.
+const KudosVideoMaxDurationMs = 30_000
+
+// ValidateVideoKudos checks the extra fields a "video"-type kudos must carry.
+// Non-video types pass unconditionally.
+func ValidateVideoKudos(kudosType string, thumbnailURL *string, durationMs *int) error {
+	if kudosType != "video" {
+		return nil
+	}
+	if thumbnailURL == nil || *thumbnailURL == "" {
+		return errors.New("thumbnailUrl is required for video kudos")
+	}
+	if durationMs == nil || *durationMs <= 0 {
+		return errors.New("durationMs is required for video kudos")
+	}
+	if *durationMs > KudosVideoMaxDurationMs {
+		return fmt.Errorf("video kudos must be %d seconds or shorter", KudosVideoMaxDurationMs/1000)
+	}
+	return nil
 }
 
 type CommentDocument struct {

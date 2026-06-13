@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { router, type Href } from "expo-router";
-import { User } from "phosphor-react-native";
+import { Play, User } from "phosphor-react-native";
+import KudosVideoPlayerModal from "./KudosVideoPlayerModal";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import CachedImage from "@/components/CachedImage";
@@ -24,6 +25,7 @@ interface Props {
 export default function CongratulatorsBottomSheetModal({ visible, setVisible, kudos }: Props) {
     const ThemedColor = useThemeColor();
     const styles = createStyles(ThemedColor);
+    const [playingUri, setPlayingUri] = useState<string | null>(null);
 
     return (
         <DefaultModal visible={visible} setVisible={setVisible}>
@@ -63,7 +65,22 @@ export default function CongratulatorsBottomSheetModal({ visible, setVisible, ku
                                         {anon ? "Anonymous" : item.sender.name}
                                     </ThemedText>
                                     {!anon && item.message ? (
-                                        item.type === "image" ? (
+                                        item.type === "video" && item.thumbnailUrl ? (
+                                            <TouchableOpacity
+                                                onPress={() => setPlayingUri(item.message)}
+                                                activeOpacity={0.8}
+                                                style={styles.kudosVideoWrap}>
+                                                <CachedImage
+                                                    source={{ uri: item.thumbnailUrl }}
+                                                    contentFit="cover"
+                                                    cachePolicy="memory-disk"
+                                                    style={styles.kudosImage}
+                                                />
+                                                <View style={styles.playBadge}>
+                                                    <Play size={14} color="#fff" weight="fill" />
+                                                </View>
+                                            </TouchableOpacity>
+                                        ) : item.type === "image" ? (
                                             <CachedImage
                                                 source={{ uri: item.message }}
                                                 contentFit="cover"
@@ -82,6 +99,8 @@ export default function CongratulatorsBottomSheetModal({ visible, setVisible, ku
                     }}
                 />
             </View>
+            {/* RN Modal from inside a gorhom sheet — pending on-device verification. */}
+            {playingUri ? <KudosVideoPlayerModal uri={playingUri} onClose={() => setPlayingUri(null)} /> : null}
         </DefaultModal>
     );
 }
@@ -94,4 +113,14 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: ThemedColor.tertiary },
         anon: { alignItems: "center", justifyContent: "center" },
         kudosImage: { width: 120, height: 120, borderRadius: 10, marginTop: 4 },
+        kudosVideoWrap: { position: "relative", alignSelf: "flex-start" },
+        playBadge: {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            alignItems: "center",
+            justifyContent: "center",
+        },
     });

@@ -10,10 +10,13 @@ import Octicons from "@expo/vector-icons/Octicons";
 import { createCongratulationAPI } from "@/api/congratulation";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
-import { useMediaLibrary } from "@/hooks/useMediaLibrary";
-import { uploadImageSmart } from "@/api/upload";
-import { Images, Gif, Sparkle } from "phosphor-react-native";
+import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
+import { uploadImageSmart, uploadVideo, KUDOS_VIDEO_MAX_BYTES, KUDOS_VIDEO_MAX_DURATION_MS } from "@/api/upload";
+import { Images, Gif, Sparkle, VideoCamera } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
+import KudosVideoRecorder from "./KudosVideoRecorder";
+import KudosVideoPreview from "./KudosVideoPreview";
+import { formatVideoDuration } from "@/api/media";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -22,6 +25,8 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+
+type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
 interface CongratulateModalProps {
     visible: boolean;
@@ -47,7 +52,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const { updateUser } = useAuth();
     const { showRingUpdate } = useRingUpdate();
     const [congratulationMessage, setCongratulationMessage] = useState("");
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedMedia, setSelectedMedia] = useState<SelectedKudosMedia | null>(null);
+    const [showRecorder, setShowRecorder] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -112,7 +118,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
         } else {
             // Reset state when modal closes
             setCongratulationMessage("");
-            setSelectedImage(null);
+            setSelectedMedia(null);
+            setShowRecorder(false);
             setIsUploading(false);
             setShowGifPicker(false);
             setIsPrivate(false);
@@ -126,30 +133,52 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const { congratulationsLeft, currentKudosRewards } = useUserKudos();
     const { capture } = useAnalytics();
 
-    const handleImagePick = async () => {
+    const handleMediaPick = async () => {
         try {
             const result = await pickImage({
+                mediaTypes: IMAGE_AND_VIDEO_TYPES,
                 allowsEditing: true,
                 quality: 0.7,
+                videoMaxDuration: KUDOS_VIDEO_MAX_DURATION_MS / 1000,
             });
 
             if (result && !result.canceled && result.assets && result.assets[0]) {
-                const imageUri = result.assets[0].uri;
-                setSelectedImage(imageUri);
-                // Clear message when image is selected
+                const asset = result.assets[0];
+                if (asset.type === "video") {
+                    // iOS trims via allowsEditing; Android ignores videoMaxDuration
+                    // for library picks, so enforce the cap here. duration is ms.
+                    if (!asset.duration) {
+                        setAlertTitle("Error");
+                        setAlertMessage("Couldn't read the video's length. Please try a different video.");
+                        setAlertButtons([{ text: "OK", style: "default" }]);
+                        setAlertVisible(true);
+                        return;
+                    }
+                    if (asset.duration > KUDOS_VIDEO_MAX_DURATION_MS) {
+                        setAlertTitle("Video too long");
+                        setAlertMessage("Videos can be up to 30 seconds.");
+                        setAlertButtons([{ text: "OK", style: "default" }]);
+                        setAlertVisible(true);
+                        return;
+                    }
+                    setSelectedMedia({ uri: asset.uri, type: "video", durationMs: asset.duration });
+                } else {
+                    setSelectedMedia({ uri: asset.uri, type: "image" });
+                }
+                // Clear message when media is selected
                 setCongratulationMessage("");
             }
         } catch (error) {
-            console.error("Error picking image:", error);
+            console.error("Error picking media:", error);
             setAlertTitle("Error");
-            setAlertMessage("Failed to select image. Please try again.");
+            setAlertMessage("Failed to select media. Please try again.");
             setAlertButtons([{ text: "OK", style: "default" }]);
             setAlertVisible(true);
         }
     };
 
     const handleGifSelect = (gifUrl: string) => {
-        setSelectedImage(gifUrl);
+        setSelectedMedia({ uri: gifUrl, type: "image" });
         setCongratulationMessage("");
         setShowGifPicker(false);
     };
@@ -171,8 +200,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             return;
         }
 
-        // Check if either message or image is provided
-        if (!congratulationMessage.trim() && !selectedImage) {
+        // Check if either message or media is provided
+        if (!congratulationMessage.trim() && !selectedMedia) {
             setAlertTitle("Error");
             setAlertMessage("Please enter a message or select an image");
             setAlertButtons([{ text: "OK", style: "default" }]);
@@ -185,31 +214,43 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
             let contentToSend = congratulationMessage.trim();
             let congratulationType = "message";
+            let thumbnailUrl: string | undefined;
+            let durationMs: number | undefined;
 
-            // If image is selected, upload it first (unless it's a GIF URL)
-            if (selectedImage) {
+            if (selectedMedia) {
                 try {
-                    // Check if it's a URL (GIF from Tenor) or a local file (uploaded image)
-                    if (selectedImage.startsWith('http://') || selectedImage.startsWith('https://')) {
-                        // It's a GIF URL, use it directly
-                        contentToSend = selectedImage;
+                    if (selectedMedia.type === "video") {
+                        const tempId = `congratulation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        const media = await uploadVideo("congratulation", tempId, selectedMedia.uri, {
+                            maxBytes: KUDOS_VIDEO_MAX_BYTES,
+                            durationMs: selectedMedia.durationMs,
+                        });
+                        contentToSend = media.url;
+                        thumbnailUrl = media.thumbnailUrl ?? undefined;
+                        durationMs = media.durationMs ?? selectedMedia.durationMs;
+                        congratulationType = "video";
+                    } else if (selectedMedia.uri.startsWith("http://") || selectedMedia.uri.startsWith("https://")) {
+                        // GIF URL from Tenor — use it directly
+                        contentToSend = selectedMedia.uri;
                         congratulationType = "image";
                     } else {
-                        // It's a local image, upload it
+                        // Local image — upload it
                         const tempId = `congratulation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-                        const imageUrl = await uploadImageSmart("congratulation", tempId, selectedImage, {
+                        const imageUrl = await uploadImageSmart("congratulation", tempId, selectedMedia.uri, {
                             variant: "large",
                         });
-
-                        contentToSend = typeof imageUrl === 'string' ? imageUrl : imageUrl.public_url;
+                        contentToSend = typeof imageUrl === "string" ? imageUrl : imageUrl.public_url;
                         congratulationType = "image";
                     }
                 } catch (uploadError) {
-                    console.error("Error uploading image:", uploadError);
+                    console.error("Error uploading media:", uploadError);
                     setIsUploading(false);
                     setAlertTitle("Error");
-                    setAlertMessage("Failed to upload image. Please try again.");
+                    setAlertMessage(
+                        uploadError instanceof Error && uploadError.message.includes("too large")
+                            ? uploadError.message
+                            : "Failed to upload media. Please try again."
+                    );
                     setAlertButtons([{ text: "OK", style: "default" }]);
                     setAlertVisible(true);
                     return;
@@ -223,6 +264,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 categoryName: congratulationConfig.categoryName,
                 taskName: task.content,
                 type: congratulationType,
+                ...(thumbnailUrl && { thumbnailUrl }),
+                ...(durationMs && { durationMs }),
                 private: isPrivate,
                 ...(congratulationConfig.postId && { postId: congratulationConfig.postId }), // Include postId if available
             };
@@ -234,7 +277,9 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             if (!isMountedRef.current) return;
 
             capture(AnalyticsEvents.CONGRATULATION_SENT, {
-                has_image: !!selectedImage,
+                has_message: !!congratulationMessage?.trim(),
+                has_image: selectedMedia?.type === "image",
+                has_video: selectedMedia?.type === "video",
             });
 
             setIsUploading(false);
@@ -344,7 +389,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 </View>
             )}
 
-            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedImage ? ["85%"] : ["55%"]}>
+            <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Task Card */}
                 <View style={styles.taskCardContainer}>
@@ -373,8 +418,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     A little goes a long way
                 </ThemedText>
 
-                {/* Text Input or Image Preview */}
-                {!selectedImage ? (
+                {/* Text Input or Media Preview */}
+                {!selectedMedia ? (
                     <View style={styles.inputContainer}>
                         <BottomSheetTextInput
                             placeholder={`Write a message...`}
@@ -388,7 +433,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                         <View style={styles.mediaIconsRow}>
                             <TouchableOpacity
                                 style={styles.iconButton}
-                                onPress={handleImagePick}
+                                onPress={handleMediaPick}
                                 disabled={isUploading}
                             >
                                 <Images size={20} color={ThemedColor.caption} weight="regular" />
@@ -400,20 +445,46 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                             >
                                 <Gif size={20} color={ThemedColor.caption} weight="regular" />
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.iconButton}
+                                onPress={() => setShowRecorder(true)}
+                                disabled={isUploading}
+                            >
+                                <VideoCamera size={20} color={ThemedColor.caption} weight="regular" />
+                            </TouchableOpacity>
                         </View>
+                    </View>
+                ) : selectedMedia.type === "video" ? (
+                    <View style={styles.imagePreviewContainer}>
+                        <View style={styles.videoPreview}>
+                            <KudosVideoPreview uri={selectedMedia.uri} />
+                        </View>
+                        {selectedMedia.durationMs ? (
+                            <View style={styles.durationPill}>
+                                <ThemedText type="caption" style={{ color: "#fff", fontSize: 12 }}>
+                                    {formatVideoDuration(selectedMedia.durationMs)}
+                                </ThemedText>
+                            </View>
+                        ) : null}
+                        <TouchableOpacity
+                            style={styles.removeImageButton}
+                            onPress={() => setSelectedMedia(null)}
+                        >
+                            <Octicons name="x" size={20} color={ThemedColor.text} />
+                        </TouchableOpacity>
                     </View>
                 ) : (
                     <TouchableOpacity
                         style={styles.imagePreviewContainer}
-                        onPress={handleImagePick}
+                        onPress={handleMediaPick}
                         activeOpacity={0.9}
                     >
-                        <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="contain" />
+                        <Image source={{ uri: selectedMedia.uri }} style={styles.imagePreview} resizeMode="contain" />
                         <TouchableOpacity
                             style={styles.removeImageButton}
                             onPress={(e) => {
                                 e.stopPropagation();
-                                setSelectedImage(null);
+                                setSelectedMedia(null);
                             }}
                         >
                             <Octicons name="x" size={20} color={ThemedColor.text} />
@@ -443,7 +514,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     <PrimaryButton
                         title={isUploading ? "Uploading..." : "Send Congratulation"}
                         onPress={handleSendCongratulation}
-                        disabled={(!congratulationMessage.trim() && !selectedImage) || congratulationsLeft === 0 || isUploading}
+                        disabled={(!congratulationMessage.trim() && !selectedMedia) || congratulationsLeft === 0 || isUploading}
                         style={styles.sendButton}
                     />
                     <ThemedText type="caption" style={styles.counterStyled}>
@@ -470,6 +541,16 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                     <GifPicker onGifSelect={handleGifSelect} />
                 </View>
             </Modal>
+
+            <KudosVideoRecorder
+                visible={showRecorder}
+                onClose={() => setShowRecorder(false)}
+                onRecorded={({ uri, durationMs: recordedMs }) => {
+                    setSelectedMedia({ uri, type: "video", durationMs: recordedMs });
+                    setCongratulationMessage("");
+                    setShowRecorder(false);
+                }}
+            />
 
             <CustomAlert
                 visible={alertVisible}
@@ -610,6 +691,22 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             height: 32,
             alignItems: "center",
             justifyContent: "center",
+        },
+        videoPreview: {
+            width: "100%",
+            height: Dimensions.get("window").height * 0.3,
+            borderRadius: 12,
+            overflow: "hidden",
+            backgroundColor: "#000",
+        },
+        durationPill: {
+            position: "absolute",
+            bottom: 8,
+            left: 8,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            borderRadius: 10,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
         },
         gifPickerContainer: {
             flex: 1,

@@ -167,13 +167,15 @@ func (s *CongratulationSenderInternal) ToAPI() *CongratulationSender {
 }
 
 type CreateCongratulationParams struct {
-	Receiver     string `json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID" validate:"required"`
-	Message      string `json:"message" example:"Congratulations on completing your task!" doc:"Congratulation message" validate:"required"`
-	CategoryName string `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
-	TaskName     string `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
-	Type         string `json:"type" example:"message" doc:"Type of congratulation (message or image)" validate:"omitempty,oneof=message image"`
-	PostID       string `json:"postId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Optional post ID associated with the congratulation"`
-	Private      bool   `json:"private,omitempty" doc:"If true, the sender is anonymized to everyone except the receiver"`
+	Receiver     string  `json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID" validate:"required"`
+	Message      string  `json:"message" example:"Congratulations on completing your task!" doc:"Congratulation message" validate:"required"`
+	CategoryName string  `json:"categoryName" example:"Work" doc:"Category name" validate:"required"`
+	TaskName     string  `json:"taskName" example:"Complete project proposal" doc:"Task name" validate:"required"`
+	Type         string  `json:"type" example:"message" doc:"Type of congratulation (message, image, or video)" validate:"omitempty,oneof=message image video"`
+	ThumbnailURL *string `json:"thumbnailUrl,omitempty" example:"https://example.com/thumb.jpg" doc:"Video thumbnail URL (required for video type)" validate:"omitempty,url"`
+	DurationMs   *int    `json:"durationMs,omitempty" example:"15000" doc:"Video duration in milliseconds, max 30000 (required for video type)"`
+	PostID       string  `json:"postId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Optional post ID associated with the congratulation"`
+	Private      bool    `json:"private,omitempty" doc:"If true, the sender is anonymized to everyone except the receiver"`
 }
 
 type CongratulationDocument struct {
@@ -185,7 +187,9 @@ type CongratulationDocument struct {
 	CategoryName string               `bson:"categoryName" json:"categoryName" example:"Work" doc:"Category name"`
 	TaskName     string               `bson:"taskName" json:"taskName" example:"Complete project proposal" doc:"Task name"`
 	Read         bool                 `bson:"read" json:"read" example:"false" doc:"Whether the congratulation has been read"`
-	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message or image)"`
+	Type         string               `bson:"type" json:"type" example:"message" doc:"Type of congratulation (message, image, or video)"`
+	ThumbnailURL *string              `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty" example:"https://example.com/thumb.jpg" doc:"Video thumbnail URL (video type only)"`
+	DurationMs   *int                 `bson:"durationMs,omitempty" json:"durationMs,omitempty" example:"15000" doc:"Video duration in milliseconds (video type only)"`
 	Reaction     *string              `bson:"reaction,omitempty" json:"reaction,omitempty" example:"🙌" doc:"Receiver's emoji reaction"`
 	ReactedAt    *time.Time           `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"When the receiver reacted"`
 	// Populated only by sent queries (kudos documents store just the receiver's ID).
@@ -203,6 +207,8 @@ type CongratulationDocumentInternal struct {
 	TaskName     string                       `bson:"taskName"`
 	Read         bool                         `bson:"read"`
 	Type         string                       `bson:"type"`
+	ThumbnailURL *string                      `bson:"thumbnailUrl,omitempty"`
+	DurationMs   *int                         `bson:"durationMs,omitempty"`
 	PostID       *primitive.ObjectID          `bson:"postId,omitempty"`
 	Private      bool                         `bson:"private,omitempty"`
 	Reaction     *string                      `bson:"reaction,omitempty"`
@@ -229,6 +235,8 @@ func (c *CongratulationDocumentInternal) ToAPI() *CongratulationDocument {
 		TaskName:     c.TaskName,
 		Read:         c.Read,
 		Type:         c.Type,
+		ThumbnailURL: c.ThumbnailURL,
+		DurationMs:   c.DurationMs,
 		Reaction:     c.Reaction,
 		ReactedAt:    c.ReactedAt,
 	}

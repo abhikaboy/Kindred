@@ -145,13 +145,15 @@ func (s *EncouragementSenderInternal) ToAPI() *EncouragementSender {
 }
 
 type CreateEncouragementParams struct {
-	Receiver     string `json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID" validate:"required"`
-	Message      string `json:"message" example:"Great job on completing your task!" doc:"Encouragement message" validate:"required"`
-	Scope        string `json:"scope" example:"task" doc:"Scope of encouragement (task or profile)" validate:"omitempty,oneof=task profile"`
-	CategoryName string `json:"categoryName,omitempty" example:"Work" doc:"Category name (required for task scope)"`
-	TaskName     string `json:"taskName,omitempty" example:"Complete project proposal" doc:"Task name (required for task scope)"`
-	TaskID       string `json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID (required for task scope)"`
-	Type         string `json:"type" example:"message" doc:"Type of encouragement (message or image)" validate:"omitempty,oneof=message image"`
+	Receiver     string  `json:"receiver" example:"507f1f77bcf86cd799439012" doc:"Receiver user ID" validate:"required"`
+	Message      string  `json:"message" example:"Great job on completing your task!" doc:"Encouragement message" validate:"required"`
+	Scope        string  `json:"scope" example:"task" doc:"Scope of encouragement (task or profile)" validate:"omitempty,oneof=task profile"`
+	CategoryName string  `json:"categoryName,omitempty" example:"Work" doc:"Category name (required for task scope)"`
+	TaskName     string  `json:"taskName,omitempty" example:"Complete project proposal" doc:"Task name (required for task scope)"`
+	TaskID       string  `json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID (required for task scope)"`
+	Type         string  `json:"type" example:"message" doc:"Type of encouragement (message, image, or video)" validate:"omitempty,oneof=message image video"`
+	ThumbnailURL *string `json:"thumbnailUrl,omitempty" example:"https://example.com/thumb.jpg" doc:"Video thumbnail URL (required for video type)" validate:"omitempty,url"`
+	DurationMs   *int    `json:"durationMs,omitempty" example:"15000" doc:"Video duration in milliseconds, max 30000 (required for video type)"`
 }
 
 type EncouragementDocument struct {
@@ -166,6 +168,8 @@ type EncouragementDocument struct {
 	TaskID       string              `bson:"taskId,omitempty" json:"taskId,omitempty" example:"507f1f77bcf86cd799439013" doc:"Task ID being encouraged"`
 	Read         bool                `bson:"read" json:"read" example:"false" doc:"Whether the encouragement has been read"`
 	Type         string              `bson:"type" json:"type" example:"message" doc:"Type of encouragement (message or image)"`
+	ThumbnailURL *string             `bson:"thumbnailUrl,omitempty" json:"thumbnailUrl,omitempty" example:"https://example.com/thumb.jpg" doc:"Video thumbnail URL (video type only)"`
+	DurationMs   *int                `bson:"durationMs,omitempty" json:"durationMs,omitempty" example:"15000" doc:"Video duration in milliseconds (video type only)"`
 	Reaction     *string             `bson:"reaction,omitempty" json:"reaction,omitempty" example:"❤️" doc:"Receiver's emoji reaction"`
 	ReactedAt    *time.Time          `bson:"reactedAt,omitempty" json:"reactedAt,omitempty" doc:"When the receiver reacted"`
 	// Populated only by sent queries (kudos documents store just the receiver's ID).
@@ -185,6 +189,8 @@ type EncouragementDocumentInternal struct {
 	TaskID       primitive.ObjectID          `bson:"taskId,omitempty"`
 	Read         bool                        `bson:"read"`
 	Type         string                      `bson:"type"`
+	ThumbnailURL *string                     `bson:"thumbnailUrl,omitempty"`
+	DurationMs   *int                        `bson:"durationMs,omitempty"`
 	Reaction     *string                     `bson:"reaction,omitempty"`
 	ReactedAt    *time.Time                  `bson:"reactedAt,omitempty"`
 }
@@ -200,16 +206,18 @@ type UpdateEncouragementDocument struct {
 // Helper functions to convert between internal and API types
 func (e *EncouragementDocumentInternal) ToAPI() *EncouragementDocument {
 	doc := &EncouragementDocument{
-		ID:        e.ID.Hex(),
-		Sender:    *e.Sender.ToAPI(),
-		Receiver:  e.Receiver.Hex(),
-		Message:   e.Message,
-		Timestamp: e.Timestamp,
-		Scope:     e.Scope,
-		Read:      e.Read,
-		Type:      e.Type,
-		Reaction:  e.Reaction,
-		ReactedAt: e.ReactedAt,
+		ID:           e.ID.Hex(),
+		Sender:       *e.Sender.ToAPI(),
+		Receiver:     e.Receiver.Hex(),
+		Message:      e.Message,
+		Timestamp:    e.Timestamp,
+		Scope:        e.Scope,
+		Read:         e.Read,
+		Type:         e.Type,
+		ThumbnailURL: e.ThumbnailURL,
+		DurationMs:   e.DurationMs,
+		Reaction:     e.Reaction,
+		ReactedAt:    e.ReactedAt,
 	}
 
 	// Include task fields for task-scoped encouragements
