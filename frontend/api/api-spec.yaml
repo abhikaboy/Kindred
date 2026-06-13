@@ -1571,6 +1571,53 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/analytics:
+        get:
+            tags:
+                - Analytics
+            summary: Get analytics dashboard
+            description: Returns the widget-ready analytics payload for the authenticated user, filtered by range, workspace, and category.
+            operationId: get-analytics
+            parameters:
+                - name: range
+                  in: query
+                  description: 'Time range: week, month, or sixmonth'
+                  explode: false
+                  schema:
+                    type: string
+                    description: 'Time range: week, month, or sixmonth'
+                    default: week
+                    enum:
+                        - week
+                        - month
+                        - sixmonth
+                - name: workspace
+                  in: query
+                  description: Workspace name filter (optional; empty = all workspaces)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Workspace name filter (optional; empty = all workspaces)
+                - name: category
+                  in: query
+                  description: Category ID filter (optional; empty = all categories)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Category ID filter (optional; empty = all categories)
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints:
         post:
             tags:
@@ -7254,6 +7301,393 @@ components:
                     type: string
             required:
                 - emoji
+        AnalyticsCategoryHealth:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsCategoryHealthRow'
+            required:
+                - rows
+        AnalyticsCategoryHealthRow:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                done:
+                    type: integer
+                    format: int64
+                kudos:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+                onTimePct:
+                    type: integer
+                    format: int64
+                sparkline:
+                    type: array
+                    items:
+                        type: integer
+                        format: int64
+                status:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - workspace
+                - color
+                - done
+                - onTimePct
+                - kudos
+                - status
+                - sparkline
+        AnalyticsCategoryShare:
+            type: object
+            additionalProperties: false
+            properties:
+                overTime:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareBand'
+                slices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareSlice'
+                takeaway:
+                    type: string
+            required:
+                - slices
+                - overTime
+                - takeaway
+        AnalyticsHabitRow:
+            type: object
+            additionalProperties: false
+            properties:
+                completed:
+                    type: integer
+                    format: int64
+                dots:
+                    type: array
+                    items:
+                        type: boolean
+                frequency:
+                    type: string
+                nextDueAt:
+                    type: string
+                rhythmLabel:
+                    type: string
+                status:
+                    type: string
+                templateId:
+                    type: string
+                title:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - templateId
+                - title
+                - frequency
+                - completed
+                - total
+                - dots
+                - rhythmLabel
+                - status
+        AnalyticsHabits:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsHabitRow'
+                takeaway:
+                    type: string
+            required:
+                - rows
+                - takeaway
+        AnalyticsHeatmap:
+            type: object
+            additionalProperties: false
+            properties:
+                days:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsHeatmapDay'
+                maxCount:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - days
+                - maxCount
+                - total
+                - takeaway
+        AnalyticsHeatmapDay:
+            type: object
+            additionalProperties: false
+            properties:
+                count:
+                    type: integer
+                    format: int64
+                date:
+                    type: string
+                level:
+                    type: integer
+                    format: int64
+            required:
+                - date
+                - count
+                - level
+        AnalyticsLegendItem:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                name:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - color
+        AnalyticsProgress:
+            type: object
+            additionalProperties: false
+            properties:
+                bucketUnit:
+                    type: string
+                buckets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsProgressBucket'
+                delta:
+                    type: number
+                    format: double
+                legend:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsLegendItem'
+                prevTotal:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - total
+                - prevTotal
+                - delta
+                - bucketUnit
+                - buckets
+                - legend
+                - takeaway
+        AnalyticsProgressBucket:
+            type: object
+            additionalProperties: false
+            properties:
+                date:
+                    type: string
+                label:
+                    type: string
+                segments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsProgressSegment'
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - label
+                - date
+                - total
+                - segments
+        AnalyticsProgressSegment:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                count:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - color
+                - count
+        AnalyticsResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AnalyticsResponse.json
+                    readOnly: true
+                categoryFilter:
+                    type: string
+                categoryHealth:
+                    $ref: '#/components/schemas/AnalyticsCategoryHealth'
+                categoryShare:
+                    $ref: '#/components/schemas/AnalyticsCategoryShare'
+                generatedAt:
+                    type: string
+                    format: date-time
+                habits:
+                    $ref: '#/components/schemas/AnalyticsHabits'
+                heatmap:
+                    $ref: '#/components/schemas/AnalyticsHeatmap'
+                progress:
+                    $ref: '#/components/schemas/AnalyticsProgress'
+                range:
+                    type: string
+                signals:
+                    $ref: '#/components/schemas/AnalyticsSignals'
+                workspaceFilter:
+                    type: string
+                workspaceHealth:
+                    $ref: '#/components/schemas/AnalyticsWorkspaceHealth'
+            required:
+                - range
+                - generatedAt
+                - signals
+                - progress
+                - categoryShare
+                - heatmap
+                - habits
+                - categoryHealth
+                - workspaceHealth
+        AnalyticsShareBand:
+            type: object
+            additionalProperties: false
+            properties:
+                label:
+                    type: string
+                slices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareSlice'
+            required:
+                - label
+                - slices
+        AnalyticsShareSlice:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                count:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+                pct:
+                    type: number
+                    format: double
+            required:
+                - categoryId
+                - name
+                - color
+                - count
+                - pct
+        AnalyticsSignal:
+            type: object
+            additionalProperties: false
+            properties:
+                delta:
+                    type: number
+                    format: double
+                deltaLabel:
+                    type: string
+                direction:
+                    type: string
+                label:
+                    type: string
+                rawValue:
+                    type: number
+                    format: double
+                value:
+                    type: string
+            required:
+                - label
+                - value
+                - rawValue
+                - delta
+                - deltaLabel
+                - direction
+        AnalyticsSignals:
+            type: object
+            additionalProperties: false
+            properties:
+                momentum:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+                support:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+                timing:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+            required:
+                - momentum
+                - timing
+                - support
+        AnalyticsWorkspaceHealth:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsWorkspaceHealthRow'
+            required:
+                - rows
+        AnalyticsWorkspaceHealthRow:
+            type: object
+            additionalProperties: false
+            properties:
+                done:
+                    type: integer
+                    format: int64
+                kudos:
+                    type: integer
+                    format: int64
+                onTimePct:
+                    type: integer
+                    format: int64
+                status:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - workspace
+                - done
+                - onTimePct
+                - kudos
+                - status
         ApplyReferralCodeInputBody:
             type: object
             additionalProperties: false

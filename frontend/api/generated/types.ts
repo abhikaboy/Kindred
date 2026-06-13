@@ -948,6 +948,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get analytics dashboard
+         * @description Returns the widget-ready analytics payload for the authenticated user, filtered by range, workspace, and category.
+         */
+        get: operations["get-analytics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints": {
         parameters: {
             query?: never;
@@ -3565,6 +3585,152 @@ export interface components {
              */
             readonly $schema?: string;
             emoji: string;
+        };
+        AnalyticsCategoryHealth: {
+            rows: components["schemas"]["AnalyticsCategoryHealthRow"][];
+        };
+        AnalyticsCategoryHealthRow: {
+            categoryId: string;
+            color: string;
+            /** Format: int64 */
+            done: number;
+            /** Format: int64 */
+            kudos: number;
+            name: string;
+            /** Format: int64 */
+            onTimePct: number;
+            sparkline: number[];
+            status: string;
+            workspace: string;
+        };
+        AnalyticsCategoryShare: {
+            overTime: components["schemas"]["AnalyticsShareBand"][];
+            slices: components["schemas"]["AnalyticsShareSlice"][];
+            takeaway: string;
+        };
+        AnalyticsHabitRow: {
+            /** Format: int64 */
+            completed: number;
+            dots: boolean[];
+            frequency: string;
+            nextDueAt?: string;
+            rhythmLabel: string;
+            status: string;
+            templateId: string;
+            title: string;
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsHabits: {
+            rows: components["schemas"]["AnalyticsHabitRow"][];
+            takeaway: string;
+        };
+        AnalyticsHeatmap: {
+            days: components["schemas"]["AnalyticsHeatmapDay"][];
+            /** Format: int64 */
+            maxCount: number;
+            takeaway: string;
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsHeatmapDay: {
+            /** Format: int64 */
+            count: number;
+            date: string;
+            /** Format: int64 */
+            level: number;
+        };
+        AnalyticsLegendItem: {
+            categoryId: string;
+            color: string;
+            name: string;
+        };
+        AnalyticsProgress: {
+            bucketUnit: string;
+            buckets: components["schemas"]["AnalyticsProgressBucket"][];
+            /** Format: double */
+            delta: number;
+            legend: components["schemas"]["AnalyticsLegendItem"][];
+            /** Format: int64 */
+            prevTotal: number;
+            takeaway: string;
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsProgressBucket: {
+            date: string;
+            label: string;
+            segments: components["schemas"]["AnalyticsProgressSegment"][];
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsProgressSegment: {
+            categoryId: string;
+            color: string;
+            /** Format: int64 */
+            count: number;
+            name: string;
+        };
+        AnalyticsResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AnalyticsResponse.json
+             */
+            readonly $schema?: string;
+            categoryFilter?: string;
+            categoryHealth: components["schemas"]["AnalyticsCategoryHealth"];
+            categoryShare: components["schemas"]["AnalyticsCategoryShare"];
+            /** Format: date-time */
+            generatedAt: string;
+            habits: components["schemas"]["AnalyticsHabits"];
+            heatmap: components["schemas"]["AnalyticsHeatmap"];
+            progress: components["schemas"]["AnalyticsProgress"];
+            range: string;
+            signals: components["schemas"]["AnalyticsSignals"];
+            workspaceFilter?: string;
+            workspaceHealth: components["schemas"]["AnalyticsWorkspaceHealth"];
+        };
+        AnalyticsShareBand: {
+            label: string;
+            slices: components["schemas"]["AnalyticsShareSlice"][];
+        };
+        AnalyticsShareSlice: {
+            categoryId: string;
+            color: string;
+            /** Format: int64 */
+            count: number;
+            name: string;
+            /** Format: double */
+            pct: number;
+        };
+        AnalyticsSignal: {
+            /** Format: double */
+            delta: number;
+            deltaLabel: string;
+            direction: string;
+            label: string;
+            /** Format: double */
+            rawValue: number;
+            value: string;
+        };
+        AnalyticsSignals: {
+            momentum: components["schemas"]["AnalyticsSignal"];
+            support: components["schemas"]["AnalyticsSignal"];
+            timing: components["schemas"]["AnalyticsSignal"];
+        };
+        AnalyticsWorkspaceHealth: {
+            rows: components["schemas"]["AnalyticsWorkspaceHealthRow"][];
+        };
+        AnalyticsWorkspaceHealthRow: {
+            /** Format: int64 */
+            done: number;
+            /** Format: int64 */
+            kudos: number;
+            /** Format: int64 */
+            onTimePct: number;
+            status: string;
+            workspace: string;
         };
         ApplyReferralCodeInputBody: {
             /**
@@ -9544,6 +9710,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeleteAccountOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-analytics": {
+        parameters: {
+            query?: {
+                /** @description Time range: week, month, or sixmonth */
+                range?: "week" | "month" | "sixmonth";
+                /** @description Workspace name filter (optional; empty = all workspaces) */
+                workspace?: string;
+                /** @description Category ID filter (optional; empty = all categories) */
+                category?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsResponse"];
                 };
             };
             /** @description Error */
