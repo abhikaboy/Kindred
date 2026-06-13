@@ -48,7 +48,7 @@ export function WeeklyProgressWidget({ progress, range }: Props) {
             <StackedBarChart buckets={progress.buckets} />
 
             <View style={styles.legend}>
-                {progress.legend.map((item) => (
+                {(progress.legend ?? []).map((item) => (
                     <LegendChip key={item.categoryId} item={item} />
                 ))}
             </View>

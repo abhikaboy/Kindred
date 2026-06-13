@@ -15,7 +15,8 @@ export function WorkspaceHealthWidget({ workspaceHealth, onSelectWorkspace }: Pr
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
 
-    if (workspaceHealth.rows.length === 0) {
+    const rows = workspaceHealth.rows ?? [];
+    if (rows.length === 0) {
         return (
             <WidgetCard title="Workspace health">
                 <ThemedText type="caption">No workspace activity in this period yet.</ThemedText>
@@ -26,7 +27,7 @@ export function WorkspaceHealthWidget({ workspaceHealth, onSelectWorkspace }: Pr
     return (
         <WidgetCard title="Workspace health">
             <View style={styles.list}>
-                {workspaceHealth.rows.map((row) => (
+                {rows.map((row) => (
                     <WorkspaceHealthRowItem key={row.workspace} row={row} onSelectWorkspace={onSelectWorkspace} />
                 ))}
             </View>

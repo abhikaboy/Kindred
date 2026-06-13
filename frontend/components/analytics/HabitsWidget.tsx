@@ -19,11 +19,11 @@ export function HabitsWidget({ habits, onPress }: Props) {
             title="Habits & recurring"
             takeaway={habits.takeaway}
             cta={onPress ? { label: "View habits", onPress } : undefined}>
-            {habits.rows.length === 0 ? (
+            {(habits.rows ?? []).length === 0 ? (
                 <ThemedText type="caption">No recurring tasks yet.</ThemedText>
             ) : (
                 <View style={styles.list}>
-                    {habits.rows.map((row) => (
+                    {(habits.rows ?? []).map((row) => (
                         <HabitRow key={row.templateId} row={row} />
                     ))}
                 </View>
@@ -44,7 +44,7 @@ function HabitRow({ row }: { row: AnalyticsHabitRow }) {
                 <ThemedText type="caption">{row.rhythmLabel}</ThemedText>
             </View>
             <View style={styles.dots}>
-                {row.dots.map((filled, i) => (
+                {(row.dots ?? []).map((filled, i) => (
                     <View
                         key={i}
                         style={[

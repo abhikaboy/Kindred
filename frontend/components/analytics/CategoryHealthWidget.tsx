@@ -16,7 +16,8 @@ export function CategoryHealthWidget({ categoryHealth, onSelectCategory }: Props
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
 
-    if (categoryHealth.rows.length === 0) {
+    const rows = categoryHealth.rows ?? [];
+    if (rows.length === 0) {
         return (
             <WidgetCard title="Category health">
                 <ThemedText type="caption">No category activity in this period yet.</ThemedText>
@@ -27,7 +28,7 @@ export function CategoryHealthWidget({ categoryHealth, onSelectCategory }: Props
     return (
         <WidgetCard title="Category health">
             <View style={styles.list}>
-                {categoryHealth.rows.map((row) => (
+                {rows.map((row) => (
                     <CategoryHealthRowItem key={row.categoryId} row={row} onSelectCategory={onSelectCategory} />
                 ))}
             </View>
@@ -60,7 +61,7 @@ function CategoryHealthRowItem({
                 </View>
             </View>
             <View style={styles.right}>
-                <Sparkline data={row.sparkline} color={row.color} width={48} height={20} />
+                <Sparkline data={row.sparkline ?? []} color={row.color} width={48} height={20} />
                 <StatusPill status={row.status} />
             </View>
         </TouchableOpacity>

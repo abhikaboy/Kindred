@@ -13,9 +13,10 @@ export function MonthHeatmap({ days }: MonthHeatmapProps) {
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
 
+    const safeDays = days ?? [];
     const columns: AnalyticsHeatmapDay[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-        columns.push(days.slice(i, i + 7));
+    for (let i = 0; i < safeDays.length; i += 7) {
+        columns.push(safeDays.slice(i, i + 7));
     }
 
     return (

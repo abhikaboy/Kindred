@@ -424,8 +424,9 @@ func computeProgress(unit string, curStart time.Time, nb int, cur, prev []Analyt
 	segCounts := make([]map[string]int, nb)
 	for i := 0; i < nb; i++ {
 		buckets[i] = AnalyticsProgressBucket{
-			Label: bucketLabel(unit, curStart, i),
-			Date:  bucketStart(unit, curStart, i).Format("2006-01-02"),
+			Label:    bucketLabel(unit, curStart, i),
+			Date:     bucketStart(unit, curStart, i).Format("2006-01-02"),
+			Segments: []AnalyticsProgressSegment{},
 		}
 		segCounts[i] = map[string]int{}
 	}
@@ -531,8 +532,8 @@ func computeShare(unit string, curStart time.Time, nb int, cur []AnalyticsTaskLi
 		})
 	}
 
-	// Bands over time (month / sixmonth only).
-	var bands []AnalyticsShareBand
+	// 100% stacked bands per bucket (month range → weekly bands, sixmonth → monthly).
+	bands := []AnalyticsShareBand{}
 	if unit == "week" || unit == "month" {
 		segCounts := make([]map[string]int, nb)
 		totals := make([]int, nb)
@@ -551,27 +552,23 @@ func computeShare(unit string, curStart time.Time, nb int, cur []AnalyticsTaskLi
 			segCounts[idx][key]++
 			totals[idx]++
 		}
-		// Only emit bands when there's a per-bucket breakdown worth showing.
-		if unit == "month" {
-			bands = make([]AnalyticsShareBand, 0, nb)
-			for i := 0; i < nb; i++ {
-				band := AnalyticsShareBand{Label: bucketLabel(unit, curStart, i)}
-				for _, cid := range top {
-					if c := segCounts[i][cid]; c > 0 {
-						band.Slices = append(band.Slices, AnalyticsShareSlice{
-							CategoryID: cid, Name: nameOf(cid), Color: colorByID[cid],
-							Count: c, Pct: float64(pctInt(c, totals[i])),
-						})
-					}
-				}
-				if c := segCounts[i][otherID]; c > 0 {
+		for i := 0; i < nb; i++ {
+			band := AnalyticsShareBand{Label: bucketLabel(unit, curStart, i), Slices: []AnalyticsShareSlice{}}
+			for _, cid := range top {
+				if c := segCounts[i][cid]; c > 0 {
 					band.Slices = append(band.Slices, AnalyticsShareSlice{
-						CategoryID: otherID, Name: otherName, Color: otherColor,
+						CategoryID: cid, Name: nameOf(cid), Color: colorByID[cid],
 						Count: c, Pct: float64(pctInt(c, totals[i])),
 					})
 				}
-				bands = append(bands, band)
 			}
+			if c := segCounts[i][otherID]; c > 0 {
+				band.Slices = append(band.Slices, AnalyticsShareSlice{
+					CategoryID: otherID, Name: otherName, Color: otherColor,
+					Count: c, Pct: float64(pctInt(c, totals[i])),
+				})
+			}
+			bands = append(bands, band)
 		}
 	}
 
