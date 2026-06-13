@@ -50,6 +50,11 @@ export function AnalyticsHome() {
         setCategory(undefined);
     };
 
+    const goToCategory = (id: string) => router.push(`/(activity)/category/${id}` as Href);
+    const goToWorkspace = (ws: string) => router.push(`/(activity)/workspace/${encodeURIComponent(ws)}` as Href);
+    const goToHabits = () => router.push("/(activity)/habits" as Href);
+    const goToInsight = () => router.push("/(activity)/insight/activity" as Href);
+
     return (
         <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
             <View style={styles.header}>
@@ -95,7 +100,10 @@ export function AnalyticsHome() {
                             id={id}
                             data={data}
                             range={range}
-                            onSelectCategory={setCategory}
+                            onOpenCategory={goToCategory}
+                            onOpenWorkspace={goToWorkspace}
+                            onOpenHabits={goToHabits}
+                            onOpenInsight={goToInsight}
                         />
                     ))
                 )}
@@ -108,24 +116,27 @@ interface WidgetRendererProps {
     id: WidgetId;
     data: AnalyticsResponse;
     range: AnalyticsRange;
-    onSelectCategory: (categoryId: string) => void;
+    onOpenCategory: (categoryId: string) => void;
+    onOpenWorkspace: (workspace: string) => void;
+    onOpenHabits: () => void;
+    onOpenInsight: () => void;
 }
 
 /** Maps a widget id to its component — a proper component, not an inline helper. */
-function WidgetRenderer({ id, data, range, onSelectCategory }: WidgetRendererProps) {
+function WidgetRenderer({ id, data, range, onOpenCategory, onOpenWorkspace, onOpenHabits, onOpenInsight }: WidgetRendererProps) {
     switch (id) {
         case "progress":
             return <WeeklyProgressWidget progress={data.progress} range={range} />;
         case "categoryShare":
-            return <CategoryShareWidget share={data.categoryShare} range={range} onSelectCategory={onSelectCategory} />;
+            return <CategoryShareWidget share={data.categoryShare} range={range} onSelectCategory={onOpenCategory} />;
         case "habits":
-            return <HabitsWidget habits={data.habits} />;
+            return <HabitsWidget habits={data.habits} onPress={onOpenHabits} />;
         case "heatmap":
-            return <ActivityHeatmapWidget heatmap={data.heatmap} />;
+            return <ActivityHeatmapWidget heatmap={data.heatmap} onOpenDetail={onOpenInsight} />;
         case "categoryHealth":
-            return <CategoryHealthWidget categoryHealth={data.categoryHealth} onSelectCategory={onSelectCategory} />;
+            return <CategoryHealthWidget categoryHealth={data.categoryHealth} onSelectCategory={onOpenCategory} />;
         case "workspaceHealth":
-            return <WorkspaceHealthWidget workspaceHealth={data.workspaceHealth} />;
+            return <WorkspaceHealthWidget workspaceHealth={data.workspaceHealth} onSelectWorkspace={onOpenWorkspace} />;
         default:
             return null;
     }
