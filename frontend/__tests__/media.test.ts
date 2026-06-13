@@ -1,4 +1,4 @@
-import { assetsToPickedMedia, resolvePlayableVideo, type PickedMedia } from "../api/media";
+import { assetsToPickedMedia, resolvePlayableVideo, formatVideoDuration, mediaTypeFromUri, type PickedMedia } from "../api/media";
 
 describe("assetsToPickedMedia", () => {
     it("tags each asset as image or video and preserves order", () => {
@@ -44,5 +44,27 @@ describe("resolvePlayableVideo", () => {
             resolvePlayableVideo("file://same.mov", "file://same.mov", getThumbnail)
         ).rejects.toThrow("Cannot Open");
         expect(getThumbnail).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("mediaTypeFromUri", () => {
+    test("classifies remote video URLs by extension", () => {
+        expect(mediaTypeFromUri("https://cdn.example.com/kudos/cheer.mp4")).toBe("video");
+        expect(mediaTypeFromUri("https://cdn.example.com/kudos/cheer.MOV")).toBe("video");
+    });
+
+    test("treats non-video and extension-less URLs as images", () => {
+        expect(mediaTypeFromUri("https://cdn.example.com/kudos/pic.jpg")).toBe("image");
+        expect(mediaTypeFromUri("https://media.tenor.com/abc/tenor.gif")).toBe("image");
+        expect(mediaTypeFromUri("https://cdn.example.com/no-extension")).toBe("image");
+    });
+});
+
+describe("formatVideoDuration", () => {
+    test("formats ms as m:ss", () => {
+        expect(formatVideoDuration(15_000)).toBe("0:15");
+        expect(formatVideoDuration(5_400)).toBe("0:05");
+        expect(formatVideoDuration(30_000)).toBe("0:30");
+        expect(formatVideoDuration(90_000)).toBe("1:30");
     });
 });

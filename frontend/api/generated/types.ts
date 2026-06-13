@@ -4069,6 +4069,12 @@ export interface components {
              */
             categoryName: string;
             /**
+             * Format: int64
+             * @description Video duration in milliseconds (video type only)
+             * @example 15000
+             */
+            durationMs?: number;
+            /**
              * @description Unique identifier for the congratulation
              * @example 507f1f77bcf86cd799439011
              */
@@ -4108,13 +4114,18 @@ export interface components {
              */
             taskName: string;
             /**
+             * @description Video thumbnail URL (video type only)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
+            /**
              * Format: date-time
              * @description Creation timestamp
              * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
             /**
-             * @description Type of congratulation (message or image)
+             * @description Type of congratulation (message, image, or video)
              * @example message
              */
             type: string;
@@ -4292,6 +4303,12 @@ export interface components {
              */
             categoryName: string;
             /**
+             * Format: int64
+             * @description Video duration in milliseconds (video type only)
+             * @example 15000
+             */
+            durationMs?: number;
+            /**
              * @description Unique identifier for the congratulation
              * @example 507f1f77bcf86cd799439011
              */
@@ -4333,13 +4350,18 @@ export interface components {
              */
             taskName: string;
             /**
+             * @description Video thumbnail URL (video type only)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
+            /**
              * Format: date-time
              * @description Creation timestamp
              * @example 2023-01-01T00:00:00Z
              */
             timestamp: string;
             /**
-             * @description Type of congratulation (message or image)
+             * @description Type of congratulation (message, image, or video)
              * @example message
              */
             type: string;
@@ -4356,6 +4378,12 @@ export interface components {
              * @example Work
              */
             categoryName: string;
+            /**
+             * Format: int64
+             * @description Video duration in milliseconds, max 30000 (required for video type)
+             * @example 15000
+             */
+            durationMs?: number;
             /**
              * @description Congratulation message
              * @example Congratulations on completing your task!
@@ -4379,7 +4407,12 @@ export interface components {
              */
             taskName: string;
             /**
-             * @description Type of congratulation (message or image)
+             * @description Video thumbnail URL (required for video type)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
+            /**
+             * @description Type of congratulation (message, image, or video)
              * @example message
              */
             type: string;
@@ -4409,6 +4442,12 @@ export interface components {
              * @example Work
              */
             categoryName?: string;
+            /**
+             * Format: int64
+             * @description Video duration in milliseconds (video type only)
+             * @example 15000
+             */
+            durationMs?: number;
             /**
              * @description Unique identifier for the encouragement
              * @example 507f1f77bcf86cd799439011
@@ -4461,6 +4500,11 @@ export interface components {
              */
             taskName?: string;
             /**
+             * @description Video thumbnail URL (video type only)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
+            /**
              * Format: date-time
              * @description Creation timestamp
              * @example 2023-01-01T00:00:00Z
@@ -4484,6 +4528,12 @@ export interface components {
              * @example Work
              */
             categoryName?: string;
+            /**
+             * Format: int64
+             * @description Video duration in milliseconds, max 30000 (required for video type)
+             * @example 15000
+             */
+            durationMs?: number;
             /**
              * @description Encouragement message
              * @example Great job on completing your task!
@@ -4510,7 +4560,12 @@ export interface components {
              */
             taskName?: string;
             /**
-             * @description Type of encouragement (message or image)
+             * @description Video thumbnail URL (required for video type)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
+            /**
+             * @description Type of encouragement (message, image, or video)
              * @example message
              */
             type: string;
@@ -4970,6 +5025,12 @@ export interface components {
              */
             categoryName?: string;
             /**
+             * Format: int64
+             * @description Video duration in milliseconds (video type only)
+             * @example 15000
+             */
+            durationMs?: number;
+            /**
              * @description Unique identifier for the encouragement
              * @example 507f1f77bcf86cd799439011
              */
@@ -5018,6 +5079,11 @@ export interface components {
              * @example Complete project proposal
              */
             taskName?: string;
+            /**
+             * @description Video thumbnail URL (video type only)
+             * @example https://example.com/thumb.jpg
+             */
+            thumbnailUrl?: string;
             /**
              * Format: date-time
              * @description Creation timestamp
@@ -6063,9 +6129,12 @@ export interface components {
         };
         PostKudos: {
             congratulationId: string;
+            /** Format: int64 */
+            durationMs?: number;
             message: string;
             private?: boolean;
             sender: components["schemas"]["KudosSender"];
+            thumbnailUrl?: string;
             /** Format: date-time */
             timestamp: string;
             type: string;
@@ -6895,9 +6964,12 @@ export interface components {
             workingOnSince?: string;
         };
         TaskKudos: {
+            /** Format: int64 */
+            durationMs?: number;
             encouragementId: string;
             message: string;
             sender: components["schemas"]["KudosSender"];
+            thumbnailUrl?: string;
             /** Format: date-time */
             timestamp: string;
             type: string;

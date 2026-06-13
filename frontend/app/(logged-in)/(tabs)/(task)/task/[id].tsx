@@ -748,6 +748,8 @@ export default function Task() {
                                                 icon={k.sender.icon}
                                                 time={new Date(k.timestamp).getTime()}
                                                 referenceId={task?.id ?? ""}
+                                                thumbnail={k.thumbnailUrl ?? undefined}
+                                                durationMs={k.durationMs ?? undefined}
                                                 type="encouragement"
                                             />
                                         ))}

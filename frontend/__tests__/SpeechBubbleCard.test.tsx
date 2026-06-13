@@ -6,6 +6,15 @@ import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
 // CachedImage wraps expo-image; stub it so tests don't touch native modules.
 jest.mock("@/components/CachedImage", () => "CachedImage");
 
+jest.mock("expo-video", () => ({
+    useVideoPlayer: () => ({}),
+    VideoView: "VideoView",
+}));
+// KudosVideoPlayerModal positions its close button with safe-area insets.
+jest.mock("react-native-safe-area-context", () => ({
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
 const sender = { name: "Sarah", picture: "https://x/a.png", id: "u1" };
 
 describe("SpeechBubbleCard", () => {
@@ -57,6 +66,36 @@ describe("SpeechBubbleCard", () => {
         );
         getByTestId("bubble-image");
         expect(queryByText("should be hidden")).toBeNull();
+    });
+
+    test("renders the video thumbnail with duration (not message text) when video props are set", () => {
+        const { getByTestId, getByText, queryByText } = render(
+            <SpeechBubbleCard
+                sender={sender}
+                message="should be hidden"
+                videoUri="https://x/cheer.mp4"
+                videoThumbnailUri="https://x/cheer-thumb.jpg"
+                videoDurationMs={15000}
+                timeLabel="now"
+            />,
+        );
+        getByTestId("bubble-video");
+        getByText("0:15");
+        expect(queryByText("should be hidden")).toBeNull();
+    });
+
+    test("tapping the video thumbnail opens the fullscreen player", () => {
+        const { getByTestId, queryByTestId } = render(
+            <SpeechBubbleCard
+                sender={sender}
+                videoUri="https://x/cheer.mp4"
+                videoThumbnailUri="https://x/cheer-thumb.jpg"
+                timeLabel="now"
+            />,
+        );
+        expect(queryByTestId("kudos-video-close")).toBeNull();
+        fireEvent.press(getByTestId("bubble-video"));
+        getByTestId("kudos-video-close");
     });
 
     test("renders footerSlot beside the time", () => {

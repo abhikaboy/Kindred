@@ -54,6 +54,10 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		congratulationType = "message"
 	}
 
+	if err := types.ValidateVideoKudos(congratulationType, input.Body.ThumbnailURL, input.Body.DurationMs); err != nil {
+		return nil, huma.Error422UnprocessableEntity(err.Error())
+	}
+
 	// Parse postId if provided
 	var postID *primitive.ObjectID
 	if input.Body.PostID != "" {
@@ -74,6 +78,8 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		TaskName:     input.Body.TaskName,
 		Read:         false,
 		Type:         congratulationType,
+		ThumbnailURL: input.Body.ThumbnailURL,
+		DurationMs:   input.Body.DurationMs,
 		PostID:       postID,
 		Private:      input.Body.Private,
 	}

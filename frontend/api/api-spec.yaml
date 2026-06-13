@@ -8091,6 +8091,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the congratulation
@@ -8131,6 +8137,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -8139,7 +8150,7 @@ components:
                         - "2023-01-01T00:00:00Z"
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -8388,6 +8399,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the congratulation
@@ -8431,6 +8448,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -8439,7 +8461,7 @@ components:
                         - "2023-01-01T00:00:00Z"
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -8468,6 +8490,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds, max 30000 (required for video type)
+                    format: int64
+                    examples:
+                        - 15000
                 message:
                     type: string
                     description: Congratulation message
@@ -8491,9 +8519,14 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (required for video type)
+                    examples:
+                        - https://example.com/thumb.jpg
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -8536,6 +8569,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the encouragement
@@ -8589,6 +8628,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -8625,6 +8669,12 @@ components:
                     description: Category name (required for task scope)
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds, max 30000 (required for video type)
+                    format: int64
+                    examples:
+                        - 15000
                 message:
                     type: string
                     description: Encouragement message
@@ -8650,9 +8700,14 @@ components:
                     description: Task name (required for task scope)
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (required for video type)
+                    examples:
+                        - https://example.com/thumb.jpg
                 type:
                     type: string
-                    description: Type of encouragement (message or image)
+                    description: Type of encouragement (message, image, or video)
                     examples:
                         - message
             required:
@@ -9502,6 +9557,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the encouragement
@@ -9552,6 +9613,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -11453,12 +11519,17 @@ components:
             properties:
                 congratulationId:
                     type: string
+                durationMs:
+                    type: integer
+                    format: int64
                 message:
                     type: string
                 private:
                     type: boolean
                 sender:
                     $ref: '#/components/schemas/KudosSender'
+                thumbnailUrl:
+                    type: string
                 timestamp:
                     type: string
                     format: date-time
@@ -13056,12 +13127,17 @@ components:
             type: object
             additionalProperties: false
             properties:
+                durationMs:
+                    type: integer
+                    format: int64
                 encouragementId:
                     type: string
                 message:
                     type: string
                 sender:
                     $ref: '#/components/schemas/KudosSender'
+                thumbnailUrl:
+                    type: string
                 timestamp:
                     type: string
                     format: date-time

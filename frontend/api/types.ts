@@ -75,7 +75,9 @@ export interface TaskKudos {
     sender: KudosSender;
     message: string;
     timestamp: string;
-    type: string; // "message" | "image"
+    type: string; // "message" | "image" | "video"
+    thumbnailUrl?: string; // video kudos: poster frame URL
+    durationMs?: number;  // video kudos: clip length
 }
 
 export interface PostKudos {
@@ -83,7 +85,9 @@ export interface PostKudos {
     sender: KudosSender;
     message: string;
     timestamp: string;
-    type?: string; // "message" | "image" (image => message holds the URL/GIF)
+    type?: string; // "message" | "image" | "video"
+    thumbnailUrl?: string; // video kudos: poster frame URL
+    durationMs?: number;  // video kudos: clip length
     // Private congrats are anonymized for non-owners: backend strips sender +
     // message, leaving private=true. Owner still receives the real sender.
     private?: boolean;
