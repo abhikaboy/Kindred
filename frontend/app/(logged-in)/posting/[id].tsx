@@ -9,6 +9,7 @@ import { getPostById } from "@/api/post";
 import { Ionicons } from "@expo/vector-icons";
 import { showToast } from "@/utils/showToast";
 import { useNavigation } from "expo-router";
+import { feedActivePost } from "@/utils/feedSongPlayback";
 
 export default function PostDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,6 +20,12 @@ export default function PostDetail() {
     const [post, setPost] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // No feed viewability here, so mark this post active so its song can play.
+    useEffect(() => {
+        if (post?._id) feedActivePost.set(post._id);
+        return () => feedActivePost.set(null);
+    }, [post?._id]);
 
     const handleBack = () => {
         if (navigation.canGoBack()) {
