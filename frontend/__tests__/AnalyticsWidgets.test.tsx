@@ -11,6 +11,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 
 import { SignalStrip } from "@/components/analytics/SignalStrip";
 import { StatusPill } from "@/components/analytics/StatusPill";
+import { StatCards } from "@/components/analytics/StatCards";
+import { TasksNeedingAttentionWidget } from "@/components/analytics/TasksNeedingAttentionWidget";
 import {
     moveItem,
     sanitizeOrder,
@@ -105,5 +107,48 @@ describe("StatusPill", () => {
     test("renders the friendly status label", () => {
         const { getByText } = render(<StatusPill status="slipping" />);
         getByText("Slipping");
+    });
+});
+
+describe("StatCards", () => {
+    test("renders label/value pairs", () => {
+        const { getByText } = render(
+            <StatCards
+                items={[
+                    { label: "Done", value: "8" },
+                    { label: "On time", value: "68%" },
+                ]}
+            />,
+        );
+        getByText("Done");
+        getByText("8");
+        getByText("On time");
+        getByText("68%");
+    });
+});
+
+describe("TasksNeedingAttentionWidget", () => {
+    test("shows an empty state when nothing is flagged", () => {
+        const { getByText } = render(<TasksNeedingAttentionWidget attention={{ tasks: [] }} />);
+        getByText(/Nothing needs attention/);
+    });
+
+    test("renders a flagged task with its reasons", () => {
+        const attention: any = {
+            tasks: [
+                {
+                    id: "1",
+                    title: "Problem Set",
+                    workspace: "School",
+                    category: "Assignments",
+                    categoryId: "c1",
+                    daysOpen: 6,
+                    reasons: ["No Kudos", "Open 6 days"],
+                },
+            ],
+        };
+        const { getByText } = render(<TasksNeedingAttentionWidget attention={attention} />);
+        getByText("Problem Set");
+        getByText("No Kudos");
     });
 });

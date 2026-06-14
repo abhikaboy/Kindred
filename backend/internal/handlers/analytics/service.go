@@ -12,6 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// proxyCategoryName is the sentinel name for placeholder categories that only
+// carry workspace metadata (see category handler). They are not real categories
+// and must be excluded from analytics.
+const proxyCategoryName = "!-proxy-!"
+
 // Service loads the raw corpus for a user and delegates the math to the pure
 // computeAnalytics function so the heavy logic stays unit-testable.
 type Service struct {
@@ -48,7 +53,7 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
-	categories, err := s.loadCategories(ctx, userID)
+	categories, openTasks, proxyIDs, err := s.loadCategories(ctx, userID)
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
@@ -60,15 +65,17 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 	supportPrev := s.countSupport(ctx, userID, prevStart, prevEnd)
 
 	in := computeInput{
-		Range:           rng,
-		Now:             now,
-		WorkspaceFilter: workspace,
-		CategoryFilter:  category,
-		Completed:       completed,
-		Categories:      categories,
-		Habits:          habits,
-		SupportCurrent:  supportCur,
-		SupportPrev:     supportPrev,
+		Range:            rng,
+		Now:              now,
+		WorkspaceFilter:  workspace,
+		CategoryFilter:   category,
+		Completed:        completed,
+		Categories:       categories,
+		Habits:           habits,
+		OpenTasks:        openTasks,
+		ProxyCategoryIDs: proxyIDs,
+		SupportCurrent:   supportCur,
+		SupportPrev:      supportPrev,
 	}
 	return computeAnalytics(in), nil
 }
@@ -111,30 +118,52 @@ func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, 
 	return out, cursor.Err()
 }
 
-func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, error) {
+// loadCategories returns both category metadata and the user's open (active)
+// tasks. Both come from the single categories query — open tasks are embedded
+// in the category documents, so there's no extra round trip.
+func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, []AnalyticsOpenTaskLite, map[string]bool, error) {
 	if s.Categories == nil {
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 	cursor, err := s.Categories.Find(ctx, bson.M{"user": userID})
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	defer cursor.Close(ctx)
 
-	out := []AnalyticsCategoryMeta{}
+	meta := []AnalyticsCategoryMeta{}
+	open := []AnalyticsOpenTaskLite{}
+	proxy := map[string]bool{}
 	for cursor.Next(ctx) {
 		var c types.CategoryDocument
 		if err := cursor.Decode(&c); err != nil {
 			slog.Warn("analytics: skipping undecodable category", "error", err)
 			continue
 		}
-		out = append(out, AnalyticsCategoryMeta{
-			ID:        c.ID.Hex(),
-			Name:      c.Name,
-			Workspace: c.WorkspaceName,
-		})
+		catID := c.ID.Hex()
+		if c.Name == proxyCategoryName {
+			// Placeholder category — record its id so its tasks are dropped,
+			// and skip it from metadata and open tasks entirely.
+			proxy[catID] = true
+			continue
+		}
+		meta = append(meta, AnalyticsCategoryMeta{ID: catID, Name: c.Name, Workspace: c.WorkspaceName})
+		for _, t := range c.Tasks {
+			if !t.Active {
+				continue
+			}
+			open = append(open, AnalyticsOpenTaskLite{
+				ID:         t.ID.Hex(),
+				Title:      t.Content,
+				CategoryID: catID,
+				CreatedAt:  t.Timestamp,
+				Deadline:   t.Deadline,
+				Priority:   t.Priority,
+				KudosCount: len(t.Encouragements),
+			})
+		}
 	}
-	return out, cursor.Err()
+	return meta, open, proxy, cursor.Err()
 }
 
 func (s *Service) loadHabits(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsHabitLite, error) {

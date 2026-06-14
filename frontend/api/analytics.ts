@@ -24,6 +24,10 @@ export type AnalyticsCategoryHealth = components["schemas"]["AnalyticsCategoryHe
 export type AnalyticsCategoryHealthRow = components["schemas"]["AnalyticsCategoryHealthRow"];
 export type AnalyticsWorkspaceHealth = components["schemas"]["AnalyticsWorkspaceHealth"];
 export type AnalyticsWorkspaceHealthRow = components["schemas"]["AnalyticsWorkspaceHealthRow"];
+export type AnalyticsBestTime = components["schemas"]["AnalyticsBestTime"];
+export type AnalyticsBestTimeCell = components["schemas"]["AnalyticsBestTimeCell"];
+export type AnalyticsAttention = components["schemas"]["AnalyticsAttention"];
+export type AnalyticsAttentionTask = components["schemas"]["AnalyticsAttentionTask"];
 
 export type AnalyticsRange = "week" | "month" | "sixmonth";
 

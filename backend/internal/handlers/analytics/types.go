@@ -41,6 +41,41 @@ type AnalyticsResponse struct {
 	Habits          AnalyticsHabits          `json:"habits"`
 	CategoryHealth  AnalyticsCategoryHealth  `json:"categoryHealth"`
 	WorkspaceHealth AnalyticsWorkspaceHealth `json:"workspaceHealth"`
+	BestTime        AnalyticsBestTime        `json:"bestTime"`
+	Attention       AnalyticsAttention       `json:"attention"`
+}
+
+// AnalyticsBestTimeCell is one weekday×hour bucket of completion activity.
+// Weekday is Monday-indexed (0 = Mon … 6 = Sun).
+type AnalyticsBestTimeCell struct {
+	Weekday int `json:"weekday"`
+	Hour    int `json:"hour"`
+	Count   int `json:"count"`
+	Level   int `json:"level"`
+}
+
+// AnalyticsBestTime backs the hour×weekday "best time of day" heatmap. Only
+// non-zero cells are emitted; the client fills the rest of the grid.
+type AnalyticsBestTime struct {
+	Cells    []AnalyticsBestTimeCell `json:"cells"`
+	MaxCount int                     `json:"maxCount"`
+	Takeaway string                  `json:"takeaway"`
+}
+
+// AnalyticsAttentionTask is one open task flagged as needing attention.
+type AnalyticsAttentionTask struct {
+	ID         string   `json:"id"`
+	Title      string   `json:"title"`
+	Workspace  string   `json:"workspace"`
+	Category   string   `json:"category"`
+	CategoryID string   `json:"categoryId"`
+	Deadline   *string  `json:"deadline,omitempty"`
+	DaysOpen   int      `json:"daysOpen"`
+	Reasons    []string `json:"reasons"`
+}
+
+type AnalyticsAttention struct {
+	Tasks []AnalyticsAttentionTask `json:"tasks"`
 }
 
 // AnalyticsSignal is one stat in the signal strip (momentum / timing / support).
