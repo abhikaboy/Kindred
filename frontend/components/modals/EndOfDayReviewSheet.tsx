@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { BottomSheetScrollView, BottomSheetTextInput, type BottomSheetScrollViewMethods } from "@gorhom/bottom-sheet";
 import { CheckCircleIcon, CircleIcon, PlusCircleIcon, XCircleIcon } from "phosphor-react-native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -76,7 +76,6 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const { workspaces, selected, removeFromCategory, fetchWorkspaces } = useTasks();
-    const { height: windowHeight } = useWindowDimensions();
     const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
 
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
@@ -157,14 +156,18 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     };
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible} enableContentPanningGesture={false}>
+        <DefaultModal
+            visible={visible}
+            setVisible={setVisible}
+            enableContentPanningGesture={false}
+            keyboardBehavior="extend">
             <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
                 How did today go?
             </ThemedText>
 
             <BottomSheetScrollView
                 ref={scrollRef}
-                style={{ maxHeight: windowHeight * 0.42 }}
+                style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator
                 keyboardShouldPersistTaps="handled"
@@ -195,9 +198,9 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                 </View>
             </BottomSheetScrollView>
 
+            {/* Pinned footer; with keyboardBehavior="extend" the content region
+                shrinks for the keyboard so the whole footer stays above it. */}
             <View style={[styles.footer, { borderTopColor: ThemedColor.tertiary }]}>
-                {/* Button above the input: the keyboard only lifts enough to reveal
-                    the focused (bottom-most) input, so the button stays uncovered. */}
                 <PrimaryButton
                     title={submitting ? "Logging…" : "Log my day"}
                     onPress={handleSubmit}
@@ -226,6 +229,11 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
 const styles = StyleSheet.create({
     heading: {
         marginBottom: 16,
+    },
+    // Flex so the list fills the space above the footer; the footer pins to the
+    // bottom and rides up with the keyboard (extend) instead of being covered.
+    scroll: {
+        flex: 1,
     },
     scrollContent: {
         paddingBottom: 8,
