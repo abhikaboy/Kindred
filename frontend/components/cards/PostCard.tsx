@@ -28,7 +28,6 @@ import * as SMS from 'expo-sms';
 import PostCardHeader from "./PostCardHeader";
 import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
-import PostSongPill from "./PostSongPill";
 import { getUsersByIds, type UserExtendedReference } from "@/api/profile";
 import { buildReactionGroups, type ReactionGroup } from "@/utils/reactions";
 import ReactionsBottomSheetModal from "@/components/modals/ReactionsBottomSheetModal";
@@ -650,6 +649,8 @@ const PostCard = React.memo(({
                         taggedUsers={taggedUsers}
                         timeLabel={formatTime(time)}
                         onOptionsPress={showPostOptions}
+                        song={song}
+                        postId={id}
                     />
                     {hasMediaContent && (
                         <PostCardMedia
@@ -661,7 +662,6 @@ const PostCard = React.memo(({
                             onImageLongPress={openModal}
                         />
                     )}
-                    {song && <PostSongPill song={song} postId={id} />}
                     <PostCardFooter
                         caption={caption}
                         taggedUsers={taggedUsers}

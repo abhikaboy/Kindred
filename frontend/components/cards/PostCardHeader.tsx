@@ -8,6 +8,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import type { TaggedUser } from "./types";
+import type { components } from "@/api/generated/types";
+import PostSongBar from "./PostSongBar";
 
 // Tagged users display by name; fall back to their handle without the leading "@".
 const taggedDisplayName = (u: TaggedUser) => u.name?.trim() || u.handle.replace(/^@/, "");
@@ -48,6 +50,8 @@ export type PostCardHeaderProps = {
     onOptionsPress?: () => void;
     /** If true, the user info row is not pressable (e.g. in preview mode) */
     disableNavigation?: boolean;
+    song?: components["schemas"]["Song"];
+    postId?: string;
 };
 
 const PostCardHeader = ({
@@ -59,6 +63,8 @@ const PostCardHeader = ({
     timeLabel,
     onOptionsPress,
     disableNavigation = false,
+    song,
+    postId,
 }: PostCardHeaderProps) => {
     const ThemedColor = useThemeColor();
 
@@ -155,6 +161,7 @@ const PostCardHeader = ({
                             ) : null}
                         </View>
                     ) : null}
+                    {song ? <PostSongBar song={song} postId={postId} /> : null}
                 </View>
             </View>
             <View style={styles.timeAndMenu}>
