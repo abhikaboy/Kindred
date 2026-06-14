@@ -43,6 +43,37 @@ type AnalyticsResponse struct {
 	WorkspaceHealth AnalyticsWorkspaceHealth `json:"workspaceHealth"`
 	BestTime        AnalyticsBestTime        `json:"bestTime"`
 	Attention       AnalyticsAttention       `json:"attention"`
+	KudosEffect     AnalyticsKudosEffect     `json:"kudosEffect"`
+	SupportCoverage AnalyticsSupportCoverage `json:"supportCoverage"`
+	TopSupporters   []AnalyticsSupporter     `json:"topSupporters"`
+}
+
+// AnalyticsKudosEffect compares median time-to-finish for tasks with vs without
+// Kudos. Intentionally non-causal; HasComparison gates the comparison copy.
+type AnalyticsKudosEffect struct {
+	WithKudosMedianHours    float64 `json:"withKudosMedianHours"`
+	WithoutKudosMedianHours float64 `json:"withoutKudosMedianHours"`
+	WithCount               int     `json:"withCount"`
+	WithoutCount            int     `json:"withoutCount"`
+	HasComparison           bool    `json:"hasComparison"`
+	Takeaway                string  `json:"takeaway"`
+}
+
+// AnalyticsSupportCoverage is the share of completed tasks that had support
+// (Kudos or a tagged friend).
+type AnalyticsSupportCoverage struct {
+	Pct       int    `json:"pct"`
+	Supported int    `json:"supported"`
+	Total     int    `json:"total"`
+	Takeaway  string `json:"takeaway"`
+}
+
+// AnalyticsSupporter is one person who sent the user Kudos in the period.
+type AnalyticsSupporter struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Icon  string `json:"icon"`
+	Count int    `json:"count"`
 }
 
 // AnalyticsBestTimeCell is one weekday×hour bucket of completion activity.

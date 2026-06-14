@@ -3,6 +3,7 @@ package analytics
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -77,7 +78,63 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 		SupportCurrent:   supportCur,
 		SupportPrev:      supportPrev,
 	}
-	return computeAnalytics(in), nil
+	resp := computeAnalytics(in)
+	resp.TopSupporters = s.loadTopSupporters(ctx, userID, curStart, curEnd)
+	return resp, nil
+}
+
+// loadTopSupporters returns the people who sent the user the most Kudos in the
+// window, for the "who showed up" / top-supporters surfaces.
+func (s *Service) loadTopSupporters(ctx context.Context, userID primitive.ObjectID, start, end time.Time) []AnalyticsSupporter {
+	supporters := []AnalyticsSupporter{}
+	if s.Encouragements == nil {
+		return supporters
+	}
+	cursor, err := s.Encouragements.Find(ctx, bson.M{
+		"receiver":  userID,
+		"timestamp": bson.M{"$gte": start, "$lt": end},
+	})
+	if err != nil {
+		slog.Warn("analytics: top supporters query failed", "error", err)
+		return supporters
+	}
+	defer cursor.Close(ctx)
+
+	type agg struct {
+		name, icon string
+		count      int
+	}
+	by := map[string]*agg{}
+	order := []string{}
+	for cursor.Next(ctx) {
+		var e struct {
+			Sender struct {
+				Name    string             `bson:"name"`
+				Picture string             `bson:"picture"`
+				ID      primitive.ObjectID `bson:"id"`
+			} `bson:"sender"`
+		}
+		if err := cursor.Decode(&e); err != nil {
+			continue
+		}
+		id := e.Sender.ID.Hex()
+		a, ok := by[id]
+		if !ok {
+			a = &agg{name: e.Sender.Name, icon: e.Sender.Picture}
+			by[id] = a
+			order = append(order, id)
+		}
+		a.count++
+	}
+	for _, id := range order {
+		a := by[id]
+		supporters = append(supporters, AnalyticsSupporter{ID: id, Name: a.name, Icon: a.icon, Count: a.count})
+	}
+	sort.SliceStable(supporters, func(i, j int) bool { return supporters[i].Count > supporters[j].Count })
+	if len(supporters) > 5 {
+		supporters = supporters[:5]
+	}
+	return supporters
 }
 
 func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, since time.Time) ([]AnalyticsTaskLite, error) {
@@ -110,9 +167,11 @@ func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, 
 		}
 		out = append(out, AnalyticsTaskLite{
 			CategoryID:  catID,
+			CreatedAt:   t.Timestamp,
 			CompletedAt: t.TimeCompleted.UTC(),
 			Deadline:    t.Deadline,
 			KudosCount:  len(t.Encouragements),
+			HasTag:      len(t.TaggedUsers) > 0,
 		})
 	}
 	return out, cursor.Err()

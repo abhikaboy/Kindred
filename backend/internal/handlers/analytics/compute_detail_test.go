@@ -93,3 +93,37 @@ func TestComputeAnalytics_ExcludesProxyCategories(t *testing.T) {
 		t.Errorf("proxy open task should be excluded from attention, got %d", len(resp.Attention.Tasks))
 	}
 }
+
+func TestComputeKudosEffectAndSupportCoverage(t *testing.T) {
+	completed := time.Date(2025, 5, 13, 12, 0, 0, 0, time.UTC) // Tuesday, in the week window
+	mk := func(kudos int, hours float64, tagged bool) AnalyticsTaskLite {
+		return AnalyticsTaskLite{
+			CategoryID:  "school",
+			CreatedAt:   completed.Add(-time.Duration(hours * float64(time.Hour))),
+			CompletedAt: completed,
+			KudosCount:  kudos,
+			HasTag:      tagged,
+		}
+	}
+	cur := []AnalyticsTaskLite{
+		mk(1, 1, false), mk(2, 2, false), mk(1, 1, false), // with kudos, fast
+		mk(0, 10, false), mk(0, 12, false), mk(0, 11, false), // no kudos, slow
+	}
+	resp := computeAnalytics(computeInput{Range: RangeWeek, Now: fixedNow, Categories: baseCategories(), Completed: cur})
+
+	ke := resp.KudosEffect
+	if !ke.HasComparison {
+		t.Fatalf("expected HasComparison true (with=%d without=%d)", ke.WithCount, ke.WithoutCount)
+	}
+	if ke.WithKudosMedianHours >= ke.WithoutKudosMedianHours {
+		t.Errorf("with-kudos median %v should be < without %v", ke.WithKudosMedianHours, ke.WithoutKudosMedianHours)
+	}
+	if !strings.Contains(ke.Takeaway, "faster") {
+		t.Errorf("kudos-effect takeaway = %q, want it to mention faster", ke.Takeaway)
+	}
+
+	sc := resp.SupportCoverage
+	if sc.Total != 6 || sc.Supported != 3 || sc.Pct != 50 {
+		t.Errorf("support coverage = %d/%d (%d%%), want 3/6 (50%%)", sc.Supported, sc.Total, sc.Pct)
+	}
+}

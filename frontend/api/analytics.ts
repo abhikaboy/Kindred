@@ -28,6 +28,9 @@ export type AnalyticsBestTime = components["schemas"]["AnalyticsBestTime"];
 export type AnalyticsBestTimeCell = components["schemas"]["AnalyticsBestTimeCell"];
 export type AnalyticsAttention = components["schemas"]["AnalyticsAttention"];
 export type AnalyticsAttentionTask = components["schemas"]["AnalyticsAttentionTask"];
+export type AnalyticsKudosEffect = components["schemas"]["AnalyticsKudosEffect"];
+export type AnalyticsSupportCoverage = components["schemas"]["AnalyticsSupportCoverage"];
+export type AnalyticsSupporter = components["schemas"]["AnalyticsSupporter"];
 
 export type AnalyticsRange = "week" | "month" | "sixmonth";
 
