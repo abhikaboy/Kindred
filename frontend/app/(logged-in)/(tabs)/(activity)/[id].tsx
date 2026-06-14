@@ -17,6 +17,7 @@ import { buildTagAggregates, selectedTagTemplateIds } from "@/utils/tagBreakdown
 import { useAuth } from "@/hooks/useAuth";
 import { RecurringTaskCard } from "@/components/activity/RecurringTaskCard";
 import CalendarMonth, { CELL_SIZE, GRID_GAP } from "@/components/activity/CalendarMonth";
+import { FriendView } from "@/components/analytics/FriendView";
 
 const month_names = [
     "January", "February", "March", "April", "May", "June",
@@ -384,7 +385,20 @@ const Activity = () => {
     );
 };
 
-export default Activity;
+// Route wrapper: viewing another user shows the privacy-safe minimal Friend
+// View; your own id falls through to the full activity screen.
+export default function ActivityRoute() {
+    const { user } = useAuth();
+    const params = useLocalSearchParams();
+    const friendId = params.id as string;
+    const displayName = params.displayName as string | undefined;
+    const isFriend = !!displayName && friendId !== user?._id;
+
+    if (isFriend) {
+        return <FriendView userId={friendId} displayName={displayName} handle={params.handle as string | undefined} />;
+    }
+    return <Activity />;
+}
 
 // --- Page Styles ---
 

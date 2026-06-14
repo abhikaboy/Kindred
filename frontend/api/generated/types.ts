@@ -3670,6 +3670,18 @@ export interface components {
             /** Format: int64 */
             level: number;
         };
+        AnalyticsKudosEffect: {
+            hasComparison: boolean;
+            takeaway: string;
+            /** Format: int64 */
+            withCount: number;
+            /** Format: double */
+            withKudosMedianHours: number;
+            /** Format: int64 */
+            withoutCount: number;
+            /** Format: double */
+            withoutKudosMedianHours: number;
+        };
         AnalyticsLegendItem: {
             categoryId: string;
             color: string;
@@ -3717,9 +3729,12 @@ export interface components {
             generatedAt: string;
             habits: components["schemas"]["AnalyticsHabits"];
             heatmap: components["schemas"]["AnalyticsHeatmap"];
+            kudosEffect: components["schemas"]["AnalyticsKudosEffect"];
             progress: components["schemas"]["AnalyticsProgress"];
             range: string;
             signals: components["schemas"]["AnalyticsSignals"];
+            supportCoverage: components["schemas"]["AnalyticsSupportCoverage"];
+            topSupporters: components["schemas"]["AnalyticsSupporter"][];
             workspaceFilter?: string;
             workspaceHealth: components["schemas"]["AnalyticsWorkspaceHealth"];
         };
@@ -3750,6 +3765,22 @@ export interface components {
             momentum: components["schemas"]["AnalyticsSignal"];
             support: components["schemas"]["AnalyticsSignal"];
             timing: components["schemas"]["AnalyticsSignal"];
+        };
+        AnalyticsSupportCoverage: {
+            /** Format: int64 */
+            pct: number;
+            /** Format: int64 */
+            supported: number;
+            takeaway: string;
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsSupporter: {
+            /** Format: int64 */
+            count: number;
+            icon: string;
+            id: string;
+            name: string;
         };
         AnalyticsWorkspaceHealth: {
             rows: components["schemas"]["AnalyticsWorkspaceHealthRow"][];

@@ -19,6 +19,9 @@ import { ActivityHeatmapWidget } from "./ActivityHeatmapWidget";
 import { HabitsWidget } from "./HabitsWidget";
 import { CategoryHealthWidget } from "./CategoryHealthWidget";
 import { WorkspaceHealthWidget } from "./WorkspaceHealthWidget";
+import { KudosEffectWidget } from "./KudosEffectWidget";
+import { SupportCoverageWidget } from "./SupportCoverageWidget";
+import { WeeklyReviewWidget } from "./WeeklyReviewWidget";
 
 const EDIT_HREF = "/(activity)/edit" as Href;
 
@@ -55,6 +58,7 @@ export function AnalyticsHome() {
     const goToWorkspace = (ws: string) => router.push(`/(activity)/workspace/${encodeURIComponent(ws)}` as Href);
     const goToHabits = () => router.push("/(activity)/habits" as Href);
     const goToInsight = () => router.push("/(activity)/insight/activity" as Href);
+    const goToWeeklyReview = () => router.push("/(activity)/weekly-review" as Href);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -105,6 +109,7 @@ export function AnalyticsHome() {
                             onOpenWorkspace={goToWorkspace}
                             onOpenHabits={goToHabits}
                             onOpenInsight={goToInsight}
+                            onOpenWeeklyReview={goToWeeklyReview}
                         />
                     ))
                 )}
@@ -121,10 +126,11 @@ interface WidgetRendererProps {
     onOpenWorkspace: (workspace: string) => void;
     onOpenHabits: () => void;
     onOpenInsight: () => void;
+    onOpenWeeklyReview: () => void;
 }
 
 /** Maps a widget id to its component — a proper component, not an inline helper. */
-function WidgetRenderer({ id, data, range, onOpenCategory, onOpenWorkspace, onOpenHabits, onOpenInsight }: WidgetRendererProps) {
+function WidgetRenderer({ id, data, range, onOpenCategory, onOpenWorkspace, onOpenHabits, onOpenInsight, onOpenWeeklyReview }: WidgetRendererProps) {
     switch (id) {
         case "progress":
             return <WeeklyProgressWidget progress={data.progress} range={range} />;
@@ -138,6 +144,12 @@ function WidgetRenderer({ id, data, range, onOpenCategory, onOpenWorkspace, onOp
             return <CategoryHealthWidget categoryHealth={data.categoryHealth} onSelectCategory={onOpenCategory} />;
         case "workspaceHealth":
             return <WorkspaceHealthWidget workspaceHealth={data.workspaceHealth} onSelectWorkspace={onOpenWorkspace} />;
+        case "kudosEffect":
+            return <KudosEffectWidget kudosEffect={data.kudosEffect} />;
+        case "supportCoverage":
+            return <SupportCoverageWidget supportCoverage={data.supportCoverage} />;
+        case "weeklyReview":
+            return <WeeklyReviewWidget onOpen={onOpenWeeklyReview} />;
         default:
             return null;
     }

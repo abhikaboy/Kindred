@@ -7,7 +7,10 @@ export type WidgetId =
     | "habits"
     | "heatmap"
     | "categoryHealth"
-    | "workspaceHealth";
+    | "workspaceHealth"
+    | "kudosEffect"
+    | "supportCoverage"
+    | "weeklyReview";
 
 export const DEFAULT_WIDGET_ORDER: WidgetId[] = [
     "categoryShare",
@@ -16,6 +19,9 @@ export const DEFAULT_WIDGET_ORDER: WidgetId[] = [
     "heatmap",
     "categoryHealth",
     "workspaceHealth",
+    "kudosEffect",
+    "supportCoverage",
+    "weeklyReview",
 ];
 
 export const WIDGET_TITLES: Record<WidgetId, string> = {
@@ -25,6 +31,9 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
     heatmap: "Activity heatmap",
     categoryHealth: "Category health",
     workspaceHealth: "Workspace health",
+    kudosEffect: "Kudos effect",
+    supportCoverage: "Support coverage",
+    weeklyReview: "Weekly review",
 };
 
 export function isWidgetId(value: unknown): value is WidgetId {
