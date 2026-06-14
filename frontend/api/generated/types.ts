@@ -968,6 +968,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/analytics/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get analytics dashboard layout
+         * @description Returns the authenticated user's saved widget order and hidden widgets.
+         */
+        get: operations["get-analytics-layout"];
+        /**
+         * Update analytics dashboard layout
+         * @description Persists the user's widget order and hidden widgets.
+         */
+        put: operations["update-analytics-layout"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/blueprints": {
         parameters: {
             query?: never;
@@ -3670,6 +3694,28 @@ export interface components {
             /** Format: int64 */
             level: number;
         };
+        AnalyticsKudosEffect: {
+            hasComparison: boolean;
+            takeaway: string;
+            /** Format: int64 */
+            withCount: number;
+            /** Format: double */
+            withKudosMedianHours: number;
+            /** Format: int64 */
+            withoutCount: number;
+            /** Format: double */
+            withoutKudosMedianHours: number;
+        };
+        AnalyticsLayout: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AnalyticsLayout.json
+             */
+            readonly $schema?: string;
+            hidden: string[];
+            order: string[];
+        };
         AnalyticsLegendItem: {
             categoryId: string;
             color: string;
@@ -3717,9 +3763,12 @@ export interface components {
             generatedAt: string;
             habits: components["schemas"]["AnalyticsHabits"];
             heatmap: components["schemas"]["AnalyticsHeatmap"];
+            kudosEffect: components["schemas"]["AnalyticsKudosEffect"];
             progress: components["schemas"]["AnalyticsProgress"];
             range: string;
             signals: components["schemas"]["AnalyticsSignals"];
+            supportCoverage: components["schemas"]["AnalyticsSupportCoverage"];
+            topSupporters: components["schemas"]["AnalyticsSupporter"][];
             workspaceFilter?: string;
             workspaceHealth: components["schemas"]["AnalyticsWorkspaceHealth"];
         };
@@ -3750,6 +3799,22 @@ export interface components {
             momentum: components["schemas"]["AnalyticsSignal"];
             support: components["schemas"]["AnalyticsSignal"];
             timing: components["schemas"]["AnalyticsSignal"];
+        };
+        AnalyticsSupportCoverage: {
+            /** Format: int64 */
+            pct: number;
+            /** Format: int64 */
+            supported: number;
+            takeaway: string;
+            /** Format: int64 */
+            total: number;
+        };
+        AnalyticsSupporter: {
+            /** Format: int64 */
+            count: number;
+            icon: string;
+            id: string;
+            name: string;
         };
         AnalyticsWorkspaceHealth: {
             rows: components["schemas"]["AnalyticsWorkspaceHealthRow"][];
@@ -9793,6 +9858,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyticsResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-analytics-layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsLayout"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-analytics-layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyticsLayout"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsLayout"];
                 };
             };
             /** @description Error */

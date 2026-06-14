@@ -14,9 +14,11 @@ import (
 
 type AnalyticsTaskLite struct {
 	CategoryID  string
+	CreatedAt   time.Time
 	CompletedAt time.Time
 	Deadline    *time.Time
 	KudosCount  int
+	HasTag      bool
 }
 
 type AnalyticsCategoryMeta struct {
@@ -391,8 +393,95 @@ func computeAnalytics(in computeInput) AnalyticsResponse {
 	resp.WorkspaceHealth = computeWorkspaceHealth(cur, workspaceOf)
 	resp.BestTime = computeBestTime(cur, now)
 	resp.Attention = computeAttention(in.OpenTasks, inScope, nameOf, workspaceOf, now)
+	resp.KudosEffect = computeKudosEffect(cur)
+	resp.SupportCoverage = computeSupportCoverage(cur)
 
 	return resp
+}
+
+func medianHours(durations []float64) float64 {
+	n := len(durations)
+	if n == 0 {
+		return 0
+	}
+	d := append([]float64{}, durations...)
+	sort.Float64s(d)
+	var m float64
+	if n%2 == 1 {
+		m = d[n/2]
+	} else {
+		m = (d[n/2-1] + d[n/2]) / 2
+	}
+	return math.Round(m*10) / 10
+}
+
+func computeKudosEffect(cur []AnalyticsTaskLite) AnalyticsKudosEffect {
+	var with, without []float64
+	for _, t := range cur {
+		if t.CreatedAt.IsZero() {
+			continue
+		}
+		hours := t.CompletedAt.Sub(t.CreatedAt).Hours()
+		if hours <= 0 {
+			continue
+		}
+		if t.KudosCount > 0 {
+			with = append(with, hours)
+		} else {
+			without = append(without, hours)
+		}
+	}
+	wMed, woMed := medianHours(with), medianHours(without)
+	hasComparison := len(with) >= 3 && len(without) >= 3
+	return AnalyticsKudosEffect{
+		WithKudosMedianHours:    wMed,
+		WithoutKudosMedianHours: woMed,
+		WithCount:               len(with),
+		WithoutCount:            len(without),
+		HasComparison:           hasComparison,
+		Takeaway:                kudosEffectTakeaway(hasComparison, wMed, woMed),
+	}
+}
+
+func kudosEffectTakeaway(hasComparison bool, withMed, withoutMed float64) string {
+	if !hasComparison {
+		return "Not enough completed tasks yet to compare with vs without Kudos."
+	}
+	switch {
+	case withMed < withoutMed:
+		return "Tasks with Kudos tended to finish faster."
+	case withMed > withoutMed:
+		return "Tasks with Kudos took a little longer this period — support isn't only about speed."
+	default:
+		return "Tasks finished at about the same pace with or without Kudos."
+	}
+}
+
+func computeSupportCoverage(cur []AnalyticsTaskLite) AnalyticsSupportCoverage {
+	total := len(cur)
+	supported := 0
+	for _, t := range cur {
+		if t.KudosCount > 0 || t.HasTag {
+			supported++
+		}
+	}
+	pct := pctInt(supported, total)
+	return AnalyticsSupportCoverage{
+		Pct:       pct,
+		Supported: supported,
+		Total:     total,
+		Takeaway:  supportCoverageTakeaway(pct, total),
+	}
+}
+
+func supportCoverageTakeaway(pct, total int) string {
+	if total == 0 {
+		return "No completed tasks to measure support on yet."
+	}
+	if pct >= 50 {
+		return fmt.Sprintf("%d%% of your finished work had someone in your corner.", pct)
+	}
+	return fmt.Sprintf("Only %d%% of your work had support — tag a friend to bring them along.", pct)
 }
 
 func computeBestTime(cur []AnalyticsTaskLite, now time.Time) AnalyticsBestTime {

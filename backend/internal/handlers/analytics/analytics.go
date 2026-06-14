@@ -35,3 +35,43 @@ func (h *Handler) GetAnalytics(ctx context.Context, input *GetAnalyticsInput) (*
 
 	return &GetAnalyticsOutput{Body: resp}, nil
 }
+
+// GetLayout returns the user's saved dashboard layout (empty if never set).
+func (h *Handler) GetLayout(ctx context.Context, input *GetLayoutInput) (*GetLayoutOutput, error) {
+	userID, err := currentUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	layout, err := h.service.GetLayout(userID)
+	if err != nil {
+		slog.Error("analytics: failed to load layout", "error", err, "user_id", userID.Hex())
+		return nil, huma.Error500InternalServerError("Unable to load layout.", err)
+	}
+	return &GetLayoutOutput{Body: layout}, nil
+}
+
+// UpdateLayout persists the user's dashboard layout.
+func (h *Handler) UpdateLayout(ctx context.Context, input *UpdateLayoutInput) (*UpdateLayoutOutput, error) {
+	userID, err := currentUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.service.UpdateLayout(userID, input.Body); err != nil {
+		slog.Error("analytics: failed to save layout", "error", err, "user_id", userID.Hex())
+		return nil, huma.Error500InternalServerError("Unable to save layout.", err)
+	}
+	return &UpdateLayoutOutput{Body: input.Body}, nil
+}
+
+// currentUserID resolves the authenticated user from context.
+func currentUserID(ctx context.Context) (primitive.ObjectID, error) {
+	uid, ok := auth.GetUserIDFromContext(ctx)
+	if !ok {
+		return primitive.ObjectID{}, huma.Error401Unauthorized("Not authenticated")
+	}
+	userID, err := primitive.ObjectIDFromHex(uid)
+	if err != nil {
+		return primitive.ObjectID{}, huma.Error400BadRequest("Invalid user ID", err)
+	}
+	return userID, nil
+}

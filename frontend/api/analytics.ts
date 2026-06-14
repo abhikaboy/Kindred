@@ -28,6 +28,10 @@ export type AnalyticsBestTime = components["schemas"]["AnalyticsBestTime"];
 export type AnalyticsBestTimeCell = components["schemas"]["AnalyticsBestTimeCell"];
 export type AnalyticsAttention = components["schemas"]["AnalyticsAttention"];
 export type AnalyticsAttentionTask = components["schemas"]["AnalyticsAttentionTask"];
+export type AnalyticsKudosEffect = components["schemas"]["AnalyticsKudosEffect"];
+export type AnalyticsSupportCoverage = components["schemas"]["AnalyticsSupportCoverage"];
+export type AnalyticsSupporter = components["schemas"]["AnalyticsSupporter"];
+export type AnalyticsLayout = components["schemas"]["AnalyticsLayout"];
 
 export type AnalyticsRange = "week" | "month" | "sixmonth";
 
@@ -60,4 +64,32 @@ export const getAnalytics = async (filters: AnalyticsFilters): Promise<Analytics
         logger.error("Error fetching analytics", error);
         throw error;
     }
+};
+
+/** Fetch the user's saved dashboard layout (empty order = use client default). */
+export const getAnalyticsLayout = async (): Promise<AnalyticsLayout> => {
+    try {
+        const { data, error } = await client.GET("/v1/user/analytics/layout" as any, {
+            params: withAuthHeaders(),
+        });
+        if (error) {
+            throw new Error(`Failed to fetch layout: ${JSON.stringify(error)}`);
+        }
+        return data as AnalyticsLayout;
+    } catch (error) {
+        logger.error("Error fetching analytics layout", error);
+        throw error;
+    }
+};
+
+/** Persist the user's dashboard layout (order + hidden). */
+export const saveAnalyticsLayout = async (layout: AnalyticsLayout): Promise<AnalyticsLayout> => {
+    const { data, error } = await client.PUT("/v1/user/analytics/layout" as any, {
+        params: withAuthHeaders(),
+        body: layout,
+    });
+    if (error) {
+        throw new Error(`Failed to save layout: ${JSON.stringify(error)}`);
+    }
+    return data as AnalyticsLayout;
 };
