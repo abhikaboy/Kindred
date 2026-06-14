@@ -1618,6 +1618,51 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/analytics/layout:
+        get:
+            tags:
+                - Analytics
+            summary: Get analytics dashboard layout
+            description: Returns the authenticated user's saved widget order and hidden widgets.
+            operationId: get-analytics-layout
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsLayout'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        put:
+            tags:
+                - Analytics
+            summary: Update analytics dashboard layout
+            description: Persists the user's widget order and hidden widgets.
+            operationId: update-analytics-layout
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AnalyticsLayout'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsLayout'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints:
         post:
             tags:
@@ -7558,6 +7603,28 @@ components:
                 - withoutCount
                 - hasComparison
                 - takeaway
+        AnalyticsLayout:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AnalyticsLayout.json
+                    readOnly: true
+                hidden:
+                    type: array
+                    items:
+                        type: string
+                order:
+                    type: array
+                    items:
+                        type: string
+            required:
+                - order
+                - hidden
         AnalyticsLegendItem:
             type: object
             additionalProperties: false

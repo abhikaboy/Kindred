@@ -264,9 +264,53 @@ func RegisterGetAnalyticsOperation(api huma.API, handler *Handler) {
 	}, handler.GetAnalytics)
 }
 
+// AnalyticsLayout is the user's persisted dashboard arrangement (widget order +
+// hidden ids). Stored on the user document so it syncs across devices.
+type AnalyticsLayout struct {
+	Order  []string `bson:"order" json:"order"`
+	Hidden []string `bson:"hidden" json:"hidden"`
+}
+
+type GetLayoutInput struct{}
+
+type GetLayoutOutput struct {
+	Body AnalyticsLayout `json:"body"`
+}
+
+type UpdateLayoutInput struct {
+	Body AnalyticsLayout `json:"body"`
+}
+
+type UpdateLayoutOutput struct {
+	Body AnalyticsLayout `json:"body"`
+}
+
+// RegisterLayoutOperations registers the GET/PUT dashboard-layout endpoints.
+func RegisterLayoutOperations(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-analytics-layout",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/analytics/layout",
+		Summary:     "Get analytics dashboard layout",
+		Description: "Returns the authenticated user's saved widget order and hidden widgets.",
+		Tags:        []string{"Analytics"},
+	}, handler.GetLayout)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "update-analytics-layout",
+		Method:        http.MethodPut,
+		Path:          "/v1/user/analytics/layout",
+		Summary:       "Update analytics dashboard layout",
+		Description:   "Persists the user's widget order and hidden widgets.",
+		Tags:          []string{"Analytics"},
+		DefaultStatus: 200,
+	}, handler.UpdateLayout)
+}
+
 // Routes wires the analytics handler into the API.
 func Routes(api huma.API, collections map[string]*mongo.Collection) {
 	service := newService(collections)
 	handler := newHandler(service)
 	RegisterGetAnalyticsOperation(api, handler)
+	RegisterLayoutOperations(api, handler)
 }

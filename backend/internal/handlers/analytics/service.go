@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // proxyCategoryName is the sentinel name for placeholder categories that only
@@ -25,6 +26,7 @@ type Service struct {
 	Categories     *mongo.Collection
 	Templates      *mongo.Collection
 	Encouragements *mongo.Collection
+	Users          *mongo.Collection
 }
 
 func newService(collections map[string]*mongo.Collection) *Service {
@@ -33,7 +35,44 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Categories:     collections["categories"],
 		Templates:      collections["template-tasks"],
 		Encouragements: collections["encouragements"],
+		Users:          collections["users"],
 	}
+}
+
+// GetLayout returns the user's saved dashboard layout, or an empty layout if
+// none is stored (the client then falls back to its default order).
+func (s *Service) GetLayout(userID primitive.ObjectID) (AnalyticsLayout, error) {
+	if s.Users == nil {
+		return AnalyticsLayout{}, nil
+	}
+	var doc struct {
+		Layout *AnalyticsLayout `bson:"analytics_layout"`
+	}
+	err := s.Users.FindOne(
+		context.Background(),
+		bson.M{"_id": userID},
+		options.FindOne().SetProjection(bson.M{"analytics_layout": 1}),
+	).Decode(&doc)
+	if err == mongo.ErrNoDocuments || doc.Layout == nil {
+		return AnalyticsLayout{}, nil
+	}
+	if err != nil {
+		return AnalyticsLayout{}, err
+	}
+	return *doc.Layout, nil
+}
+
+// UpdateLayout persists the user's dashboard layout onto the user document.
+func (s *Service) UpdateLayout(userID primitive.ObjectID, layout AnalyticsLayout) error {
+	if s.Users == nil {
+		return nil
+	}
+	_, err := s.Users.UpdateOne(
+		context.Background(),
+		bson.M{"_id": userID},
+		bson.M{"$set": bson.M{"analytics_layout": layout}},
+	)
+	return err
 }
 
 // GetAnalytics builds the widget-ready dashboard payload for one user.

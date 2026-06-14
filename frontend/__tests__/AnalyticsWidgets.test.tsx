@@ -1,14 +1,5 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-
-// analyticsLayout imports AsyncStorage; stub it so the native module isn't touched.
-jest.mock("@react-native-async-storage/async-storage", () => ({
-    getItem: jest.fn(() => Promise.resolve(null)),
-    setItem: jest.fn(() => Promise.resolve()),
-    removeItem: jest.fn(() => Promise.resolve()),
-    clear: jest.fn(() => Promise.resolve()),
-}));
-
 import { SignalStrip } from "@/components/analytics/SignalStrip";
 import { StatusPill } from "@/components/analytics/StatusPill";
 import { StatCards } from "@/components/analytics/StatCards";
