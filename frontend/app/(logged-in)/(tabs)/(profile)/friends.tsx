@@ -7,7 +7,6 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchBox } from "@/components/SearchBox";
-import { BorderGlow } from "@/components/ui/BorderGlow";
 import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
 import { getFriendsAPI } from "@/api/connection";
@@ -21,7 +20,6 @@ export default function Friends() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchFocused, setSearchFocused] = useState(false);
 
     const ThemedColor = useThemeColor();
     const router = useRouter();
@@ -200,7 +198,6 @@ export default function Friends() {
                     onSubmit={() => {}}
                     recent={false}
                     name="friends-search"
-                    setFocused={setSearchFocused}
                 />
             </View>
 
@@ -238,9 +235,6 @@ export default function Friends() {
                     removeClippedSubviews={true}
                 />
             </View>
-
-            {/* Edge glow while the search bar is active — sits on top, never blocks touches */}
-            <BorderGlow active={searchFocused} />
         </ThemedView>
     );
 }
