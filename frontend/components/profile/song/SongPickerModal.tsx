@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Modal, View, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { MagnifyingGlass, MusicNote, X } from "phosphor-react-native";
+import { MagnifyingGlass, MusicNote, X, Play, Pause, PlusCircle } from "phosphor-react-native";
 import { searchSongs, type Song } from "@/api/itunes";
+import Equalizer from "./Equalizer";
 
 export default function SongPickerModal({
     visible,
@@ -19,9 +21,19 @@ export default function SongPickerModal({
     const [term, setTerm] = useState("");
     const [results, setResults] = useState<Song[]>([]);
     const [loading, setLoading] = useState(false);
+    const [previewId, setPreviewId] = useState<number | null>(null);
+
+    // One shared player for the whole list — tapping a row swaps its source
+    // rather than mounting a player per result.
+    const player = useVideoPlayer(null, (p) => {
+        p.loop = true;
+    });
 
     // Debounced search straight to the public iTunes API — no backend needed.
+    // Any in-flight preview stops when the query changes.
     useEffect(() => {
+        player.pause();
+        setPreviewId(null);
         if (!term.trim()) {
             setResults([]);
             return;
@@ -41,9 +53,29 @@ export default function SongPickerModal({
             clearTimeout(handle);
             controller.abort();
         };
-    }, [term]);
+    }, [term, player]);
+
+    // Never let a preview leak past a dismiss.
+    useEffect(() => {
+        if (!visible) {
+            player.pause();
+            setPreviewId(null);
+        }
+    }, [visible, player]);
+
+    const togglePreview = (song: Song) => {
+        if (previewId === song.id) {
+            player.pause();
+            setPreviewId(null);
+            return;
+        }
+        setPreviewId(song.id);
+        player.replaceAsync(song.previewUrl).then(() => player.play());
+    };
 
     const pick = (song: Song) => {
+        player.pause();
+        setPreviewId(null);
         onSelect(song);
         setTerm("");
         setResults([]);
@@ -81,32 +113,53 @@ export default function SongPickerModal({
                     keyExtractor={(item) => String(item.id)}
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={styles.listContent}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[styles.row, { borderBottomColor: ThemedColor.tertiary }]}
-                            onPress={() => pick(item)}
-                            activeOpacity={0.7}>
-                            <View style={[styles.rowArt, { backgroundColor: ThemedColor.lightened }]}>
-                                {item.artworkUrl ? (
-                                    <Image
-                                        source={{ uri: item.artworkUrl }}
-                                        style={StyleSheet.absoluteFill}
-                                        contentFit="cover"
-                                    />
-                                ) : (
-                                    <MusicNote size={18} color={ThemedColor.caption} weight="fill" />
-                                )}
+                    renderItem={({ item }) => {
+                        const previewing = previewId === item.id;
+                        return (
+                            <View style={[styles.row, { borderBottomColor: ThemedColor.tertiary }]}>
+                                <TouchableOpacity
+                                    style={styles.rowMain}
+                                    onPress={() => togglePreview(item)}
+                                    activeOpacity={0.7}>
+                                    <View style={[styles.rowArt, { backgroundColor: ThemedColor.lightened }]}>
+                                        {item.artworkUrl ? (
+                                            <Image
+                                                source={{ uri: item.artworkUrl }}
+                                                style={StyleSheet.absoluteFill}
+                                                contentFit="cover"
+                                            />
+                                        ) : (
+                                            <MusicNote size={18} color={ThemedColor.caption} weight="fill" />
+                                        )}
+                                        <View style={styles.playOverlay}>
+                                            {previewing ? (
+                                                <Pause size={14} color="#fff" weight="fill" />
+                                            ) : (
+                                                <Play size={14} color="#fff" weight="fill" />
+                                            )}
+                                        </View>
+                                    </View>
+                                    <View style={styles.rowText}>
+                                        <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                            {item.title}
+                                        </ThemedText>
+                                        <ThemedText type="caption" numberOfLines={1}>
+                                            {item.artist}
+                                        </ThemedText>
+                                    </View>
+                                    {previewing && <Equalizer playing color={ThemedColor.primary} size={14} />}
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => pick(item)}
+                                    hitSlop={8}
+                                    style={styles.addBtn}
+                                    activeOpacity={0.7}
+                                    accessibilityLabel={`Use ${item.title}`}>
+                                    <PlusCircle size={28} color={ThemedColor.primary} weight="fill" />
+                                </TouchableOpacity>
                             </View>
-                            <View style={styles.rowText}>
-                                <ThemedText type="defaultSemiBold" numberOfLines={1}>
-                                    {item.title}
-                                </ThemedText>
-                                <ThemedText type="caption" numberOfLines={1}>
-                                    {item.artist}
-                                </ThemedText>
-                            </View>
-                        </TouchableOpacity>
-                    )}
+                        );
+                    }}
                     ListEmptyComponent={
                         !loading && term.trim() ? (
                             <ThemedText type="caption" style={styles.empty}>
@@ -115,6 +168,8 @@ export default function SongPickerModal({
                         ) : null
                     }
                 />
+
+                <VideoView player={player} style={styles.hiddenVideo} />
             </View>
         </Modal>
     );
@@ -154,9 +209,14 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: "row",
         alignItems: "center",
+        borderBottomWidth: 0.5,
+    },
+    rowMain: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
         gap: 12,
         paddingVertical: 10,
-        borderBottomWidth: 0.5,
     },
     rowArt: {
         width: 44,
@@ -166,11 +226,27 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
+    playOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.25)",
+    },
     rowText: {
         flex: 1,
         gap: 2,
     },
+    addBtn: {
+        paddingLeft: 12,
+        paddingVertical: 10,
+    },
     empty: {
         marginTop: 24,
+    },
+    hiddenVideo: {
+        width: 1,
+        height: 1,
+        opacity: 0,
+        position: "absolute",
     },
 });
