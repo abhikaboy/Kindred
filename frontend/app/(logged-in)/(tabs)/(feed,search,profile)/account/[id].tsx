@@ -32,6 +32,7 @@ import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import FollowButton from "@/components/inputs/FollowButton";
 import BlueprintSection from "@/components/profile/BlueprintSection";
+import SongPreviewPill from "@/components/profile/song/SongPreviewPill";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
 import { type Profile, type RelationshipStatus } from "@/api/types";
@@ -228,6 +229,10 @@ export default function Profile() {
                             onRelationshipChange={handleRelationshipChange}
                         />
                     </View>
+
+                    {profile?.song && (
+                        <SongPreviewPill key={profile.song.id} song={profile.song} />
+                    )}
 
                     {canViewPersonalContent && (
                         <View style={{ marginTop: 8 }}>

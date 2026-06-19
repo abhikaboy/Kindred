@@ -13,25 +13,32 @@ const task = (over: Partial<Task>): Task =>
 describe("isEndOfDayWindow", () => {
     it("is false before the trigger hour", () => {
         expect(isEndOfDayWindow(new Date(2026, 5, 10, END_OF_DAY_HOUR - 1, 59))).toBe(false);
+        expect(isEndOfDayWindow(new Date(2026, 5, 10, 12, 0))).toBe(false);
     });
 
-    it("is true from the trigger hour until midnight", () => {
+    it("is true from 8PM through the early morning", () => {
         expect(isEndOfDayWindow(new Date(2026, 5, 10, END_OF_DAY_HOUR, 0))).toBe(true);
         expect(isEndOfDayWindow(new Date(2026, 5, 10, 23, 59))).toBe(true);
+        expect(isEndOfDayWindow(new Date(2026, 5, 11, 0, 1))).toBe(true);
+        expect(isEndOfDayWindow(new Date(2026, 5, 11, 5, 59))).toBe(true);
     });
 
-    it("resets after midnight", () => {
-        expect(isEndOfDayWindow(new Date(2026, 5, 11, 0, 1))).toBe(false);
+    it("closes at 6AM", () => {
+        expect(isEndOfDayWindow(new Date(2026, 5, 11, 6, 0))).toBe(false);
     });
 });
 
 describe("endOfDayDismissKey", () => {
-    it("encodes the local date", () => {
+    it("encodes the local date in the evening", () => {
         expect(endOfDayDismissKey(new Date(2026, 5, 10, 21, 0))).toBe("eod-dismissed-2026-06-10");
     });
 
-    it("differs across days so the card returns the next evening", () => {
-        expect(endOfDayDismissKey(new Date(2026, 5, 10))).not.toBe(endOfDayDismissKey(new Date(2026, 5, 11)));
+    it("anchors post-midnight hours to the evening the window opened", () => {
+        expect(endOfDayDismissKey(new Date(2026, 5, 11, 1, 0))).toBe("eod-dismissed-2026-06-10");
+    });
+
+    it("differs across nights so the card returns the next evening", () => {
+        expect(endOfDayDismissKey(new Date(2026, 5, 10, 21))).not.toBe(endOfDayDismissKey(new Date(2026, 5, 11, 21)));
     });
 });
 

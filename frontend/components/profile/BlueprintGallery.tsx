@@ -10,8 +10,10 @@ import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Play } from "phosphor-react-native";
 import LoadingScreen from "../ui/LoadingScreen";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { postCover, type PostCover } from "@/utils/postMedia";
 
 interface BlueprintGalleryProps {
     blueprintId: string;
@@ -19,6 +21,7 @@ interface BlueprintGalleryProps {
 
 interface PostImage {
     imageUrl: string;
+    isVideo: boolean;
     postId: string;
     postUserId: string;
 }
@@ -51,14 +54,16 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
             const posts = await getPostsByBlueprint(blueprintId);
 
             const postImageData: PostImage[] = posts
-                .filter((post) => post.images && post.images.length > 0)
+                .map((post) => ({ post, cover: postCover(post) }))
+                .filter((p): p is { post: (typeof posts)[number]; cover: PostCover } => p.cover !== null)
                 .sort((a, b) => {
-                    const dateA = new Date(a.metadata?.createdAt || 0);
-                    const dateB = new Date(b.metadata?.createdAt || 0);
+                    const dateA = new Date(a.post.metadata?.createdAt || 0);
+                    const dateB = new Date(b.post.metadata?.createdAt || 0);
                     return dateB.getTime() - dateA.getTime();
                 })
-                .map((post) => ({
-                    imageUrl: post.images[0],
+                .map(({ post, cover }) => ({
+                    imageUrl: cover.url,
+                    isVideo: cover.isVideo,
                     postId: post._id,
                     postUserId: post.user._id,
                 }));
@@ -172,6 +177,11 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
                     cachePolicy="disk"
                     transition={100}
                 />
+                {item.isVideo && (
+                    <View style={styles.videoBadge} pointerEvents="none">
+                        <Play size={12} color="#fff" weight="fill" />
+                    </View>
+                )}
             </TouchableOpacity>
         );
     }, [deletingPosts]);
@@ -264,6 +274,17 @@ const stylesheet = (ThemedColor: any) =>
         galleryImage: {
             width: "100%",
             height: "100%",
+        },
+        videoBadge: {
+            position: "absolute",
+            top: 6,
+            right: 6,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            alignItems: "center",
+            justifyContent: "center",
         },
         galleryContainer: {
             paddingBottom: 20,

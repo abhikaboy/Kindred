@@ -71,6 +71,7 @@ export default function Caption() {
                     id: e.sender?.id,
                     handle: (e.sender as any)?.handle ?? "",
                     display_name: e.sender?.name,
+                    profile_picture: e.sender?.picture,
                 })).filter((u) => u.id);
                 const seen = new Set<string>();
                 setTaggedUsers(prefilled.filter((u) => {
@@ -317,7 +318,7 @@ export default function Caption() {
                             onMentionPicked={(c: MentionCandidate) => {
                                 setTaggedUsers((prev) => {
                                     if (prev.find((p) => p.id === c.id)) return prev;
-                                    return [...prev, { id: c.id, handle: c.handle, display_name: c.display_name }];
+                                    return [...prev, { id: c.id, handle: c.handle, display_name: c.display_name, profile_picture: c.profile_picture }];
                                 });
                             }}
                         />

@@ -8,6 +8,8 @@ import CachedImage from "../CachedImage";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import { postCover, type PostCover } from "@/utils/postMedia";
+import { Play } from "phosphor-react-native";
 
 export interface ProfileGalleryHandle {
     loadMore: () => void;
@@ -21,6 +23,7 @@ interface ProfileGalleryProps {
 
 interface PostImage {
     imageUrl: string;
+    isVideo: boolean;
     postId: string;
     postUserId: string;
 }
@@ -96,7 +99,7 @@ const EmptyGallery = ({ ThemedColor }: { ThemedColor: any }) => {
                 No Posts Yet
             </ThemedText>
             <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
-                Posts with photos will appear here
+                Your posts will appear here
             </ThemedText>
         </View>
     );
@@ -122,20 +125,19 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
 
     const mapPostsToImages = (posts: any[], fallbackUserId?: string): PostImage[] =>
         posts
-            .filter((post) => post.images && post.images.length > 0)
+            .map((post) => ({ post, cover: postCover(post) }))
+            .filter((p): p is { post: any; cover: PostCover } => p.cover !== null)
             .sort((a, b) => {
-                const dateA = new Date(a.metadata?.createdAt || 0);
-                const dateB = new Date(b.metadata?.createdAt || 0);
+                const dateA = new Date(a.post.metadata?.createdAt || 0);
+                const dateB = new Date(b.post.metadata?.createdAt || 0);
                 return dateB.getTime() - dateA.getTime();
             })
-            .map((post) => {
-                const postUserId = post.user?._id || fallbackUserId || "";
-                return {
-                    imageUrl: post.images[0],
-                    postId: post._id,
-                    postUserId,
-                };
-            });
+            .map(({ post, cover }) => ({
+                imageUrl: cover.url,
+                isVideo: cover.isVideo,
+                postId: post._id,
+                postUserId: post.user?._id || fallbackUserId || "",
+            }));
 
     useEffect(() => {
         const fetchImages = async () => {
@@ -146,6 +148,7 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
             if (images && images.length > 0) {
                 const legacyImages = images.map((imageUrl, index) => ({
                     imageUrl,
+                    isVideo: false,
                     postId: `legacy-${index}`,
                     postUserId: "",
                 }));
@@ -358,6 +361,11 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
                                         cachePolicy="disk"
                                         transition={100}
                                     />
+                                    {item.isVideo && (
+                                        <View style={styles.videoBadge} pointerEvents="none">
+                                            <Play size={12} color="#fff" weight="fill" />
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
                             );
                         })}
@@ -400,6 +408,17 @@ const styles = StyleSheet.create({
     },
     galleryImage: {
         aspectRatio: 1,
+    },
+    videoBadge: {
+        position: "absolute",
+        top: 6,
+        right: 6,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        alignItems: "center",
+        justifyContent: "center",
     },
     deletingItem: {
         opacity: 0.5,

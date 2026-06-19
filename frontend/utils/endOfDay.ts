@@ -1,17 +1,23 @@
-import { isSameDay, startOfDay } from "date-fns";
+import { isSameDay, startOfDay, subDays } from "date-fns";
 import type { Task } from "@/api/types";
 import type { BulkCompleteResult, LogTasksResult } from "@/api/task";
 
 export const END_OF_DAY_HOUR = 20;
+export const END_OF_DAY_END_HOUR = 6;
 
+// Window runs from 8PM through 6AM the next morning (spans midnight).
 export function isEndOfDayWindow(now: Date): boolean {
-    return true; // TEMP: force EOD card on for testing — revert to `now.getHours() >= END_OF_DAY_HOUR`
+    const hour = now.getHours();
+    return hour >= END_OF_DAY_HOUR || hour < END_OF_DAY_END_HOUR;
 }
 
 export function endOfDayDismissKey(now: Date): string {
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `eod-dismissed-${now.getFullYear()}-${month}-${day}`;
+    // Anchor to the evening the window opened so a review done at night stays
+    // dismissed through the post-midnight hours of the same window.
+    const anchor = now.getHours() < END_OF_DAY_END_HOUR ? subDays(now, 1) : now;
+    const month = String(anchor.getMonth() + 1).padStart(2, "0");
+    const day = String(anchor.getDate()).padStart(2, "0");
+    return `eod-dismissed-${anchor.getFullYear()}-${month}-${day}`;
 }
 
 // Open tasks worth reviewing tonight: starting today, due today, or overdue.

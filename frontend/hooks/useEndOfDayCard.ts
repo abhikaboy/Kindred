@@ -3,9 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { endOfDayDismissKey, isEndOfDayWindow } from "@/utils/endOfDay";
 
 /**
- * Card is visible from END_OF_DAY_HOUR until local midnight, unless dismissed
- * (or the review was completed) today. Re-checks every minute so the card
- * appears if the app stays open across the trigger hour.
+ * Card is visible from END_OF_DAY_HOUR (8PM) through 6AM the next morning,
+ * unless dismissed (or the review was completed) for that night. Re-checks
+ * every minute so the card appears if the app stays open across the trigger hour.
  */
 export const useEndOfDayCard = () => {
     // Start hidden until storage answers, so the card never flashes.
