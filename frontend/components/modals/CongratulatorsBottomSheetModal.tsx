@@ -107,7 +107,7 @@ export default function CongratulatorsBottomSheetModal({ visible, setVisible, ku
 
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
-        container: { paddingHorizontal: 20, paddingBottom: 16, gap: 12, minHeight: 200 },
+        container: { paddingBottom: 16, gap: 12, minHeight: 200 },
         title: { marginBottom: 4 },
         row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
         avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: ThemedColor.tertiary },
