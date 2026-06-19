@@ -12,14 +12,17 @@ import { AnalyticsRange, AnalyticsResponse } from "@/api/analytics";
 import { WorkspaceSelector } from "./WorkspaceSelector";
 import { RangeSwitcher } from "./RangeSwitcher";
 import { FilterChips } from "./FilterChips";
-import { useAnalyticsLayout, WidgetId } from "./analyticsLayout";
-import { SignalStrip } from "./SignalStrip";
+import { WidgetId } from "./analyticsLayout";
+import { useAnalyticsLayout } from "@/hooks/useAnalyticsLayout";
 import { WeeklyProgressWidget } from "./WeeklyProgressWidget";
 import { CategoryShareWidget } from "./CategoryShareWidget";
 import { ActivityHeatmapWidget } from "./ActivityHeatmapWidget";
 import { HabitsWidget } from "./HabitsWidget";
 import { CategoryHealthWidget } from "./CategoryHealthWidget";
 import { WorkspaceHealthWidget } from "./WorkspaceHealthWidget";
+import { KudosEffectWidget } from "./KudosEffectWidget";
+import { SupportCoverageWidget } from "./SupportCoverageWidget";
+import { WeeklyReviewWidget } from "./WeeklyReviewWidget";
 
 const EDIT_HREF = "/(activity)/edit" as Href;
 
@@ -43,13 +46,20 @@ export function AnalyticsHome() {
         const source = workspace
             ? workspaces.find((w: any) => w.name === workspace)?.categories ?? []
             : workspaces.flatMap((w: any) => w.categories ?? []);
-        return source.map((c: any) => ({ id: c.id, name: c.name }));
+        // Drop sentinel "!-proxy-!" placeholder categories — they aren't real.
+        return source.filter((c: any) => c.name !== "!-proxy-!").map((c: any) => ({ id: c.id, name: c.name }));
     }, [workspaces, workspace]);
 
     const onSelectWorkspace = (ws?: string) => {
         setWorkspace(ws);
         setCategory(undefined);
     };
+
+    const goToCategory = (id: string) => router.push(`/(activity)/category/${id}` as Href);
+    const goToWorkspace = (ws: string) => router.push(`/(activity)/workspace/${encodeURIComponent(ws)}` as Href);
+    const goToHabits = () => router.push("/(activity)/habits" as Href);
+    const goToInsight = () => router.push("/(activity)/insight/activity" as Href);
+    const goToWeeklyReview = () => router.push("/(activity)/weekly-review" as Href);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -96,7 +106,11 @@ export function AnalyticsHome() {
                             id={id}
                             data={data}
                             range={range}
-                            onSelectCategory={setCategory}
+                            onOpenCategory={goToCategory}
+                            onOpenWorkspace={goToWorkspace}
+                            onOpenHabits={goToHabits}
+                            onOpenInsight={goToInsight}
+                            onOpenWeeklyReview={goToWeeklyReview}
                         />
                     ))
                 )}
@@ -109,26 +123,34 @@ interface WidgetRendererProps {
     id: WidgetId;
     data: AnalyticsResponse;
     range: AnalyticsRange;
-    onSelectCategory: (categoryId: string) => void;
+    onOpenCategory: (categoryId: string) => void;
+    onOpenWorkspace: (workspace: string) => void;
+    onOpenHabits: () => void;
+    onOpenInsight: () => void;
+    onOpenWeeklyReview: () => void;
 }
 
 /** Maps a widget id to its component — a proper component, not an inline helper. */
-function WidgetRenderer({ id, data, range, onSelectCategory }: WidgetRendererProps) {
+function WidgetRenderer({ id, data, range, onOpenCategory, onOpenWorkspace, onOpenHabits, onOpenInsight, onOpenWeeklyReview }: WidgetRendererProps) {
     switch (id) {
-        case "signals":
-            return <SignalStrip signals={data.signals} />;
         case "progress":
             return <WeeklyProgressWidget progress={data.progress} range={range} />;
         case "categoryShare":
-            return <CategoryShareWidget share={data.categoryShare} range={range} onSelectCategory={onSelectCategory} />;
+            return <CategoryShareWidget share={data.categoryShare} range={range} onSelectCategory={onOpenCategory} />;
         case "habits":
-            return <HabitsWidget habits={data.habits} />;
+            return <HabitsWidget habits={data.habits} onPress={onOpenHabits} />;
         case "heatmap":
-            return <ActivityHeatmapWidget heatmap={data.heatmap} />;
+            return <ActivityHeatmapWidget heatmap={data.heatmap} onOpenDetail={onOpenInsight} />;
         case "categoryHealth":
-            return <CategoryHealthWidget categoryHealth={data.categoryHealth} onSelectCategory={onSelectCategory} />;
+            return <CategoryHealthWidget categoryHealth={data.categoryHealth} onSelectCategory={onOpenCategory} />;
         case "workspaceHealth":
-            return <WorkspaceHealthWidget workspaceHealth={data.workspaceHealth} />;
+            return <WorkspaceHealthWidget workspaceHealth={data.workspaceHealth} onSelectWorkspace={onOpenWorkspace} />;
+        case "kudosEffect":
+            return <KudosEffectWidget kudosEffect={data.kudosEffect} />;
+        case "supportCoverage":
+            return <SupportCoverageWidget supportCoverage={data.supportCoverage} />;
+        case "weeklyReview":
+            return <WeeklyReviewWidget onOpen={onOpenWeeklyReview} />;
         default:
             return null;
     }

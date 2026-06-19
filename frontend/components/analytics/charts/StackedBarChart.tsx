@@ -13,15 +13,19 @@ interface StackedBarChartProps {
 export function StackedBarChart({ buckets, height = 160 }: StackedBarChartProps) {
     const ThemedColor = useThemeColor() as any;
 
-    const stackData = buckets.map((b) => ({
-        label: b.label,
-        stacks:
-            b.segments.length > 0
-                ? b.segments.map((s) => ({ value: s.count, color: s.color }))
-                : [{ value: 0, color: "transparent" }],
-    }));
+    const safeBuckets = buckets ?? [];
+    const stackData = safeBuckets.map((b) => {
+        const segments = b.segments ?? [];
+        return {
+            label: b.label,
+            stacks:
+                segments.length > 0
+                    ? segments.map((s) => ({ value: s.count, color: s.color }))
+                    : [{ value: 0, color: "transparent" }],
+        };
+    });
 
-    const peak = Math.max(1, ...buckets.map((b) => b.total));
+    const peak = Math.max(1, ...safeBuckets.map((b) => b.total ?? 0));
     const maxValue = peak <= 3 ? 3 : Math.ceil(peak / 3) * 3;
 
     return (

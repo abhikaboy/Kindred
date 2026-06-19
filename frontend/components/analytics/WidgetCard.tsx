@@ -67,6 +67,7 @@ const stylesheet = (ThemedColor: any) =>
             marginBottom: 16,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
+            boxShadow: ThemedColor.shadowSmall,
         },
         header: {
             flexDirection: "row",

@@ -14,6 +14,7 @@ type Props = {
     customPadding?: boolean;
     enableDynamicSizing?: boolean;
     enableContentPanningGesture?: boolean;
+    keyboardBehavior?: "interactive" | "extend" | "fillParent";
 };
 
 // Using memo to prevent unnecessary re-renders
@@ -78,7 +79,7 @@ const DefaultModal = memo((props: Props) => {
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
-            keyboardBehavior="interactive"
+            keyboardBehavior={props.keyboardBehavior ?? "interactive"}
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             enableContentPanningGesture={props.enableContentPanningGesture}

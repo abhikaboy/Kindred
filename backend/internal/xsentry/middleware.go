@@ -81,11 +81,19 @@ func FiberMiddleware() fiber.Handler {
 			scope.SetContext("response", responseCtx)
 		})
 
-		// Huma writes validation failures (422) and handler 400s straight to the
-		// response — they never reach Fiber's ErrorHandler or slog.Error, so they'd
-		// be invisible otherwise. The scope above already carries the response body
-		// (field-level validation detail), user, and route.
-		if shouldReportClientError(statusCode) {
+		// Huma writes 5xx, validation failures (422), and handler 400s straight to
+		// the response — they never reach Fiber's ErrorHandler, and only reach
+		// Sentry if the handler also happened to slog.Error. Capturing here
+		// guarantees every internal error is recorded with full request context
+		// (route, user, body). The message groups per status+endpoint, so 5xx that a
+		// handler also logged stay low-cardinality rather than flooding.
+		switch {
+		case shouldReportServerError(statusCode):
+			hub.WithScope(func(scope *sentry.Scope) {
+				scope.SetLevel(sentry.LevelError)
+				hub.CaptureMessage(fmt.Sprintf("HTTP %d: %s %s", statusCode, c.Method(), c.Route().Path))
+			})
+		case shouldReportClientError(statusCode):
 			hub.WithScope(func(scope *sentry.Scope) {
 				scope.SetLevel(sentry.LevelWarning)
 				hub.CaptureMessage(fmt.Sprintf("HTTP %d: %s %s", statusCode, c.Method(), c.Route().Path))
@@ -94,6 +102,12 @@ func FiberMiddleware() fiber.Handler {
 
 		return err
 	}
+}
+
+// shouldReportServerError reports every 5xx — these are always unexpected and
+// worth a Sentry event regardless of whether the handler logged the error.
+func shouldReportServerError(status int) bool {
+	return status >= fiber.StatusInternalServerError
 }
 
 // shouldReportClientError picks the client errors that signal a frontend/backend

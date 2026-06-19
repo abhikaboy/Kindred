@@ -18,18 +18,20 @@ export function CategoryShareWidget({ share, range, onSelectCategory }: Props) {
     const styles = stylesheet(ThemedColor);
 
     const title = range === "week" ? "Where your time went" : "Category share";
-    const total = share.slices.reduce((sum, s) => sum + s.count, 0);
-    const useBands = range !== "week" && share.overTime.length > 0;
+    const slices = share.slices ?? [];
+    const overTime = share.overTime ?? [];
+    const total = slices.reduce((sum, s) => sum + s.count, 0);
+    const useBands = range !== "week" && overTime.length > 0;
 
     return (
         <WidgetCard title={title} takeaway={share.takeaway}>
             {useBands ? (
-                <StackedBandChart bands={share.overTime} />
+                <StackedBandChart bands={overTime} />
             ) : (
                 <View style={styles.donutRow}>
-                    <DonutChart slices={share.slices} total={total} />
+                    <DonutChart slices={slices} total={total} />
                     <View style={styles.legend}>
-                        {share.slices.map((slice) => (
+                        {slices.map((slice) => (
                             <ShareLegendRow key={slice.categoryId} slice={slice} onSelectCategory={onSelectCategory} />
                         ))}
                     </View>

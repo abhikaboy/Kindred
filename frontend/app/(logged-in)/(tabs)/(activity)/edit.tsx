@@ -1,12 +1,13 @@
 import React from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { ArrowUp, ArrowDown, EyeSlash, Plus } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/hooks/useAuth";
-import { useAnalyticsLayout, WidgetId, WIDGET_TITLES } from "@/components/analytics/analyticsLayout";
+import { WidgetId, WIDGET_TITLES } from "@/components/analytics/analyticsLayout";
+import { useAnalyticsLayout } from "@/hooks/useAnalyticsLayout";
 
 export default function EditAnalytics() {
     const ThemedColor = useThemeColor() as any;
@@ -56,16 +57,15 @@ export default function EditAnalytics() {
                     />
                 ))}
 
-                {hidden.length > 0 ? (
-                    <>
-                        <ThemedText type="defaultSemiBold" style={styles.sectionLabel}>
-                            Add Cards
-                        </ThemedText>
-                        {hidden.map((id) => (
-                            <HiddenRow key={id} id={id} onAdd={() => toggleHidden(id)} />
-                        ))}
-                    </>
-                ) : null}
+                <TouchableOpacity
+                    style={styles.browseButton}
+                    activeOpacity={0.8}
+                    onPress={() => router.push("/(activity)/add-cards" as Href)}>
+                    <Plus size={18} color={ThemedColor.primary} weight="bold" />
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
+                        Browse cards to add
+                    </ThemedText>
+                </TouchableOpacity>
             </ScrollView>
         </View>
     );
@@ -100,24 +100,6 @@ function VisibleRow({ id, isFirst, isLast, onMoveUp, onMoveDown, onHide }: Visib
                     <EyeSlash size={20} color={ThemedColor.caption} weight="bold" />
                 </TouchableOpacity>
             </View>
-        </View>
-    );
-}
-
-function HiddenRow({ id, onAdd }: { id: WidgetId; onAdd: () => void }) {
-    const ThemedColor = useThemeColor() as any;
-    const styles = stylesheet(ThemedColor);
-    return (
-        <View style={styles.row}>
-            <ThemedText type="default" style={[styles.rowTitle, { color: ThemedColor.caption }]}>
-                {WIDGET_TITLES[id]}
-            </ThemedText>
-            <TouchableOpacity onPress={onAdd} activeOpacity={0.7} style={styles.addButton}>
-                <Plus size={18} color={ThemedColor.primary} weight="bold" />
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
-                    Add
-                </ThemedText>
-            </TouchableOpacity>
         </View>
     );
 }
@@ -170,9 +152,16 @@ const stylesheet = (ThemedColor: any) =>
             alignItems: "center",
             gap: 18,
         },
-        addButton: {
+        browseButton: {
             flexDirection: "row",
             alignItems: "center",
-            gap: 4,
+            justifyContent: "center",
+            gap: 6,
+            marginTop: 16,
+            paddingVertical: 14,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: ThemedColor.primary,
+            borderStyle: "dashed",
         },
     });
