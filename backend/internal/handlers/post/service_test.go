@@ -1671,9 +1671,9 @@ func (s *PostServiceTestSuite) TestUpdatePost_NotifiesOnlyNewlyAddedTags() {
 	})
 
 	// Update with both f1 and f2.
-	newTags := []Post.MentionInput{
-		{ID: f1.ID.Hex(), Handle: f1.Handle},
-		{ID: f2.ID.Hex(), Handle: f2.Handle},
+	newTags := []any{
+		map[string]any{"id": f1.ID.Hex(), "handle": f1.Handle},
+		map[string]any{"id": f2.ID.Hex(), "handle": f2.Handle},
 	}
 	params := Post.UpdatePostParams{TaggedUsers: &newTags}
 	err = s.service.UpdatePartialPost(s.Ctx, post.ID, params)
