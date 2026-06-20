@@ -306,10 +306,13 @@ func (s *Service) UpdatePartialPost(ctx context.Context, id primitive.ObjectID, 
 		}
 
 		var candidates []primitive.ObjectID
-		for _, m := range *updated.TaggedUsers {
+		for _, m := range coerceMentions(*updated.TaggedUsers) {
 			if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
 				candidates = append(candidates, objID)
 			}
+		}
+		if len(candidates) > maxTaggedUsers {
+			candidates = candidates[:maxTaggedUsers] // cap fanout; we dropped the validate=max guard
 		}
 
 		resolved, err := s.ResolveTaggedUsers(ctx, existing.User.ID, candidates)
