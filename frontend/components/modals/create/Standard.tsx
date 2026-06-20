@@ -1,6 +1,7 @@
-import { Dimensions, Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect, useMemo } from "react";
-import ThemedInput from "../../inputs/ThemedInput";
+import MentionTextInput from "../../inputs/MentionTextInput";
+import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
@@ -15,7 +16,6 @@ import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
 import { updateTaskAPI, updateTemplateAPI, respondToTaskTagAPI } from "@/api/task";
 import { ObjectId } from "bson";
@@ -41,7 +41,6 @@ type Props = {
 };
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
-    const nameRef = React.useRef<TextInput>(null);
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
@@ -77,6 +76,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         isBlueprint: isBlueprintState,
         setIsBlueprint,
         taggedUsers,
+        setTaggedUsers,
         notes,
         checklist,
         copySourceTaskId,
@@ -493,32 +493,20 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
             </View>
-            <View onStartShouldSetResponder={() => true}>
-                <ThemedInput
-                    ghost
-                    autofocus={taskName.length === 0}
-                    ref={nameRef as React.Ref<React.ElementRef<typeof BottomSheetTextInput>>}
-                    placeHolder="Enter the Task Name"
-                    textArea
-                    onSubmit={() => {
-                        if (!selectedCategory?.id) return;
-                        createPost();
-                        hide();
-                    }}
-                    onBlur={() => {
-                        nameRef.current?.blur();
-                        Keyboard.dismiss();
-                    }}
-                    onChangeText={(text) => {
-                        setTaskName(text);
-                    }}
+            <View onStartShouldSetResponder={() => true} style={{ zIndex: 1000 }}>
+                <MentionTextInput
+                    placeholder="Enter the Task Name"
                     value={taskName}
                     setValue={setTaskName}
-                    textStyle={{
-                        fontSize: 24,
-                        fontFamily: "Outfit",
-                        fontWeight: 500,
-                        letterSpacing: -0.2,
+                    fontSize={24}
+                    fontWeight={500}
+                    autoFocus={taskName.length === 0}
+                    onMentionPicked={(c: MentionCandidate) => {
+                        if (taggedUsers.find((u) => u.id === c.id)) return;
+                        setTaggedUsers([
+                            ...taggedUsers,
+                            { id: c.id, handle: c.handle, display_name: c.display_name, profile_picture: c.profile_picture },
+                        ]);
                     }}
                 />
             </View>
