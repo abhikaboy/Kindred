@@ -1,6 +1,13 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { BottomSheetScrollView, BottomSheetTextInput, type BottomSheetScrollViewMethods } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+    BottomSheetFooter,
+    BottomSheetScrollView,
+    BottomSheetTextInput,
+    type BottomSheetFooterProps,
+    type BottomSheetScrollViewMethods,
+} from "@gorhom/bottom-sheet";
 import { CheckCircleIcon, CircleIcon, PlusCircleIcon, XCircleIcon } from "phosphor-react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Sentry from "@sentry/react-native";
@@ -65,6 +72,62 @@ function PendingEntryRow({ content, onRemove }: PendingEntryRowProps) {
     );
 }
 
+interface DayLogFooterProps {
+    footerProps: BottomSheetFooterProps;
+    bottomInset: number;
+    submitting: boolean;
+    hasSelections: boolean;
+    onAddEntry: (content: string) => void;
+    onSubmit: (extraEntry: string) => Promise<boolean>;
+}
+
+// Composer lives in its own component with local draft state so the
+// footerComponent identity stays stable as you type (a changing footerComponent
+// remounts the input and drops keyboard focus). BottomSheetFooter keeps it
+// above the keyboard — keyboardBehavior="extend" alone can't lift a
+// bottom-pinned input on a fixed snap point.
+function DayLogFooter({ footerProps, bottomInset, submitting, hasSelections, onAddEntry, onSubmit }: DayLogFooterProps) {
+    const ThemedColor = useThemeColor();
+    const [draft, setDraft] = useState("");
+
+    const add = () => {
+        const content = draft.trim();
+        if (!content) return;
+        onAddEntry(content);
+        setDraft("");
+    };
+
+    const submit = async () => {
+        const ok = await onSubmit(draft.trim());
+        if (ok) setDraft("");
+    };
+
+    const canSubmit = !submitting && (hasSelections || draft.trim().length > 0);
+
+    return (
+        <BottomSheetFooter {...footerProps} bottomInset={bottomInset}>
+            <View style={[styles.footer, { borderTopColor: ThemedColor.tertiary, backgroundColor: ThemedColor.background }]}>
+                <PrimaryButton title={submitting ? "Logging…" : "Log my day"} onPress={submit} disabled={!canSubmit} />
+                <View style={styles.inputRow}>
+                    <BottomSheetTextInput
+                        style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
+                        placeholder="e.g. went to the gym"
+                        placeholderTextColor={ThemedColor.caption}
+                        value={draft}
+                        onChangeText={setDraft}
+                        onSubmitEditing={add}
+                        returnKeyType="done"
+                        submitBehavior="submit"
+                    />
+                    <TouchableOpacity onPress={add} hitSlop={8}>
+                        <PlusCircleIcon size={28} color={ThemedColor.primary} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </BottomSheetFooter>
+    );
+}
+
 interface Props {
     visible: boolean;
     setVisible: (visible: boolean) => void;
@@ -74,16 +137,22 @@ interface Props {
 
 export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, onLogged }: Props) {
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
     const { workspaces, selected, removeFromCategory, fetchWorkspaces } = useTasks();
     const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
 
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [entries, setEntries] = useState<string[]>([]);
-    const [draft, setDraft] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     const workspaceName = selected || workspaces.find((ws) => !ws.isBlueprint)?.name || workspaces[0]?.name;
+    const hasSelections = checkedIds.size > 0 || entries.length > 0;
+
+    // Latest values for the submit handler, so it can stay identity-stable (it
+    // feeds renderFooter; an unstable handler would remount the composer).
+    const submitDataRef = useRef({ openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged });
+    submitDataRef.current = { openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged };
 
     const toggleTask = (taskId: string) => {
         setCheckedIds((prev) => {
@@ -94,73 +163,91 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
         });
     };
 
-    const addEntry = () => {
-        const content = draft.trim();
-        if (!content) return;
+    const handleAddEntry = useCallback((content: string) => {
         setEntries((prev) => [...prev, content]);
-        setDraft("");
         // Reveal the just-added entry; keyboard stays up for the next one.
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-    };
+    }, []);
 
     const removeEntry = (index: number) => {
         setEntries((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const canSubmit = !submitting && (checkedIds.size > 0 || entries.length > 0 || draft.trim().length > 0);
+    // Returns true if the entry was consumed (so the composer can clear it).
+    const handleSubmit = useCallback(
+        async (extraEntry: string): Promise<boolean> => {
+            const { openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged } =
+                submitDataRef.current;
+            // Pull in an un-added draft so "type and hit Log" works without tapping +.
+            const pendingEntries = extraEntry ? [...entries, extraEntry] : entries;
+            const checkedTasks = openTasks.filter((t) => t.id && checkedIds.has(t.id));
+            if (checkedTasks.length === 0 && pendingEntries.length === 0) return false;
 
-    const handleSubmit = async () => {
-        // Pull in an un-added draft so "type and hit Log" works without tapping +.
-        const pendingEntries = draft.trim() ? [...entries, draft.trim()] : entries;
-        const checkedTasks = openTasks.filter((t) => t.id && checkedIds.has(t.id));
+            setSubmitting(true);
+            try {
+                const result = await runEndOfDaySubmission(checkedTasks, pendingEntries, workspaceName, {
+                    bulkComplete: bulkCompleteTasksAPI,
+                    logTasks: logTasksAPI,
+                });
 
-        setSubmitting(true);
-        try {
-            const result = await runEndOfDaySubmission(checkedTasks, pendingEntries, workspaceName, {
-                bulkComplete: bulkCompleteTasksAPI,
-                logTasks: logTasksAPI,
-            });
+                result.confirmedCompletions.forEach(({ taskId, categoryId }) => removeFromCategory(categoryId, taskId));
+                setEntries(result.remainingEntries);
+                if (result.loggedCount > 0) fetchWorkspaces(true);
+                queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
-            result.confirmedCompletions.forEach(({ taskId, categoryId }) => removeFromCategory(categoryId, taskId));
-            setEntries(result.remainingEntries);
-            setDraft("");
-            if (result.loggedCount > 0) fetchWorkspaces(true);
-            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
-
-            const total = result.completedCount + result.loggedCount;
-            if (result.failedCount > 0) {
-                showToast(`${total} logged, ${result.failedCount} failed — try those again`, "warning");
-            } else {
-                showToast(`Nice — ${total} task${total === 1 ? "" : "s"} logged for today`, "success");
-                onLogged();
-                setVisible(false);
-            }
-        } catch (error) {
-            // Catches client-side failures the backend never sees (offline, DNS).
-            // Server-rejected requests (e.g. 422) are captured server-side in xsentry.
-            console.error("End of day review failed:", error);
-            Sentry.captureException(error, {
-                tags: { feature: "end-of-day-log" },
-                contexts: {
-                    submission: {
-                        checkedTasks: checkedTasks.length,
-                        entries: pendingEntries.length,
-                        workspaceName: workspaceName ?? "(none)",
+                const total = result.completedCount + result.loggedCount;
+                if (result.failedCount > 0) {
+                    showToast(`${total} logged, ${result.failedCount} failed — try those again`, "warning");
+                } else {
+                    showToast(`Nice — ${total} task${total === 1 ? "" : "s"} logged for today`, "success");
+                    onLogged();
+                    setVisible(false);
+                }
+                return true;
+            } catch (error) {
+                // Catches client-side failures the backend never sees (offline, DNS).
+                // Server-rejected requests (e.g. 422) are captured server-side in xsentry.
+                console.error("End of day review failed:", error);
+                Sentry.captureException(error, {
+                    tags: { feature: "end-of-day-log" },
+                    contexts: {
+                        submission: {
+                            checkedTasks: checkedTasks.length,
+                            entries: pendingEntries.length,
+                            workspaceName: workspaceName ?? "(none)",
+                        },
                     },
-                },
-            });
-            showToast("Couldn't log your day. Please try again.", "danger");
-        } finally {
-            setSubmitting(false);
-        }
-    };
+                });
+                showToast("Couldn't log your day. Please try again.", "danger");
+                return false;
+            } finally {
+                setSubmitting(false);
+            }
+        },
+        [queryClient, setVisible]
+    );
+
+    const renderFooter = useCallback(
+        (props: BottomSheetFooterProps) => (
+            <DayLogFooter
+                footerProps={props}
+                bottomInset={insets.bottom}
+                submitting={submitting}
+                hasSelections={hasSelections}
+                onAddEntry={handleAddEntry}
+                onSubmit={handleSubmit}
+            />
+        ),
+        [insets.bottom, submitting, hasSelections, handleAddEntry, handleSubmit]
+    );
 
     return (
         <DefaultModal
             visible={visible}
             setVisible={setVisible}
             enableContentPanningGesture={false}
-            keyboardBehavior="extend">
+            keyboardBehavior="extend"
+            footerComponent={renderFooter}>
             <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
                 How did today go?
             </ThemedText>
@@ -170,6 +257,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator
+                enableFooterMarginAdjustment
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag">
                 {openTasks.length > 0 && (
@@ -197,31 +285,6 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
                     ))}
                 </View>
             </BottomSheetScrollView>
-
-            {/* Pinned footer; with keyboardBehavior="extend" the content region
-                shrinks for the keyboard so the whole footer stays above it. */}
-            <View style={[styles.footer, { borderTopColor: ThemedColor.tertiary }]}>
-                <PrimaryButton
-                    title={submitting ? "Logging…" : "Log my day"}
-                    onPress={handleSubmit}
-                    disabled={!canSubmit}
-                />
-                <View style={styles.inputRow}>
-                    <BottomSheetTextInput
-                        style={[styles.input, { color: ThemedColor.text, borderColor: ThemedColor.tertiary }]}
-                        placeholder="e.g. went to the gym"
-                        placeholderTextColor={ThemedColor.caption}
-                        value={draft}
-                        onChangeText={setDraft}
-                        onSubmitEditing={addEntry}
-                        returnKeyType="done"
-                        submitBehavior="submit"
-                    />
-                    <TouchableOpacity onPress={addEntry} hitSlop={8}>
-                        <PlusCircleIcon size={28} color={ThemedColor.primary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
         </DefaultModal>
     );
 }
@@ -230,8 +293,7 @@ const styles = StyleSheet.create({
     heading: {
         marginBottom: 16,
     },
-    // Flex so the list fills the space above the footer; the footer pins to the
-    // bottom and rides up with the keyboard (extend) instead of being covered.
+    // Flex so the list fills the space above the (absolutely-positioned) footer.
     scroll: {
         flex: 1,
     },
@@ -255,6 +317,8 @@ const styles = StyleSheet.create({
     footer: {
         gap: 12,
         paddingTop: 12,
+        paddingBottom: 8,
+        paddingHorizontal: 20,
         borderTopWidth: StyleSheet.hairlineWidth,
     },
     inputRow: {

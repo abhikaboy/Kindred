@@ -1,7 +1,7 @@
 import { Dimensions, StyleSheet } from "react-native";
 import React, { useCallback, useEffect, useRef, memo, useMemo, ReactNode } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, type BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -15,6 +15,7 @@ type Props = {
     enableDynamicSizing?: boolean;
     enableContentPanningGesture?: boolean;
     keyboardBehavior?: "interactive" | "extend" | "fillParent";
+    footerComponent?: React.FC<BottomSheetFooterProps>;
 };
 
 // Using memo to prevent unnecessary re-renders
@@ -83,6 +84,7 @@ const DefaultModal = memo((props: Props) => {
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             enableContentPanningGesture={props.enableContentPanningGesture}
+            footerComponent={props.footerComponent}
             enablePanDownToClose={props.enablePanDownToClose !== false}>
             <BottomSheetView style={styles.contentContainer}>{props.children}</BottomSheetView>
         </BottomSheetModal>
