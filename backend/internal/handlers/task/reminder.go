@@ -31,33 +31,26 @@ func (h *Handler) HandleReminder() (fiber.Map, error) {
 	for _, task := range tasks {
 		// Process ALL past due reminders for this task, not just the first one
 		for _, reminder := range task.Reminders {
-			// Only process reminders that are due and not sent
-			if !reminder.Sent && reminder.TriggerTime.Before(xutils.NowUTC()) {
-				err = h.service.SendReminder(task.UserID, reminder, &task)
-				if err != nil {
-					slog.Error("Failed to send reminder", "error", err, "taskId", task.ID.Hex(), "userId", task.UserID.Hex())
-					failed_updates = append(failed_updates, TaskID{
-						TaskID:     task.ID,
-						CategoryID: task.CategoryID,
-						UserID:     task.UserID,
-					})
-					continue
-				}
-				// Mark this specific reminder as successful
-				successful_updates = append(successful_updates, TaskID{
-					TaskID:     task.ID,
-					CategoryID: task.CategoryID,
-					UserID:     task.UserID,
-				})
+			if reminder.Sent || !reminder.TriggerTime.Before(xutils.NowUTC()) {
+				continue
 			}
-		}
-	}
-
-	for _, update := range successful_updates {
-		err = h.service.UpdateReminderSent(update.TaskID, update.CategoryID, update.UserID)
-		if err != nil {
-			slog.Error("Failed to update reminder sent status", "error", err, "taskId", update.TaskID.Hex())
-			failed_updates = append(failed_updates, update)
+			// Atomically claim before sending so overlapping cron runs / instances
+			// can't double-send the same reminder. Only the winner sends.
+			won, err := h.service.ClaimReminder(task.ID, task.CategoryID, reminder.TriggerTime)
+			if err != nil {
+				slog.Error("Failed to claim reminder", "error", err, "taskId", task.ID.Hex())
+				continue
+			}
+			if !won {
+				continue
+			}
+			id := TaskID{TaskID: task.ID, CategoryID: task.CategoryID, UserID: task.UserID}
+			if err := h.service.SendReminder(task.UserID, reminder, &task); err != nil {
+				slog.Error("Failed to send reminder", "error", err, "taskId", task.ID.Hex(), "userId", task.UserID.Hex())
+				failed_updates = append(failed_updates, id)
+				continue
+			}
+			successful_updates = append(successful_updates, id)
 		}
 	}
 
@@ -354,26 +347,30 @@ func formatDuration(d time.Duration) string {
 	}
 }
 
-func (s *Service) UpdateReminderSent(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID) error {
+// ClaimReminder atomically marks a single due reminder as sent and returns true
+// only for the caller that won the claim. This is the dedup point: concurrent
+// cron runs / instances racing the same reminder serialize on this update, so
+// exactly one gets ModifiedCount == 1 and sends. Matched by triggerTime since
+// reminders have no _id.
+// ponytail: two reminders on one task at the same millisecond would both flip
+// to sent in one $set, dropping the duplicate — accept it, give reminders an _id
+// if that ever matters.
+func (s *Service) ClaimReminder(taskID, categoryID primitive.ObjectID, triggerTime time.Time) (bool, error) {
 	ctx := context.Background()
-
-	options := options.UpdateOptions{
-		ArrayFilters: &options.ArrayFilters{
-			Filters: bson.A{
-				bson.M{
-					"t._id": taskID,
-				},
-			},
+	opts := options.Update().SetArrayFilters(options.ArrayFilters{
+		Filters: bson.A{
+			bson.M{"t._id": taskID},
+			bson.M{"r.triggerTime": triggerTime, "r.sent": false},
 		},
-	}
-
-	// Pull the reminder from the list of reminders
-	// if the triggerTime is less than or equal to the current time, pull it from the list
-	_, err := s.Tasks.UpdateOne(ctx,
+	})
+	res, err := s.Tasks.UpdateOne(ctx,
 		bson.M{"_id": categoryID},
-		bson.M{"$pull": bson.M{"tasks.$[t].reminders": bson.M{"triggerTime": bson.M{"$lte": xutils.NowUTC()}}}},
-		&options)
-	return err
+		bson.M{"$set": bson.M{"tasks.$[t].reminders.$[r].sent": true}},
+		opts)
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount == 1, nil
 }
 
 func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primitive.ObjectID, userID primitive.ObjectID, reminder Reminder) error {

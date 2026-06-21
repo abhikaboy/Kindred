@@ -118,6 +118,64 @@ func (s *TaskServiceTestSuite) TestMarkAsCompleted_UpdatesTemplateStats() {
 	s.Len(updatedTemplate.CompletionDates, 1, "CompletionDates should have 1 entry")
 }
 
+// ========================================
+// Reminder Claim (Dedup) Tests
+// ========================================
+
+// A reminder must be claimable exactly once so concurrent cron runs / instances
+// can't double-send it. The second claim of the same reminder must lose.
+func (s *TaskServiceTestSuite) TestClaimReminder_OnlyClaimsOnce() {
+	user := s.GetUser(0)
+
+	categoryID := primitive.NewObjectID()
+	category := &types.CategoryDocument{
+		ID:            categoryID,
+		Name:          "Test Category",
+		User:          user.ID,
+		WorkspaceName: "Test Workspace",
+		Tasks:         []TaskDocument{},
+	}
+	_, err := s.Collections["categories"].InsertOne(s.Ctx, category)
+	s.NoError(err)
+
+	taskID := primitive.NewObjectID()
+	task := TaskDocument{
+		ID:         taskID,
+		UserID:     user.ID,
+		CategoryID: categoryID,
+		Content:    "Task with reminder",
+		Active:     true,
+		Timestamp:  xutils.NowUTC(),
+		Reminders: []*Reminder{
+			{TriggerTime: xutils.NowUTC().Add(-time.Minute), Type: "absolute", Sent: false},
+		},
+	}
+	_, err = s.Collections["categories"].UpdateOne(s.Ctx,
+		bson.M{"_id": categoryID},
+		bson.M{"$push": bson.M{"tasks": task}},
+	)
+	s.NoError(err)
+
+	// Read back the persisted trigger time — BSON datetime is millisecond precision.
+	due, err := s.service.GetTasksWithPastReminders()
+	s.NoError(err)
+	s.Require().Len(due, 1)
+	triggerTime := due[0].Reminders[0].TriggerTime
+
+	won, err := s.service.ClaimReminder(taskID, categoryID, triggerTime)
+	s.NoError(err)
+	s.True(won, "first claim should win")
+
+	wonAgain, err := s.service.ClaimReminder(taskID, categoryID, triggerTime)
+	s.NoError(err)
+	s.False(wonAgain, "second claim must lose — this is what prevents double sends")
+
+	// The claimed reminder is now marked sent and excluded from the due query.
+	dueAfter, err := s.service.GetTasksWithPastReminders()
+	s.NoError(err)
+	s.Len(dueAfter, 0, "claimed reminder should no longer be due")
+}
+
 func (s *TaskServiceTestSuite) TestMarkAsCompleted_MultipleCompletions_UpdatesStreakAndHighestStreak() {
 	user := s.GetUser(0)
 
