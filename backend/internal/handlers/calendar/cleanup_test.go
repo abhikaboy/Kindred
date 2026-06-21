@@ -13,8 +13,7 @@ import (
 
 type CleanupAfterDisconnectSuite struct {
 	testpkg.BaseSuite
-	svc           *Service
-	pushOutboxCol bson.M // placeholder so tests can find the collection by name
+	svc *Service
 }
 
 func TestCleanupAfterDisconnect(t *testing.T) {
