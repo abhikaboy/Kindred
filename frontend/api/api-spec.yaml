@@ -1618,51 +1618,6 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
-    /v1/user/analytics/layout:
-        get:
-            tags:
-                - Analytics
-            summary: Get analytics dashboard layout
-            description: Returns the authenticated user's saved widget order and hidden widgets.
-            operationId: get-analytics-layout
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AnalyticsLayout'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
-        put:
-            tags:
-                - Analytics
-            summary: Update analytics dashboard layout
-            description: Persists the user's widget order and hidden widgets.
-            operationId: update-analytics-layout
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/AnalyticsLayout'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AnalyticsLayout'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints:
         post:
             tags:
@@ -7346,85 +7301,6 @@ components:
                     type: string
             required:
                 - emoji
-        AnalyticsAttention:
-            type: object
-            additionalProperties: false
-            properties:
-                tasks:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AnalyticsAttentionTask'
-            required:
-                - tasks
-        AnalyticsAttentionTask:
-            type: object
-            additionalProperties: false
-            properties:
-                category:
-                    type: string
-                categoryId:
-                    type: string
-                daysOpen:
-                    type: integer
-                    format: int64
-                deadline:
-                    type: string
-                id:
-                    type: string
-                reasons:
-                    type: array
-                    items:
-                        type: string
-                title:
-                    type: string
-                workspace:
-                    type: string
-            required:
-                - id
-                - title
-                - workspace
-                - category
-                - categoryId
-                - daysOpen
-                - reasons
-        AnalyticsBestTime:
-            type: object
-            additionalProperties: false
-            properties:
-                cells:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AnalyticsBestTimeCell'
-                maxCount:
-                    type: integer
-                    format: int64
-                takeaway:
-                    type: string
-            required:
-                - cells
-                - maxCount
-                - takeaway
-        AnalyticsBestTimeCell:
-            type: object
-            additionalProperties: false
-            properties:
-                count:
-                    type: integer
-                    format: int64
-                hour:
-                    type: integer
-                    format: int64
-                level:
-                    type: integer
-                    format: int64
-                weekday:
-                    type: integer
-                    format: int64
-            required:
-                - weekday
-                - hour
-                - count
-                - level
         AnalyticsCategoryHealth:
             type: object
             additionalProperties: false
@@ -7576,55 +7452,6 @@ components:
                 - date
                 - count
                 - level
-        AnalyticsKudosEffect:
-            type: object
-            additionalProperties: false
-            properties:
-                hasComparison:
-                    type: boolean
-                takeaway:
-                    type: string
-                withCount:
-                    type: integer
-                    format: int64
-                withKudosMedianHours:
-                    type: number
-                    format: double
-                withoutCount:
-                    type: integer
-                    format: int64
-                withoutKudosMedianHours:
-                    type: number
-                    format: double
-            required:
-                - withKudosMedianHours
-                - withoutKudosMedianHours
-                - withCount
-                - withoutCount
-                - hasComparison
-                - takeaway
-        AnalyticsLayout:
-            type: object
-            additionalProperties: false
-            properties:
-                $schema:
-                    type: string
-                    description: A URL to the JSON Schema for this object.
-                    format: uri
-                    examples:
-                        - https://example.com/schemas/AnalyticsLayout.json
-                    readOnly: true
-                hidden:
-                    type: array
-                    items:
-                        type: string
-                order:
-                    type: array
-                    items:
-                        type: string
-            required:
-                - order
-                - hidden
         AnalyticsLegendItem:
             type: object
             additionalProperties: false
@@ -7721,10 +7548,6 @@ components:
                     examples:
                         - https://example.com/schemas/AnalyticsResponse.json
                     readOnly: true
-                attention:
-                    $ref: '#/components/schemas/AnalyticsAttention'
-                bestTime:
-                    $ref: '#/components/schemas/AnalyticsBestTime'
                 categoryFilter:
                     type: string
                 categoryHealth:
@@ -7738,20 +7561,12 @@ components:
                     $ref: '#/components/schemas/AnalyticsHabits'
                 heatmap:
                     $ref: '#/components/schemas/AnalyticsHeatmap'
-                kudosEffect:
-                    $ref: '#/components/schemas/AnalyticsKudosEffect'
                 progress:
                     $ref: '#/components/schemas/AnalyticsProgress'
                 range:
                     type: string
                 signals:
                     $ref: '#/components/schemas/AnalyticsSignals'
-                supportCoverage:
-                    $ref: '#/components/schemas/AnalyticsSupportCoverage'
-                topSupporters:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AnalyticsSupporter'
                 workspaceFilter:
                     type: string
                 workspaceHealth:
@@ -7766,11 +7581,6 @@ components:
                 - habits
                 - categoryHealth
                 - workspaceHealth
-                - bestTime
-                - attention
-                - kudosEffect
-                - supportCoverage
-                - topSupporters
         AnalyticsShareBand:
             type: object
             additionalProperties: false
@@ -7845,44 +7655,6 @@ components:
                 - momentum
                 - timing
                 - support
-        AnalyticsSupportCoverage:
-            type: object
-            additionalProperties: false
-            properties:
-                pct:
-                    type: integer
-                    format: int64
-                supported:
-                    type: integer
-                    format: int64
-                takeaway:
-                    type: string
-                total:
-                    type: integer
-                    format: int64
-            required:
-                - pct
-                - supported
-                - total
-                - takeaway
-        AnalyticsSupporter:
-            type: object
-            additionalProperties: false
-            properties:
-                count:
-                    type: integer
-                    format: int64
-                icon:
-                    type: string
-                id:
-                    type: string
-                name:
-                    type: string
-            required:
-                - id
-                - name
-                - icon
-                - count
         AnalyticsWorkspaceHealth:
             type: object
             additionalProperties: false
