@@ -28,6 +28,8 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/joho/godotenv"
 	"github.com/lmittmann/tint"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,8 +53,33 @@ func run(stderr io.Writer, args []string) {
 
 	ctx := context.Background()
 
+	// Generating the OpenAPI spec is hermetic: it only needs the registered
+	// routes, not a live DB, secrets, or a .env file. Handle it before any of
+	// that setup so it runs in CI (the API-contract-drift check has no env/DB).
+	if *generateOpenAPIFlag {
+		// Route registration re-loads config and fatals on these required vars;
+		// the spec doesn't encode their values, so set placeholders when unset.
+		// ponytail: hardcoded list — extend if more `required` config vars appear.
+		for _, k := range []string{
+			"GOOGLE_CALENDAR_CLIENT_ID", "GOOGLE_CALENDAR_CLIENT_SECRET", "GOOGLE_CALENDAR_WEBHOOK_BASE_URL",
+			"DO_SPACES_ACCESS_KEY", "DO_SPACES_SECRET_KEY",
+		} {
+			if os.Getenv(k) == "" {
+				os.Setenv(k, "openapi-generation-placeholder")
+			}
+		}
+		cfg, _ := config.Load() // best-effort; the spec doesn't encode secret values
+		api, _ := server.New(openAPICollections(), nil, nil, cfg)
+		if err := generateOpenAPISpec(api, *openAPIOutputFlag); err != nil {
+			fatal(ctx, "Failed to generate OpenAPI spec", err)
+		}
+		fmt.Printf("OpenAPI spec generated successfully: %s\n", *openAPIOutputFlag)
+		os.Exit(0)
+	}
+
+	// .env is a dev convenience; in CI/prod, config comes from the environment.
 	if err := godotenv.Load(); err != nil {
-		fatal(ctx, "Failed to load .env", err)
+		slog.Warn("No .env file loaded; using environment variables", "error", err)
 	}
 
 	config, err := config.Load()
@@ -128,17 +155,8 @@ func run(stderr io.Writer, args []string) {
 	fmt.Printf("Gemini service initialized\n")
 
 	// API Server Setup
-	api, fiberApp := server.New(db.Collections, db.Stream, geminiService, config)
+	_, fiberApp := server.New(db.Collections, db.Stream, geminiService, config)
 	fmt.Printf("Server initialized\n")
-
-	// Handle OpenAPI generation if flag is set
-	if *generateOpenAPIFlag {
-		if err := generateOpenAPISpec(api, *openAPIOutputFlag); err != nil {
-			fatal(ctx, "Failed to generate OpenAPI spec", err)
-		}
-		fmt.Printf("OpenAPI spec generated successfully: %s\n", *openAPIOutputFlag)
-		os.Exit(0)
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Hour)
 	go func() {
@@ -269,4 +287,30 @@ func generateOpenAPISpec(api huma.API, outputPath string) error {
 	}
 
 	return nil
+}
+
+// openAPICollections returns lazy collection handles (mongo.Connect doesn't dial
+// and Collection() does no I/O) so server.New can register routes — which deref
+// these handles — without a live DB. The spec's route set is data-independent,
+// so this reproduces the real spec.
+// ponytail: names mirror the app's collections; if registration accesses a new
+// one, generation panics here — add it to the list.
+func openAPICollections() map[string]*mongo.Collection {
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		panic(err)
+	}
+	db := client.Database("openapi")
+	names := []string{
+		"activity", "blueprints", "calendar_connections", "categories",
+		"completed-tasks", "congratulations", "encouragements", "for_you_exposures",
+		"friend-requests", "groups", "health", "notifications", "passwordResets",
+		"posts", "referrals", "reports", "ring_states", "sample", "template-tasks",
+		"users", "waitlist", "workspaces",
+	}
+	collections := make(map[string]*mongo.Collection, len(names))
+	for _, n := range names {
+		collections[n] = db.Collection(n)
+	}
+	return collections
 }
