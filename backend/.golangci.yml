@@ -7,6 +7,10 @@ linters-settings:
   errcheck:
     check-type-assertions: true
 
+  gosec:
+    excludes:
+      - G404  # math/rand is fine for non-security uses (feed sampling, default color choice)
+
   govet:
     enable-all: true
     disable:

@@ -11,20 +11,18 @@ jobs:
     name: Backend Tests
     runs-on: ubuntu-latest
 
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # Single-node replica set so MongoDB transactions work (the plain `services`
+      # mongo container can't run with --replSet). Tests connect with
+      # directConnection=true to skip replica-set host discovery.
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.11.0
+        with:
+          mongodb-version: '7.0'
+          mongodb-replica-set: rs0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -39,15 +37,15 @@ jobs:
       - name: Run unit tests
         working-directory: backend
         env:
-          MONGO_URI: mongodb://localhost:27017
-          TEST_MONGO_URI: mongodb://localhost:27017
+          MONGO_URI: mongodb://localhost:27017/?directConnection=true
+          TEST_MONGO_URI: mongodb://localhost:27017/?directConnection=true
         run: go test -short -v -race -coverprofile=coverage.out ./...
 
       - name: Run integration tests (excluding spaces)
         working-directory: backend
         env:
-          MONGO_URI: mongodb://localhost:27017
-          TEST_MONGO_URI: mongodb://localhost:27017
+          MONGO_URI: mongodb://localhost:27017/?directConnection=true
+          TEST_MONGO_URI: mongodb://localhost:27017/?directConnection=true
         run: go test -v -race ./internal/handlers/connection ./internal/handlers/post ./internal/handlers/blueprint ./internal/handlers/category ./internal/handlers/congratulation ./internal/handlers/encouragement ./internal/handlers/group ./internal/handlers/notifications ./internal/handlers/profile ./internal/handlers/report ./internal/handlers/settings ./internal/handlers/waitlist
 
       - name: Generate coverage report
