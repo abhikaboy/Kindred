@@ -3,7 +3,7 @@ import React from "react";
 import DashboardCard from "../cards/DashboardCard";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
-import { Bird, Calendar, HandSwipeRight, PencilLine } from "phosphor-react-native";
+import { Bird, Calendar, HandSwipeRight, Microphone } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 const DashboardCards = () => {
@@ -41,11 +41,11 @@ const DashboardCards = () => {
             },
         },
         {
-            title: "Text Dump",
-            icon: <PencilLine size={22} weight="light" color={ThemedColor.primary} />,
+            title: "Voice Dump",
+            icon: <Microphone size={22} weight="light" color={ThemedColor.primary} />,
             badge: "AI",
             onPress: () => {
-                router.push("/text-dump");
+                router.push("/voice");
             },
         },
     ];
