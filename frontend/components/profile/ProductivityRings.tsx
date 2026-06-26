@@ -97,12 +97,17 @@ function RingCircle({
 interface ProductivityRingsCardProps {
     expanded?: boolean;
     onExpandChange?: (expanded: boolean) => void;
+    // "rings" on home, "score" on profile, "full" shows both
+    variant?: "full" | "rings" | "score";
 }
 
 const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     expanded,
     onExpandChange,
+    variant = "full",
 }) => {
+    const showScore = variant !== "rings";
+    const showRings = variant !== "score";
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
     const { rings, score, streak, isLoading, history, canClaimReward, allClosed, claimReward, isClaiming } = useRings();
@@ -177,11 +182,15 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             </View>
 
             {/* Score Arc */}
-            <View style={[styles.arcSection, { marginBottom: 8 }]}>
-                <ScoreArc score={score} />
-            </View>
+            {showScore && (
+                <View style={[styles.arcSection, { marginBottom: 8 }]}>
+                    <ScoreArc score={score} />
+                </View>
+            )}
 
             {/* Rings Row */}
+            {showRings && (
+            <>
             <View style={styles.ringsRow}>
                 {ringEntries.map(({ key, label, progress }) => (
                     <TouchableOpacity
@@ -277,6 +286,8 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                         : undefined
                 }
             />
+            </>
+            )}
         </View>
     );
 };

@@ -18,6 +18,7 @@ import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
+import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
 import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
@@ -121,6 +122,9 @@ export default function Profile() {
                 <ProfileSongWidget />
 
                 <CompleteProfileCard />
+
+                {/* Productivity score lives on the profile; rings moved to home */}
+                <ProductivityRingsCard variant="score" />
 
                 <ReferralCard />
 

@@ -349,7 +349,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
-                    <ProductivityRingsCard expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
+                    <ProductivityRingsCard variant="rings" expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
                 </View>
 
                 {scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
