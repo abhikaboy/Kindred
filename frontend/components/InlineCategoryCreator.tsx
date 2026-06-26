@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, Dimensions } from "react-native";
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, Dimensions, Easing } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { useRequest } from "@/hooks/useRequest";
 import { Plus, X, Tag } from "phosphor-react-native";
+import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -15,16 +16,22 @@ type Props = {
     onCreated?: (categoryId: string, categoryName: string) => void;
     onCancel: () => void;
     initialName?: string;
+    // Onboarding tutorial: type the name in for the user, lock the input,
+    // hide the tag button, and point a guiding cursor at the create button.
+    tutorial?: boolean;
 };
 
-const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
-    const [name, setName] = useState(initialName ?? "");
+const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = false }: Props) => {
+    const [name, setName] = useState(tutorial ? "" : (initialName ?? ""));
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
+    const [typingDone, setTypingDone] = useState(false);
     const inputRef = useRef<TextInput>(null);
     const mountedRef = useRef(true);
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const cursorSlide = useRef(new Animated.Value(-50)).current;
+    const cursorScale = useRef(new Animated.Value(1)).current;
     const ThemedColor = useThemeColor();
     const { selected, addToWorkspace } = useTasks();
     const { request } = useRequest();
@@ -39,9 +46,41 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
             duration: 200,
             useNativeDriver: true,
         }).start();
-        setTimeout(() => inputRef.current?.focus(), 150);
+        // Tutorial types the name itself — don't focus (no keyboard).
+        if (!tutorial) setTimeout(() => inputRef.current?.focus(), 150);
         return () => { mountedRef.current = false; };
     }, []);
+
+    // Tutorial: typewriter the name in, then point the cursor at create + pulse
+    useEffect(() => {
+        if (!tutorial || !initialName) return;
+        let i = 0;
+        let cancelled = false;
+        const tick = () => {
+            if (cancelled) return;
+            i++;
+            setName(initialName.slice(0, i));
+            if (i < initialName.length) setTimeout(tick, 110);
+            else setTypingDone(true);
+        };
+        const start = setTimeout(tick, 1200);
+        return () => { cancelled = true; clearTimeout(start); };
+    }, [tutorial, initialName]);
+
+    useEffect(() => {
+        if (!typingDone) return;
+        const slide = setTimeout(() => {
+            Animated.timing(cursorSlide, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(() => {
+                Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(cursorScale, { toValue: 0.7, duration: 650, useNativeDriver: true }),
+                        Animated.timing(cursorScale, { toValue: 1, duration: 750, useNativeDriver: true }),
+                    ])
+                ).start();
+            });
+        }, 400);
+        return () => clearTimeout(slide);
+    }, [typingDone]);
 
     const animateOut = (callback: () => void) => {
         Animated.timing(fadeAnim, {
@@ -113,7 +152,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
                     placeholder="Category name"
                     placeholderTextColor={error ? ThemedColor.error : ThemedColor.caption}
                     returnKeyType="done"
-                    editable={!loading}
+                    editable={!loading && !tutorial}
                     style={[
                         styles.input,
                         { color: error ? ThemedColor.error : ThemedColor.text },
@@ -129,16 +168,18 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
                                     <X size={14} weight="bold" color={ThemedColor.caption} />
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={openTagsSheet} hitSlop={8} accessibilityLabel="Add tags">
-                                <View
-                                    style={[
-                                        styles.iconCircle,
-                                        { backgroundColor: hasTags ? ThemedColor.primary + "20" : ThemedColor.lightened },
-                                    ]}
-                                >
-                                    <Tag size={14} weight={hasTags ? "fill" : "bold"} color={hasTags ? ThemedColor.primary : ThemedColor.caption} />
-                                </View>
-                            </TouchableOpacity>
+                            {!tutorial && (
+                                <TouchableOpacity onPress={openTagsSheet} hitSlop={8} accessibilityLabel="Add tags">
+                                    <View
+                                        style={[
+                                            styles.iconCircle,
+                                            { backgroundColor: hasTags ? ThemedColor.primary + "20" : ThemedColor.lightened },
+                                        ]}
+                                    >
+                                        <Tag size={14} weight={hasTags ? "fill" : "bold"} color={hasTags ? ThemedColor.primary : ThemedColor.caption} />
+                                    </View>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                                 onPress={handleCreate}
                                 disabled={name.trim().length === 0}
@@ -160,6 +201,16 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName }: Props) => {
                         </>
                     )}
                 </View>
+
+                {/* Tutorial: guiding cursor slides to the create button and pulses */}
+                {tutorial && typingDone && (
+                    <Animated.View
+                        pointerEvents="none"
+                        style={[styles.tutorialCursor, { transform: [{ translateX: cursorSlide }] }]}
+                    >
+                        <TutorialCursor size={30} label="Tap to create" bubbleLeft arrowScale={cursorScale} />
+                    </Animated.View>
+                )}
             </Animated.View>
 
             <BottomSheetModal
@@ -191,6 +242,14 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignSelf: "stretch",
         gap: 12,
+        position: "relative",
+    },
+    // ponytail: tip sits on the create (+) button; tune right/top if it drifts
+    tutorialCursor: {
+        position: "absolute",
+        right: -11,
+        top: 4,
+        zIndex: 50,
     },
     input: {
         flex: 1,

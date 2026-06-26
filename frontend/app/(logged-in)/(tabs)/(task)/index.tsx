@@ -20,6 +20,7 @@ import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectio
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
+import { ThemedText } from "@/components/ThemedText";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
@@ -335,6 +336,23 @@ const HomeContent = ({
                                     menuRef={menuRef}
                                 />
                             </Animated.View>
+
+                            {/* ponytail: dev-only — replay the interactive onboarding tutorial. Remove before ship. */}
+                            <TouchableOpacity
+                                onPress={() => router.push("/(onboarding)/tutorial")}
+                                style={{
+                                    marginHorizontal: HORIZONTAL_PADDING,
+                                    marginBottom: 12,
+                                    padding: 10,
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: ThemedColor.tertiary,
+                                    alignItems: "center",
+                                }}>
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                    ▶ Replay onboarding tutorial (dev)
+                                </ThemedText>
+                            </TouchableOpacity>
 
                             <HomeScrollContent
                                 encouragementCount={encouragementCount}
