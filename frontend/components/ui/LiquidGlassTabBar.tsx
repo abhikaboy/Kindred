@@ -57,13 +57,23 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, badg
 
     const shown = visible && !keyboardUp;
 
-    const routeCount = state.routes.length;
+    // Honor expo-router `href: null` (it hides a tab via tabBarItemStyle.display = "none").
+    const visibleRoutes = state.routes.filter(
+        (route) => (descriptors[route.key].options.tabBarItemStyle as any)?.display !== "none"
+    );
+    const activeRouteKey = state.routes[state.index]?.key;
+    const activeVisibleIndex = Math.max(
+        visibleRoutes.findIndex((route) => route.key === activeRouteKey),
+        0
+    );
+
+    const routeCount = visibleRoutes.length;
     const tabWidth = contentWidth > 0 ? contentWidth / routeCount : 0;
 
     const capsuleX = useSharedValue(0);
     useEffect(() => {
-        capsuleX.value = withSpring(state.index * tabWidth, { damping: 18, stiffness: 180, mass: 0.6 });
-    }, [state.index, tabWidth]);
+        capsuleX.value = withSpring(activeVisibleIndex * tabWidth, { damping: 18, stiffness: 180, mass: 0.6 });
+    }, [activeVisibleIndex, tabWidth]);
 
     const capsuleStyle = useAnimatedStyle(() => ({
         width: Math.max(tabWidth, 0),
@@ -174,9 +184,9 @@ export function LiquidGlassTabBar({ state, descriptors, navigation, badges, badg
                             ]}
                         />
 
-                        {state.routes.map((route, index) => {
+                        {visibleRoutes.map((route) => {
                             const { options } = descriptors[route.key];
-                            const focused = state.index === index;
+                            const focused = route.key === activeRouteKey;
 
                             const onPress = () => {
                                 const event = navigation.emit({
