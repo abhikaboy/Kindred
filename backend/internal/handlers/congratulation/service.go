@@ -618,8 +618,7 @@ func (s *Service) GrantWelcomeCredits(userID primitive.ObjectID) (map[string]int
 	}
 
 	credits := map[string]int{
-		"voice":     5,
-		"analytics": 5,
+		"naturalLanguage": 5,
 	}
 
 	// Atomically set the flag and grant credits — only succeeds if flag is not already set
@@ -628,8 +627,7 @@ func (s *Service) GrantWelcomeCredits(userID primitive.ObjectID) (map[string]int
 		bson.M{"_id": userID, "welcomeCreditsGranted": bson.M{"$ne": true}},
 		bson.M{
 			"$inc": bson.M{
-				"credits.voice":     credits["voice"],
-				"credits.analytics": credits["analytics"],
+				"credits.naturalLanguage": credits["naturalLanguage"],
 			},
 			"$set": bson.M{"welcomeCreditsGranted": true},
 		},
