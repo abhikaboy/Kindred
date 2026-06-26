@@ -38,6 +38,8 @@ import { RevenueCatProvider } from "@/hooks/useRevenueCat";
 import { AnalyticsProvider } from "@/hooks/useAnalytics";
 import { RingUpdateProvider } from "@/contexts/ringUpdateContext";
 import { RingUpdateOverlay } from "@/components/ui/RingUpdateOverlay";
+import { KudosSentProvider } from "@/contexts/kudosSentContext";
+import { KudosSentOverlay } from "@/components/ui/KudosSentOverlay";
 
 try {
     const previousHandler = ErrorUtils.getGlobalHandler();
@@ -156,6 +158,7 @@ export default Sentry.wrap(function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>
             <RingUpdateProvider>
+            <KudosSentProvider>
             <AnalyticsProvider>
             <AnimatePresence>
                 <AuthProvider>
@@ -183,6 +186,7 @@ export default Sentry.wrap(function RootLayout() {
                                                                     />
                                                                     <Slot />
                                                                     <RingUpdateOverlay />
+                                                                    <KudosSentOverlay />
                                                                     <StatusBar style="light" />
                                                                 </AlertProvider>
                                                             </BottomSheetModalProvider>
@@ -200,6 +204,7 @@ export default Sentry.wrap(function RootLayout() {
                 </AuthProvider>
             </AnimatePresence>
             </AnalyticsProvider>
+            </KudosSentProvider>
             </RingUpdateProvider>
         </QueryClientProvider>
     );

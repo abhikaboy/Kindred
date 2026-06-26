@@ -28,6 +28,8 @@ import { useUserSettings, useUpdateDashboardConfiguration, settingsKeys } from "
 import type { DashboardConfiguration, UserSettings } from "@/api/settings";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
+import ProductivityRingsCard from "@/components/profile/ProductivityRings";
+import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -77,6 +79,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     const router = useRouter();
     const { showAlert } = useAlert();
     const [statsExpanded, setStatsExpanded] = useState(false);
+    const [ringsExpanded, setRingsExpanded] = useState(false);
     const dimAnim = useRef(new Animated.Value(1)).current;
 
     // Dashboard section visibility
@@ -334,6 +337,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 ) : undefined
             }
         >
+            <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
             <MotiView style={{ gap: 16, marginTop: 0 }}>
 
                 <TaggedTaskBanners />
@@ -342,6 +346,12 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
                     <DashboardStats onExpandChange={handleStatsExpandChange} />
                 </View>
+
+                {/* Productivity Rings - private to the user, live-updates via useRings cache */}
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
+                    <ProductivityRingsCard expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
+                </View>
+
                 {scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
                 <WorkingOnRow />
 

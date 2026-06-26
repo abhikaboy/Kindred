@@ -27,6 +27,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { useKudosSent } from "@/contexts/kudosSentContext";
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -55,6 +56,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
+    const { showKudosSent } = useKudosSent();
     const [encouragementMessage, setEncouragementMessage] = useState("");
     const [selectedMedia, setSelectedMedia] = useState<SelectedKudosMedia | null>(null);
     const [showRecorder, setShowRecorder] = useState(false);
@@ -329,6 +331,17 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             if (Platform.OS === "ios") {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
+
+            // Show the global "kudos sent" overlay. Media sends have no text body.
+            showKudosSent({
+                recipientName: encouragementConfig?.userHandle || "them",
+                message: selectedMedia
+                    ? selectedMedia.type === "video"
+                        ? "Sent a video"
+                        : "Sent an image"
+                    : encouragementMessage.trim(),
+                kind: "encouragement",
+            });
 
             // Close modal first, enable confetti, then trigger it
             setVisible(false);
