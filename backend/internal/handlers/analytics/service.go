@@ -3,6 +3,7 @@ package analytics
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -10,7 +11,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// proxyCategoryName is the sentinel name for placeholder categories that only
+// carry workspace metadata (see category handler). They are not real categories
+// and must be excluded from analytics.
+const proxyCategoryName = "!-proxy-!"
 
 // Service loads the raw corpus for a user and delegates the math to the pure
 // computeAnalytics function so the heavy logic stays unit-testable.
@@ -19,6 +26,7 @@ type Service struct {
 	Categories     *mongo.Collection
 	Templates      *mongo.Collection
 	Encouragements *mongo.Collection
+	Users          *mongo.Collection
 }
 
 func newService(collections map[string]*mongo.Collection) *Service {
@@ -27,7 +35,44 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Categories:     collections["categories"],
 		Templates:      collections["template-tasks"],
 		Encouragements: collections["encouragements"],
+		Users:          collections["users"],
 	}
+}
+
+// GetLayout returns the user's saved dashboard layout, or an empty layout if
+// none is stored (the client then falls back to its default order).
+func (s *Service) GetLayout(userID primitive.ObjectID) (AnalyticsLayout, error) {
+	if s.Users == nil {
+		return AnalyticsLayout{}, nil
+	}
+	var doc struct {
+		Layout *AnalyticsLayout `bson:"analytics_layout"`
+	}
+	err := s.Users.FindOne(
+		context.Background(),
+		bson.M{"_id": userID},
+		options.FindOne().SetProjection(bson.M{"analytics_layout": 1}),
+	).Decode(&doc)
+	if err == mongo.ErrNoDocuments || doc.Layout == nil {
+		return AnalyticsLayout{}, nil
+	}
+	if err != nil {
+		return AnalyticsLayout{}, err
+	}
+	return *doc.Layout, nil
+}
+
+// UpdateLayout persists the user's dashboard layout onto the user document.
+func (s *Service) UpdateLayout(userID primitive.ObjectID, layout AnalyticsLayout) error {
+	if s.Users == nil {
+		return nil
+	}
+	_, err := s.Users.UpdateOne(
+		context.Background(),
+		bson.M{"_id": userID},
+		bson.M{"$set": bson.M{"analytics_layout": layout}},
+	)
+	return err
 }
 
 // GetAnalytics builds the widget-ready dashboard payload for one user.
@@ -48,7 +93,7 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
-	categories, err := s.loadCategories(ctx, userID)
+	categories, openTasks, proxyIDs, err := s.loadCategories(ctx, userID)
 	if err != nil {
 		return AnalyticsResponse{}, err
 	}
@@ -60,17 +105,75 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 	supportPrev := s.countSupport(ctx, userID, prevStart, prevEnd)
 
 	in := computeInput{
-		Range:           rng,
-		Now:             now,
-		WorkspaceFilter: workspace,
-		CategoryFilter:  category,
-		Completed:       completed,
-		Categories:      categories,
-		Habits:          habits,
-		SupportCurrent:  supportCur,
-		SupportPrev:     supportPrev,
+		Range:            rng,
+		Now:              now,
+		WorkspaceFilter:  workspace,
+		CategoryFilter:   category,
+		Completed:        completed,
+		Categories:       categories,
+		Habits:           habits,
+		OpenTasks:        openTasks,
+		ProxyCategoryIDs: proxyIDs,
+		SupportCurrent:   supportCur,
+		SupportPrev:      supportPrev,
 	}
-	return computeAnalytics(in), nil
+	resp := computeAnalytics(in)
+	resp.TopSupporters = s.loadTopSupporters(ctx, userID, curStart, curEnd)
+	return resp, nil
+}
+
+// loadTopSupporters returns the people who sent the user the most Kudos in the
+// window, for the "who showed up" / top-supporters surfaces.
+func (s *Service) loadTopSupporters(ctx context.Context, userID primitive.ObjectID, start, end time.Time) []AnalyticsSupporter {
+	supporters := []AnalyticsSupporter{}
+	if s.Encouragements == nil {
+		return supporters
+	}
+	cursor, err := s.Encouragements.Find(ctx, bson.M{
+		"receiver":  userID,
+		"timestamp": bson.M{"$gte": start, "$lt": end},
+	})
+	if err != nil {
+		slog.Warn("analytics: top supporters query failed", "error", err)
+		return supporters
+	}
+	defer cursor.Close(ctx)
+
+	type agg struct {
+		name, icon string
+		count      int
+	}
+	by := map[string]*agg{}
+	order := []string{}
+	for cursor.Next(ctx) {
+		var e struct {
+			Sender struct {
+				Name    string             `bson:"name"`
+				Picture string             `bson:"picture"`
+				ID      primitive.ObjectID `bson:"id"`
+			} `bson:"sender"`
+		}
+		if err := cursor.Decode(&e); err != nil {
+			continue
+		}
+		id := e.Sender.ID.Hex()
+		a, ok := by[id]
+		if !ok {
+			a = &agg{name: e.Sender.Name, icon: e.Sender.Picture}
+			by[id] = a
+			order = append(order, id)
+		}
+		a.count++
+	}
+	for _, id := range order {
+		a := by[id]
+		supporters = append(supporters, AnalyticsSupporter{ID: id, Name: a.name, Icon: a.icon, Count: a.count})
+	}
+	sort.SliceStable(supporters, func(i, j int) bool { return supporters[i].Count > supporters[j].Count })
+	if len(supporters) > 5 {
+		supporters = supporters[:5]
+	}
+	return supporters
 }
 
 func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, since time.Time) ([]AnalyticsTaskLite, error) {
@@ -103,38 +206,62 @@ func (s *Service) loadCompleted(ctx context.Context, userID primitive.ObjectID, 
 		}
 		out = append(out, AnalyticsTaskLite{
 			CategoryID:  catID,
+			CreatedAt:   t.Timestamp,
 			CompletedAt: t.TimeCompleted.UTC(),
 			Deadline:    t.Deadline,
 			KudosCount:  len(t.Encouragements),
+			HasTag:      len(t.TaggedUsers) > 0,
 		})
 	}
 	return out, cursor.Err()
 }
 
-func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, error) {
+// loadCategories returns both category metadata and the user's open (active)
+// tasks. Both come from the single categories query — open tasks are embedded
+// in the category documents, so there's no extra round trip.
+func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsCategoryMeta, []AnalyticsOpenTaskLite, map[string]bool, error) {
 	if s.Categories == nil {
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 	cursor, err := s.Categories.Find(ctx, bson.M{"user": userID})
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	defer cursor.Close(ctx)
 
-	out := []AnalyticsCategoryMeta{}
+	meta := []AnalyticsCategoryMeta{}
+	open := []AnalyticsOpenTaskLite{}
+	proxy := map[string]bool{}
 	for cursor.Next(ctx) {
 		var c types.CategoryDocument
 		if err := cursor.Decode(&c); err != nil {
 			slog.Warn("analytics: skipping undecodable category", "error", err)
 			continue
 		}
-		out = append(out, AnalyticsCategoryMeta{
-			ID:        c.ID.Hex(),
-			Name:      c.Name,
-			Workspace: c.WorkspaceName,
-		})
+		catID := c.ID.Hex()
+		if c.Name == proxyCategoryName {
+			// Placeholder category — record its id so its tasks are dropped,
+			// and skip it from metadata and open tasks entirely.
+			proxy[catID] = true
+			continue
+		}
+		meta = append(meta, AnalyticsCategoryMeta{ID: catID, Name: c.Name, Workspace: c.WorkspaceName})
+		for _, t := range c.Tasks {
+			if !t.Active {
+				continue
+			}
+			open = append(open, AnalyticsOpenTaskLite{
+				ID:         t.ID.Hex(),
+				Title:      t.Content,
+				CategoryID: catID,
+				CreatedAt:  t.Timestamp,
+				Deadline:   t.Deadline,
+				Priority:   t.Priority,
+				KudosCount: len(t.Encouragements),
+			})
+		}
 	}
-	return out, cursor.Err()
+	return meta, open, proxy, cursor.Err()
 }
 
 func (s *Service) loadHabits(ctx context.Context, userID primitive.ObjectID) ([]AnalyticsHabitLite, error) {

@@ -14,9 +14,11 @@ import (
 
 type AnalyticsTaskLite struct {
 	CategoryID  string
+	CreatedAt   time.Time
 	CompletedAt time.Time
 	Deadline    *time.Time
 	KudosCount  int
+	HasTag      bool
 }
 
 type AnalyticsCategoryMeta struct {
@@ -35,16 +37,28 @@ type AnalyticsHabitLite struct {
 	NextDueAt       *time.Time
 }
 
+type AnalyticsOpenTaskLite struct {
+	ID         string
+	Title      string
+	CategoryID string
+	CreatedAt  time.Time
+	Deadline   *time.Time
+	Priority   int
+	KudosCount int
+}
+
 type computeInput struct {
-	Range           string
-	Now             time.Time
-	WorkspaceFilter string
-	CategoryFilter  string
-	Completed       []AnalyticsTaskLite // covers the heatmap window (>= 91 days) and both periods
-	Categories      []AnalyticsCategoryMeta
-	Habits          []AnalyticsHabitLite
-	SupportCurrent  int // kudos received in the current period
-	SupportPrev     int // kudos received in the previous period
+	Range            string
+	Now              time.Time
+	WorkspaceFilter  string
+	CategoryFilter   string
+	Completed        []AnalyticsTaskLite // covers the heatmap window (>= 91 days) and both periods
+	Categories       []AnalyticsCategoryMeta
+	Habits           []AnalyticsHabitLite
+	OpenTasks        []AnalyticsOpenTaskLite
+	ProxyCategoryIDs map[string]bool // sentinel "!-proxy-!" categories — excluded everywhere
+	SupportCurrent   int             // kudos received in the current period
+	SupportPrev      int             // kudos received in the previous period
 }
 
 // --- palette / thresholds ----------------------------------------------------
@@ -323,6 +337,9 @@ func computeAnalytics(in computeInput) AnalyticsResponse {
 		return ""
 	}
 	inScope := func(catID string) bool {
+		if in.ProxyCategoryIDs[catID] {
+			return false // sentinel "!-proxy-!" categories are not real
+		}
 		if in.CategoryFilter != "" && catID != in.CategoryFilter {
 			return false
 		}
@@ -374,8 +391,228 @@ func computeAnalytics(in computeInput) AnalyticsResponse {
 	resp.Habits = computeHabits(in.Habits, inScope, curStart, curEnd)
 	resp.CategoryHealth = computeCategoryHealth(unit, curStart, nb, cur, orderedCats, colorByID, nameOf, workspaceOf)
 	resp.WorkspaceHealth = computeWorkspaceHealth(cur, workspaceOf)
+	resp.BestTime = computeBestTime(cur, now)
+	resp.Attention = computeAttention(in.OpenTasks, inScope, nameOf, workspaceOf, now)
+	resp.KudosEffect = computeKudosEffect(cur)
+	resp.SupportCoverage = computeSupportCoverage(cur)
 
 	return resp
+}
+
+func medianHours(durations []float64) float64 {
+	n := len(durations)
+	if n == 0 {
+		return 0
+	}
+	d := append([]float64{}, durations...)
+	sort.Float64s(d)
+	var m float64
+	if n%2 == 1 {
+		m = d[n/2]
+	} else {
+		m = (d[n/2-1] + d[n/2]) / 2
+	}
+	return math.Round(m*10) / 10
+}
+
+func computeKudosEffect(cur []AnalyticsTaskLite) AnalyticsKudosEffect {
+	var with, without []float64
+	for _, t := range cur {
+		if t.CreatedAt.IsZero() {
+			continue
+		}
+		hours := t.CompletedAt.Sub(t.CreatedAt).Hours()
+		if hours <= 0 {
+			continue
+		}
+		if t.KudosCount > 0 {
+			with = append(with, hours)
+		} else {
+			without = append(without, hours)
+		}
+	}
+	wMed, woMed := medianHours(with), medianHours(without)
+	hasComparison := len(with) >= 3 && len(without) >= 3
+	return AnalyticsKudosEffect{
+		WithKudosMedianHours:    wMed,
+		WithoutKudosMedianHours: woMed,
+		WithCount:               len(with),
+		WithoutCount:            len(without),
+		HasComparison:           hasComparison,
+		Takeaway:                kudosEffectTakeaway(hasComparison, wMed, woMed),
+	}
+}
+
+func kudosEffectTakeaway(hasComparison bool, withMed, withoutMed float64) string {
+	if !hasComparison {
+		return "Not enough completed tasks yet to compare with vs without Kudos."
+	}
+	switch {
+	case withMed < withoutMed:
+		return "Tasks with Kudos tended to finish faster."
+	case withMed > withoutMed:
+		return "Tasks with Kudos took a little longer this period — support isn't only about speed."
+	default:
+		return "Tasks finished at about the same pace with or without Kudos."
+	}
+}
+
+func computeSupportCoverage(cur []AnalyticsTaskLite) AnalyticsSupportCoverage {
+	total := len(cur)
+	supported := 0
+	for _, t := range cur {
+		if t.KudosCount > 0 || t.HasTag {
+			supported++
+		}
+	}
+	pct := pctInt(supported, total)
+	return AnalyticsSupportCoverage{
+		Pct:       pct,
+		Supported: supported,
+		Total:     total,
+		Takeaway:  supportCoverageTakeaway(pct, total),
+	}
+}
+
+func supportCoverageTakeaway(pct, total int) string {
+	if total == 0 {
+		return "No completed tasks to measure support on yet."
+	}
+	if pct >= 50 {
+		return fmt.Sprintf("%d%% of your finished work had someone in your corner.", pct)
+	}
+	return fmt.Sprintf("Only %d%% of your work had support — tag a friend to bring them along.", pct)
+}
+
+func computeBestTime(cur []AnalyticsTaskLite, now time.Time) AnalyticsBestTime {
+	grid := map[int]map[int]int{} // weekday(Mon=0) -> hour -> count
+	maxCount := 0
+	peakWd, peakHour, peakCount := 0, 0, 0
+	for _, t := range cur {
+		wd := (int(t.CompletedAt.Weekday()) + 6) % 7
+		h := t.CompletedAt.Hour()
+		if grid[wd] == nil {
+			grid[wd] = map[int]int{}
+		}
+		grid[wd][h]++
+		if grid[wd][h] > peakCount {
+			peakCount = grid[wd][h]
+			peakWd, peakHour = wd, h
+		}
+	}
+
+	cells := []AnalyticsBestTimeCell{}
+	for wd := 0; wd < 7; wd++ {
+		for h := 0; h < 24; h++ {
+			c := grid[wd][h]
+			if c == 0 {
+				continue
+			}
+			if c > maxCount {
+				maxCount = c
+			}
+			cells = append(cells, AnalyticsBestTimeCell{Weekday: wd, Hour: h, Count: c, Level: levelForCount(c)})
+		}
+	}
+
+	return AnalyticsBestTime{Cells: cells, MaxCount: maxCount, Takeaway: bestTimeTakeaway(peakWd, peakHour, peakCount)}
+}
+
+func bestTimeTakeaway(peakWd, peakHour, peakCount int) string {
+	if peakCount == 0 {
+		return "Not enough activity yet to find your peak time."
+	}
+	return fmt.Sprintf("Your peak time is %s around %s.", monWeekdayName(peakWd), formatHour12(peakHour))
+}
+
+func monWeekdayName(monIdx int) string {
+	names := [...]string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
+	if monIdx < 0 || monIdx > 6 {
+		return ""
+	}
+	return names[monIdx]
+}
+
+func formatHour12(h int) string {
+	switch {
+	case h == 0:
+		return "12 AM"
+	case h < 12:
+		return fmt.Sprintf("%d AM", h)
+	case h == 12:
+		return "12 PM"
+	default:
+		return fmt.Sprintf("%d PM", h-12)
+	}
+}
+
+func computeAttention(open []AnalyticsOpenTaskLite, inScope func(string) bool, nameOf, workspaceOf func(string) string, now time.Time) AnalyticsAttention {
+	tasks := []AnalyticsAttentionTask{}
+	for _, t := range open {
+		if !inScope(t.CategoryID) {
+			continue
+		}
+		daysOpen := int(now.Sub(t.CreatedAt).Hours() / 24)
+		if daysOpen < 0 {
+			daysOpen = 0
+		}
+		pastDue := t.Deadline != nil && t.Deadline.Before(now)
+		flagged := pastDue || daysOpen >= 7 || (t.Deadline == nil && daysOpen >= 5)
+		if !flagged {
+			continue
+		}
+		reasons := []string{}
+		if pastDue {
+			reasons = append(reasons, "Past due")
+		}
+		if t.Deadline == nil {
+			reasons = append(reasons, "No deadline")
+		}
+		if t.KudosCount == 0 {
+			reasons = append(reasons, "No Kudos")
+		}
+		if t.Priority >= 3 {
+			reasons = append(reasons, "High priority")
+		}
+		if daysOpen >= 7 {
+			reasons = append(reasons, fmt.Sprintf("Open %d days", daysOpen))
+		}
+		at := AnalyticsAttentionTask{
+			ID:         t.ID,
+			Title:      t.Title,
+			Category:   nameOf(t.CategoryID),
+			CategoryID: t.CategoryID,
+			Workspace:  workspaceOf(t.CategoryID),
+			DaysOpen:   daysOpen,
+			Reasons:    reasons,
+		}
+		if t.Deadline != nil {
+			s := t.Deadline.Format(time.RFC3339)
+			at.Deadline = &s
+		}
+		tasks = append(tasks, at)
+	}
+
+	sort.SliceStable(tasks, func(i, j int) bool {
+		pi, pj := hasReason(tasks[i].Reasons, "Past due"), hasReason(tasks[j].Reasons, "Past due")
+		if pi != pj {
+			return pi
+		}
+		return tasks[i].DaysOpen > tasks[j].DaysOpen
+	})
+	if len(tasks) > 10 {
+		tasks = tasks[:10]
+	}
+	return AnalyticsAttention{Tasks: tasks}
+}
+
+func hasReason(reasons []string, want string) bool {
+	for _, r := range reasons {
+		if r == want {
+			return true
+		}
+	}
+	return false
 }
 
 func computeSignals(rng string, cur, prev []AnalyticsTaskLite, supportCur, supportPrev int) AnalyticsSignals {
@@ -424,8 +661,9 @@ func computeProgress(unit string, curStart time.Time, nb int, cur, prev []Analyt
 	segCounts := make([]map[string]int, nb)
 	for i := 0; i < nb; i++ {
 		buckets[i] = AnalyticsProgressBucket{
-			Label: bucketLabel(unit, curStart, i),
-			Date:  bucketStart(unit, curStart, i).Format("2006-01-02"),
+			Label:    bucketLabel(unit, curStart, i),
+			Date:     bucketStart(unit, curStart, i).Format("2006-01-02"),
+			Segments: []AnalyticsProgressSegment{},
 		}
 		segCounts[i] = map[string]int{}
 	}
@@ -531,8 +769,8 @@ func computeShare(unit string, curStart time.Time, nb int, cur []AnalyticsTaskLi
 		})
 	}
 
-	// Bands over time (month / sixmonth only).
-	var bands []AnalyticsShareBand
+	// 100% stacked bands per bucket (month range → weekly bands, sixmonth → monthly).
+	bands := []AnalyticsShareBand{}
 	if unit == "week" || unit == "month" {
 		segCounts := make([]map[string]int, nb)
 		totals := make([]int, nb)
@@ -551,27 +789,23 @@ func computeShare(unit string, curStart time.Time, nb int, cur []AnalyticsTaskLi
 			segCounts[idx][key]++
 			totals[idx]++
 		}
-		// Only emit bands when there's a per-bucket breakdown worth showing.
-		if unit == "month" {
-			bands = make([]AnalyticsShareBand, 0, nb)
-			for i := 0; i < nb; i++ {
-				band := AnalyticsShareBand{Label: bucketLabel(unit, curStart, i)}
-				for _, cid := range top {
-					if c := segCounts[i][cid]; c > 0 {
-						band.Slices = append(band.Slices, AnalyticsShareSlice{
-							CategoryID: cid, Name: nameOf(cid), Color: colorByID[cid],
-							Count: c, Pct: float64(pctInt(c, totals[i])),
-						})
-					}
-				}
-				if c := segCounts[i][otherID]; c > 0 {
+		for i := 0; i < nb; i++ {
+			band := AnalyticsShareBand{Label: bucketLabel(unit, curStart, i), Slices: []AnalyticsShareSlice{}}
+			for _, cid := range top {
+				if c := segCounts[i][cid]; c > 0 {
 					band.Slices = append(band.Slices, AnalyticsShareSlice{
-						CategoryID: otherID, Name: otherName, Color: otherColor,
+						CategoryID: cid, Name: nameOf(cid), Color: colorByID[cid],
 						Count: c, Pct: float64(pctInt(c, totals[i])),
 					})
 				}
-				bands = append(bands, band)
 			}
+			if c := segCounts[i][otherID]; c > 0 {
+				band.Slices = append(band.Slices, AnalyticsShareSlice{
+					CategoryID: otherID, Name: otherName, Color: otherColor,
+					Count: c, Pct: float64(pctInt(c, totals[i])),
+				})
+			}
+			bands = append(bands, band)
 		}
 	}
 

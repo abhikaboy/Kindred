@@ -4895,7 +4895,8 @@ export interface components {
             media?: components["schemas"]["MediaItemInput"][];
             size?: components["schemas"]["ImageSize"];
             song?: components["schemas"]["Song"];
-            taggedUsers?: components["schemas"]["MentionInput"][];
+            /** @description Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected */
+            taggedUsers?: unknown;
             task?: components["schemas"]["PostTaskExtendedReference"];
         };
         CreateTaskNaturalLanguageInputBody: {
@@ -7732,7 +7733,8 @@ export interface components {
             caption?: string;
             isPublic?: boolean;
             size?: components["schemas"]["ImageSize"];
-            taggedUsers?: components["schemas"]["MentionInput"][];
+            /** @description Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected */
+            taggedUsers?: unknown[];
         };
         UpdateProfileDocument: {
             /**

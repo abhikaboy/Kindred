@@ -106,9 +106,10 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 
 	doc.Metadata.IsPublic = input.Body.IsPublic
 
-	// Collect tag candidates: explicit + encourager auto-tag.
+	// Collect tag candidates: explicit + encourager auto-tag. coerceMentions
+	// drops any malformed tag so a bad "@" can't fail the post.
 	var tagCandidates []primitive.ObjectID
-	for _, m := range input.Body.TaggedUsers {
+	for _, m := range coerceMentions(input.Body.TaggedUsers) {
 		if objID, err := primitive.ObjectIDFromHex(m.ID); err == nil {
 			tagCandidates = append(tagCandidates, objID)
 		}
@@ -123,6 +124,9 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 				tagCandidates = append(tagCandidates, e.Sender.ID)
 			}
 		}
+	}
+	if len(tagCandidates) > maxTaggedUsers {
+		tagCandidates = tagCandidates[:maxTaggedUsers] // cap fanout; we dropped the validate=max guard
 	}
 	if len(tagCandidates) > 0 {
 		resolved, resolveErr := h.service.ResolveTaggedUsers(ctx, userObjID, tagCandidates)

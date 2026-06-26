@@ -100,7 +100,7 @@ export default function ReactionsBottomSheetModal({
 
 const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
-        container: { paddingHorizontal: 20, paddingBottom: 16, gap: 12, minHeight: 200 },
+        container: { paddingBottom: 16, gap: 12, minHeight: 200 },
         title: { marginBottom: 4 },
         chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
         chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
