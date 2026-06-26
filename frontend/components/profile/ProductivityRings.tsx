@@ -173,13 +173,15 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 styles.cardExpanded,
             ]}
         >
-            {/* Private label */}
-            <View style={styles.privateRow}>
-                <LockSimple size={12} color={ThemedColor.caption} />
-                <ThemedText type="caption" style={{ opacity: 0.6 }}>
-                    Only visible to you
-                </ThemedText>
-            </View>
+            {/* Private label — hidden on the home rings card */}
+            {variant !== "rings" && (
+                <View style={styles.privateRow}>
+                    <LockSimple size={12} color={ThemedColor.caption} />
+                    <ThemedText type="caption" style={{ opacity: 0.6 }}>
+                        Only visible to you
+                    </ThemedText>
+                </View>
+            )}
 
             {/* Score Arc */}
             {showScore && (

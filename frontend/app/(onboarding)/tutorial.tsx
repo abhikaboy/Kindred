@@ -379,6 +379,8 @@ export default function TutorialOnboarding() {
             step_name: OnboardingSteps.TUTORIAL.name,
             step_index: OnboardingSteps.TUTORIAL.index,
         });
+        // Demo selected the Guide workspace; reset so they land on home, not that workspace
+        setSelected("");
         router.push("/(onboarding)/calendar");
     };
 
