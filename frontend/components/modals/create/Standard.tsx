@@ -1,6 +1,7 @@
-import { Dimensions, Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect, useMemo } from "react";
-import ThemedInput from "../../inputs/ThemedInput";
+import MentionTextInput from "../../inputs/MentionTextInput";
+import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
@@ -15,7 +16,6 @@ import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import type { components } from "@/api/generated/types";
 import { updateTaskAPI, updateTemplateAPI, respondToTaskTagAPI } from "@/api/task";
 import { ObjectId } from "bson";
@@ -38,10 +38,10 @@ type Props = {
     screen?: Screen;
     categoryId?: string; // Category ID for editing tasks
     isBlueprint?: boolean; // Flag to indicate if this modal is being used for blueprint task creation
+    tutorial?: boolean; // Onboarding tutorial: lock the task name + hide the tag option
 };
 
-const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
-    const nameRef = React.useRef<TextInput>(null);
+const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
@@ -77,6 +77,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         isBlueprint: isBlueprintState,
         setIsBlueprint,
         taggedUsers,
+        setTaggedUsers,
         notes,
         checklist,
         copySourceTaskId,
@@ -475,7 +476,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                         alignItems: "center",
                         justifyContent: "center",
                         borderWidth: 0,
-                        borderColor: ThemedColor.text,
                         zIndex: 1001,
                         opacity: !selectedCategory?.id ? 0.4 : 1,
                     }}
@@ -490,40 +490,31 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                         }
                         hide();
                     }}>
-                    <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
             </View>
-            <View onStartShouldSetResponder={() => true}>
-                <ThemedInput
-                    ghost
-                    autofocus={taskName.length === 0}
-                    ref={nameRef as React.Ref<React.ElementRef<typeof BottomSheetTextInput>>}
-                    placeHolder="Enter the Task Name"
-                    textArea
-                    onSubmit={() => {
-                        if (!selectedCategory?.id) return;
-                        createPost();
-                        hide();
-                    }}
-                    onBlur={() => {
-                        nameRef.current?.blur();
-                        Keyboard.dismiss();
-                    }}
-                    onChangeText={(text) => {
-                        setTaskName(text);
-                    }}
+            <View
+                onStartShouldSetResponder={() => true}
+                style={{ zIndex: 1000 }}
+                pointerEvents={tutorial ? "none" : "auto"}>
+                <MentionTextInput
+                    placeholder="Enter the Task Name"
                     value={taskName}
                     setValue={setTaskName}
-                    textStyle={{
-                        fontSize: 24,
-                        fontFamily: "Outfit",
-                        fontWeight: 500,
-                        letterSpacing: -0.2,
+                    fontSize={24}
+                    fontWeight={500}
+                    autoFocus={taskName.length === 0}
+                    onMentionPicked={(c: MentionCandidate) => {
+                        if (taggedUsers.find((u) => u.id === c.id)) return;
+                        setTaggedUsers([
+                            ...taggedUsers,
+                            { id: c.id, handle: c.handle, display_name: c.display_name, profile_picture: c.profile_picture },
+                        ]);
                     }}
                 />
             </View>
             <PrimaryOptionRow goTo={goTo} />
-            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} />
+            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} tutorial={tutorial} />
             <TouchableOpacity
                 onPress={() => {
                     setShowAdvanced(!showAdvanced);
@@ -544,7 +535,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 )}
             </TouchableOpacity>
             <ConditionalView condition={showAdvanced}>
-                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} />
+                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} tutorial={tutorial} />
             </ConditionalView>
 
             <CustomAlert
@@ -776,10 +767,12 @@ const AdvancedOptionList = ({
     goTo,
     showUnconfigured,
     edit,
+    tutorial,
 }: {
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
     edit?: boolean;
+    tutorial?: boolean;
 }) => {
     const {
         startDate,
@@ -870,7 +863,7 @@ const AdvancedOptionList = ({
                 showUnconfigured={showUnconfigured}
                 configured={integration !== ""}
             />
-            {!edit && (
+            {!edit && !tutorial && (
                 <AdvancedOption
                     icon="people"
                     label={
