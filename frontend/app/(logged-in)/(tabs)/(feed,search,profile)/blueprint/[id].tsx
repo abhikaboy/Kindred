@@ -4,6 +4,8 @@ import { useLocalSearchParams, Stack, router } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CaretLeft } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
@@ -235,6 +237,7 @@ const BlueprintDetailSkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
 export default function BlueprintDetailScreen() {
     const { id } = useLocalSearchParams();
     const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
     const styles = stylesheet(ThemedColor);
 
     const {
@@ -325,6 +328,7 @@ export default function BlueprintDetailScreen() {
     };
 
     return (
+        <>
         <ParallaxScrollView
             headerBackgroundColor={{ light: ThemedColor.background, dark: ThemedColor.background }}
             headerImage={<Image source={getImageSource()} style={styles.headerImage} />}>
@@ -443,6 +447,16 @@ export default function BlueprintDetailScreen() {
                 </AnimatedTabContent>
             </View>
         </ParallaxScrollView>
+        {router.canGoBack() && (
+            <TouchableOpacity
+                onPress={() => router.back()}
+                style={[styles.floatingBack, { top: insets.top + 8 }]}
+                hitSlop={10}
+                accessibilityLabel="Go back">
+                <CaretLeft size={22} color="white" weight="bold" />
+            </TouchableOpacity>
+        )}
+        </>
     );
 }
 
@@ -456,6 +470,17 @@ const stylesheet = (ThemedColor: any) =>
             width: "100%",
             height: "100%",
             resizeMode: "cover",
+        },
+        floatingBack: {
+            position: "absolute",
+            left: 16,
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "rgba(0,0,0,0.2)",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
         },
         informationContainer: {
             borderTopLeftRadius: 30,
