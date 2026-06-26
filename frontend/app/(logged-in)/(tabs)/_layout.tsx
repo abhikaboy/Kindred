@@ -140,6 +140,8 @@ export default function TabLayout() {
                 <Tabs.Screen
                     name="(activity)"
                     options={{
+                        // hidden for now: route stays registered, just off the tab bar
+                        href: null,
                         title: "Activity",
                         tabBarIcon: ({ color, focused }) => (
                             <Brain size={24} color={color} weight={focused ? "fill" : "regular"} />

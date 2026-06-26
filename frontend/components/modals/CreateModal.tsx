@@ -28,6 +28,7 @@ type Props = {
         blueprintName: string;
     };
     isBlueprint?: boolean; // Flag to indicate if this modal is being used for blueprint task creation
+    tutorial?: boolean; // Onboarding tutorial: lock the task name + hide the tag option
 };
 
 export enum Screen {
@@ -160,6 +161,7 @@ const CreateModal = (props: Props) => {
                         edit={props.edit}
                         categoryId={props.categoryId}
                         isBlueprint={props.isBlueprint}
+                        tutorial={props.tutorial}
                     />
                 );
             case Screen.NEW_CATEGORY:
@@ -190,6 +192,7 @@ const CreateModal = (props: Props) => {
         props.edit,
         props.categoryId,
         props.isBlueprint,
+        props.tutorial,
         hideModal,
         goToStandard,
         // Include task creation context values to ensure Standard component updates when these change

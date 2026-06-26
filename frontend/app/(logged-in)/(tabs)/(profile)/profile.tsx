@@ -11,8 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
-import ProductivityRings from "@/components/profile/ProductivityRings";
-import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import WeeklyActivity from "@/components/profile/WeeklyActivity";
@@ -20,6 +18,7 @@ import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
+import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
 import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
@@ -36,7 +35,6 @@ export default function Profile() {
     let ThemedColor = useThemeColor();
 
     const [activeTab, setActiveTab] = useState(0);
-    const [ringsExpanded, setRingsExpanded] = useState(false);
 
     const DEFAULT_PICTURE = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg";
     const hasDefaultAvatar = !user?.profile_picture || user.profile_picture === DEFAULT_PICTURE;
@@ -108,10 +106,6 @@ export default function Profile() {
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
             style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
-            <RingsBlurOverlay
-                visible={ringsExpanded}
-                onDismiss={() => setRingsExpanded(false)}
-            />
             <ParallaxBanner
                 scrollRef={scrollRef}
                 backgroundImage={user?.profile_picture || Icons.luffy}
@@ -129,7 +123,8 @@ export default function Profile() {
 
                 <CompleteProfileCard />
 
-                <ProductivityRings expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
+                {/* Productivity score lives on the profile; rings moved to home */}
+                <ProductivityRingsCard variant="score" />
 
                 <ReferralCard />
 

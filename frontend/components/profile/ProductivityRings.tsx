@@ -42,21 +42,29 @@ type RingKey = "plan" | "do" | "share";
 function RingCircle({
     progress,
     trackColor,
+    delay = 0,
 }: {
     progress: RingProgress;
     trackColor: string;
+    delay?: number; // one-time entrance delay (staggered tutorial reveal)
 }) {
     const fraction =
         progress.target > 0
             ? Math.min(progress.current / progress.target, 1)
             : 0;
     const animatedValue = useRef(new RNAnimated.Value(0)).current;
+    const firstRun = useRef(true);
 
     useEffect(() => {
+        // Only the first fill honors the stagger delay; later changes (e.g. a
+        // ring closing) animate immediately.
+        const d = firstRun.current ? delay : 0;
+        firstRun.current = false;
         animatedValue.setValue(0);
         RNAnimated.timing(animatedValue, {
             toValue: fraction,
             duration: 800,
+            delay: d,
             useNativeDriver: false,
         }).start();
     }, [fraction]);
@@ -97,18 +105,43 @@ function RingCircle({
 interface ProductivityRingsCardProps {
     expanded?: boolean;
     onExpandChange?: (expanded: boolean) => void;
+    // "rings" on home, "score" on profile, "full" shows both
+    variant?: "full" | "rings" | "score";
+    // Onboarding tutorial: render these rings instead of the user's live data,
+    // and make them non-interactive (read-only demo).
+    ringsOverride?: RingState;
+    // Onboarding tutorial: stagger each ring's entrance by this many ms (0 = off).
+    staggerMs?: number;
 }
 
 const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     expanded,
     onExpandChange,
+    variant = "full",
+    ringsOverride,
+    staggerMs = 0,
 }) => {
+    const showScore = variant !== "rings";
+    const showRings = variant !== "score";
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
     const { rings, score, streak, isLoading, history, canClaimReward, allClosed, claimReward, isClaiming } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
     const [showUnboxing, setShowUnboxing] = useState(false);
     const [rewardResult, setRewardResult] = useState<RingRewardResponse | null>(null);
+
+    // Staggered entrance (tutorial): each ring fades + scales in, one after another
+    const entranceValues = useRef([0, 1, 2].map(() => new RNAnimated.Value(staggerMs ? 0 : 1))).current;
+    useEffect(() => {
+        if (!staggerMs) return;
+        entranceValues.forEach((v) => v.setValue(0));
+        RNAnimated.stagger(
+            staggerMs,
+            entranceValues.map((v) =>
+                RNAnimated.timing(v, { toValue: 1, duration: 450, useNativeDriver: true })
+            )
+        ).start();
+    }, [staggerMs]);
 
     const handleClaim = async () => {
         try {
@@ -146,14 +179,15 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
         [expandedRing, onExpandChange]
     );
 
-    if (isLoading || !rings) {
+    const effectiveRings = ringsOverride ?? rings;
+    if (!effectiveRings || (!ringsOverride && isLoading)) {
         return null;
     }
 
     const ringEntries: { key: RingKey; label: string; progress: RingProgress }[] = [
-        { key: "plan", label: "Plan", progress: rings.plan },
-        { key: "do", label: "Do", progress: rings.do },
-        { key: "share", label: "Share", progress: rings.share },
+        { key: "plan", label: "Plan", progress: effectiveRings.plan },
+        { key: "do", label: "Do", progress: effectiveRings.do },
+        { key: "share", label: "Share", progress: effectiveRings.share },
     ];
 
     const isExpanded = expandedRing !== null;
@@ -168,36 +202,52 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 styles.cardExpanded,
             ]}
         >
-            {/* Private label */}
-            <View style={styles.privateRow}>
-                <LockSimple size={12} color={ThemedColor.caption} />
-                <ThemedText type="caption" style={{ opacity: 0.6 }}>
-                    Only visible to you
-                </ThemedText>
-            </View>
+            {/* Private label — hidden on the home rings card */}
+            {variant !== "rings" && (
+                <View style={styles.privateRow}>
+                    <LockSimple size={12} color={ThemedColor.caption} />
+                    <ThemedText type="caption" style={{ opacity: 0.6 }}>
+                        Only visible to you
+                    </ThemedText>
+                </View>
+            )}
 
             {/* Score Arc */}
-            <View style={[styles.arcSection, { marginBottom: 8 }]}>
-                <ScoreArc score={score} />
-            </View>
+            {showScore && (
+                <View style={[styles.arcSection, { marginBottom: 8 }]}>
+                    <ScoreArc score={score} />
+                </View>
+            )}
 
             {/* Rings Row */}
+            {showRings && (
+            <>
             <View style={styles.ringsRow}>
-                {ringEntries.map(({ key, label, progress }) => (
-                    <TouchableOpacity
+                {ringEntries.map(({ key, label, progress }, index) => {
+                    const ev = entranceValues[index];
+                    return (
+                    <RNAnimated.View
                         key={key}
+                        style={{
+                            opacity: ev,
+                            transform: [{ scale: ev.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
+                        }}
+                    >
+                    <TouchableOpacity
                         style={[
                             styles.ringItem,
                             isExpanded &&
                                 expandedRing !== key && { opacity: 0.3 },
                         ]}
                         onPress={() => handleRingPress(key)}
+                        disabled={!!ringsOverride}
                         activeOpacity={0.7}
                     >
                         <View style={styles.ringWrapper}>
                             <RingCircle
                                 progress={progress}
                                 trackColor={trackColor}
+                                delay={staggerMs ? index * staggerMs : 0}
                             />
                             <View style={styles.ringCenter}>
                                 {progress.closed ? (
@@ -227,14 +277,16 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                             {label.toUpperCase()}
                         </ThemedText>
                     </TouchableOpacity>
-                ))}
+                    </RNAnimated.View>
+                    );
+                })}
             </View>
 
             {/* Expanded detail */}
             {expandedRing && (
                 <ExpandedRingDetail
                     ringKey={expandedRing}
-                    todayRing={rings[expandedRing]}
+                    todayRing={effectiveRings[expandedRing]}
                     history={history}
                 />
             )}
@@ -277,6 +329,8 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                         : undefined
                 }
             />
+            </>
+            )}
         </View>
     );
 };

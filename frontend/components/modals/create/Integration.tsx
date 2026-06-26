@@ -12,6 +12,7 @@ import {
     GoogleChromeLogo,
     CompassTool,
     SlackLogo,
+    CaretLeft,
 } from "phosphor-react-native";
 
 type Props = {
@@ -79,9 +80,14 @@ const Integration = ({ goTo }: Props) => {
 
     return (
         <View style={styles.container}>
-            <ThemedText type="subtitle" style={styles.title}>
-                Select Integration
-            </ThemedText>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => goTo(Screen.STANDARD)} activeOpacity={0.7}>
+                    <CaretLeft size={24} color={ThemedColor.text} weight="regular" />
+                </TouchableOpacity>
+                <ThemedText type="subtitle" style={styles.title}>
+                    Select Integration
+                </ThemedText>
+            </View>
             <ThemedText style={styles.description}>
                 Choose an app to integrate with this task
             </ThemedText>
@@ -116,10 +122,15 @@ const createStyles = (ThemedColor: any) =>
         container: {
             flex: 1,
         },
+        header: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 8,
+        },
         title: {
             fontSize: 20,
             fontWeight: "600",
-            marginBottom: 8,
         },
         description: {
             fontSize: 14,
@@ -159,4 +170,3 @@ const createStyles = (ThemedColor: any) =>
     });
 
 export default Integration;
-

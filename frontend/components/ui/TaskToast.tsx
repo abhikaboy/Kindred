@@ -26,6 +26,10 @@ interface TaskToastProps extends ToastableBodyParams {
         points?: number;
         public?: boolean;
     };
+    // Onboarding tutorial: handle the tap ourselves instead of opening the camera.
+    onPressOverride?: () => void;
+    // Onboarding tutorial: a persistent toast the user can't swipe away.
+    disableDismiss?: boolean;
 }
 
 export default function TaskToast(props: TaskToastProps) {
@@ -45,6 +49,7 @@ export default function TaskToast(props: TaskToastProps) {
     }, []);
 
     const panGesture = Gesture.Pan()
+        .enabled(!props.disableDismiss)
         .onBegin(() => {
             startX.value = translateX.value;
             startY.value = translateY.value;
@@ -126,7 +131,7 @@ export default function TaskToast(props: TaskToastProps) {
     return (
         <GestureDetector gesture={panGesture}>
             <Reanimated.View style={animatedStyle as any}>
-                <TouchableOpacity activeOpacity={0.8} onPress={handleNavigateToCamera}>
+                <TouchableOpacity activeOpacity={0.8} onPress={props.onPressOverride ?? handleNavigateToCamera}>
                     <Animated.View
                         style={{
                             backgroundColor: ThemedColor.lightened,

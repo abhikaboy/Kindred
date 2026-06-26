@@ -82,13 +82,7 @@ const PostCardFooter = ({
                     >
                         <Confetti size={24} weight="regular" color={ThemedColor.primary} />
                         <ThemedText style={[styles.congratulateText, { color: ThemedColor.primary }]}>
-                            {readOnly
-                                ? "Congratulate"
-                                : !currentUserId
-                                  ? "Congratulate"
-                                  : isOwnPost
-                                    ? "Your Post"
-                                    : "Congratulate"}
+                            {isOwnPost && currentUserId && !readOnly ? "Your Post" : "Send Kudos"}
                         </ThemedText>
                     </TouchableOpacity>
                 </View>

@@ -25,6 +25,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { useKudosSent } from "@/contexts/kudosSentContext";
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -53,6 +54,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const queryClient = useQueryClient();
     const { updateUser } = useAuth();
     const { showRingUpdate } = useRingUpdate();
+    const { showKudosSent } = useKudosSent();
     const [congratulationMessage, setCongratulationMessage] = useState("");
     const [selectedMedia, setSelectedMedia] = useState<SelectedKudosMedia | null>(null);
     const [showRecorder, setShowRecorder] = useState(false);
@@ -303,6 +305,17 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             if (Platform.OS === "ios") {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             }
+
+            // Show the global "kudos sent" overlay. Media sends have no text body.
+            showKudosSent({
+                recipientName: congratulationConfig?.userHandle || "them",
+                message: selectedMedia
+                    ? selectedMedia.type === "video"
+                        ? "Sent a video"
+                        : "Sent an image"
+                    : congratulationMessage.trim(),
+                kind: "congratulation",
+            });
 
             onSent?.();
 

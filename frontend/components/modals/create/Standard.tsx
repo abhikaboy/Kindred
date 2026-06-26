@@ -1,5 +1,6 @@
-import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useState, useEffect, useMemo } from "react";
+import { Animated, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import MentionTextInput from "../../inputs/MentionTextInput";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
@@ -38,9 +39,10 @@ type Props = {
     screen?: Screen;
     categoryId?: string; // Category ID for editing tasks
     isBlueprint?: boolean; // Flag to indicate if this modal is being used for blueprint task creation
+    tutorial?: boolean; // Onboarding tutorial: lock the task name + hide the tag option
 };
 
-const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false }: Props) => {
+const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
@@ -86,6 +88,23 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
+
+    // Tutorial: a guiding cursor pulses over the Create button once the field is auto-typed
+    const [showTutorialCursor, setShowTutorialCursor] = useState(false);
+    const tutorialCursorPulse = useRef(new Animated.Value(1)).current;
+    useEffect(() => {
+        if (!tutorial) return;
+        const t = setTimeout(() => {
+            setShowTutorialCursor(true);
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(tutorialCursorPulse, { toValue: 0.78, duration: 650, useNativeDriver: true }),
+                    Animated.timing(tutorialCursorPulse, { toValue: 1, duration: 750, useNativeDriver: true }),
+                ])
+            ).start();
+        }, 2600);
+        return () => clearTimeout(t);
+    }, [tutorial]);
 
     // Determine which categories to use based on blueprint mode
     // Use state version from context (synced from prop via useEffect)
@@ -475,7 +494,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                         alignItems: "center",
                         justifyContent: "center",
                         borderWidth: 0,
-                        borderColor: ThemedColor.text,
                         zIndex: 1001,
                         opacity: !selectedCategory?.id ? 0.4 : 1,
                     }}
@@ -490,17 +508,29 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                         }
                         hide();
                     }}>
-                    <ThemedText type="lightBody">{edit ? "Update" : "Create"}</ThemedText>
+                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>{edit ? "Update" : "Create"}</ThemedText>
                 </TouchableOpacity>
+
+                {/* Tutorial: guiding cursor over the Create button */}
+                {tutorial && showTutorialCursor && (
+                    <Animated.View
+                        pointerEvents="none"
+                        style={{ position: "absolute", right: -4, top: 30, zIndex: 1002 }}>
+                        <TutorialCursor size={30} label="Tap create" bubbleLeft arrowScale={tutorialCursorPulse} />
+                    </Animated.View>
+                )}
             </View>
-            <View onStartShouldSetResponder={() => true} style={{ zIndex: 1000 }}>
+            <View
+                onStartShouldSetResponder={() => true}
+                style={{ zIndex: 1000 }}
+                pointerEvents={tutorial ? "none" : "auto"}>
                 <MentionTextInput
                     placeholder="Enter the Task Name"
                     value={taskName}
                     setValue={setTaskName}
                     fontSize={24}
                     fontWeight={500}
-                    autoFocus={taskName.length === 0}
+                    autoFocus={!tutorial && taskName.length === 0}
                     onMentionPicked={(c: MentionCandidate) => {
                         if (taggedUsers.find((u) => u.id === c.id)) return;
                         setTaggedUsers([
@@ -511,7 +541,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 />
             </View>
             <PrimaryOptionRow goTo={goTo} />
-            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} />
+            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} tutorial={tutorial} />
             <TouchableOpacity
                 onPress={() => {
                     setShowAdvanced(!showAdvanced);
@@ -532,7 +562,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 )}
             </TouchableOpacity>
             <ConditionalView condition={showAdvanced}>
-                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} />
+                <AdvancedOptionList goTo={goTo} showUnconfigured={true} edit={edit} tutorial={tutorial} />
             </ConditionalView>
 
             <CustomAlert
@@ -764,10 +794,12 @@ const AdvancedOptionList = ({
     goTo,
     showUnconfigured,
     edit,
+    tutorial,
 }: {
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
     edit?: boolean;
+    tutorial?: boolean;
 }) => {
     const {
         startDate,
@@ -858,7 +890,7 @@ const AdvancedOptionList = ({
                 showUnconfigured={showUnconfigured}
                 configured={integration !== ""}
             />
-            {!edit && (
+            {!edit && !tutorial && (
                 <AdvancedOption
                     icon="people"
                     label={
