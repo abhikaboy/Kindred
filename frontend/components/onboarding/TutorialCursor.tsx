@@ -9,14 +9,16 @@ type Props = {
     size?: number;
     label?: string; // optional Figma-style speech bubble (typewriters in)
     bubbleLeft?: boolean; // anchor the bubble to the left (for right-edge cursors)
+    bubbleBelow?: boolean; // drop the bubble below the arrow (keeps the arrow on its target)
     arrowScale?: Animated.Value; // pulse the ARROW only — the bubble never scales
     color?: string; // cursor + bubble color (e.g. a friend's cursor is red)
+    labelStartDelay?: number; // delay the typewriter until the cursor has settled
 };
 
 // Figma-style arrow cursor: colored fill, white outline, drop shadow, optional
 // label bubble. It fades + slides in on mount (never just spawns) and the label
 // typewriters in.
-export default function TutorialCursor({ size = 32, label, bubbleLeft = false, arrowScale, color = PURPLE }: Props) {
+export default function TutorialCursor({ size = 32, label, bubbleLeft = false, bubbleBelow = false, arrowScale, color = PURPLE, labelStartDelay = 400 }: Props) {
     const enter = useRef(new Animated.Value(0)).current;
     useEffect(() => {
         Animated.timing(enter, { toValue: 1, duration: 450, useNativeDriver: true }).start();
@@ -37,12 +39,12 @@ export default function TutorialCursor({ size = 32, label, bubbleLeft = false, a
             setTyped(label.slice(0, i));
             if (i < label.length) setTimeout(tick, 45);
         };
-        const start = setTimeout(tick, 400); // begin after the cursor has slid in
+        const start = setTimeout(tick, labelStartDelay); // begin after the cursor has slid in
         return () => {
             cancelled = true;
             clearTimeout(start);
         };
-    }, [label]);
+    }, [label, labelStartDelay]);
 
     const arrow = (
         <Animated.View style={[styles.arrowShadow, arrowScale ? { transform: [{ scale: arrowScale }] } : null]}>
@@ -62,13 +64,15 @@ export default function TutorialCursor({ size = 32, label, bubbleLeft = false, a
     if (!label) return <Animated.View style={enterStyle}>{arrow}</Animated.View>;
 
     return (
-        <Animated.View style={[styles.row, bubbleLeft && styles.rowReverse, enterStyle]}>
+        <Animated.View style={[bubbleBelow ? styles.column : styles.row, !bubbleBelow && bubbleLeft && styles.rowReverse, enterStyle]}>
             {arrow}
-            <View style={[styles.bubble, { backgroundColor: color + "B3" }, bubbleLeft ? styles.bubbleTuckLeft : styles.bubbleTuckRight]}>
-                <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.bubbleText}>
-                    {typed}
-                </ThemedText>
-            </View>
+            {typed.length > 0 && (
+                <View style={[styles.bubble, { backgroundColor: color + "B3" }, bubbleBelow ? null : bubbleLeft ? styles.bubbleTuckLeft : styles.bubbleTuckRight]}>
+                    <ThemedText type="defaultSemiBold" numberOfLines={1} style={styles.bubbleText}>
+                        {typed}
+                    </ThemedText>
+                </View>
+            )}
         </Animated.View>
     );
 }
@@ -80,6 +84,10 @@ const styles = StyleSheet.create({
     },
     rowReverse: {
         flexDirection: "row-reverse",
+    },
+    column: {
+        flexDirection: "column",
+        alignItems: "flex-end", // right-align the bubble under a right-edge arrow
     },
     arrowShadow: {
         shadowColor: "#000",

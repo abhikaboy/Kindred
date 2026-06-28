@@ -378,11 +378,14 @@ const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, on
                 </View>
             </TouchableOpacity>
 
-            {pendingTaskCount != null && pendingTaskCount > 0 && (
-                <ThemedText type="caption" style={{ marginLeft: "auto", opacity: 0.6 }}>
-                    {pendingTaskCount}
-                </ThemedText>
-            )}
+            <TouchableOpacity onPress={onPress} style={styles.workspaceCountButton}>
+                {pendingTaskCount != null && pendingTaskCount > 0 && (
+                    <ThemedText type="caption" style={{ opacity: 0.6 }}>
+                        {pendingTaskCount}
+                    </ThemedText>
+                )}
+                <CaretRight size={14} color={ThemedColor.caption} style={{ opacity: 0.6 }} />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -407,6 +410,12 @@ const styles = StyleSheet.create({
     },
     workspaceCardContent: {
         flex: 1,
+    },
+    workspaceCountButton: {
+        marginLeft: "auto",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
     },
     workspaceNameRow: {
         flexDirection: "row",

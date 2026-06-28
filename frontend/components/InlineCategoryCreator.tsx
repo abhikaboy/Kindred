@@ -71,6 +71,8 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
         if (!typingDone) return;
         const slide = setTimeout(() => {
             Animated.timing(cursorSlide, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start(() => {
+                // pulse loop draws attention now; the "Tap to create" bubble only
+                // types in at 5s (labelStartDelay) as a hint if the user is stuck
                 Animated.loop(
                     Animated.sequence([
                         Animated.timing(cursorScale, { toValue: 0.7, duration: 650, useNativeDriver: true }),
@@ -78,7 +80,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
                     ])
                 ).start();
             });
-        }, 400);
+        }, 700);
         return () => clearTimeout(slide);
     }, [typingDone]);
 
@@ -208,7 +210,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
                         pointerEvents="none"
                         style={[styles.tutorialCursor, { transform: [{ translateX: cursorSlide }] }]}
                     >
-                        <TutorialCursor size={30} label="Tap to create" bubbleLeft arrowScale={cursorScale} />
+                        <TutorialCursor size={30} label="Tap to create" bubbleBelow arrowScale={cursorScale} labelStartDelay={5000} />
                     </Animated.View>
                 )}
             </Animated.View>
@@ -244,7 +246,8 @@ const styles = StyleSheet.create({
         gap: 12,
         position: "relative",
     },
-    // ponytail: tip sits on the create (+) button; tune right/top if it drifts
+    // ponytail: arrow sits on the create (+) button; the bubble drops below it
+    // (bubbleBelow) so it clears the X/tag/+ row; tune right/top if it drifts
     tutorialCursor: {
         position: "absolute",
         right: -11,

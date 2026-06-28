@@ -32,6 +32,7 @@ type Props = {
     task: Task;
     categoryName?: string;
     highlightContent?: boolean;
+    tutorial?: boolean; // suppress real completion overlays — the tutorial fakes them
 };
 
 const SwipableTaskCard = ({
@@ -40,6 +41,7 @@ const SwipableTaskCard = ({
     task,
     categoryName,
     highlightContent = false,
+    tutorial = false,
 }: Props) => {
     const { removeFromCategory, addToCategory, setShowConfetti, categories, updateTask } = useTasks();
     const { loadTaskData } = useTaskCreation();
@@ -95,10 +97,12 @@ const SwipableTaskCard = ({
             // The do ring lives in the same top region, so wait for the toast
             // to clear before animating it.
             const ringDelta = res.ringDelta;
-            if (ringDelta?.ring === "do" && task.public) {
-                setTimeout(() => showRingUpdate(ringDelta), 5600);
-            } else {
-                showRingUpdate(ringDelta);
+            if (!tutorial) {
+                if (ringDelta?.ring === "do" && task.public) {
+                    setTimeout(() => showRingUpdate(ringDelta), 5600);
+                } else {
+                    showRingUpdate(ringDelta);
+                }
             }
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
             capture(AnalyticsEvents.TASK_COMPLETED, {
@@ -137,7 +141,7 @@ const SwipableTaskCard = ({
             }
 
             // Show completion toast with streak info included if applicable
-            if (task.public) {
+            if (task.public && !tutorial) {
                 showToastable({
                     title,
                     status: "success",
