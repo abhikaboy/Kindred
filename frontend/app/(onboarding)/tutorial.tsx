@@ -531,6 +531,17 @@ export default function TutorialOnboarding() {
             <CongratulateModal
                 visible={showKudosModal}
                 setVisible={setShowKudosModal}
+                task={
+                    taskData
+                        ? {
+                              id: taskData.id,
+                              content: taskData.content,
+                              value: taskData.value,
+                              priority: taskData.priority,
+                              categoryId: categoryId ?? "",
+                          }
+                        : undefined
+                }
                 congratulationConfig={{ receiverId: BEAK.id, categoryName: categoryName ?? PREFILL_CATEGORY, userHandle: BEAK.name }}
                 onSent={() => {
                     setShowKudosModal(false);
@@ -598,6 +609,7 @@ export default function TutorialOnboarding() {
                                             task={taskData}
                                             categoryName={categoryName}
                                             redirect={false}
+                                            tutorial
                                         />
                                         {/* Guiding cursor: swipe the task right to complete it */}
                                         <Animated.View
@@ -856,10 +868,7 @@ export default function TutorialOnboarding() {
                             )}
                         </ScrollView>
 
-                        {/* you + beak cursors — clearly two different people */}
-                        <View pointerEvents="none" style={[styles.feedYouCursor, { top: insets.top + 56 }]}>
-                            <TutorialCursor size={26} label="you" />
-                        </View>
+                        {/* beak's cursor flies in to congratulate your post */}
                         <Animated.View
                             pointerEvents="none"
                             style={[styles.feedBeakCursor, { transform: [{ translateX: friendCursorX }, { translateY: friendCursorY }] }]}>
@@ -955,11 +964,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 6,
         right: 48,
-    },
-    feedYouCursor: {
-        position: "absolute",
-        left: 28,
-        zIndex: 50,
     },
     feedBeakCursor: {
         position: "absolute",
