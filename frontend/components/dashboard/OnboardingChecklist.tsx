@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, Animated, Easing, Dimensions, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showToastable } from 'react-native-toastable';
 import * as Haptics from 'expo-haptics';
@@ -66,8 +67,16 @@ interface OnboardingChecklistProps {
 export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scrollRef, kudosOffsetRef }) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
-    const { user } = useAuth();
+    const { user, refresh } = useAuth();
     const { openModal } = useCreateModal();
+
+    // Re-fetch the user each time home gains focus so the checks (esp. "Add a
+    // friend") don't go stale after acting elsewhere. refresh() is rate-limited.
+    useFocusEffect(
+        useCallback(() => {
+            refresh();
+        }, [refresh])
+    );
     const [dismissed, setDismissed] = useState<boolean | null>(null);
     const [celebrating, setCelebrating] = useState(false);
     const [activeKey, setActiveKey] = useState<ItemKey | null>(null);
