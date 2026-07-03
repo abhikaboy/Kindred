@@ -34,6 +34,7 @@ export function useLiveActivityScheduler(): void {
     const { allTasks } = useTasks();
     const tasksRef = useRef(allTasks);
     tasksRef.current = allTasks;
+    const checkTasksRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         function checkTasks() {
@@ -62,8 +63,16 @@ export function useLiveActivityScheduler(): void {
             }
         }
 
+        checkTasksRef.current = checkTasks;
         checkTasks();
         const intervalId = setInterval(checkTasks, 30 * 1000);
         return () => clearInterval(intervalId);
     }, []);
+
+    // Also check immediately when tasks change, so a newly started/edited task
+    // gets its live activity right away instead of waiting for the next tick.
+    // The 30s interval stays as a safety net for time-based triggers.
+    useEffect(() => {
+        checkTasksRef.current?.();
+    }, [allTasks]);
 }

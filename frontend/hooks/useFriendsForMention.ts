@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getFriendsAPI } from "@/api/connection";
 
 export type MentionCandidate = {
@@ -8,34 +9,23 @@ export type MentionCandidate = {
     profile_picture?: string;
 };
 
-export const useFriendsForMention = () => {
-    const [friends, setFriends] = useState<MentionCandidate[]>([]);
-    const [loading, setLoading] = useState(true);
+const EMPTY: MentionCandidate[] = [];
 
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                const list = await getFriendsAPI();
-                if (cancelled) return;
-                setFriends(
-                    list.map((f: any) => ({
-                        id: f._id ?? f.id,
-                        handle: f.handle,
-                        display_name: f.display_name,
-                        profile_picture: f.profile_picture,
-                    })),
-                );
-            } catch (e) {
-                console.warn("useFriendsForMention: failed to load friends", e);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+export const useFriendsForMention = () => {
+    const { data, isPending } = useQuery({
+        queryKey: ["friends", "mention"],
+        queryFn: async () => {
+            const list = await getFriendsAPI();
+            return list.map((f: any) => ({
+                id: f._id ?? f.id,
+                handle: f.handle,
+                display_name: f.display_name,
+                profile_picture: f.profile_picture,
+            })) as MentionCandidate[];
+        },
+    });
+
+    const friends = data ?? EMPTY;
 
     const filter = useMemo(
         () => (query: string) => {
@@ -50,5 +40,5 @@ export const useFriendsForMention = () => {
         [friends],
     );
 
-    return { friends, filter, loading };
+    return { friends, filter, loading: isPending };
 };

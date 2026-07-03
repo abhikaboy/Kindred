@@ -9,6 +9,7 @@ import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import TagEditor, { type TagEditorHandle } from "@/components/TagEditor";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 const SCREEN_SCALE = Dimensions.get("screen").width / 393;
 
@@ -35,6 +36,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
     const ThemedColor = useThemeColor();
     const { selected, addToWorkspace } = useTasks();
     const { request } = useRequest();
+    const setT = useTimeouts();
 
     const tagsSheetRef = useRef<BottomSheetModal>(null);
     const tagEditorRef = useRef<TagEditorHandle>(null);
@@ -47,7 +49,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
             useNativeDriver: true,
         }).start();
         // Tutorial types the name itself — don't focus (no keyboard).
-        if (!tutorial) setTimeout(() => inputRef.current?.focus(), 150);
+        if (!tutorial) setT(() => inputRef.current?.focus(), 150);
         return () => { mountedRef.current = false; };
     }, []);
 

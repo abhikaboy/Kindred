@@ -34,9 +34,17 @@ const TagEditor = forwardRef<TagEditorHandle, TagEditorProps>(function TagEditor
     const [suggestions, setSuggestions] = useState<string[]>([]);
 
     useEffect(() => {
+        let cancelled = false;
         getUserTags()
-            .then(setSuggestions)
-            .catch(() => setSuggestions([]));
+            .then((fetched) => {
+                if (!cancelled) setSuggestions(fetched);
+            })
+            .catch(() => {
+                if (!cancelled) setSuggestions([]);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const addTag = (raw: string) => {

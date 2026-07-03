@@ -104,7 +104,7 @@ export default function Feed() {
     const logoSource = colorScheme === "dark"
         ? require("@/assets/splash-icon-dark.png")
         : require("@/assets/splash-icon-light.png");
-    const styles = stylesheet(ThemedColor, insets);
+    const styles = useMemo(() => stylesheet(ThemedColor, insets), [ThemedColor, insets]);
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);

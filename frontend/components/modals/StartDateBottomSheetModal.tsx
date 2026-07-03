@@ -4,6 +4,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskStartAPI } from "@/api/task";
 import StartDate from "./create/StartDate";
 import { showToast } from "@/utils/showToast";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 type Props = {
     visible: boolean;
@@ -15,6 +16,7 @@ type Props = {
 
 const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onStartDateUpdate }: Props) => {
     const ThemedColor = useThemeColor();
+    const setT = useTimeouts();
     const startDateSheetRef = useRef<BottomSheetModal>(null);
     const isPresentingRef = useRef(false);
     const snapPoints = useMemo(() => ["50%", "80%"], []);
@@ -26,7 +28,7 @@ const StartDateBottomSheetModal = ({ visible, setVisible, taskId, categoryId, on
             startDateSheetRef.current?.dismiss();
             const timer = setTimeout(() => {
                 startDateSheetRef.current?.present();
-                setTimeout(() => {
+                setT(() => {
                     isPresentingRef.current = false;
                 }, 500);
             }, 100);

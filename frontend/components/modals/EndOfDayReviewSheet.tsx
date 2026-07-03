@@ -19,6 +19,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { bulkCompleteTasksAPI, logTasksAPI } from "@/api/task";
 import { runEndOfDaySubmission } from "@/utils/endOfDay";
 import { showToast } from "@/utils/showToast";
+import { useTimeouts } from "@/hooks/useTimeouts";
 import type { Task } from "@/api/types";
 
 interface OpenTaskRowProps {
@@ -141,6 +142,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const queryClient = useQueryClient();
     const { workspaces, selected, removeFromCategory, fetchWorkspaces } = useTasks();
     const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
+    const setT = useTimeouts();
 
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [entries, setEntries] = useState<string[]>([]);
@@ -166,8 +168,8 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const handleAddEntry = useCallback((content: string) => {
         setEntries((prev) => [...prev, content]);
         // Reveal the just-added entry; keyboard stays up for the next one.
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-    }, []);
+        setT(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    }, [setT]);
 
     const removeEntry = (index: number) => {
         setEntries((prev) => prev.filter((_, i) => i !== index));

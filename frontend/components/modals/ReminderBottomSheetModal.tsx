@@ -4,6 +4,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { updateTaskRemindersAPI } from "@/api/task";
 import ReminderComponent from "./create/Reminder";
 import { showToast } from "@/utils/showToast";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 type ReminderType = {
     triggerTime: string;
@@ -21,6 +22,7 @@ type Props = {
 
 const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onReminderUpdate }: Props) => {
     const ThemedColor = useThemeColor();
+    const setT = useTimeouts();
     const reminderSheetRef = useRef<BottomSheetModal>(null);
     const isPresentingRef = useRef(false);
     const snapPoints = useMemo(() => ["60%", "90%"], []);
@@ -32,7 +34,7 @@ const ReminderBottomSheetModal = ({ visible, setVisible, taskId, categoryId, onR
             reminderSheetRef.current?.dismiss();
             const timer = setTimeout(() => {
                 reminderSheetRef.current?.present();
-                setTimeout(() => {
+                setT(() => {
                     isPresentingRef.current = false;
                 }, 500);
             }, 100);

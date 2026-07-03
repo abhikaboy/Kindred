@@ -3,6 +3,7 @@ import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
 import { ThemedText } from "@/components/ThemedText";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 export interface AlertButton {
     text: string;
@@ -20,6 +21,7 @@ type Props = {
 
 const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Props) => {
     const ThemedColor = useThemeColor();
+    const setT = useTimeouts();
 
     const handleButtonPress = (button: AlertButton) => {
         // Only run the handler and close if the modal is actually visible
@@ -28,10 +30,10 @@ const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Prop
         if (button.onPress) {
             button.onPress();
         }
-        
+
         // Delay dismissal slightly to allow for animations/state updates if needed
         // But more importantly to prevent race conditions
-        setTimeout(() => {
+        setT(() => {
             // Only dismiss if the button action didn't navigate away or unmount
             // and if the modal is still conceptually "visible" in state
             setVisible(false);
@@ -50,9 +52,9 @@ const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Prop
     });
 
     return (
-        <DefaultModal 
-            visible={visible} 
-            setVisible={setVisible} 
+        <DefaultModal
+            visible={visible}
+            setVisible={setVisible}
             enableDynamicSizing={true}
             enablePanDownToClose={false}
         >
@@ -85,16 +87,16 @@ const CustomAlert = ({ visible, setVisible, title, message, buttons = [] }: Prop
                         const isDestructive = button.style === "destructive";
                         const isCancel = button.style === "cancel";
                         const isLast = index === sortedButtons.length - 1;
-                        
+
                         return (
                             <React.Fragment key={index}>
                                 <TouchableOpacity
                                     onPress={() => handleButtonPress(button)}
                                     style={styles.button}
                                 >
-                                    <ThemedText 
-                                        type="defaultSemiBold" 
-                                        style={{ 
+                                    <ThemedText
+                                        type="defaultSemiBold"
+                                        style={{
                                             color: (isDestructive || isCancel) ? ThemedColor.error : ThemedColor.text,
                                             textAlign: "center"
                                         }}
@@ -155,4 +157,3 @@ const styles = StyleSheet.create({
 });
 
 export default CustomAlert;
-
