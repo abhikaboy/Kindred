@@ -9,6 +9,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { hapticSelect } from "@/utils/haptics";
 
 const SPRING_CONFIG = {
     damping: 20,
@@ -65,7 +66,10 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: 
                     key={`tab-${index}-${tab}`}
                     style={styles.tab}
                     onLayout={(e) => handleTabLayout(index, e)}
-                    onPress={() => setActiveTab(index)}>
+                    onPress={() => {
+                        if (index !== activeTab) hapticSelect();
+                        setActiveTab(index);
+                    }}>
                     <View style={styles.tabLabelRow}>
                         <ThemedText
                             style={[
@@ -162,6 +166,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
             translateX.value = withSpring(-nextTab * w, SPRING_CONFIG);
             if (nextTab !== current) {
                 activeTabSV.value = nextTab;
+                runOnJS(hapticSelect)();
                 runOnJS(setActiveTab)(nextTab);
             }
         });

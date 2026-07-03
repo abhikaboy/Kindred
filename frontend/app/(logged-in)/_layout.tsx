@@ -37,6 +37,8 @@ import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/li
 import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
 import { useTasks } from '@/contexts/tasksContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
 import { logger } from '@/utils/logger';
 
 export const unstable_settings = {
@@ -192,6 +194,9 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { user, fetchAuthData } = useAuth();
     const { fetchKudosData } = useKudos();
+    const { fetchWorkspaces } = useTasks();
+    const queryClient = useQueryClient();
+    const lastCacheRefresh = useRef(0);
     const { identify, capture } = useAnalytics();
     const [isLoading, setIsLoading] = useState(true);
     const [redirectPath, setRedirectPath] = useState<Href | null>(null);
@@ -306,6 +311,19 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         registerBackgroundFetch();
         initNotificationHandler();
 
+        // Any push means server state changed — invalidate everything so the new
+        // state shows without an app restart (friend requests, encouragements, …).
+        // ponytail: throttled blanket refetch; per-type targeted invalidation if traffic grows
+        const refreshAllCaches = () => {
+            const now = Date.now();
+            if (now - lastCacheRefresh.current < 2000) return;
+            lastCacheRefresh.current = now;
+            queryClient.invalidateQueries();
+            fetchKudosData();
+            fetchWorkspaces(true);
+            notificationRefreshEvents.emit();
+        };
+
         const startActiveTaskActivityFromPush = (data: NotificationData) => {
             tryStartActiveTaskActivity(data.taskId || '', {
                 taskName: data.taskName || '',
@@ -334,6 +352,8 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         notificationListener.current = addNotificationListener((notification) => {
             const data = notification.request.content.data as NotificationData | undefined;
 
+            refreshAllCaches();
+
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
                 if (data.liveActivityType === 'activeTask') {
@@ -344,9 +364,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 return; // Don't show toast for live activity pushes
             }
 
-            if (data?.type === 'encouragement' || data?.type === 'congratulation') {
-                fetchKudosData();
-            }
             showToastable({
                 message: notification.request.content.body || "New notification",
                 title: notification.request.content.title || "Notification",
@@ -366,6 +383,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         responseListener.current = addNotificationResponseListener((response) => {
             const data = response.notification.request.content.data as NotificationData | undefined;
+
+            // Tapped pushes can arrive with the app backgrounded, where the
+            // received-listener never fired — refresh here too.
+            refreshAllCaches();
 
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {

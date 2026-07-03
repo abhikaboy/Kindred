@@ -13,13 +13,12 @@ import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTa
 import ProfileStats from "@/components/profile/ProfileStats";
 import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
-import WeeklyActivity from "@/components/profile/WeeklyActivity";
+import MemoriesCalendar from "@/components/profile/MemoriesCalendar";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
-import BlueprintSection from "@/components/profile/BlueprintSection";
 import ReferralCard from "@/components/profile/ReferralCard";
 import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
 import { components } from "@/api/generated/types";
@@ -128,15 +127,7 @@ export default function Profile() {
 
                 <ReferralCard />
 
-                <WeeklyActivity userid={user?._id} displayName={user?.display_name} />
-
-                {user?._id && (
-                    <BlueprintSection
-                        userId={user._id}
-                        title="My Blueprints"
-                        showViewAll={true}
-                    />
-                )}
+                <MemoriesCalendar userId={user?._id} />
 
                 <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

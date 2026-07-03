@@ -13,6 +13,10 @@ export interface KudosSent {
     recipientName: string;
     message: string;
     kind: KudosKind;
+    /** Task the kudos was about, when task-scoped. */
+    taskName?: string;
+    /** Preview of the sent image/GIF, or a video's thumbnail. */
+    imageUri?: string;
 }
 
 interface KudosSentContextValue {

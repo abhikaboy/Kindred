@@ -47,9 +47,11 @@ interface CongratulateModalProps {
     };
     /** Called after the congratulation is successfully sent. */
     onSent?: () => void;
+    /** Tutorial mode: auto-types this message, hides media/privacy/counter. */
+    tutorialPrefill?: string;
 }
 
-export default function CongratulateModal({ visible, setVisible, task, congratulationConfig, onSent }: CongratulateModalProps) {
+export default function CongratulateModal({ visible, setVisible, task, congratulationConfig, onSent, tutorialPrefill }: CongratulateModalProps) {
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
     const { updateUser } = useAuth();
@@ -136,6 +138,24 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
     const { congratulationsLeft, currentKudosRewards } = useUserKudos();
     const { capture } = useAnalytics();
+
+    // Tutorial mode: auto-type the kudos message like the rest of the tutorial
+    useEffect(() => {
+        if (!visible || !tutorialPrefill) return;
+        let i = 0;
+        let cancelled = false;
+        const tick = () => {
+            if (cancelled) return;
+            i++;
+            setCongratulationMessage(tutorialPrefill.slice(0, i));
+            if (i < tutorialPrefill.length) setTimeout(tick, 45);
+        };
+        const start = setTimeout(tick, 600);
+        return () => {
+            cancelled = true;
+            clearTimeout(start);
+        };
+    }, [visible, tutorialPrefill]);
 
     const handleMediaPick = async () => {
         try {
@@ -315,6 +335,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                         : "Sent an image"
                     : congratulationMessage.trim(),
                 kind: "congratulation",
+                taskName: task?.content,
+                imageUri: selectedMedia?.type === "image" ? selectedMedia.uri : thumbnailUrl,
             });
 
             onSent?.();
@@ -429,7 +451,9 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
-                    Congratulate {congratulationConfig?.userHandle || "User"}
+                    {tutorialPrefill
+                        ? `Send ${congratulationConfig?.userHandle || "them"} kudos`
+                        : `Congratulate ${congratulationConfig?.userHandle || "User"}`}
                 </ThemedText>
                 <ThemedText type="captionLight" style={styles.subtitleStyled}>
                     A little goes a long way
@@ -445,9 +469,12 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                             onChangeText={setCongratulationMessage}
                             multiline={true}
                             numberOfLines={3}
-                            style={styles.textInputStyled}
+                            style={[
+                                styles.textInputStyled,
+                                tutorialPrefill && { borderBottomLeftRadius: 12, borderBottomRightRadius: 12, borderBottomWidth: 1 },
+                            ]}
                         />
-                        <View style={styles.mediaIconsRow}>
+                        {!tutorialPrefill && <View style={styles.mediaIconsRow}>
                             <TouchableOpacity
                                 style={styles.iconButton}
                                 onPress={handleMediaPick}
@@ -469,7 +496,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                             >
                                 <VideoCamera size={20} color={ThemedColor.caption} weight="regular" />
                             </TouchableOpacity>
-                        </View>
+                        </View>}
                     </View>
                 ) : selectedMedia.type === "video" ? (
                     <View style={styles.imagePreviewContainer}>
@@ -510,7 +537,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 )}
 
                 {/* Privacy toggle */}
-                <View style={styles.privacyRow}>
+                {!tutorialPrefill && <View style={styles.privacyRow}>
                     <View style={{ flex: 1, paddingRight: 12, gap: 4 }}>
                         <ThemedText type="defaultSemiBold">{isPrivate ? "Private" : "Public"}</ThemedText>
                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
@@ -524,19 +551,29 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                         onValueChange={setIsPrivate}
                         trackColor={{ false: ThemedColor.tertiary, true: ThemedColor.primary }}
                     />
-                </View>
+                </View>}
 
                 {/* Send Button and Counter */}
                 <View style={styles.buttonContainer}>
                     <PrimaryButton
-                        title={isUploading ? "Uploading..." : isPrivate ? "Send Private Congrats" : "Send Public Congrats"}
+                        title={
+                            isUploading
+                                ? "Uploading..."
+                                : tutorialPrefill
+                                  ? "Send Kudos"
+                                  : isPrivate
+                                    ? "Send Private Congrats"
+                                    : "Send Public Congrats"
+                        }
                         onPress={handleSendCongratulation}
                         disabled={(!congratulationMessage.trim() && !selectedMedia) || congratulationsLeft === 0 || isUploading}
                         style={styles.sendButton}
                     />
-                    <ThemedText type="caption" style={styles.counterStyled}>
-                        {congratulationsLeft} Congratulations Left Today
-                    </ThemedText>
+                    {!tutorialPrefill && (
+                        <ThemedText type="caption" style={styles.counterStyled}>
+                            {congratulationsLeft} Congratulations Left Today
+                        </ThemedText>
+                    )}
                 </View>
             </View>
 

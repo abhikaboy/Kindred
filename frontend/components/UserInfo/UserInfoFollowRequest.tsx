@@ -11,6 +11,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { FRIEND_REQUESTS_KEY } from "@/hooks/useFriendRequests";
+import { hapticLight, hapticSuccess } from "@/utils/haptics";
 
 type Props = {
     name: string;
@@ -49,6 +50,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
         try {
             setIsLoading(true);
             await acceptConnectionAPI(connectionID);
+            hapticSuccess();
             capture(AnalyticsEvents.FOLLOW_REQUEST_ACCEPTED, {});
             queryClient.invalidateQueries({ queryKey: FRIEND_REQUESTS_KEY });
             showToast(`Accepted ${name}'s friend request`, 'success');
@@ -67,6 +69,7 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
 
     const handleDeny = async () => {
         try {
+            hapticLight();
             setIsLoading(true);
             await deleteConnectionAPI(connectionID);
             capture(AnalyticsEvents.FOLLOW_REQUEST_REJECTED, {});

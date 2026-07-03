@@ -2,6 +2,7 @@ import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-nati
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { hapticMedium } from "@/utils/haptics";
 type Props = {
     onPress: () => void;
     disabled: boolean;
@@ -14,7 +15,10 @@ const OnboardButton = ({ onPress, disabled, testID }: Props) => {
     return (
         <TouchableOpacity
             testID={testID}
-            onPress={onPress}
+            onPress={() => {
+                hapticMedium();
+                onPress();
+            }}
             disabled={disabled}
             style={{
                 position: "absolute",

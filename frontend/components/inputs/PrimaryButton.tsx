@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle, TextStyle } from "react-native";
 import React from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { hapticLight } from "@/utils/haptics";
 type Props = {
     title: string;
     onPress: () => void;
@@ -39,7 +40,10 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
         <TouchableOpacity
             testID={testID}
             disabled={disabled}
-            onPress={onPress}
+            onPress={() => {
+                hapticLight();
+                onPress();
+            }}
             style={[
                 {
                     width: "100%",

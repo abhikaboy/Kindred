@@ -9,9 +9,11 @@ type Props = {
     isToday?: boolean;
     onPress?: () => void;
     size?: number;
+    /** Always-visible cell label (e.g. day of month in the memories calendar). */
+    label?: string;
 };
 
-const ActivityPoint = ({ level, isFuture = false, isToday = false, onPress, size }: Props) => {
+const ActivityPoint = ({ level, isFuture = false, isToday = false, onPress, size, label }: Props) => {
     const ThemedColor = useThemeColor();
     const LEVELS: Record<number, string> = {
         0: ThemedColor.lightened,
@@ -45,16 +47,29 @@ const ActivityPoint = ({ level, isFuture = false, isToday = false, onPress, size
                     borderColor: isToday ? ThemedColor.primary : ThemedColor.text + "05",
                     opacity: isFuture ? 0.25 : 1,
                 }}>
-                {display && level > 0 && (
+                {label ? (
                     <ThemedText
                         type="lightBody"
                         style={{
-                            color: ThemedColor.background,
+                            color: level > 0 ? ThemedColor.background : ThemedColor.caption,
                             textAlign: "center",
-                            fontSize: 11,
+                            fontSize: 12,
                         }}>
-                        {level}
+                        {label}
                     </ThemedText>
+                ) : (
+                    display &&
+                    level > 0 && (
+                        <ThemedText
+                            type="lightBody"
+                            style={{
+                                color: ThemedColor.background,
+                                textAlign: "center",
+                                fontSize: 11,
+                            }}>
+                            {level}
+                        </ThemedText>
+                    )
                 )}
             </View>
         </TouchableOpacity>

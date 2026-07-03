@@ -16,17 +16,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { getEncouragementsAPI } from "@/api/encouragement";
 import { getCongratulationsAPI } from "@/api/congratulation";
+import { notificationRefreshEvents } from "@/utils/notificationRefreshEvents";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
-import { ThemedText } from "@/components/ThemedText";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
+import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
+import FriendsContent from "@/components/dashboard/FriendsContent";
 import { List } from "phosphor-react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { useRouter } from "expo-router";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useKudos } from "@/contexts/kudosContext";
 
@@ -191,6 +192,12 @@ const Home = (props: Props) => {
         fetchKudosCounts();
     }, [fetchKudosCounts]);
 
+    // Push notifications force-refresh these counts past the AsyncStorage TTL.
+    useEffect(
+        () => notificationRefreshEvents.subscribe(() => fetchKudosCounts(true)),
+        [fetchKudosCounts]
+    );
+
     // Refresh all data (for pull-to-refresh)
     const handleRefresh = React.useCallback(async () => {
         capture(AnalyticsEvents.PULL_TO_REFRESH, {
@@ -260,7 +267,7 @@ const HomeContent = ({
     onRefresh,
 }: any) => {
     const { selected } = useTasks();
-    const router = useRouter();
+    const [homeTab, setHomeTab] = useState(0);
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
 
@@ -337,45 +344,41 @@ const HomeContent = ({
                                 />
                             </Animated.View>
 
-                            {/* ponytail: dev-only — replay the interactive onboarding tutorial. Remove before ship. */}
-                            <TouchableOpacity
-                                onPress={() => router.push("/(onboarding)/tutorial")}
-                                style={{
-                                    marginHorizontal: HORIZONTAL_PADDING,
-                                    marginBottom: 12,
-                                    padding: 10,
-                                    borderRadius: 8,
-                                    borderWidth: 1,
-                                    borderColor: ThemedColor.tertiary,
-                                    alignItems: "center",
-                                }}>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                    ▶ Replay onboarding tutorial (dev)
-                                </ThemedText>
-                            </TouchableOpacity>
+                            <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
+                                <AnimatedTabs
+                                    tabs={["Home", "Friends"]}
+                                    activeTab={homeTab}
+                                    setActiveTab={setHomeTab}
+                                />
+                            </View>
 
-                            <HomeScrollContent
-                                encouragementCount={encouragementCount}
-                                congratulationCount={congratulationCount}
-                                workspaces={workspaces}
-                                displayWorkspaces={displayWorkspaces}
-                                fetchingWorkspaces={fetchingWorkspaces}
-                                onWorkspaceSelect={setSelected}
-                                onCreateWorkspace={() => setCreatingWorkspace(true)}
-                                drawerRef={drawerRef}
-                                ThemedColor={ThemedColor}
-                                focusMode={focusMode}
-                                toggleFocusMode={toggleFocusMode}
-                                refreshing={refreshing}
-                                onRefresh={onRefresh}
-                                scrollRef={homeScrollRef}
-                                kudosRef={kudosRef}
-                                kudosOffsetRef={kudosOffsetRef}
-                                onKudosLayout={(layout) => {
-                                    kudosOffsetRef.current = layout.y;
-                                }}
-                                onStatsExpandChange={setStatsExpanded}
-                            />
+                            <AnimatedTabContent activeTab={homeTab} setActiveTab={setHomeTab} flex lazy>
+                                <View style={{ flex: 1 }}>
+                                    <HomeScrollContent
+                                        encouragementCount={encouragementCount}
+                                        congratulationCount={congratulationCount}
+                                        workspaces={workspaces}
+                                        displayWorkspaces={displayWorkspaces}
+                                        fetchingWorkspaces={fetchingWorkspaces}
+                                        onWorkspaceSelect={setSelected}
+                                        onCreateWorkspace={() => setCreatingWorkspace(true)}
+                                        drawerRef={drawerRef}
+                                        ThemedColor={ThemedColor}
+                                        focusMode={focusMode}
+                                        toggleFocusMode={toggleFocusMode}
+                                        refreshing={refreshing}
+                                        onRefresh={onRefresh}
+                                        scrollRef={homeScrollRef}
+                                        kudosRef={kudosRef}
+                                        kudosOffsetRef={kudosOffsetRef}
+                                        onKudosLayout={(layout) => {
+                                            kudosOffsetRef.current = layout.y;
+                                        }}
+                                        onStatsExpandChange={setStatsExpanded}
+                                    />
+                                </View>
+                                <FriendsContent />
+                            </AnimatedTabContent>
                         </ThemedView>
                     </AnimatedView>
 

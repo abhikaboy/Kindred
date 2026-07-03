@@ -119,10 +119,6 @@ const SwipableTaskCard = ({
 
             setShowConfetti(true);
 
-            if (Platform.OS === "ios") {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-
             const taskData = {
                 id: task.id,
                 name: task.content,
@@ -276,6 +272,9 @@ const SwipableTaskCard = ({
     );
 }
 
+// Swipe distance between haptic ticks (~16 ticks across a full swipe).
+const HAPTIC_STEP = 24;
+
 function LeftAction(
     prog: SharedValue<number>,
     drag: SharedValue<number>,
@@ -287,16 +286,45 @@ function LeftAction(
     const [isCompleting, setIsCompleting] = React.useState(false);
     const ThemedColor = useThemeColor();
 
+    // Duolingo-style ratchet: a tick every HAPTIC_STEP px of swipe, growing
+    // from Soft to Heavy as the card approaches the completion point.
+    const tickHaptic = (progress: number) => {
+        if (Platform.OS !== "ios") return;
+        const style =
+            progress > 0.7
+                ? Haptics.ImpactFeedbackStyle.Heavy
+                : progress > 0.35
+                  ? Haptics.ImpactFeedbackStyle.Medium
+                  : Haptics.ImpactFeedbackStyle.Soft;
+        Haptics.impactAsync(style).catch(() => {});
+    };
+
+    const completionHaptic = () => {
+        if (Platform.OS !== "ios") return;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    };
+
     // Use useAnimatedReaction to watch the drag value
     useAnimatedReaction(
         () => drag.value,
-        (currentValue) => {
+        (currentValue, previousValue) => {
             let threshold = width / 4;
             let percent = (currentValue - threshold * 3) / threshold;
             let opacity = 1 - percent;
 
+            // Positive drag = completion swipe. Tick each step crossed, in
+            // either direction, so the card ratchets under the finger.
+            const prev = previousValue ?? 0;
+            if (
+                currentValue > 0 &&
+                Math.floor(currentValue / HAPTIC_STEP) !== Math.floor(prev / HAPTIC_STEP)
+            ) {
+                runOnJS(tickHaptic)(currentValue / width);
+            }
+
             if (opacity <= 0 && !isCompleting) {
                 runOnJS(setIsCompleting)(true);
+                runOnJS(completionHaptic)(); // instant thud — don't wait for the API
                 runOnJS(markAsCompleted)(categoryId, id); // runs only once
             }
         }

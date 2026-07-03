@@ -341,6 +341,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                         : "Sent an image"
                     : encouragementMessage.trim(),
                 kind: "encouragement",
+                taskName: task?.content,
+                imageUri: selectedMedia?.type === "image" ? selectedMedia.uri : thumbnailUrl,
             });
 
             // Close modal first, enable confetti, then trigger it

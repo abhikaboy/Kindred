@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -12,16 +13,17 @@ const GRADIENT_HEIGHT = SCREEN_HEIGHT * 0.5;
 const PRIMARY_COLOR = "#854DFF";
 
 // Phased timings — mirror RingUpdateOverlay's "room dims, then content" beat.
-//   0ms .. 900ms   : gradient fades in from the top
-//   700ms .. 1180ms : card drops in + fades in
-//   then hold ~1200ms, then fade everything out
-const GRADIENT_ENTER_DURATION = 900;
-const CARD_ENTER_DELAY = 700;
-const CARD_ENTER_DURATION = 480;
-const HOLD = 1200;
-const CARD_EXIT_DURATION = 420;
-const GRADIENT_EXIT_DELAY = 200;
-const GRADIENT_EXIT_DURATION = 640;
+// Deliberately unhurried: the moment should land, breathe, then dissolve.
+//   0ms .. 1400ms   : gradient fades in from the top
+//   1000ms .. 1720ms : card drops in + fades in
+//   then hold ~2400ms, then fade everything out
+const GRADIENT_ENTER_DURATION = 1400;
+const CARD_ENTER_DELAY = 1000;
+const CARD_ENTER_DURATION = 720;
+const HOLD = 2400;
+const CARD_EXIT_DURATION = 650;
+const GRADIENT_EXIT_DELAY = 300;
+const GRADIENT_EXIT_DURATION = 1000;
 
 export const KudosSentOverlay: React.FC = () => {
     const { current, onComplete } = useKudosSent();
@@ -141,7 +143,7 @@ export const KudosSentOverlay: React.FC = () => {
                 style={[
                     styles.content,
                     {
-                        top: insets.top + 64,
+                        top: insets.top + 12,
                         opacity: cardOpacity,
                         transform: [{ translateY: cardTranslateY }],
                     },
@@ -152,20 +154,29 @@ export const KudosSentOverlay: React.FC = () => {
                 </View>
                 <View style={styles.sentRow}>
                     <Check size={16} color="#ffffff" weight="bold" />
-                    <ThemedText style={styles.sentText}>Kudos sent!</ThemedText>
+                    <ThemedText style={styles.sentText}>{kindLabel} sent</ThemedText>
                 </View>
-                <ThemedText style={styles.recipientText}>
-                    {kindLabel} to {current.recipientName}
+                <ThemedText style={styles.recipientText} numberOfLines={2}>
+                    to {current.recipientName}
+                    {current.taskName ? ` · “${current.taskName}”` : ""}
                 </ThemedText>
-                {!!current.message && (
-                    <View style={styles.messageCard}>
-                        <ThemedText
-                            style={styles.messageText}
-                            numberOfLines={3}
-                        >
-                            {current.message}
-                        </ThemedText>
-                    </View>
+                {current.imageUri ? (
+                    <Image
+                        source={{ uri: current.imageUri }}
+                        style={styles.sentImage}
+                        contentFit="cover"
+                    />
+                ) : (
+                    !!current.message && (
+                        <View style={styles.messageCard}>
+                            <ThemedText
+                                style={styles.messageText}
+                                numberOfLines={3}
+                            >
+                                {current.message}
+                            </ThemedText>
+                        </View>
+                    )
                 )}
             </Animated.View>
         </View>
@@ -218,6 +229,14 @@ const styles = StyleSheet.create({
         fontFamily: "Outfit",
         fontWeight: "500",
         textAlign: "center",
+    },
+    sentImage: {
+        marginTop: 4,
+        width: 200,
+        height: 150,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
     },
     messageCard: {
         marginTop: 4,

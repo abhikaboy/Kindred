@@ -1,5 +1,6 @@
 import {
     Dimensions,
+    Image,
     StyleSheet,
     View,
     ScrollView,
@@ -17,6 +18,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -34,15 +36,14 @@ import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Plus } from "phosphor-react-native";
+import { Images, Plus } from "phosphor-react-native";
 import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
-import KudosItem from "@/components/cards/KudosItem";
-import MentionTextInput from "@/components/inputs/MentionTextInput";
+import CachedImage from "@/components/CachedImage";
 import TaskToast from "@/components/ui/TaskToast";
 import { Task, RingState } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,20 +52,82 @@ import { registerForPushNotificationsAsync, sendPushTokenToBackend } from "@/uti
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+// Centered kudos card for the blurred spotlight. Purpose-built from plain
+// Views: KudosItem/SpeechBubbleCard collapses when mounted inside the animated
+// overlay on the new arch, so the spotlight doesn't reuse it.
+function SpotlightKudos({ gif, message }: { gif?: string; message?: string }) {
+    const ThemedColor = useThemeColor();
+    // ponytail: JS-driven fade — native-driver anims on this subtree are what
+    // broke layout; revisit if the Fabric/RN-Animated mount race gets fixed
+    const fade = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.timing(fade, { toValue: 1, duration: 250, useNativeDriver: false }).start();
+    }, []);
+    return (
+        <Animated.View
+            style={[styles.spotlightCard, { opacity: fade, backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
+            <View style={styles.spotlightHeader}>
+                <CachedImage
+                    source={{ uri: BEAK.picture }}
+                    variant="thumbnail"
+                    cachePolicy="memory-disk"
+                    style={styles.spotlightAvatar}
+                />
+                <ThemedText type="default" style={{ flexShrink: 1 }}>
+                    <ThemedText type="defaultSemiBold">beak</ThemedText> sent you kudos
+                </ThemedText>
+            </View>
+            {gif ? (
+                <Image source={{ uri: gif }} style={styles.spotlightGif} resizeMode="cover" />
+            ) : (
+                <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>{message}</ThemedText>
+            )}
+        </Animated.View>
+    );
+}
+
+// Per-phase step dots: phase 1 "Do your first task" (steps 0-2),
+// phase 2 "Share it" (rings → post → kudos).
+function PhaseProgress({ label, current }: { label: string; current: number }) {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={styles.stepIndicatorRow}>
+            <View style={styles.dotsRow}>
+                {[0, 1, 2].map((i) => (
+                    <View
+                        key={i}
+                        style={[styles.dot, { backgroundColor: i <= current ? ThemedColor.primary : ThemedColor.tertiary }]}
+                    />
+                ))}
+            </View>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
+                {label} · Step {current + 1} of 3
+            </ThemedText>
+        </View>
+    );
+}
+
 const BEAK = {
     id: "67eef59f4931ee7a9fb630e5",
     name: "beak",
     picture:
         "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg",
 };
-const CONGRATS_GIF = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnp1MHYxaTN0aG1sdHI5aWNleDA0MmV4cXR6Z3ZtbmcxdnM3MmlxNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4LibSc90N18FBLvMJd/giphy.gif";
-
-const TAIL_SIZE = 10;
 const DISPLAY_WORKSPACE = "Example Workspace";
 const PREFILL_CATEGORY = "My Tasks";
 const PREFILL_TASK = "Finish Kindred Onboarding";
 const CONGRATS_MESSAGE = "it's beak, one of kindred's founders; welcome! and congrats on finishing your first (of many!) tasks :)";
-const CREDITS_MESSAGE = "here are some credits for features I think you'll like. you can get more by closing your rings";
+const CONGRATS_GIF = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnp1MHYxaTN0aG1sdHI5aWNleDA0MmV4cXR6Z3ZtbmcxdnM3MmlxNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4LibSc90N18FBLvMJd/giphy.gif";
+
+// Beak's own post in the mini-feed: the user sends kudos on beak's task,
+// which is the direction kudos actually flow in the real app.
+const BEAK_CATEGORY = "Kindred HQ";
+const BEAK_TASK = { id: "beak-demo-task", content: "Ship the new onboarding", value: 5, priority: 1, categoryId: "" };
+const KUDOS_PREFILL = "nice work beak!! 🎉";
+const KUDOS_DEFINITION = "Kudos are quick congrats you send when a friend finishes something.";
+
+// The photo the user "adds" to their post during the guided share step.
+const SHARE_PHOTO = "https://i.pinimg.com/736x/6e/6a/47/6e6a475d2f7967465952e2cbfde1c66e.jpg";
 
 const STEP_CATEGORY = 0;
 const STEP_TASK = 1;
@@ -72,10 +135,6 @@ const STEP_COMPLETE = 2;
 const STEP_RINGS = 3;
 const STEP_SHARE = 4;
 const STEP_CONGRATS = 5;
-
-// The completed task gets shared: post photo + auto-typed caption.
-const SHARE_PHOTO = "https://i.pinimg.com/736x/6e/6a/47/6e6a475d2f7967465952e2cbfde1c66e.jpg";
-const SHARE_CAPTION = "me when i finish kindred onboarding 🐐 #goat #productivity";
 
 // Demo ring state for the explainer: plan + do closed (they just planned + did a
 // task), share still open — the user closes the share ring in the next sequence.
@@ -98,7 +157,7 @@ export default function TutorialOnboarding() {
     const totalSteps = isSocialAuth ? 4 : 5;
     const router = useRouter();
     const { capture } = useAnalytics();
-    const { user, updateUser } = useAuth();
+    const { user } = useAuth();
     const { workspaces, fetchWorkspaces, setSelected, setCreateCategory, categories, selected, addToCategory } = useTasks();
     const { setTaskName, resetTaskCreation } = useTaskCreation();
     const { request } = useRequest();
@@ -109,7 +168,8 @@ export default function TutorialOnboarding() {
     const [showShareToast, setShowShareToast] = useState(false); // top toast appears a beat later
     const [shareClosed, setShareClosed] = useState(false); // share ring closed after posting
     const [sharePhase, setSharePhase] = useState<"toast" | "caption" | "posted">("toast");
-    const [captionText, setCaptionText] = useState(""); // auto-typed post caption
+    // Composer reveals one element at a time: 1 = preview card, 2 = photo added, 3 = post button
+    const [shareStage, setShareStage] = useState(0);
     const friendCursorX = useRef(new Animated.Value(0)).current; // beak's red cursor fly-in
     const friendCursorY = useRef(new Animated.Value(0)).current;
     const [isCreatingCategory, setIsCreatingCategory] = useState(true); // start with creator open
@@ -137,11 +197,12 @@ export default function TutorialOnboarding() {
     const ringsStepAnim = useRef(new Animated.Value(0)).current; // rings page enter transition
 
     const captionAnim = useRef(new Animated.Value(0)).current; // caption screen fade-in
-    // Feed / congrats reveal (beak congratulates on the post you just made)
+    // Feed / congrats beats: beak's cursor clicks your post, kudos take over a
+    // blurred overlay one at a time, then beak's post + the kudos CTA appear.
     const feedAnim = useRef(new Animated.Value(0)).current; // feed fade-in
-    const [showGifCongrats, setShowGifCongrats] = useState(false);
-    const [showTextCongrats, setShowTextCongrats] = useState(false);
-    const [showKudosBack, setShowKudosBack] = useState(false);
+    const friendCursorScale = useRef(new Animated.Value(1)).current; // beak's click pulse
+    const kudosBlurAnim = useRef(new Animated.Value(0)).current; // kudos spotlight fade
+    const [congratsPhase, setCongratsPhase] = useState<"post" | "kudos1" | "kudos2" | "beakPost">("post");
     const [showKudosModal, setShowKudosModal] = useState(false);
 
     const confettiRef = useRef<any>(null);
@@ -371,16 +432,23 @@ export default function TutorialOnboarding() {
         }
         // Page-enter transition: fade + slide the rings in
         Animated.timing(ringsStepAnim, { toValue: 1, duration: 600, easing: CURSOR_EASE, useNativeDriver: true }).start();
-        // Reveal the share-ring cursor after the rings stagger in, then the toast a beat later
-        const t1 = setTimeout(() => setShowRingCursor(true), 4000);
-        const t2 = setTimeout(() => setShowShareToast(true), 6200);
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-        };
+        // Reveal the share-ring cursor after the rings stagger in; the toast
+        // follows once the cursor's label finishes typing (onLabelTyped)
+        const t1 = setTimeout(() => setShowRingCursor(true), 2500);
+        return () => clearTimeout(t1);
     }, [step]);
 
-    // Real beak congrats on the post (stored so it shows in the actual feed too)
+    // Toast springs down from the top like a real toast
+    const toastAnim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        if (!showShareToast) {
+            toastAnim.setValue(0);
+            return;
+        }
+        Animated.spring(toastAnim, { toValue: 1, stiffness: 240, damping: 24, mass: 0.9, useNativeDriver: false }).start();
+    }, [showShareToast]);
+
+    // Real beak kudos on the post (stored so it shows in the actual notifications too)
     const sendCongratulation = async () => {
         try {
             await request("POST", "/user/congratulations/beak", {
@@ -391,49 +459,47 @@ export default function TutorialOnboarding() {
         } catch {}
     };
 
-    // Grant the welcome AI credits silently (no gift beat — the user dropped it)
-    const grantCreditsSilently = async () => {
-        try {
-            const response = await request("POST", "/user/congratulations/beak", {
-                message: CREDITS_MESSAGE,
-                categoryName: categoryName ?? PREFILL_CATEGORY,
-                taskName: taskData?.content ?? PREFILL_TASK,
-                grantCredits: true,
-            });
-            if (response?.creditsGranted && user?.credits) {
-                const updated = { ...user.credits };
-                for (const [key, amount] of Object.entries(response.creditsGranted)) {
-                    if (key in updated) (updated as any)[key] += amount as number;
-                }
-                updateUser({ credits: updated });
-            }
-        } catch {}
-    };
-
-    // ─── Feed step: beak congratulates your post (GIF first, then text), then
-    // you send a kudos back. beak's red cursor flies in alongside yours.
+    // ─── Feed step: enter on the "post" phase and store the real beak kudos ──
     useEffect(() => {
         if (step !== STEP_CONGRATS) return;
+        setCongratsPhase("post");
         sendCongratulation();
-        grantCreditsSilently();
-
         feedAnim.setValue(0);
         Animated.timing(feedAnim, { toValue: 1, duration: 500, easing: CURSOR_EASE, useNativeDriver: true }).start();
-
-        const t1 = setTimeout(() => {
-            if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setShowGifCongrats(true);
-        }, 1800);
-        const t2 = setTimeout(() => setShowTextCongrats(true), 4200);
-        const t3 = setTimeout(() => setShowKudosBack(true), 6000);
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-            clearTimeout(t3);
-        };
     }, [step]);
 
-    // Final action: open the real congratulate modal to send beak a kudos back.
+    // Any tap (or the Next button) moves to the next beat
+    const advanceCongrats = useCallback(() => {
+        setCongratsPhase((p) => (p === "post" ? "kudos1" : p === "kudos1" ? "kudos2" : "beakPost"));
+    }, []);
+
+    // Per-phase beats: cursor click on your post, then the kudos overlay
+    // advances on its own; "kudos2" waits for the Next button.
+    useEffect(() => {
+        if (step !== STEP_CONGRATS) return;
+        if (congratsPhase === "post") {
+            const click = setTimeout(() => {
+                if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                Animated.sequence([
+                    Animated.timing(friendCursorScale, { toValue: 0.75, duration: 160, useNativeDriver: true }),
+                    Animated.timing(friendCursorScale, { toValue: 1, duration: 200, useNativeDriver: true }),
+                ]).start();
+            }, 1100);
+            const adv = setTimeout(advanceCongrats, 1700);
+            return () => {
+                clearTimeout(click);
+                clearTimeout(adv);
+            };
+        }
+        if (congratsPhase === "kudos1") {
+            kudosBlurAnim.setValue(0);
+            Animated.timing(kudosBlurAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+            const adv = setTimeout(advanceCongrats, 2400);
+            return () => clearTimeout(adv);
+        }
+    }, [step, congratsPhase, advanceCongrats]);
+
+    // Final action: open the real kudos modal to congratulate beak's task.
     const handleSendKudosBack = () => {
         if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setShowKudosModal(true);
@@ -446,26 +512,24 @@ export default function TutorialOnboarding() {
         setStep(STEP_SHARE);
     };
 
-    // Caption auto-types once the caption screen opens
+    // Share screen: slide up like a real screen push, then stage the preview card in
     useEffect(() => {
-        if (step !== STEP_SHARE || sharePhase !== "caption") return;
+        if (step !== STEP_SHARE || sharePhase !== "caption") {
+            setShareStage(0);
+            return;
+        }
         captionAnim.setValue(0);
-        Animated.timing(captionAnim, { toValue: 1, duration: 400, easing: CURSOR_EASE, useNativeDriver: true }).start();
-        setCaptionText("");
-        let i = 0;
-        let cancelled = false;
-        const tick = () => {
-            if (cancelled) return;
-            i++;
-            setCaptionText(SHARE_CAPTION.slice(0, i));
-            if (i < SHARE_CAPTION.length) setTimeout(tick, 55);
-        };
-        const start = setTimeout(tick, 500);
-        return () => {
-            cancelled = true;
-            clearTimeout(start);
-        };
+        Animated.timing(captionAnim, { toValue: 1, duration: 450, easing: CURSOR_EASE, useNativeDriver: true }).start();
+        const t = setTimeout(() => setShareStage(1), 900);
+        return () => clearTimeout(t);
     }, [step, sharePhase]);
+
+    // Tap the photo slot → photo drops into the preview, then the Post button appears
+    const handleAddPhoto = useCallback(() => {
+        if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setShareStage(2);
+        setTimeout(() => setShareStage(3), 700);
+    }, []);
 
     const handlePostShare = () => {
         if (Platform.OS === "ios") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -500,7 +564,6 @@ export default function TutorialOnboarding() {
         0: { title: "Create a category", subtitle: "Workspaces hold categories, and categories hold tasks" },
         1: { title: "Add a task", subtitle: "Tap the category to create one" },
         2: { title: "Complete your task", subtitle: "Swipe right to mark it done" },
-        3: { title: "", subtitle: "" },
     };
 
     return (
@@ -531,18 +594,9 @@ export default function TutorialOnboarding() {
             <CongratulateModal
                 visible={showKudosModal}
                 setVisible={setShowKudosModal}
-                task={
-                    taskData
-                        ? {
-                              id: taskData.id,
-                              content: taskData.content,
-                              value: taskData.value,
-                              priority: taskData.priority,
-                              categoryId: categoryId ?? "",
-                          }
-                        : undefined
-                }
-                congratulationConfig={{ receiverId: BEAK.id, categoryName: categoryName ?? PREFILL_CATEGORY, userHandle: BEAK.name }}
+                task={BEAK_TASK}
+                congratulationConfig={{ receiverId: BEAK.id, categoryName: BEAK_CATEGORY, userHandle: BEAK.name }}
+                tutorialPrefill={KUDOS_PREFILL}
                 onSent={() => {
                     setShowKudosModal(false);
                     handleContinue();
@@ -646,7 +700,14 @@ export default function TutorialOnboarding() {
                                 opacity: ringsStepAnim,
                                 transform: [{ translateY: ringsStepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
                             },
-                        ]}>
+                        ]}
+                        onTouchEnd={() => {
+                            setShowRingCursor(true);
+                            setShowShareToast(true);
+                        }}>
+                        <View style={{ marginBottom: 16 }}>
+                            <PhaseProgress label="Share it" current={0} />
+                        </View>
                         <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Your daily rings
                         </ThemedText>
@@ -656,7 +717,7 @@ export default function TutorialOnboarding() {
 
                         <ProductivityRingsCard
                             variant="rings"
-                            staggerMs={1000}
+                            staggerMs={600}
                             ringsOverride={
                                 shareClosed
                                     ? { ...DEMO_RINGS, share: { current: 1, target: 1, closed: true }, all_closed: true }
@@ -664,17 +725,17 @@ export default function TutorialOnboarding() {
                             }
                         />
 
-                        <View style={styles.ringLegend}>
+                        <View style={styles.ringCards}>
                             {[
-                                { label: "Plan", desc: "plan your tasks" },
-                                { label: "Do", desc: "complete them" },
-                                { label: "Share", desc: "share your progress" },
+                                { label: "Plan", desc: "Add tasks to your day" },
+                                { label: "Do", desc: "Complete them" },
+                                { label: "Share", desc: "Post a win or send kudos" },
                             ].map((r) => (
-                                <View key={r.label} style={styles.ringLegendRow}>
+                                <View key={r.label} style={[styles.ringCard, { backgroundColor: ThemedColor.lightened }]}>
                                     <View style={[styles.ringDot, { backgroundColor: ThemedColor.primary }]} />
                                     <ThemedText type="defaultSemiBold">{r.label}</ThemedText>
                                     <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
-                                        — {r.desc}
+                                        {r.desc}
                                     </ThemedText>
                                 </View>
                             ))}
@@ -682,7 +743,11 @@ export default function TutorialOnboarding() {
 
                         {showRingCursor && (
                             <View style={styles.ringCursor}>
-                                <TutorialCursor size={34} label="Let's close our share ring" />
+                                <TutorialCursor
+                                    size={34}
+                                    label="Let's close your Share ring"
+                                    onLabelTyped={() => setTimeout(() => setShowShareToast(true), 350)}
+                                />
                             </View>
                         )}
                     </Animated.View>
@@ -718,19 +783,7 @@ export default function TutorialOnboarding() {
                             {prompts[step].subtitle}
                         </ThemedText>
 
-                        <View style={styles.stepIndicatorRow}>
-                            <View style={styles.dotsRow}>
-                                {[0, 1, 2].map((i) => (
-                                    <View
-                                        key={i}
-                                        style={[styles.dot, { backgroundColor: i <= step ? ThemedColor.primary : ThemedColor.tertiary }]}
-                                    />
-                                ))}
-                            </View>
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Step {step + 1} of 3
-                            </ThemedText>
-                        </View>
+                        <PhaseProgress label="Do your first task" current={step} />
                     </Animated.View>
                 ) : null}
 
@@ -740,83 +793,127 @@ export default function TutorialOnboarding() {
             {/* Completion toast pinned at the top — persistent, can't be dismissed */}
             {step === STEP_RINGS && showShareToast && (
                 <View style={styles.toastOverlay} pointerEvents="box-none">
-                    <LinearGradient
-                        colors={["rgba(0,0,0,0.30)", "rgba(0,0,0,0)"]}
-                        style={styles.toastGradient}
-                        pointerEvents="none"
-                    />
-                    <View style={[styles.toastWrap, { marginTop: insets.top + 8 }]}>
-                        <TaskToast
-                            message="Congrats! Click here to post and document your task!"
-                            status="success"
-                            onPressOverride={handleToastTap}
-                            disableDismiss
+                    <Animated.View
+                        pointerEvents="box-none"
+                        style={{
+                            alignSelf: "stretch",
+                            alignItems: "center",
+                            opacity: toastAnim,
+                            transform: [
+                                { translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-(insets.top + 90), 0] }) },
+                            ],
+                        }}>
+                        <LinearGradient
+                            colors={["rgba(0,0,0,0.30)", "rgba(0,0,0,0)"]}
+                            style={styles.toastGradient}
+                            pointerEvents="none"
                         />
-                    </View>
+                        <View style={[styles.toastWrap, { marginTop: insets.top + 8 }]}>
+                            <TaskToast
+                                message="Tap here to post your task and close your Share ring!"
+                                status="success"
+                                onPressOverride={handleToastTap}
+                                disableDismiss
+                            />
+                        </View>
+                    </Animated.View>
                 </View>
             )}
 
-            {/* Share: a fake "New Post" caption screen — caption types itself, then Post */}
+            {/* Share: guided "New Post" composer — slides up, then reveals the
+                preview, the photo step, and the Post button one at a time */}
             {step === STEP_SHARE && sharePhase === "caption" && (
-                <Animated.View style={[StyleSheet.absoluteFill, { opacity: captionAnim }]}>
+                <Animated.View
+                    style={[
+                        StyleSheet.absoluteFill,
+                        {
+                            transform: [
+                                {
+                                    translateY: captionAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [screenHeight, 0],
+                                    }),
+                                },
+                            ],
+                        },
+                    ]}>
                   <ThemedView style={StyleSheet.absoluteFill}>
                     <ScrollView
                         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 24 + insets.bottom }}
                         keyboardShouldPersistTaps="handled">
-                        <ThemedText type="subtitle" style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+                        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+                            <PhaseProgress label="Share it" current={1} />
+                        </View>
+                        <ThemedText type="subtitle" style={{ paddingHorizontal: 16, marginBottom: 4 }}>
                             New Post
                         </ThemedText>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption, paddingHorizontal: 16, marginBottom: 16 }}>
+                            Posting shares your win with friends — and closes your Share ring.
+                        </ThemedText>
 
-                        <View style={{ paddingHorizontal: 16 }}>
-                            <View style={styles.postPreview}>
-                                <PostCardHeader
-                                    icon={user?.profile_picture}
-                                    name={user?.display_name ?? "You"}
-                                    username={user?.handle ?? undefined}
-                                    timeLabel="Just now"
-                                    disableNavigation
-                                />
-                                <PostCardMedia
-                                    images={[SHARE_PHOTO]}
-                                    media={[{ type: "image", url: SHARE_PHOTO, thumbnailUrl: SHARE_PHOTO, width: 0, height: 0 }]}
-                                    dual={null}
-                                    imageHeight={280}
-                                />
-                                <PostCardFooter category={categoryName ?? PREFILL_CATEGORY} taskName={taskData?.content ?? PREFILL_TASK} readOnly />
+                        {shareStage >= 1 && (
+                            <View style={{ paddingHorizontal: 16 }}>
+                                <View style={styles.postPreview}>
+                                    <PostCardHeader
+                                        icon={user?.profile_picture}
+                                        name={user?.display_name ?? "You"}
+                                        username={user?.handle ?? undefined}
+                                        timeLabel="Just now"
+                                        disableNavigation
+                                    />
+                                    {shareStage === 1 && (
+                                        <TouchableOpacity
+                                            style={[styles.photoSlot, { borderColor: ThemedColor.tertiary }]}
+                                            onPress={handleAddPhoto}
+                                            activeOpacity={0.7}>
+                                            <Images size={28} color={ThemedColor.caption} />
+                                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                                Add a photo
+                                            </ThemedText>
+                                            <View pointerEvents="none" style={styles.photoSlotCursor}>
+                                                <TutorialCursor size={30} />
+                                            </View>
+                                        </TouchableOpacity>
+                                    )}
+                                    {shareStage >= 2 && (
+                                        <PostCardMedia
+                                            images={[SHARE_PHOTO]}
+                                            media={[{ type: "image", url: SHARE_PHOTO, thumbnailUrl: SHARE_PHOTO, width: 0, height: 0 }]}
+                                            dual={null}
+                                            imageHeight={220}
+                                        />
+                                    )}
+                                    <PostCardFooter category={categoryName ?? PREFILL_CATEGORY} taskName={taskData?.content ?? PREFILL_TASK} readOnly />
+                                </View>
                             </View>
-                        </View>
+                        )}
 
-                        <View style={{ padding: 16, gap: 16 }}>
-                            <View pointerEvents="none">
-                                <MentionTextInput
-                                    placeholder="Enter a caption"
-                                    value={captionText}
-                                    setValue={() => {}}
-                                    fontSize={16}
-                                    minHeight={80}
-                                    onMentionPicked={() => {}}
-                                />
-                            </View>
-                            <View>
-                                <PrimaryButton title="Post" onPress={handlePostShare} />
-                                {captionText.length >= SHARE_CAPTION.length && (
+                        {shareStage >= 3 && (
+                            <View style={{ padding: 16 }}>
+                                <View>
+                                    <PrimaryButton title="Post" onPress={handlePostShare} />
                                     <View pointerEvents="none" style={styles.postCursor}>
                                         <TutorialCursor size={30} />
                                     </View>
-                                )}
+                                </View>
                             </View>
-                        </View>
+                        )}
                     </ScrollView>
                   </ThemedView>
                 </Animated.View>
             )}
 
-            {/* Feed — beak congratulates the post you just made; you kudos back */}
+            {/* Feed — beak's cursor clicks your post, kudos take over a blurred
+                overlay one at a time, then beak's post appears with the kudos CTA */}
             {step === STEP_CONGRATS && (
                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: feedAnim }]}>
                     <ThemedView style={{ flex: 1 }}>
                         <ScrollView
+                            onTouchEnd={congratsPhase === "post" ? advanceCongrats : undefined}
                             contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 24 + insets.bottom, paddingHorizontal: 16 }}>
+                            <View style={{ marginBottom: 16 }}>
+                                <PhaseProgress label="Share it" current={2} />
+                            </View>
                             <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
                                 Your feed
                             </ThemedText>
@@ -839,41 +936,64 @@ export default function TutorialOnboarding() {
                                 <PostCardFooter category={categoryName ?? PREFILL_CATEGORY} taskName={taskData?.content ?? PREFILL_TASK} readOnly />
                             </View>
 
-                            {/* beak congratulates — GIF first, then the text */}
-                            {showGifCongrats && (
-                                <View style={{ marginTop: 12 }}>
-                                    <KudosItem
-                                        kudos={{ id: "c-gif", sender: BEAK, message: CONGRATS_GIF, type: "image", timestamp: new Date().toISOString(), read: true }}
-                                        formatTime={() => "now"}
-                                        visible
-                                        title="congratulated your post"
-                                    />
-                                </View>
-                            )}
-                            {showTextCongrats && (
-                                <View style={{ marginTop: 12 }}>
-                                    <KudosItem
-                                        kudos={{ id: "c-text", sender: BEAK, message: CONGRATS_MESSAGE, timestamp: new Date().toISOString(), read: true }}
-                                        formatTime={() => "now"}
-                                        visible
-                                        title="congratulated you"
-                                    />
-                                </View>
-                            )}
-
-                            {showKudosBack && (
-                                <View style={{ marginTop: 24 }}>
-                                    <PrimaryButton title="Send beak a kudos back" onPress={handleSendKudosBack} />
-                                </View>
+                            {/* beak's own post — the user sends kudos on it, the real direction */}
+                            {congratsPhase === "beakPost" && (
+                                <>
+                                    <ThemedText type="subtitle" style={{ marginTop: 24, marginBottom: 12 }}>
+                                        beak completed a task
+                                    </ThemedText>
+                                    <View style={styles.postPreview}>
+                                        <PostCardHeader
+                                            icon={BEAK.picture}
+                                            name={BEAK.name}
+                                            username="@beak"
+                                            timeLabel="Just now"
+                                            disableNavigation
+                                        />
+                                        <PostCardFooter category={BEAK_CATEGORY} taskName={BEAK_TASK.content} readOnly />
+                                    </View>
+                                    <View style={{ marginTop: 24, gap: 12 }}>
+                                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                            {KUDOS_DEFINITION}
+                                        </ThemedText>
+                                        <PrimaryButton title="Send beak kudos" onPress={handleSendKudosBack} />
+                                    </View>
+                                </>
                             )}
                         </ScrollView>
 
-                        {/* beak's cursor flies in to congratulate your post */}
-                        <Animated.View
-                            pointerEvents="none"
-                            style={[styles.feedBeakCursor, { transform: [{ translateX: friendCursorX }, { translateY: friendCursorY }] }]}>
-                            <TutorialCursor size={30} label="beak" color="#FF5A5F" bubbleLeft />
-                        </Animated.View>
+                        {/* beak's cursor flies in and clicks your post */}
+                        {congratsPhase === "post" && (
+                            <Animated.View
+                                pointerEvents="none"
+                                style={[
+                                    styles.feedBeakCursor,
+                                    { transform: [{ translateX: friendCursorX }, { translateY: friendCursorY }, { scale: friendCursorScale }] },
+                                ]}>
+                                <TutorialCursor size={30} label="beak" color="#FF5A5F" bubbleLeft />
+                            </Animated.View>
+                        )}
+
+                        {/* Blurred kudos spotlight — one kudos in focus at a time */}
+                        {(congratsPhase === "kudos1" || congratsPhase === "kudos2") && (
+                            <Animated.View
+                                style={[StyleSheet.absoluteFill, { opacity: kudosBlurAnim }]}
+                                onTouchEnd={congratsPhase === "kudos1" ? advanceCongrats : undefined}>
+                                <BlurView intensity={40} tint="default" style={StyleSheet.absoluteFill} />
+                                <View style={styles.kudosOverlay}>
+                                    {congratsPhase === "kudos1" ? (
+                                        <SpotlightKudos key="c-gif" gif={CONGRATS_GIF} />
+                                    ) : (
+                                        <SpotlightKudos key="c-text" message={CONGRATS_MESSAGE} />
+                                    )}
+                                    {congratsPhase === "kudos2" && (
+                                        <View style={{ marginTop: 24 }}>
+                                            <PrimaryButton title="Next" onPress={advanceCongrats} />
+                                        </View>
+                                    )}
+                                </View>
+                            </Animated.View>
+                        )}
                     </ThemedView>
                 </Animated.View>
             )}
@@ -941,14 +1061,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingTop: 8,
     },
-    ringLegend: {
+    ringCards: {
         marginTop: 12,
         gap: 8,
     },
-    ringLegendRow: {
+    ringCard: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 10,
+        borderRadius: 14,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
     },
     ringDot: {
         width: 10,
@@ -965,11 +1088,57 @@ const styles = StyleSheet.create({
         top: 6,
         right: 48,
     },
+    photoSlot: {
+        height: 140,
+        margin: 12,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderStyle: "dashed",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+    },
+    photoSlotCursor: {
+        position: "absolute",
+        right: "28%",
+        bottom: 18,
+    },
     feedBeakCursor: {
         position: "absolute",
-        top: "44%",
-        right: 56,
+        top: "30%",
+        right: 64,
         zIndex: 50,
+    },
+    kudosOverlay: {
+        flex: 1,
+        justifyContent: "center",
+        paddingHorizontal: 24,
+    },
+    spotlightCard: {
+        borderRadius: 16,
+        borderWidth: 0.5,
+        padding: 16,
+        gap: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    spotlightHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    spotlightAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+    spotlightGif: {
+        width: "100%",
+        height: 200,
+        borderRadius: 10,
     },
     toastOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -1039,78 +1208,4 @@ const styles = StyleSheet.create({
         lineHeight: 21,
     },
 
-    // Congrats
-    kudosRow: {
-        flexDirection: "row",
-        alignItems: "flex-start",
-    },
-    avatarSection: {
-        alignItems: "center",
-        gap: 6,
-    },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-    },
-    avatarName: {
-        fontSize: 11,
-        fontFamily: "Outfit",
-        textAlign: "center",
-        width: 52,
-    },
-    bubbleWrapper: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "flex-start",
-    },
-    bubbleTail: {
-        width: 0, height: 0,
-        borderTopWidth: TAIL_SIZE,
-        borderBottomWidth: TAIL_SIZE,
-        borderRightWidth: TAIL_SIZE,
-        borderTopColor: "transparent",
-        borderBottomColor: "transparent",
-        marginTop: 4,
-    },
-    bubbleCard: {
-        flex: 1,
-        borderRadius: 14,
-        borderTopLeftRadius: 8,
-        padding: 14,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    taskInfoRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        marginBottom: 6,
-        flexWrap: "wrap",
-    },
-    taskInfoCategory: {
-        fontSize: 15,
-        fontFamily: "Outfit",
-        fontWeight: "400",
-        flexShrink: 1,
-    },
-    taskInfoDot: {
-        width: 3, height: 3,
-        borderRadius: 2,
-        flexShrink: 0,
-    },
-    taskInfoName: {
-        fontSize: 15,
-        fontFamily: "Outfit",
-        flexShrink: 1,
-    },
-    messageText: {
-        fontSize: 16,
-        fontFamily: "Outfit",
-        lineHeight: 21,
-        marginTop: 2,
-    },
 });

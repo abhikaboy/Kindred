@@ -13,12 +13,13 @@ type Props = {
     arrowScale?: Animated.Value; // pulse the ARROW only — the bubble never scales
     color?: string; // cursor + bubble color (e.g. a friend's cursor is red)
     labelStartDelay?: number; // delay the typewriter until the cursor has settled
+    onLabelTyped?: () => void; // fires once the label finishes typing
 };
 
 // Figma-style arrow cursor: colored fill, white outline, drop shadow, optional
 // label bubble. It fades + slides in on mount (never just spawns) and the label
 // typewriters in.
-export default function TutorialCursor({ size = 32, label, bubbleLeft = false, bubbleBelow = false, arrowScale, color = PURPLE, labelStartDelay = 400 }: Props) {
+export default function TutorialCursor({ size = 32, label, bubbleLeft = false, bubbleBelow = false, arrowScale, color = PURPLE, labelStartDelay = 400, onLabelTyped }: Props) {
     const enter = useRef(new Animated.Value(0)).current;
     useEffect(() => {
         Animated.timing(enter, { toValue: 1, duration: 450, useNativeDriver: true }).start();
@@ -29,6 +30,9 @@ export default function TutorialCursor({ size = 32, label, bubbleLeft = false, b
     };
 
     const [typed, setTyped] = useState("");
+    // Ref so a changing callback identity doesn't restart the typewriter
+    const onLabelTypedRef = useRef(onLabelTyped);
+    onLabelTypedRef.current = onLabelTyped;
     useEffect(() => {
         if (!label) return;
         let i = 0;
@@ -38,6 +42,7 @@ export default function TutorialCursor({ size = 32, label, bubbleLeft = false, b
             i++;
             setTyped(label.slice(0, i));
             if (i < label.length) setTimeout(tick, 45);
+            else onLabelTypedRef.current?.();
         };
         const start = setTimeout(tick, labelStartDelay); // begin after the cursor has slid in
         return () => {

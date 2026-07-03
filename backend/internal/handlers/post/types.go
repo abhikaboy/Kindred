@@ -1,12 +1,44 @@
 package Post
 
 import (
+	"encoding/json"
+
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+// maxTaggedUsers caps tag fanout now that the validate=max guard is gone.
+const maxTaggedUsers = 20
+
+// coerceMentions best-effort parses a permissive tagged-user / mention array.
+// The field is typed `any` so no validation layer (Huma schema or go-playground)
+// can reject it: a non-array value yields nil, and malformed elements are
+// dropped. A bad "@" tag can never fail the whole request — bad entries are
+// simply stripped (the handler then ObjectID- and friend-gates what's left).
+func coerceMentions(v any) []MentionInput {
+	if v == nil {
+		return nil
+	}
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var raw []json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil // not an array → drop the whole thing
+	}
+	out := make([]MentionInput, 0, len(raw))
+	for _, r := range raw {
+		var mi MentionInput
+		if err := json.Unmarshal(r, &mi); err == nil {
+			out = append(out, mi)
+		}
+	}
+	return out
+}
 
 // Create Post
 type CreatePostInput struct {
@@ -46,8 +78,11 @@ type CreatePostParams struct {
 	BlueprintIsPublic *bool                            `json:"blueprintIsPublic,omitempty"`
 	Groups            []string                         `json:"groups,omitempty" validate:"omitempty,dive,len=24"`
 	IsPublic          bool                             `json:"isPublic"`
-	TaggedUsers       []MentionInput                   `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
-	Song              *types.Song                      `json:"song,omitempty"`
+	// Permissive on purpose: malformed tags (a bare "@", missing fields, wrong
+	// types, a non-array) are dropped via coerceMentions instead of failing the
+	// post. Shape is [{id, handle}]; the handler ObjectID- and friend-gates.
+	TaggedUsers any         `json:"taggedUsers,omitempty" doc:"Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected"`
+	Song        *types.Song `json:"song,omitempty"`
 }
 
 // Get Posts (all)
@@ -166,10 +201,12 @@ type UpdatePostOutput struct {
 }
 
 type UpdatePostParams struct {
-	Caption     *string          `json:"caption,omitempty"`
-	IsPublic    *bool            `json:"isPublic,omitempty"`
-	Size        *types.ImageSize `json:"size,omitempty"`
-	TaggedUsers *[]MentionInput  `json:"taggedUsers,omitempty" validate:"omitempty,max=20,dive"`
+	Caption  *string          `json:"caption,omitempty"`
+	IsPublic *bool            `json:"isPublic,omitempty"`
+	Size     *types.ImageSize `json:"size,omitempty"`
+	// Pointer so absent vs. provided is distinguishable; element type is `any`
+	// so malformed tags are dropped (coerceMentions), never rejected.
+	TaggedUsers *[]any `json:"taggedUsers,omitempty" doc:"Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected"`
 }
 
 // Get User Groups (for posts)

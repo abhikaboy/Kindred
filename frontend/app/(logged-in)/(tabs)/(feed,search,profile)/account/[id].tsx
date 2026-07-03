@@ -27,11 +27,10 @@ import TodayStats from "@/components/profile/TodayStats";
 import { FriendRings } from "@/components/profile/ProductivityRings";
 import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
 import ProfileHeader from "@/components/profile/ProfileHeader";
-import WeeklyActivity from "@/components/profile/WeeklyActivity";
+import MemoriesCalendar from "@/components/profile/MemoriesCalendar";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import FollowButton from "@/components/inputs/FollowButton";
-import BlueprintSection from "@/components/profile/BlueprintSection";
 import SongPreviewPill from "@/components/profile/song/SongPreviewPill";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "@/api/profile";
@@ -251,15 +250,7 @@ export default function Profile() {
                 </View>
                 {canViewPersonalContent ? (
                     <>
-                        <WeeklyActivity userid={profile?.id} />
-
-                        {profile?.id && (
-                            <BlueprintSection
-                                userId={profile.id}
-                                title={`${profile.display_name}'s Blueprints`}
-                                showViewAll={true}
-                            />
-                        )}
+                        <MemoriesCalendar userId={profile?.id} />
 
                         <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
 

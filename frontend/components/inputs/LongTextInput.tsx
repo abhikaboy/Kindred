@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TextInput, View, NativeSyntheticEvent, TextInputSelectionChangeEventData } from "react-native";
+import { StyleSheet, TextInput, View, NativeSyntheticEvent, TextInputSelectionChangeEventData, TextStyle } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {
@@ -9,6 +9,8 @@ type Props = {
     onBlur?: () => void;
     minHeight?: number;
     fontSize?: number;
+    fontWeight?: TextStyle["fontWeight"];
+    autoFocus?: boolean;
     onSelectionChange?: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void;
 };
 
@@ -19,6 +21,8 @@ const LongTextInput = ({
     onBlur,
     minHeight = 100,
     fontSize = 16,
+    fontWeight = "400",
+    autoFocus,
     onSelectionChange,
 }: Props) => {
     const ThemedColor = useThemeColor();
@@ -30,6 +34,7 @@ const LongTextInput = ({
                 placeholderTextColor={ThemedColor.ghost}
                 multiline={true}
                 numberOfLines={6}
+                autoFocus={autoFocus}
                 value={value}
                 onChangeText={setValue}
                 onBlur={onBlur}
@@ -39,7 +44,7 @@ const LongTextInput = ({
                     color: ThemedColor.text,
                     fontSize: fontSize,
                     fontFamily: "Outfit",
-                    fontWeight: "400",
+                    fontWeight: fontWeight,
                     lineHeight: fontSize * 1.5,
                     padding: 0,
                     margin: 0,
