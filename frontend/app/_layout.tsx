@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Dimensions, useColorScheme, View } from "react-native";
+import { AppState, Dimensions, Platform, useColorScheme, View } from "react-native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Slot, Stack } from "expo-router";
@@ -20,13 +20,12 @@ import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
-import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { DrawerProvider } from "@/contexts/drawerContext";
 import { FocusModeProvider } from "@/contexts/focusModeContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
 import { AnimatePresence } from "moti";
 import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
@@ -133,6 +132,17 @@ export default Sentry.wrap(function RootLayout() {
     //     };
     // }, []);
 
+    // Wire react-query's focusManager to AppState so refetchOnWindowFocus
+    // actually fires when the app returns to the foreground.
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (status) => {
+            if (Platform.OS !== "web") {
+                focusManager.setFocused(status === "active");
+            }
+        });
+        return () => sub.remove();
+    }, []);
+
     useEffect(() => {
         const hideSplash = async () => {
             if (loaded) {
@@ -168,7 +178,6 @@ export default Sentry.wrap(function RootLayout() {
                             <KudosProvider>
                                 <TasksProvider>
                                     <TaskCreationProvider>
-                                        <BlueprintCreationProvider>
                                             <SelectedGroupProvider>
                                                 <DrawerProvider>
                                                     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -194,7 +203,6 @@ export default Sentry.wrap(function RootLayout() {
                                                     </GestureHandlerRootView>
                                                 </DrawerProvider>
                                             </SelectedGroupProvider>
-                                        </BlueprintCreationProvider>
                                     </TaskCreationProvider>
                                 </TasksProvider>
                             </KudosProvider>

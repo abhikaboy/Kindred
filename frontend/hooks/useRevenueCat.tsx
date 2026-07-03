@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { Platform } from "react-native";
 import Purchases, {
     CustomerInfo,
@@ -213,20 +213,27 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
         }
     }, []);
 
+    const value = useMemo(
+        () => ({
+            isReady,
+            customerInfo,
+            currentOffering,
+            isPro,
+            presentPaywall,
+            presentPaywallIfNeeded,
+            presentCustomerCenter,
+            restorePurchases,
+            refreshCustomerInfo,
+        }),
+        [
+            isReady, customerInfo, currentOffering, isPro,
+            presentPaywall, presentPaywallIfNeeded, presentCustomerCenter,
+            restorePurchases, refreshCustomerInfo,
+        ]
+    );
+
     return (
-        <RevenueCatContext.Provider
-            value={{
-                isReady,
-                customerInfo,
-                currentOffering,
-                isPro,
-                presentPaywall,
-                presentPaywallIfNeeded,
-                presentCustomerCenter,
-                restorePurchases,
-                refreshCustomerInfo,
-            }}
-        >
+        <RevenueCatContext.Provider value={value}>
             {children}
         </RevenueCatContext.Provider>
     );

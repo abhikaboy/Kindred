@@ -21,6 +21,7 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Sentry from "@sentry/react-native";
 import { showToast } from "@/utils/showToast";
 import { ERROR_MESSAGES } from "@/utils/errorParser";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 type Props = {
     visible: boolean;
@@ -35,6 +36,7 @@ export const OnboardModal = (props: Props) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const colorScheme = useColorScheme();
+    const setT = useTimeouts();
 
     // Animation values for staggered button fade-in
     const phoneOpacity = useRef(new Animated.Value(0)).current;
@@ -123,12 +125,12 @@ export const OnboardModal = (props: Props) => {
                 googleOpacity.setValue(0);
 
                 // Clear the guard after the present animation settles
-                setTimeout(() => {
+                setT(() => {
                     isPresentingRef.current = false;
                 }, 500);
 
                 // Staggered fade-in animation with initial delay
-                setTimeout(() => {
+                setT(() => {
                     Animated.sequence([
                         Animated.timing(phoneOpacity, {
                             toValue: 1,

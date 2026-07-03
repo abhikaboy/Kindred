@@ -19,6 +19,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import ConfettiCannon from "react-native-confetti-cannon";
 import * as Haptics from "expo-haptics";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 const CREDIT_TYPES = [
     { key: "voice", label: "Voice Credits", Icon: Microphone },
@@ -44,6 +45,7 @@ export default function RewardUnboxingModal({
     newTotal,
 }: RewardUnboxingModalProps) {
     const ThemedColor = useThemeColor();
+    const setT = useTimeouts();
     const confettiRef = useRef<any>(null);
     const [phase, setPhase] = useState<"spinning" | "revealed">("spinning");
     const [leftIndex, setLeftIndex] = useState(0);
@@ -163,7 +165,7 @@ export default function RewardUnboxingModal({
             ]).start();
 
             // Reward text appears after a beat
-            setTimeout(() => {
+            setT(() => {
                 Animated.parallel([
                     Animated.spring(rewardScale, {
                         toValue: 1,
@@ -182,7 +184,7 @@ export default function RewardUnboxingModal({
             }, 400);
 
             // Total text + confetti + done button
-            setTimeout(() => {
+            setT(() => {
                 Animated.timing(totalOpacity, {
                     toValue: 1,
                     duration: 400,
