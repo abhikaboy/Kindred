@@ -19,9 +19,11 @@ type Props = {
     // Onboarding tutorial: type the name in for the user, lock the input,
     // hide the tag button, and point a guiding cursor at the create button.
     tutorial?: boolean;
+    // Create in this workspace instead of the globally selected one.
+    workspaceName?: string;
 };
 
-const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = false }: Props) => {
+const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = false, workspaceName }: Props) => {
     const [name, setName] = useState(tutorial ? "" : (initialName ?? ""));
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -35,6 +37,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
     const ThemedColor = useThemeColor();
     const { selected, addToWorkspace } = useTasks();
     const { request } = useRequest();
+    const targetWorkspace = workspaceName ?? selected;
 
     const tagsSheetRef = useRef<BottomSheetModal>(null);
     const tagEditorRef = useRef<TagEditorHandle>(null);
@@ -101,11 +104,11 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
         try {
             const response = await request("POST", `/user/categories`, {
                 name: trimmed,
-                workspaceName: selected,
+                workspaceName: targetWorkspace,
                 tags,
             });
             if (!mountedRef.current) return;
-            addToWorkspace(selected, { ...response, tasks: response.tasks ?? [], tags: response.tags ?? tags });
+            addToWorkspace(targetWorkspace, { ...response, tasks: response.tasks ?? [], tags: response.tags ?? tags });
             animateOut(() => onCreated?.(response.id, trimmed));
         } catch (e) {
             if (!mountedRef.current) return;

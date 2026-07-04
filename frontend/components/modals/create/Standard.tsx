@@ -89,7 +89,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
 
-    // Tutorial: a guiding cursor pulses over the Create button once the field is auto-typed
+    // Tutorial: a stuck-user hint — the cursor only appears if they haven't
+    // tapped Create ~5s after the field finishes auto-typing
     const [showTutorialCursor, setShowTutorialCursor] = useState(false);
     const tutorialCursorPulse = useRef(new Animated.Value(1)).current;
     useEffect(() => {
@@ -102,7 +103,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     Animated.timing(tutorialCursorPulse, { toValue: 1, duration: 750, useNativeDriver: true }),
                 ])
             ).start();
-        }, 2600);
+        }, 7600);
         return () => clearTimeout(t);
     }, [tutorial]);
 

@@ -1,5 +1,7 @@
 import { StyleSheet, View, TouchableOpacity, Animated } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { ThemedText } from "@/components/ThemedText";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
@@ -267,6 +269,7 @@ const HomeContent = ({
     onRefresh,
 }: any) => {
     const { selected } = useTasks();
+    const router = useRouter();
     const [homeTab, setHomeTab] = useState(0);
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
@@ -351,6 +354,23 @@ const HomeContent = ({
                                     setActiveTab={setHomeTab}
                                 />
                             </View>
+
+                            {/* ponytail: dev-only — replay the interactive onboarding tutorial. Remove before ship. */}
+                            <TouchableOpacity
+                                onPress={() => router.push("/(onboarding)/tutorial")}
+                                style={{
+                                    marginHorizontal: HORIZONTAL_PADDING,
+                                    marginBottom: 12,
+                                    padding: 10,
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: ThemedColor.tertiary,
+                                    alignItems: "center",
+                                }}>
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                    ▶ Replay onboarding tutorial (dev)
+                                </ThemedText>
+                            </TouchableOpacity>
 
                             <AnimatedTabContent activeTab={homeTab} setActiveTab={setHomeTab} flex lazy>
                                 <View style={{ flex: 1 }}>

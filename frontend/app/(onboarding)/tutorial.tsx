@@ -17,7 +17,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
-import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -158,7 +157,7 @@ export default function TutorialOnboarding() {
     const router = useRouter();
     const { capture } = useAnalytics();
     const { user } = useAuth();
-    const { workspaces, fetchWorkspaces, setSelected, setCreateCategory, categories, selected, addToCategory } = useTasks();
+    const { workspaces, fetchWorkspaces, setCreateCategory, categories } = useTasks();
     const { setTaskName, resetTaskCreation } = useTaskCreation();
     const { request } = useRequest();
 
@@ -223,12 +222,9 @@ export default function TutorialOnboarding() {
         init();
     }, []);
 
-    useEffect(() => {
-        if (workspaces.length > 0) {
-            const guide = workspaces.find((w) => w.name === ONBOARDING_WORKSPACE);
-            if (guide) setSelected(ONBOARDING_WORKSPACE);
-        }
-    }, [workspaces]);
+    // The Guide workspace is never globally selected — the creator targets it
+    // via its workspaceName prop, so the app stays on home throughout.
+    const guideReady = workspaces.some((w) => w.name === ONBOARDING_WORKSPACE);
 
     useEffect(() => {
         capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
@@ -237,16 +233,32 @@ export default function TutorialOnboarding() {
         });
     }, []);
 
+    // ─── Step-0 entrance stagger: header → prompt card → category creator ──
+    const introHeaderAnim = useRef(new Animated.Value(0)).current;
+    const introCreatorAnim = useRef(new Animated.Value(0)).current;
+    const [introCreatorReady, setIntroCreatorReady] = useState(false);
+    useEffect(() => {
+        Animated.timing(introHeaderAnim, { toValue: 1, duration: 500, easing: CURSOR_EASE, useNativeDriver: true }).start();
+        // Mount the creator late so its name-typewriter starts after the stagger
+        const t = setTimeout(() => {
+            setIntroCreatorReady(true);
+            Animated.timing(introCreatorAnim, { toValue: 1, duration: 400, easing: CURSOR_EASE, useNativeDriver: true }).start();
+        }, 1300);
+        return () => clearTimeout(t);
+    }, []);
+
     // ─── Prompt card animation on step change ───────────────────────
     useEffect(() => {
+        // First step waits for the header to land; later steps come in quicker
+        const delay = step === STEP_CATEGORY ? 700 : 300;
         promptOpacity.setValue(0);
         promptSlide.setValue(20);
         Animated.parallel([
             Animated.timing(promptOpacity, {
-                toValue: 1, duration: 500, delay: 300, useNativeDriver: true,
+                toValue: 1, duration: 500, delay, useNativeDriver: true,
             }),
             Animated.timing(promptSlide, {
-                toValue: 0, duration: 500, delay: 300, useNativeDriver: true,
+                toValue: 0, duration: 500, delay, useNativeDriver: true,
             }),
         ]).start();
     }, [step]);
@@ -492,10 +504,9 @@ export default function TutorialOnboarding() {
             };
         }
         if (congratsPhase === "kudos1") {
+            // No auto-advance — each kudos waits for its Next button
             kudosBlurAnim.setValue(0);
             Animated.timing(kudosBlurAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-            const adv = setTimeout(advanceCongrats, 2400);
-            return () => clearTimeout(adv);
         }
     }, [step, congratsPhase, advanceCongrats]);
 
@@ -554,8 +565,6 @@ export default function TutorialOnboarding() {
             step_name: OnboardingSteps.TUTORIAL.name,
             step_index: OnboardingSteps.TUTORIAL.index,
         });
-        // Demo selected the Guide workspace; reset so they land on home, not that workspace
-        setSelected("");
         router.push("/(onboarding)/calendar");
     };
 
@@ -612,23 +621,41 @@ export default function TutorialOnboarding() {
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                     {/* Workspace header — same as WorkspaceContent (hidden once we leave the task steps) */}
                     {step < STEP_RINGS && (
-                        <View style={styles.workspaceHeader}>
+                        <Animated.View
+                            style={[
+                                styles.workspaceHeader,
+                                {
+                                    opacity: introHeaderAnim,
+                                    transform: [
+                                        { translateY: introHeaderAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+                                    ],
+                                },
+                            ]}>
                             <ThemedText type="title" style={{ fontWeight: "600" }}>
                                 {DISPLAY_WORKSPACE}
                             </ThemedText>
-                        </View>
+                        </Animated.View>
                     )}
 
                     {/* Categories container — matches categoriesContainer gap: 16 */}
                     <View style={styles.categoriesContainer}>
-                        {/* InlineCategoryCreator — wait for selected workspace */}
-                        {isCreatingCategory && selected === ONBOARDING_WORKSPACE && (
-                            <InlineCategoryCreator
-                                initialName={step === STEP_CATEGORY ? PREFILL_CATEGORY : undefined}
-                                onCreated={handleCategoryCreated}
-                                onCancel={handleCancelCategory}
-                                tutorial
-                            />
+                        {/* InlineCategoryCreator — wait for the Guide workspace to load + entrance stagger */}
+                        {isCreatingCategory && guideReady && introCreatorReady && (
+                            <Animated.View
+                                style={{
+                                    opacity: introCreatorAnim,
+                                    transform: [
+                                        { translateY: introCreatorAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+                                    ],
+                                }}>
+                                <InlineCategoryCreator
+                                    initialName={step === STEP_CATEGORY ? PREFILL_CATEGORY : undefined}
+                                    onCreated={handleCategoryCreated}
+                                    onCancel={handleCancelCategory}
+                                    tutorial
+                                    workspaceName={ONBOARDING_WORKSPACE}
+                                />
+                            </Animated.View>
                         )}
 
                         {/* Created category — uses real Category layout pattern */}
@@ -803,11 +830,6 @@ export default function TutorialOnboarding() {
                                 { translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-(insets.top + 90), 0] }) },
                             ],
                         }}>
-                        <LinearGradient
-                            colors={["rgba(0,0,0,0.30)", "rgba(0,0,0,0)"]}
-                            style={styles.toastGradient}
-                            pointerEvents="none"
-                        />
                         <View style={[styles.toastWrap, { marginTop: insets.top + 8 }]}>
                             <TaskToast
                                 message="Tap here to post your task and close your Share ring!"
@@ -976,9 +998,7 @@ export default function TutorialOnboarding() {
 
                         {/* Blurred kudos spotlight — one kudos in focus at a time */}
                         {(congratsPhase === "kudos1" || congratsPhase === "kudos2") && (
-                            <Animated.View
-                                style={[StyleSheet.absoluteFill, { opacity: kudosBlurAnim }]}
-                                onTouchEnd={congratsPhase === "kudos1" ? advanceCongrats : undefined}>
+                            <Animated.View style={[StyleSheet.absoluteFill, { opacity: kudosBlurAnim }]}>
                                 <BlurView intensity={40} tint="default" style={StyleSheet.absoluteFill} />
                                 <View style={styles.kudosOverlay}>
                                     {congratsPhase === "kudos1" ? (
@@ -986,11 +1006,9 @@ export default function TutorialOnboarding() {
                                     ) : (
                                         <SpotlightKudos key="c-text" message={CONGRATS_MESSAGE} />
                                     )}
-                                    {congratsPhase === "kudos2" && (
-                                        <View style={{ marginTop: 24 }}>
-                                            <PrimaryButton title="Next" onPress={advanceCongrats} />
-                                        </View>
-                                    )}
+                                    <View style={{ marginTop: 24 }}>
+                                        <PrimaryButton title="Next" onPress={advanceCongrats} />
+                                    </View>
                                 </View>
                             </Animated.View>
                         )}
@@ -1146,14 +1164,8 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start",
         paddingHorizontal: 16,
     },
-    toastGradient: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 220,
-    },
     toastWrap: {
+        alignSelf: "stretch",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
