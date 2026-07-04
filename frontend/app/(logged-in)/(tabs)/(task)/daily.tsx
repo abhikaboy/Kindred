@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, {
     useSharedValue,
@@ -218,6 +218,7 @@ const Daily = (props: Props) => {
                     mode={viewMode}
                     onStep={handleStep}
                     onModeChange={setViewMode}
+                    onBack={() => router.back()}
                 />
 
                 {viewMode === "week" ? (
@@ -231,7 +232,23 @@ const Daily = (props: Props) => {
                             hoverKey={hoverKey}
                         />
                         <View style={styles.dayHeader}>
-                            <ThemedText type="defaultSemiBold">{dayLabel(selectedDate)}</ThemedText>
+                            {/* Off-today the label tints primary and taps back to today */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    const d = new Date();
+                                    d.setHours(0, 0, 0, 0);
+                                    setSelectedDate(d);
+                                }}
+                                disabled={dayLabel(selectedDate) === "Today"}
+                                hitSlop={8}
+                            >
+                                <ThemedText
+                                    type="defaultSemiBold"
+                                    style={dayLabel(selectedDate) !== "Today" && { color: ThemedColor.primary }}
+                                >
+                                    {dayLabel(selectedDate)}
+                                </ThemedText>
+                            </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setDayDetail(dayDetail === "agenda" ? "timeline" : "agenda")}
                                 hitSlop={8}

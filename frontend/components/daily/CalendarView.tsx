@@ -15,6 +15,7 @@ import Animated, {
 import { router } from "expo-router";
 import { isSameDay } from "date-fns";
 import { clampWindowToDay } from "@/utils/taskCountsByDay";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -489,7 +490,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                 <View>{headerContent}</View>
 
                 <View style={{ backgroundColor: ThemedColor.background }}>
-                    <View style={{ paddingBottom: 16, paddingHorizontal: 16 }}>
+                    <View style={{ paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
                         <UnscheduledTasksSection
                             tasks={tasksForTodayNoTime}
                             title="Tasks"
@@ -504,7 +505,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
                 {/* Schedule grid */}
                 <View
-                    style={[styles.scheduleSection, { paddingHorizontal: 16 }]}
+                    style={[styles.scheduleSection, { paddingHorizontal: HORIZONTAL_PADDING }]}
                 >
                     <GestureDetector gesture={composedGesture}>
                         <Animated.View style={animatedScheduleContentStyle}>
@@ -739,7 +740,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                     </GestureDetector>
                 </View>
 
-                <View style={{ paddingHorizontal: 16 }}>
+                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                     <UnscheduledTasksSection
                         tasks={tasksUnscheduled}
                         title="Unscheduled Tasks"

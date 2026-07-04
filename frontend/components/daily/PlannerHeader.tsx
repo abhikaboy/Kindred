@@ -11,14 +11,26 @@ type Props = {
     mode: "week" | "month";
     onStep: (delta: 1 | -1) => void;
     onModeChange: (mode: "week" | "month") => void;
+    onBack?: () => void;
 };
 
-const PlannerHeader = ({ anchorDate, mode, onStep, onModeChange }: Props) => {
+const PlannerHeader = ({ anchorDate, mode, onStep, onModeChange, onBack }: Props) => {
     const ThemedColor = useThemeColor();
     const label = anchorDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
     return (
         <View style={styles.row}>
+            {onBack && (
+                <TouchableOpacity
+                    onPress={onBack}
+                    style={[styles.backButton, { backgroundColor: ThemedColor.lightened }]}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                >
+                    <CaretLeft size={20} color={ThemedColor.text} weight="bold" />
+                </TouchableOpacity>
+            )}
             <View style={styles.stepper}>
                 <TouchableOpacity onPress={() => onStep(-1)} hitSlop={8}>
                     <CaretLeft size={18} color={ThemedColor.primary} weight="bold" />
@@ -49,8 +61,16 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         gap: 12,
     },
-    stepper: { flexDirection: "row", alignItems: "center", gap: 10 },
+    stepper: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
     segment: { width: 150 },
+    backButton: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 10,
+    },
 });
 
 export default PlannerHeader;
