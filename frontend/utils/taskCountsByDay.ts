@@ -11,6 +11,17 @@ export const fromDayKey = (key: string): Date => {
     return new Date(y, m - 1, day);
 };
 
+/** Portion of [start, end] that falls on `day` (local); null if it doesn't touch the day. */
+export function clampWindowToDay(start: Date, end: Date, day: Date): { start: Date; end: Date } | null {
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+    if (end <= dayStart || start >= dayEnd) return null;
+    return {
+        start: start < dayStart ? dayStart : start,
+        end: end > dayEnd ? dayEnd : end,
+    };
+}
+
 export function countTasksByDay(tasks: any[], start: Date, end: Date): Record<string, DayDensity> {
     const startMs = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
     const endMs = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).getTime();

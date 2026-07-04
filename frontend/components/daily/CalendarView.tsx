@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { router } from "expo-router";
 import { isSameDay } from "date-fns";
+import { clampWindowToDay } from "@/utils/taskCountsByDay";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -574,6 +575,17 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                     const hour = i;
                                     const tasksInThisHour =
                                         tasksWithSpecificTime.filter((task) => {
+                                            // Cross-midnight tasks anchor at their clamped
+                                            // start for the rendered day (midnight on day 2)
+                                            if (task.startTime && task.deadline) {
+                                                const w = clampWindowToDay(
+                                                    new Date(task.startTime),
+                                                    new Date(task.deadline),
+                                                    selectedDate
+                                                );
+                                                if (!w) return false;
+                                                return w.start.getHours() === hour;
+                                            }
                                             let taskTime;
                                             if (task.startTime)
                                                 taskTime = new Date(
@@ -638,21 +650,26 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                                         task.startTime &&
                                                         task.deadline
                                                     ) {
-                                                        const st = new Date(
-                                                            task.startTime
-                                                        );
-                                                        const et = new Date(
-                                                            task.deadline
-                                                        );
+                                                        // Clamp to the rendered day so
+                                                        // cross-midnight blocks stop at the
+                                                        // grid edge instead of bleeding past it
+                                                        const w = clampWindowToDay(
+                                                            new Date(task.startTime),
+                                                            new Date(task.deadline),
+                                                            selectedDate
+                                                        ) ?? {
+                                                            start: new Date(task.startTime),
+                                                            end: new Date(task.deadline),
+                                                        };
                                                         durationHours =
                                                             Math.min(
                                                                 8,
-                                                                (et.getTime() -
-                                                                    st.getTime()) /
+                                                                (w.end.getTime() -
+                                                                    w.start.getTime()) /
                                                                     3600000
                                                             );
                                                         minuteOffset =
-                                                            st.getMinutes();
+                                                            w.start.getMinutes();
                                                     } else if (
                                                         task.startTime
                                                     ) {
