@@ -3,7 +3,6 @@ import { Modal, TouchableOpacity, View, StyleSheet } from "react-native";
 import EmojiSelector from "react-native-emoji-selector";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Dimensions } from "react-native";
-let ThemedColor = useThemeColor();
 
 type EmojiSelectorProps = {
     showSelector: boolean;
@@ -24,7 +23,7 @@ const EmojiSelectorClass = ({ showSelector, onAddReaction, onClose }: EmojiSelec
                 animationType="slide"
                 onRequestClose={onClose}>
                 <TouchableOpacity style={styles.modalContainer} onPress={onClose}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { backgroundColor: ThemedColor.background }]}>
                         <EmojiSelector
                             onEmojiSelected={(emoji) => {
                                 onAddReaction(emoji, 1, [userId]);
@@ -53,7 +52,6 @@ const styles = StyleSheet.create({
         backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContent: {
-        backgroundColor: ThemedColor.background,
         padding: 20,
         paddingBottom: 60,
         borderRadius: 20,

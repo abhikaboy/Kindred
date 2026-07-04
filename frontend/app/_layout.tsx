@@ -18,6 +18,7 @@ import { TasksProvider } from "@/contexts/tasksContext";
 import { TaskCreationProvider } from "@/contexts/taskCreationContext";
 import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { applyStoredThemePreference } from "@/hooks/useThemePreference";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
 import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
@@ -75,6 +76,9 @@ try {
 } catch (e) {
     console.error("[Kindred] SplashScreen.preventAutoHideAsync failed:", e);
 }
+
+// Restore theme preference while the splash screen is still up
+applyStoredThemePreference();
 
 // Create QueryClient outside component to prevent recreation on every render
 const queryClient = new QueryClient({

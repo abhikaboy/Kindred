@@ -20,6 +20,7 @@ import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { SettingsActionRow } from '@/components/settings/SettingsActionRow';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useUserSettings, useUpdateSettings, useUpdateCheckinFrequency } from '@/hooks/useSettings';
+import { useThemePreference, ThemePreference } from '@/hooks/useThemePreference';
 import { getCalendarConnections, disconnectCalendar, connectGoogleCalendar, syncCalendarEvents } from '@/api/calendar';
 import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
 import CalendarSetupBottomSheet from '@/components/modals/CalendarSetupBottomSheet';
@@ -54,6 +55,17 @@ export default function Settings() {
     // Check-in frequency options
     const checkinFrequencyOptions = ['None', 'Occasionally', 'Regularly', 'Frequently'];
     const [checkinFrequency, setCheckinFrequency] = useState('Regularly');
+
+    // Theme preference (stored locally, per-device)
+    const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
+    const themeOptions = ['System', 'Light', 'Dark'];
+
+    const handleThemeChange = (option: string) => {
+        setThemePreference(option.toLowerCase() as ThemePreference);
+        capture(AnalyticsEvents.SETTINGS_CHANGED, {
+            setting_name: 'theme',
+        });
+    };
 
     // Calendar integration state
     const [calendarConnections, setCalendarConnections] = useState<any[]>([]);
@@ -386,6 +398,23 @@ export default function Settings() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.content}>
+                <SettingsSection title="APPEARANCE">
+                    <View style={styles.checkinSection}>
+                        <ThemedText type="default">
+                            Theme
+                        </ThemedText>
+                        <ThemedText type="caption" style={styles.checkinDescription}>
+                            System follows your device setting
+                        </ThemedText>
+                        <SegmentedControl
+                            options={themeOptions}
+                            selectedOption={themeOptions.find((o) => o.toLowerCase() === themePreference) ?? 'System'}
+                            onOptionPress={handleThemeChange}
+                            size="small"
+                        />
+                    </View>
+                </SettingsSection>
+
                 <View style={{ opacity: settingsAvailable ? 1 : 0.5 }} pointerEvents={settingsAvailable ? 'auto' : 'none'}>
                 <SettingsSection title="NOTIFICATIONS">
                     <View style={styles.checkinSection}>

@@ -12,8 +12,8 @@ const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 const INITIAL_BOX_SIZE = 40;
 
-let ThemedColor = useThemeColor();
 const ThemedSlider = ({ setStep, width }: { setStep: (step: number) => void; width: number }) => {
+    const ThemedColor = useThemeColor();
     let SLIDER_WIDTH = width ? Dimensions.get("window").width * width : Dimensions.get("window").width * 0.89;
     let STEP_SIZE = SLIDER_WIDTH / 11;
     const offset = useSharedValue(0);
@@ -58,7 +58,7 @@ const ThemedSlider = ({ setStep, width }: { setStep: (step: number) => void; wid
             runOnJS(setStep)(POINTS[stepIndex]?.value || POINTS[0].value);
         }
     );
-    const styles = getStyles(SLIDER_WIDTH);
+    const styles = getStyles(SLIDER_WIDTH, ThemedColor);
     return (
         <View>
             <GestureHandlerRootView style={styles.container}>
@@ -83,7 +83,7 @@ const ThemedSlider = ({ setStep, width }: { setStep: (step: number) => void; wid
     );
 };
 
-const getStyles = (SLIDER_WIDTH: number) =>
+const getStyles = (SLIDER_WIDTH: number, ThemedColor: ReturnType<typeof useThemeColor>) =>
     StyleSheet.create({
         container: {
             flex: 1,

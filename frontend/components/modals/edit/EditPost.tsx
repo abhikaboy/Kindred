@@ -58,21 +58,3 @@ const EditPost = (props: Props) => {
 };
 
 export default EditPost;
-let ThemedColor = useThemeColor();
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        width: Dimensions.get("screen").width,
-        backgroundColor: ThemedColor.background,
-        borderTopRightRadius: 24,
-        borderTopLeftRadius: 24,
-        bottom: -16,
-        paddingBottom: Dimensions.get("screen").height * 0.1,
-        paddingTop: 32,
-        paddingLeft: 24,
-        left: -24,
-        gap: 24,
-        position: "absolute",
-    },
-});

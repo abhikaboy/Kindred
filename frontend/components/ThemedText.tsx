@@ -68,7 +68,6 @@ export function ThemedText({ style, lightColor, darkColor, type = "default", ...
         />
     );
 }
-let ThemedColor = useThemeColor();
 
 const useStyles = (ThemedColor: any, scale: number) =>
     StyleSheet.create({

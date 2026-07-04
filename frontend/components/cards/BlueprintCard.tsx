@@ -17,7 +17,6 @@ import { FlatList } from "react-native";
 const blueprintImage = require("@/assets/images/blueprintReplacement.png");
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
-const ThemedColor = useThemeColor();
 const MAX_VISIBLE_TAGS = 2;
 interface Props extends BlueprintDocument {
     large?: boolean;

@@ -1,7 +1,8 @@
 import { getThemedColor } from "@/constants/Colors";
-import { Appearance } from "react-native";
+import { useColorScheme } from "react-native";
 
 export function useThemeColor(forceTheme?: "light" | "dark") {
-    const theme = forceTheme ?? Appearance.getColorScheme() ?? "light";
-    return getThemedColor(theme);
+    // Reactive: re-renders on system theme change or Appearance.setColorScheme override
+    const scheme = useColorScheme();
+    return getThemedColor(forceTheme ?? scheme ?? "light");
 }
