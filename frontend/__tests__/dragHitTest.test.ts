@@ -1,4 +1,4 @@
-import { categoryAtPoint, CategoryRect } from "@/utils/dragHitTest";
+import { categoryAtPoint, CategoryRect, rectAtPoint, DropRect } from "@/utils/dragHitTest";
 
 const rects: CategoryRect[] = [
     { categoryId: "a", x: 0, y: 0, width: 100, height: 50 },
@@ -22,5 +22,18 @@ describe("categoryAtPoint", () => {
             { categoryId: "second", x: 0, y: 0, width: 100, height: 100 },
         ];
         expect(categoryAtPoint(overlapping, 50, 50)).toBe("first");
+    });
+});
+
+describe("rectAtPoint", () => {
+    const dropRects: DropRect[] = [
+        { key: "2026-07-01", x: 0, y: 100, width: 50, height: 50 },
+        { key: "2026-07-02", x: 50, y: 100, width: 50, height: 50 },
+    ];
+    it("returns the containing rect's key", () => {
+        expect(rectAtPoint(dropRects, 60, 120)).toBe("2026-07-02");
+    });
+    it("returns null outside all rects — no slack", () => {
+        expect(rectAtPoint(dropRects, 60, 200)).toBeNull();
     });
 });

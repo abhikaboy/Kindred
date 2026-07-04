@@ -50,3 +50,13 @@ export function categoryAtPoint(
     }
     return bestDist <= VERTICAL_SLACK ? best : null;
 }
+
+export type DropRect = { key: string; x: number; y: number; width: number; height: number };
+
+/** Strict-containment hit test for tiled drop targets (day cells). */
+export function rectAtPoint(rects: DropRect[], x: number, y: number): string | null {
+    for (const r of rects) {
+        if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) return r.key;
+    }
+    return null;
+}
