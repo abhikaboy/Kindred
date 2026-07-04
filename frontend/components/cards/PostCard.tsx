@@ -103,7 +103,6 @@ const PostCard = React.memo(({
     onBlockUser,
 }: Props) => {
     const [modalVisible, setModalVisible] = useState(false);
-    const [newReactions, setNewReactions] = useState<SlackReaction[]>([]);
     const [modalIndex, setModalIndex] = useState(0);
     const [congratulateModalVisible, setCongratulateModalVisible] = useState(false);
     const [currentComments, setCurrentComments] = useState(comments || []);
@@ -242,40 +241,6 @@ const PostCard = React.memo(({
             onHeightChange?.(fallbackHeight);
         });
     }, [screenWidth, onHeightChange, id, userId, user?._id]);
-
-    const screenHeight = Dimensions.get("window").height;
-
-    // Define snap points
-    const snapPoints = useMemo(() => {
-        // const baseHeight = screenHeight * 0.1; // 70% of screen
-        // return [baseHeight];
-    }, [screenHeight]);
-
-    const mergeReactions = (): SlackReaction[] => {
-        const safeReactions = Array.isArray(reactions) ? reactions : [];
-        const reactionMap = new Map<string, SlackReaction>();
-
-        safeReactions.forEach((reaction) => {
-            reactionMap.set(reaction.emoji, { ...reaction });
-        });
-
-        newReactions.forEach((newReaction) => {
-            const existing = reactionMap.get(newReaction.emoji);
-            if (existing) {
-                const combinedIds = [...new Set([...existing.ids, ...newReaction.ids])];
-                reactionMap.set(newReaction.emoji, {
-                    emoji: newReaction.emoji,
-                    count: combinedIds.length,
-                    ids: combinedIds,
-                });
-            } else {
-                reactionMap.set(newReaction.emoji, { ...newReaction });
-            }
-        });
-        return Array.from(reactionMap.values()).filter((reaction) => reaction.count > 0);
-    };
-
-    const allReactions = mergeReactions();
 
     const ThemedColor = useThemeColor();
     const { capture } = useAnalytics();

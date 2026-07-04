@@ -76,8 +76,13 @@ export const KudosSentProvider: React.FC<{ children: React.ReactNode }> = ({
         }, 120);
     }, [startNext]);
 
+    const value = React.useMemo(
+        () => ({ current, showKudosSent, onComplete }),
+        [current, showKudosSent, onComplete]
+    );
+
     return (
-        <KudosSentContext.Provider value={{ current, showKudosSent, onComplete }}>
+        <KudosSentContext.Provider value={value}>
             {children}
         </KudosSentContext.Provider>
     );

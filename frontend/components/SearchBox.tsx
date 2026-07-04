@@ -15,6 +15,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Keyboard } from "react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { MagnifyingGlass, X, User, Package } from "phosphor-react-native";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 export interface AutocompleteSuggestion {
     id: string;
@@ -62,6 +63,7 @@ export function SearchBox({
     const [inputHeight, setInputHeight] = useState(0);
     const inputRef = useRef<TextInput>(null);
     const ThemedColor = useThemeColor();
+    const setT = useTimeouts();
 
     const [recentItems, setRecentItems] = useState<RecentSearchItem[]>([]);
     const [showResults, setShowResults] = useState(false);
@@ -203,7 +205,7 @@ export function SearchBox({
 
     const handleBlur = useCallback(() => {
         if (Date.now() - focusTimestampRef.current < 300) {
-            setTimeout(() => inputRef.current?.focus(), 0);
+            setT(() => inputRef.current?.focus(), 0);
             return;
         }
 
@@ -235,7 +237,7 @@ export function SearchBox({
                     onChangeText(searchText);
                     clearRecents();
                     inputRef.current?.blur();
-                    setTimeout(() => {
+                    setT(() => {
                         onSubmit(searchText);
                     }, 10);
                 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Platform, Keyboard, Dimensions } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Dimensions } from "react-native";
 import UserInfoRowComment from "../UserInfo/UserInfoRowComment";
 import CongratulationCommentRow from "../UserInfo/CongratulationCommentRow";
 import type { PostKudos } from "@/api/types";
@@ -74,8 +74,6 @@ const Comment = ({
     const [autoFocusInput, setAutoFocusInput] = useState(false);
     const [deletingComments, setDeletingComments] = useState<Set<string>>(new Set());
 
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertTitle, setAlertTitle] = useState("");
@@ -86,20 +84,6 @@ const Comment = ({
     useEffect(() => {
         setLocalComments(comments || []);
     }, [comments]);
-
-    // gets keyboard height when keyboard is being used
-    useEffect(() => {
-        const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-            setIsKeyboardVisible(true);
-        });
-        const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-            setIsKeyboardVisible(false);
-        });
-        return () => {
-            showSub.remove();
-            hideSub.remove();
-        };
-    }, []);
 
     // helper function to find the root parent of any comment
     const findRootParent = (commentId: string, commentsArray: CommentProps[]): string => {

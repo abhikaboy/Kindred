@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Reanimated, {
@@ -147,21 +147,29 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         opacity: 0.95,
     }));
 
+    const value = useMemo(
+        () => ({
+            fingerX,
+            fingerY,
+            hoveredCategoryId,
+            isDragging,
+            setCategoryRect,
+            removeCategoryRect,
+            setScrollOffset,
+            beginDrag,
+            updateDrag,
+            endDrag,
+            cancelDrag,
+        }),
+        [
+            fingerX, fingerY, hoveredCategoryId, isDragging,
+            setCategoryRect, removeCategoryRect, setScrollOffset,
+            beginDrag, updateDrag, endDrag, cancelDrag,
+        ]
+    );
+
     return (
-        <DragContext.Provider
-            value={{
-                fingerX,
-                fingerY,
-                hoveredCategoryId,
-                isDragging,
-                setCategoryRect,
-                removeCategoryRect,
-                setScrollOffset,
-                beginDrag,
-                updateDrag,
-                endDrag,
-                cancelDrag,
-            }}>
+        <DragContext.Provider value={value}>
             {children}
             {isDragging && draggedTask && (
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">

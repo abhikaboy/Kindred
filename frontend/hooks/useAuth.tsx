@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useRef } from "react";
 import React from "react";
 import * as SecureStore from "expo-secure-store";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -523,25 +523,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser((prevUser) => prevUser ? ({ ...prevUser, ...updates }) : null);
     }
 
+    const isLoading = appleLoginMutation.isPending || appleRegisterMutation.isPending || googleLoginMutation.isPending || googleRegisterMutation.isPending || loginWithTokenMutation.isPending;
+    const isError = appleLoginMutation.isError || appleRegisterMutation.isError || googleLoginMutation.isError || googleRegisterMutation.isError || loginWithTokenMutation.isError;
+
+    // The auth functions only capture `user` and `analytics` reactively —
+    // everything else they touch (setUser, refs, queryClient, mutateAsync) is stable.
+    const value = useMemo(
+        () => ({
+            user,
+            setUser,
+            register,
+            login,
+            loginWithPhone,
+            loginWithOTP,
+            registerWithGoogle,
+            loginWithGoogle,
+            logout,
+            refresh,
+            fetchAuthData,
+            updateUser,
+            isLoading,
+            isError,
+        }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [user, analytics, isLoading, isError]
+    );
+
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                setUser,
-                register,
-                login,
-                loginWithPhone,
-                loginWithOTP,
-                registerWithGoogle,
-                loginWithGoogle,
-                logout,
-                refresh,
-                fetchAuthData,
-                updateUser,
-                isLoading: appleLoginMutation.isPending || appleRegisterMutation.isPending || googleLoginMutation.isPending || googleRegisterMutation.isPending || loginWithTokenMutation.isPending,
-                isError: appleLoginMutation.isError || appleRegisterMutation.isError || googleLoginMutation.isError || googleRegisterMutation.isError || loginWithTokenMutation.isError
-            }}
-        >
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

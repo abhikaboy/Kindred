@@ -14,6 +14,7 @@ import * as Haptics from "expo-haptics";
 import { Check } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
     Dimensions.get("screen");
@@ -57,6 +58,7 @@ const CLOSE_FX_DELAY = ENTER_TOTAL - 120;
 export const RingUpdateOverlay: React.FC = () => {
     const { currentDelta, onAnimationComplete } = useRingUpdate();
     const insets = useSafeAreaInsets();
+    const setT = useTimeouts();
 
     const gradientOpacity = useRef(new Animated.Value(0)).current;
     const ringOpacity = useRef(new Animated.Value(0)).current;
@@ -171,7 +173,7 @@ export const RingUpdateOverlay: React.FC = () => {
                         : Haptics.ImpactFeedbackStyle.Heavy
                 ).catch(() => {});
                 if (isCloseAll) {
-                    setTimeout(() => {
+                    setT(() => {
                         Haptics.notificationAsync(
                             Haptics.NotificationFeedbackType.Success
                         ).catch(() => {});

@@ -28,6 +28,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useKudosSent } from "@/contexts/kudosSentContext";
+import { useTimeouts } from "@/hooks/useTimeouts";
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -66,6 +67,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     const isMountedRef = useRef(true);
     const { pickImage } = useMediaLibrary();
     const confettiRef = useRef<any>(null);
+    const setT = useTimeouts();
 
     // Alert state
     const [alertVisible, setAlertVisible] = useState(false);
@@ -349,12 +351,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             setVisible(false);
             setShowConfetti(true);
 
-            setTimeout(() => {
+            setT(() => {
                 if (confettiRef.current) {
                     confettiRef.current.start();
                 }
                 // Hide confetti after animation completes
-                setTimeout(() => {
+                setT(() => {
                     setShowConfetti(false);
                 }, 3000);
             }, 300); // Small delay to ensure modal is closed before confetti

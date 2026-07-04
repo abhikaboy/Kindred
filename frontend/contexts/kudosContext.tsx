@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from "react";
+import { AppState } from "react-native";
 import {
     getEncouragementsAPI,
     getSentEncouragementsAPI,
@@ -108,9 +109,9 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const totalEncouragementCount = encouragements.length;
     const totalCongratulationCount = congratulations.length;
 
-    const fetchKudosData = useCallback(async () => {
+    const fetchKudosData = useCallback(async (options?: { silent?: boolean }) => {
         try {
-            setLoading(true);
+            if (!options?.silent) setLoading(true);
 
             const [encouragementsData, congratulationsData] = await Promise.all([
                 getEncouragementsAPI().catch(() => []),
@@ -132,7 +133,7 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         } catch (error) {
             logger.error("Error fetching kudos data:", error);
         } finally {
-            setLoading(false);
+            if (!options?.silent) setLoading(false);
         }
     }, []);
 
@@ -214,6 +215,15 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
 
     useEffect(() => {
         fetchKudosData();
+    }, [fetchKudosData]);
+
+    // Refresh kudos when the app returns to the foreground so unread badges
+    // stay current. Silent: no loading flip, so consumers never flash spinners.
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (status) => {
+            if (status === "active") fetchKudosData({ silent: true });
+        });
+        return () => sub.remove();
     }, [fetchKudosData]);
 
     const value = useMemo<KudosContextType>(() => ({

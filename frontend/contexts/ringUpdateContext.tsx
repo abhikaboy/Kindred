@@ -108,10 +108,13 @@ export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
         }, 120);
     }, [startNext]);
 
+    const value = React.useMemo(
+        () => ({ currentDelta, showRingUpdate, onAnimationComplete }),
+        [currentDelta, showRingUpdate, onAnimationComplete]
+    );
+
     return (
-        <RingUpdateContext.Provider
-            value={{ currentDelta, showRingUpdate, onAnimationComplete }}
-        >
+        <RingUpdateContext.Provider value={value}>
             {children}
         </RingUpdateContext.Provider>
     );
