@@ -43,6 +43,8 @@ export default function Posting() {
     const [waitingForCamera, setWaitingForCamera] = useState(false);
     const cameraReadyRef = useRef(false);
     const previewCamera = useRef<CameraView>(null);
+    // Measured height of the bottom control bar; the camera box anchors above it
+    const [controlsHeight, setControlsHeight] = useState(200);
     let ThemedColor = useThemeColor();
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
@@ -365,8 +367,10 @@ export default function Posting() {
         </TouchableOpacity>
     );
 
+    const inCameraMode = permission?.status === PermissionStatus.GRANTED && viewMode === "camera";
+
     return (
-        <ThemedView style={{ flex: 1, backgroundColor: ThemedColor.lightened }}>
+        <ThemedView style={{ flex: 1, backgroundColor: inCameraMode ? "#000" : ThemedColor.lightened }}>
             {permission?.status !== PermissionStatus.GRANTED && (
                 <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: HORIZONTAL_PADDING }}>
                     <ThemedText type="default" style={{ marginBottom: 20, textAlign: "center" }}>
@@ -451,25 +455,32 @@ export default function Posting() {
                         </>
                     ) : (
                         <>
+                            {/* Rounded camera box on black; ends above the control bar */}
+                            <View
+                                style={{
+                                    position: "absolute",
+                                    top: insets.top + 8,
+                                    left: 12,
+                                    right: 12,
+                                    bottom: controlsHeight + 12,
+                                    borderRadius: 24,
+                                    overflow: "hidden",
+                                    backgroundColor: "#111",
+                                }}>
                             {/* Main camera view - only render when NOT capturing dual */}
                             {!isCapturingDual && (
-                                <View style={{
-                                    width: "100%",
-                                    height: Dimensions.get("window").height,
-                                }}>
-                                    <CameraView
-                                        style={{ width: "100%", height: "100%" }}
-                                        facing={facing}
-                                        ref={camera}
-                                        flash={flash}
-                                        zoom={0}
-                                        selectedLens="builtInWideAngleCamera"
-                                        onCameraReady={() => {
-                                            cameraReadyRef.current = true;
-                                            setIsCameraReady(true);
-                                        }}
-                                    />
-                                </View>
+                                <CameraView
+                                    style={{ width: "100%", height: "100%" }}
+                                    facing={facing}
+                                    ref={camera}
+                                    flash={flash}
+                                    zoom={0}
+                                    selectedLens="builtInWideAngleCamera"
+                                    onCameraReady={() => {
+                                        cameraReadyRef.current = true;
+                                        setIsCameraReady(true);
+                                    }}
+                                />
                             )}
 
                             {/* Preview box indicator (always visible when dual mode is on and not capturing) */}
@@ -477,8 +488,8 @@ export default function Posting() {
                                 <View
                                     style={{
                                         position: "absolute",
-                                        top: insets.top + 20,
-                                        right: 20,
+                                        top: 16,
+                                        right: 16,
                                         width: Dimensions.get("window").width * 0.3,
                                         aspectRatio: 3 / 4,
                                         borderRadius: 12,
@@ -510,7 +521,7 @@ export default function Posting() {
                                         bottom: 0,
                                         zIndex: 1000,
                                     }}>
-                                    {/* Full-screen captured photo (replaces camera) */}
+                                    {/* Captured photo fills the camera box */}
                                     <Image
                                         source={{ uri: justCapturedPhoto }}
                                         style={{
@@ -536,8 +547,8 @@ export default function Posting() {
                                     <View
                                         style={{
                                             position: "absolute",
-                                            top: insets.top + 20,
-                                            right: 20,
+                                            top: 16,
+                                            right: 16,
                                             width: Dimensions.get("window").width * 0.3,
                                             aspectRatio: 3 / 4,
                                             borderRadius: 12,
@@ -612,6 +623,7 @@ export default function Posting() {
                                     </View>
                                 </View>
                             )}
+                            </View>
                         </>
                     )}
 
@@ -636,7 +648,8 @@ export default function Posting() {
                     )}
 
                     <BlurView
-                        intensity={30}
+                        intensity={viewMode === "camera" ? 0 : 30}
+                        onLayout={(e) => setControlsHeight(e.nativeEvent.layout.height)}
                         style={{
                             width: "100%",
                             flexDirection: "column",
@@ -645,7 +658,7 @@ export default function Posting() {
                             gap: 12,
                             padding: HORIZONTAL_PADDING,
                             paddingBottom: insets.bottom + HORIZONTAL_PADDING,
-                            backgroundColor: ThemedColor.background + "30",
+                            backgroundColor: viewMode === "camera" ? "#000" : ThemedColor.background + "30",
                             position: "absolute",
                             bottom: 0,
                             zIndex: 10,
@@ -706,20 +719,20 @@ export default function Posting() {
                                             backgroundColor:
                                                 "transparent",
                                             borderWidth: 0,
-                                            borderColor: ThemedColor.background === "#000" ? "#fff" : "#000",
+                                            borderColor: "#fff",
                                             justifyContent: "center",
                                             alignItems: "center",
                                         }}>
                                         <Ionicons
                                             name={dualModeEnabled ? "people" : "people-outline"}
                                             size={32}
-                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"}
+                                            color="#fff"
                                         />
                                     </TouchableOpacity>
                                     <Ionicons
                                         name={flash === "off" ? "flash-outline" : "flash"}
                                         size={32}
-                                        color={ThemedColor.background === "#000" ? "#fff" : "#000"}
+                                        color="#fff"
                                         onPress={() => setFlash(flash === "off" ? "on" : "off")}
                                     />
                                     <View
@@ -728,7 +741,7 @@ export default function Posting() {
                                             backgroundColor: "transparent",
                                             padding: 6,
                                             borderWidth: 2,
-                                            borderColor: ThemedColor.background === "#000" ? "#ffffff" : "#000000",
+                                            borderColor: "#ffffff",
                                         }}>
                                         <TouchableOpacity
                                             onPress={takePicture}
@@ -736,8 +749,7 @@ export default function Posting() {
                                                 width: 64,
                                                 height: 64,
                                                 borderRadius: 32,
-                                                backgroundColor:
-                                                    ThemedColor.background === "#000" ? "#ffffff" : "#000000",
+                                                backgroundColor: "#ffffff",
                                                 justifyContent: "center",
                                                 alignItems: "center",
                                             }}>
@@ -765,13 +777,13 @@ export default function Posting() {
                                     <Ionicons
                                         name="camera-reverse-outline"
                                         size={32}
-                                        color={ThemedColor.background === "#000" ? "#fff" : "#000"}
+                                        color="#fff"
                                         onPress={() => setFacing(facing === "back" ? "front" : "back")}
                                     />
                                     <Ionicons
                                         name="images-outline"
                                         size={32}
-                                        color={ThemedColor.background === "#000" ? "#fff" : "#000"}
+                                        color="#fff"
                                         onPress={pickImage}
                                     />
                                 </View>
@@ -786,14 +798,14 @@ export default function Posting() {
                                     )}
                                     <PrimaryButton
                                         ghost
-                                        textStyle={{ color: ThemedColor.text }}
+                                        textStyle={{ color: "#fff" }}
                                         title="Cancel"
                                         onPress={() => router.back()}
                                         style={{ flex: photos.length > 0 ? 0 : 1 }}
                                     />
                                     <PrimaryButton
                                         ghost
-                                        textStyle={{ color: ThemedColor.text }}
+                                        textStyle={{ color: "#fff" }}
                                         title="Skip"
                                         onPress={skipPhotos}
                                         style={{ flex: photos.length > 0 ? 0 : 1 }}
