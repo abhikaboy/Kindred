@@ -3,10 +3,10 @@ import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import { Confetti } from "phosphor-react-native";
 import ReactPills from "../inputs/ReactPills";
 import ReactionAction from "../inputs/ReactionAction";
 import KudosAvatars from "./KudosAvatars";
+import SendKudosPill from "./SendKudosPill";
 import type { SlackReaction } from "./PostCard";
 import type { TaggedUser } from "./types";
 import type { PostKudos } from "@/api/types";
@@ -31,6 +31,8 @@ export type PostCardFooterProps = {
     onKudosPress?: () => void;
     commentCount?: number;
     onLongPressReaction?: (reaction: SlackReaction) => void;
+    /** When true the kudos CTA is overlaid on the media instead of shown in the footer */
+    hasMedia?: boolean;
 };
 
 const PostCardFooter = ({
@@ -50,11 +52,12 @@ const PostCardFooter = ({
     onKudosPress,
     commentCount = 0,
     onLongPressReaction,
+    hasMedia = false,
 }: PostCardFooterProps) => {
     const ThemedColor = useThemeColor();
 
     const isOwnPost = currentUserId && userId && currentUserId === userId;
-    const congratulateDisabled = readOnly || !currentUserId || isOwnPost;
+    const showKudosCta = !readOnly && !!currentUserId && !isOwnPost && !hasMedia;
 
     return (
         <View>
@@ -75,16 +78,6 @@ const PostCardFooter = ({
                             </ThemedText>
                         )}
                     </View>
-                    <TouchableOpacity
-                        style={[styles.congratulateButton, congratulateDisabled && { opacity: 0.5 }]}
-                        onPress={onCongratulatePress}
-                        disabled={congratulateDisabled}
-                    >
-                        <Confetti size={24} weight="regular" color={ThemedColor.primary} />
-                        <ThemedText style={[styles.congratulateText, { color: ThemedColor.primary }]}>
-                            {isOwnPost && currentUserId && !readOnly ? "Your Post" : "Send Kudos"}
-                        </ThemedText>
-                    </TouchableOpacity>
                 </View>
             )}
 
@@ -116,6 +109,7 @@ const PostCardFooter = ({
                             />
                         ))}
                         <ReactionAction onAddReaction={(emoji) => onReaction?.(emoji)} postId={0} />
+                        {showKudosCta && <SendKudosPill variant="primary" onPress={onCongratulatePress} />}
                     </View>
                 )}
 
@@ -162,16 +156,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "400",
         letterSpacing: -0.16,
-    },
-    congratulateButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-    congratulateText: {
-        fontSize: 14,
-        fontWeight: "400",
-        letterSpacing: -0.14,
     },
     captionSection: {
         paddingHorizontal: HORIZONTAL_PADDING,

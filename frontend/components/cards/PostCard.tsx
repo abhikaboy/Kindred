@@ -28,6 +28,7 @@ import * as SMS from 'expo-sms';
 import PostCardHeader from "./PostCardHeader";
 import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
+import SendKudosPill from "./SendKudosPill";
 import { getUsersByIds, type UserExtendedReference } from "@/api/profile";
 import { buildReactionGroups, type ReactionGroup } from "@/utils/reactions";
 import ReactionsBottomSheetModal from "@/components/modals/ReactionsBottomSheetModal";
@@ -653,16 +654,24 @@ const PostCard = React.memo(({
                         postId={id}
                     />
                     {hasMediaContent && (
-                        <PostCardMedia
-                            images={memoizedImages ?? []}
-                            media={memoizedMedia}
-                            dual={dual}
-                            size={memoizedSize}
-                            imageHeight={imageHeight}
-                            onImageLongPress={openModal}
-                        />
+                        <View>
+                            <PostCardMedia
+                                images={memoizedImages ?? []}
+                                media={memoizedMedia}
+                                dual={dual}
+                                size={memoizedSize}
+                                imageHeight={imageHeight}
+                                onImageLongPress={openModal}
+                            />
+                            {user?._id && user._id !== userId && (
+                                <View style={styles.kudosOverlay}>
+                                    <SendKudosPill variant="overlay" onPress={handleCongratulatePress} />
+                                </View>
+                            )}
+                        </View>
                     )}
                     <PostCardFooter
+                        hasMedia={hasMediaContent}
                         caption={caption}
                         taggedUsers={taggedUsers}
                         category={category}
@@ -796,6 +805,13 @@ const stylesheet = (ThemedColor: any) =>
         },
         content: {
             paddingVertical: 12,
+        },
+        // Media wrapper has 18px bottom margin; pill (~36px tall) at bottom:0 straddles the photo edge
+        kudosOverlay: {
+            position: "absolute",
+            right: 16,
+            bottom: 0,
+            zIndex: 10,
         },
         modalContainer: {
             flex: 1,

@@ -390,10 +390,11 @@ const styles = StyleSheet.create({
         width: "100%",
         height: "100%",
     },
+    // bottom-left: the Send Kudos pill overlays bottom-right
     muteBadge: {
         position: "absolute",
         bottom: 12,
-        right: 12,
+        left: 12,
         width: 32,
         height: 32,
         borderRadius: 16,
