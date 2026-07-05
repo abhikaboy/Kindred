@@ -60,7 +60,7 @@ describe("getTimeChipInfo", () => {
     it("startDate only, tomorrow -> 'tomorrow'", () => {
         // +25h is safely tomorrow regardless of time of day the test runs
         const info = getTimeChipInfo({ startDate: hours(25) }, true);
-        expect(["tomorrow", "in 1d"]).toContain(info?.label);
+        expect(info?.label).toBe("tomorrow");
         expect(info?.icon).toBe("calendar");
     });
 
@@ -73,5 +73,19 @@ describe("getTimeChipInfo", () => {
 
     it("bad date strings return null instead of throwing", () => {
         expect(getTimeChipInfo({ deadline: "not-a-date" }, true)).toBeNull();
+    });
+
+    it("nextGenerated 3 days out -> label is a weekday name", () => {
+        const info = getTimeChipInfo({ isPhantom: true, nextGenerated: days(3) }, true);
+        expect(info?.label).toMatch(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/);
+        expect(info?.tone).toBe("neutral");
+        expect(info?.icon).toBe("calendar");
+    });
+
+    it("nextGenerated 10 days out -> label matches Mon dd format", () => {
+        const info = getTimeChipInfo({ isPhantom: true, nextGenerated: days(10) }, true);
+        expect(info?.label).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+        expect(info?.tone).toBe("neutral");
+        expect(info?.icon).toBe("calendar");
     });
 });

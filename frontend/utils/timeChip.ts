@@ -1,7 +1,7 @@
 import {
     differenceInDays,
     format,
-    formatDistanceToNowStrict,
+    formatDistanceStrict,
     isAfter,
     isBefore,
     isToday,
@@ -38,7 +38,7 @@ export function abbreviateDistance(distance: string): string {
     return out;
 }
 
-const distance = (date: Date) => abbreviateDistance(formatDistanceToNowStrict(date));
+const distance = (date: Date, now: Date) => abbreviateDistance(formatDistanceStrict(date, now));
 
 const safeParse = (iso: string): Date | null => {
     const d = parseISO(iso);
@@ -47,9 +47,9 @@ const safeParse = (iso: string): Date | null => {
 
 function deadlineChip(deadline: Date, now: Date): TimeChipInfo {
     if (isAfter(now, deadline)) {
-        return { label: `${distance(deadline)} overdue`, tone: "overdue", icon: "clock" };
+        return { label: `${distance(deadline, now)} overdue`, tone: "overdue", icon: "clock" };
     }
-    return { label: `due in ${distance(deadline)}`, tone: "neutral", icon: "clock" };
+    return { label: `due in ${distance(deadline, now)}`, tone: "neutral", icon: "clock" };
 }
 
 // Ports TaskCard's dateDisplay priority order: phantom -> start+deadline -> deadline -> startDate.
@@ -78,7 +78,7 @@ export function getTimeChipInfo(
         const deadline = safeParse(task.deadline);
         if (!start || !deadline) return null;
         if (isBefore(now, start)) {
-            return { label: `starts in ${distance(start)}`, tone: "neutral", icon: "calendar" };
+            return { label: `starts in ${distance(start, now)}`, tone: "neutral", icon: "calendar" };
         }
         return deadlineChip(deadline, now);
     }
@@ -93,8 +93,8 @@ export function getTimeChipInfo(
         if (!start) return null;
         if (isToday(start)) return { label: "today", tone: "neutral", icon: "calendar" };
         if (isTomorrow(start)) return { label: "tomorrow", tone: "neutral", icon: "calendar" };
-        if (isAfter(now, start)) return { label: `${distance(start)} ago`, tone: "neutral", icon: "calendar" };
-        return { label: `in ${distance(start)}`, tone: "neutral", icon: "calendar" };
+        if (isAfter(now, start)) return { label: `${distance(start, now)} ago`, tone: "neutral", icon: "calendar" };
+        return { label: `in ${distance(start, now)}`, tone: "neutral", icon: "calendar" };
     }
 
     return null;
