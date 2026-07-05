@@ -3,7 +3,6 @@ import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { CaretLeft, CaretRight } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import SegmentedControl from "@/components/ui/SegmentedControl";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
 type Props = {
@@ -31,23 +30,23 @@ const PlannerHeader = ({ anchorDate, mode, onStep, onModeChange, onBack }: Props
                     <CaretLeft size={20} color={ThemedColor.text} weight="bold" />
                 </TouchableOpacity>
             )}
-            <View style={styles.stepper}>
-                <TouchableOpacity onPress={() => onStep(-1)} hitSlop={8}>
-                    <CaretLeft size={18} color={ThemedColor.primary} weight="bold" />
-                </TouchableOpacity>
-                <ThemedText type="fancyFrauncesSubheading">{label}</ThemedText>
-                <TouchableOpacity onPress={() => onStep(1)} hitSlop={8}>
-                    <CaretRight size={18} color={ThemedColor.primary} weight="bold" />
-                </TouchableOpacity>
-            </View>
-            <View style={styles.segment}>
-                <SegmentedControl
-                    options={["Week", "Month"]}
-                    selectedOption={mode === "week" ? "Week" : "Month"}
-                    onOptionPress={(o) => onModeChange(o === "Week" ? "week" : "month")}
-                    size="small"
-                />
-            </View>
+            <ThemedText type="fancyFrauncesSubheading" style={{ flex: 1 }}>
+                {label}
+            </ThemedText>
+            <TouchableOpacity onPress={() => onStep(-1)} hitSlop={10} style={styles.stepButton}>
+                <CaretLeft size={16} color={ThemedColor.caption} weight="bold" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => onStep(1)} hitSlop={10} style={styles.stepButton}>
+                <CaretRight size={16} color={ThemedColor.caption} weight="bold" />
+            </TouchableOpacity>
+            {/* Single flip button labeled with the mode it switches to */}
+            <TouchableOpacity
+                onPress={() => onModeChange(mode === "week" ? "month" : "week")}
+                style={[styles.modeButton, { backgroundColor: ThemedColor.lightened }]}
+                hitSlop={6}
+            >
+                <ThemedText type="caption">{mode === "week" ? "Month" : "Week"}</ThemedText>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -61,8 +60,13 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         gap: 12,
     },
-    stepper: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-    segment: { width: 150 },
+    stepButton: { padding: 4 },
+    modeButton: {
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        borderRadius: 16,
+        marginLeft: 4,
+    },
     backButton: {
         width: 34,
         height: 34,

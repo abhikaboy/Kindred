@@ -26,6 +26,7 @@ import PlannerHeader from "@/components/daily/PlannerHeader";
 import WeekStrip, { mondayOf, DropRectValue } from "@/components/daily/WeekStrip";
 import MonthGrid from "@/components/daily/MonthGrid";
 import UnscheduledTray from "@/components/daily/UnscheduledTray";
+import HintBubble from "@/components/ui/HintBubble";
 
 // Hooks + utils
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -138,6 +139,8 @@ const Daily = (props: Props) => {
     const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
     // Dismissed by the first successful drag-schedule, not by timeout
     const { ready: dragHintReady, done: dragHintDone } = useFirstTouchHint("planner_drag");
+    // Timeline's drag-to-create gesture is invisible; first real drag-create dismisses
+    const { ready: timelineHintReady, done: timelineHintDone } = useFirstTouchHint("timeline_drag_create");
 
     const rectsArray = () => Array.from(dropRects.current, ([key, r]) => ({ key, ...r }));
 
@@ -178,9 +181,10 @@ const Daily = (props: Props) => {
     };
 
     const handleDragCreateComplete = useCallback((range: ScheduleTimeRange) => {
+        timelineHintDone();
         setScheduleTimeRange(range);
         setShowScheduleSheet(true);
-    }, []);
+    }, [timelineHintDone]);
 
     const handleCreateNewFromRange = useCallback((startTime: Date, endTime: Date, workspaceName: string) => {
         resetTaskCreation();
@@ -276,6 +280,15 @@ const Daily = (props: Props) => {
                             </Animated.ScrollView>
                         ) : (
                             <View style={{ flex: 1 }}>
+                                {timelineHintReady && (
+                                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 6 }}>
+                                        <HintBubble
+                                            text="Press and drag on the grid to block out time"
+                                            onDone={timelineHintDone}
+                                            autoDismissMs={7000}
+                                        />
+                                    </View>
+                                )}
                                 {shouldRenderCalendar && (
                                     <CalendarView
                                         selectedDate={selectedDate}

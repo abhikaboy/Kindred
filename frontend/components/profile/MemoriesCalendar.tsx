@@ -13,6 +13,8 @@ import { getUserPosts } from "@/api/post";
 import { postCover } from "@/utils/postMedia";
 import { hapticLight } from "@/utils/haptics";
 import { useAuth } from "@/hooks/useAuth";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 
 const GAP = 4;
 const CONTAINER_PADDING = 20 * 2; // matches profile contentContainer paddingHorizontal
@@ -36,6 +38,8 @@ const MemoriesCalendar = ({ userId }: MemoriesCalendarProps) => {
     const isSelf = !!userId && user?._id === userId;
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    // First-touch (own profile only — other profiles aren't tappable day-by-day)
+    const { ready: memoriesHintReady, done: memoriesHintDone } = useFirstTouchHint("memories_days");
 
     // 4 rows of weeks ending on the Saturday of the current week.
     const cells = useMemo(() => {
@@ -123,6 +127,14 @@ const MemoriesCalendar = ({ userId }: MemoriesCalendarProps) => {
                     <CaretRightIcon size={20} color={ThemedColor.text} />
                 </TouchableOpacity>
 
+                {isSelf && memoriesHintReady && (
+                    <HintBubble
+                        text="Tap a day to revisit what you did"
+                        onDone={memoriesHintDone}
+                        autoDismissMs={7000}
+                    />
+                )}
+
                 <View style={styles.weekRow}>
                     {WEEKDAYS.map((day) => (
                         <ThemedText
@@ -144,6 +156,7 @@ const MemoriesCalendar = ({ userId }: MemoriesCalendarProps) => {
                                         key={dayKey(date)}
                                         activeOpacity={0.8}
                                         onPress={() => {
+                                            memoriesHintDone();
                                             hapticLight();
                                             router.push(`/(logged-in)/posting/${cover.postId}`);
                                         }}
@@ -176,6 +189,7 @@ const MemoriesCalendar = ({ userId }: MemoriesCalendarProps) => {
                                     label={String(date.getDate())}
                                     onPress={() => {
                                         if (isFuture || !isSelf) return;
+                                        memoriesHintDone();
                                         hapticLight();
                                         setSelectedDate(date);
                                         setModalVisible(true);

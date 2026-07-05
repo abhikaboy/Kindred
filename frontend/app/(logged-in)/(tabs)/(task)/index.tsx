@@ -21,6 +21,8 @@ import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectio
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
@@ -270,6 +272,8 @@ const HomeContent = ({
     const [homeTab, setHomeTab] = useState(0);
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
+    // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
+    const { ready: drawerHintReady, done: drawerHintDone } = useFirstTouchHint("drawer_workspaces");
 
     useEffect(() => {
         Animated.timing(headerDimAnim, {
@@ -306,7 +310,10 @@ const HomeContent = ({
             renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
             drawerPosition="left"
             drawerType="front"
-            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerOpen={() => {
+                setIsDrawerOpen(true);
+                drawerHintDone();
+            }}
             onDrawerClose={() => setIsDrawerOpen(false)}>
             {/* Shared modals */}
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
@@ -342,6 +349,13 @@ const HomeContent = ({
                                     ThemedColor={ThemedColor}
                                     menuRef={menuRef}
                                 />
+                                {drawerHintReady && (
+                                    <HintBubble
+                                        text="Tap the menu to switch or add workspaces"
+                                        onDone={drawerHintDone}
+                                        autoDismissMs={7000}
+                                    />
+                                )}
                             </Animated.View>
 
                             <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>

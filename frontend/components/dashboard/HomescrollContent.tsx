@@ -97,6 +97,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     // Debounced save: accumulate changes, update cache immediately, save to backend after delay
     // First-touch: teach that home sections are hideable; any toggle counts as learned
     const { ready: hideHintReady, done: hideHintDone } = useFirstTouchHint("home_hide_sections");
+    const { ready: workspacesHintReady, done: workspacesHintDone } = useFirstTouchHint("personal_workspaces");
 
     const pendingChangesRef = useRef<Partial<DashboardConfiguration>>({});
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -451,6 +452,14 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                                 </TouchableOpacity>
                             }
                         />
+                        {workspacesHintReady && dashboardConfig.recent_workspaces && (
+                            <HintBubble
+                                text="Workspaces keep parts of your life separate — tap + to add one"
+                                onDone={workspacesHintDone}
+                                autoDismissMs={7000}
+                                style={{ marginTop: 8 }}
+                            />
+                        )}
                     </View>
                 </View>
                 <ScrollView
