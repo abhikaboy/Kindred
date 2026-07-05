@@ -123,7 +123,11 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
     const activeTabSV = useSharedValue(activeTab);
     const widthSV = useSharedValue(0);
 
-    activeTabSV.value = activeTab;
+    // Sync outside render — writing shared values during render trips
+    // Reanimated strict mode and spams the console on every re-render
+    useEffect(() => {
+        activeTabSV.value = activeTab;
+    }, [activeTab, activeTabSV]);
 
     useEffect(() => {
         if (layoutWidth > 0) {

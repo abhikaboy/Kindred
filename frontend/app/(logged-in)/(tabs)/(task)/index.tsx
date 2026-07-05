@@ -119,7 +119,9 @@ const Home = (props: Props) => {
         };
         console.log("loading workspaces");
         loadWorkspaces();
-    }, [user]);
+        // Keyed to the id, not the object — user identity churns on every auth
+        // refresh and was re-fetching workspaces (and re-rendering home) while idle
+    }, [user?._id]);
 
     // Fetch encouragement and congratulation counts with caching
     const fetchKudosCounts = React.useCallback(async (forceRefresh: boolean = false) => {
