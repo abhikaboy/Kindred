@@ -58,7 +58,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onExpandChange }) => {
                     isSelected={expanded === "open"}
                     isDimmed={expanded !== null && expanded !== "open"}
                     onPress={() => handlePress("open")}
-                    align="center"
+                    align="left"
                 />
                 <StatItem
                     value={dueTodayTasks.length}
@@ -75,7 +75,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onExpandChange }) => {
                     isDimmed={expanded !== null && expanded !== "doneThisWeek"}
                     onPress={() => handlePress("doneThisWeek")}
                     isLoading={completedLoading}
-                    align="center"
+                    align="right"
                 />
             </View>
 
