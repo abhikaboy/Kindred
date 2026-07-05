@@ -169,7 +169,13 @@ export default React.memo(SchedulableTaskCard, (prevProps, nextProps) => {
         prevProps.task.value === nextProps.task.value &&
         prevProps.task.deadline === nextProps.task.deadline &&
         prevProps.task.startDate === nextProps.task.startDate &&
-        prevProps.task.active === nextProps.task.active
+        prevProps.task.active === nextProps.task.active &&
+        prevProps.task.workingOnSince === nextProps.task.workingOnSince &&
+        prevProps.task.startTime === nextProps.task.startTime &&
+        prevProps.task.recurring === nextProps.task.recurring &&
+        prevProps.task.flexInfo?.instanceNumber === nextProps.task.flexInfo?.instanceNumber &&
+        prevProps.task.flexInfo?.target === nextProps.task.flexInfo?.target &&
+        prevProps.task.integration === nextProps.task.integration
     );
 });
 

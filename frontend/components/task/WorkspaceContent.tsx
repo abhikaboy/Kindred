@@ -30,6 +30,7 @@ import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
+import WorkspaceGlow from "./WorkspaceGlow";
 
 /**
  * While a task is being dragged, scroll the workspace when the finger nears the
@@ -269,12 +270,13 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
             />
 
             <ThemedView style={{ flex: 1 }}>
-                {/* Workspace color trim — 3px bar pinned to the very top edge. */}
+                <WorkspaceGlow />
+                {/* Workspace color trim — 3px bar pinned to the very bottom edge. */}
                 {currentWorkspace?.color && (
                     <View
                         style={{
                             position: "absolute",
-                            top: 0,
+                            bottom: 0,
                             left: 0,
                             right: 0,
                             height: 3,
