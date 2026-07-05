@@ -5,6 +5,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 import DashboardStats from "@/components/dashboard/DashboardStats";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
 import BasicCard from "@/components/cards/BasicCard";
 import { useRouter } from "expo-router";
@@ -93,9 +95,13 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     const dashboardConfig = settings?.dashboard_configuration ?? defaultConfig;
 
     // Debounced save: accumulate changes, update cache immediately, save to backend after delay
+    // First-touch: teach that home sections are hideable; any toggle counts as learned
+    const { ready: hideHintReady, done: hideHintDone } = useFirstTouchHint("home_hide_sections");
+
     const pendingChangesRef = useRef<Partial<DashboardConfiguration>>({});
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const toggleSection = useCallback((key: keyof DashboardConfiguration) => {
+        hideHintDone();
         const newValue = !dashboardConfig[key];
         pendingChangesRef.current = { ...pendingChangesRef.current, [key]: newValue };
 
@@ -342,9 +348,21 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 <TaggedTaskBanners />
 
-                {/* Dashboard Stats - always visible */}
+                {/* Dashboard Stats */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
-                    <DashboardStats onExpandChange={handleStatsExpandChange} />
+                    <SectionHeader
+                        title="STATS"
+                        visible={dashboardConfig.stats}
+                        onToggleVisibility={() => toggleSection("stats")}
+                    />
+                    {hideHintReady && (
+                        <HintBubble
+                            text="Tap the eye to hide any home section"
+                            onDone={hideHintDone}
+                            autoDismissMs={7000}
+                        />
+                    )}
+                    {dashboardConfig.stats && <DashboardStats onExpandChange={handleStatsExpandChange} />}
                 </View>
 
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
