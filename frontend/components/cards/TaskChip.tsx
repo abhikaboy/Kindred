@@ -10,15 +10,21 @@ interface Props {
     label?: string;
     tone?: TaskChipTone;
     Icon?: React.ComponentType<IconProps>;
+    color?: string;
+    backgroundColor?: string;
 }
 
-const TaskChip = ({ label, tone = "neutral", Icon }: Props) => {
+const TaskChip = ({ label, tone = "neutral", Icon, color: colorOverride, backgroundColor: bgOverride }: Props) => {
     const ThemedColor = useThemeColor();
-    const color =
+    if (!label && !Icon) return null;
+
+    const toneColor =
         tone === "overdue" ? ThemedColor.error : tone === "active" ? ThemedColor.primary : ThemedColor.caption;
+    const color = colorOverride ?? toneColor;
+    const bg = bgOverride ?? ThemedColor.lightened;
 
     return (
-        <View style={[styles.chip, { backgroundColor: ThemedColor.lightened }]}>
+        <View style={[styles.chip, { backgroundColor: bg }]}>
             {Icon && <Icon size={12} color={color} weight="regular" />}
             {label ? (
                 <ThemedText type="caption" style={{ color, fontSize: 12.5, lineHeight: 16, letterSpacing: 0.1 }}>

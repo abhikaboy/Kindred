@@ -13,7 +13,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { Sparkle, Timer, Repeat, Camera, Clock, CalendarBlank, Play } from "phosphor-react-native";
+import { Sparkle, Repeat, Camera, Clock, CalendarBlank, Play } from "phosphor-react-native";
 import { getTimeChipInfo } from "@/utils/timeChip";
 import TaskChip from "./TaskChip";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
@@ -99,7 +99,6 @@ const TaskCard = ({
     const encouraged = isTaskEncouraged(task) || isTaskWatched(task);
     const encColors = encouragedCardColors(ThemedColor.primary);
     const { setTask, updateTask } = useTasks();
-    const [isRunningState, setIsRunningState] = useState(false);
     const isMounted = useRef(true);
     const lastTapRef = useRef<number>(0);
     const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -398,6 +397,8 @@ const TaskCard = ({
                                 label={timeChip.label}
                                 tone={timeChip.tone}
                                 Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
+                                color={encouraged ? encColors.secondaryText : undefined}
+                                backgroundColor={encouraged ? "transparent" : undefined}
                             />
                         )}
                         <ConditionalView condition={task?.recurring}>
@@ -408,12 +409,19 @@ const TaskCard = ({
                                         ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
                                         : undefined
                                 }
+                                color={encouraged ? encColors.secondaryText : undefined}
+                                backgroundColor={encouraged ? "transparent" : undefined}
                             />
                         </ConditionalView>
-                        {task?.workingOnSince && <TaskChip Icon={Play} label="active" tone="active" />}
-                        <ConditionalView condition={isRunningState}>
-                            <Timer size={20} color={ThemedColor.caption} weight="regular" />
-                        </ConditionalView>
+                        {task?.workingOnSince ? (
+                            <TaskChip
+                                Icon={Play}
+                                label="active"
+                                tone="active"
+                                color={encouraged ? encColors.secondaryText : undefined}
+                                backgroundColor={encouraged ? "transparent" : undefined}
+                            />
+                        ) : null}
                         <ConditionalView condition={!!task?.integration}>
                             {getIntegrationIcon(task?.integration, ThemedColor.caption)}
                         </ConditionalView>
@@ -515,13 +523,13 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.congratulate === nextProps.congratulate &&
         prevProps.showRedOutline === nextProps.showRedOutline &&
         prevProps.detailed === nextProps.detailed &&
-        prevProps.highlightContent === nextProps.highlightContent &&
         prevProps.task?.deadline === nextProps.task?.deadline &&
         prevProps.task?.startDate === nextProps.task?.startDate &&
         prevProps.task?.startTime === nextProps.task?.startTime &&
         prevProps.task?.active === nextProps.task?.active &&
         prevProps.task?.recurring === nextProps.task?.recurring &&
         prevProps.task?.flexInfo?.instanceNumber === nextProps.task?.flexInfo?.instanceNumber &&
+        prevProps.task?.flexInfo?.target === nextProps.task?.flexInfo?.target &&
         prevProps.task?.integration === nextProps.task?.integration &&
         prevProps.task?.isPhantom === nextProps.task?.isPhantom &&
         prevProps.task?.nextGenerated === nextProps.task?.nextGenerated &&

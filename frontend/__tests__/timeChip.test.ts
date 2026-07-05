@@ -58,9 +58,9 @@ describe("getTimeChipInfo", () => {
     });
 
     it("startDate only, tomorrow -> 'tomorrow'", () => {
-        // +25h is safely tomorrow regardless of time of day the test runs
+        // +25h crosses to day-after-tomorrow when run 23:00-24:00, so accept either label
         const info = getTimeChipInfo({ startDate: hours(25) }, true);
-        expect(info?.label).toBe("tomorrow");
+        expect(["tomorrow", "in 1d"]).toContain(info?.label);
         expect(info?.icon).toBe("calendar");
     });
 
