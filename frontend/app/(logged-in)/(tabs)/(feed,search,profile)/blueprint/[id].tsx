@@ -4,6 +4,8 @@ import { useLocalSearchParams, Stack, router } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CaretLeft } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -253,6 +255,7 @@ export default function BlueprintDetailScreen() {
     const { showAlert } = useAlert();
 
     const [activeTab, setActiveTab] = useState(0);
+    const { ready: blueprintHintReady, done: blueprintHintDone } = useFirstTouchHint("blueprints_intro");
     const [isLoadingBlueprint, setIsLoadingBlueprint] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [isSubscribed, setIsSubscribed] = useState(false);
@@ -333,6 +336,13 @@ export default function BlueprintDetailScreen() {
             headerBackgroundColor={{ light: ThemedColor.background, dark: ThemedColor.background }}
             headerImage={<Image source={getImageSource()} style={styles.headerImage} />}>
             <View style={styles.informationContainer}>
+                {blueprintHintReady && (
+                    <HintBubble
+                        text="Blueprints are ready-made routines — copy one into your workspace"
+                        onDone={blueprintHintDone}
+                        autoDismissMs={7000}
+                    />
+                )}
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <TouchableOpacity onPress={() => router.push(`/account/${selectedBlueprint.owner?._id}`)}>
                         <View style={{ flexDirection: "row", gap: 14 }}>

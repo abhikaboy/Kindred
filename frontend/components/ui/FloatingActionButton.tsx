@@ -10,6 +10,8 @@ import { getCompletedTasksAPI } from "@/api/task";
 import type { Task } from "@/api/types";
 
 import { FABButton } from "./fab/FABButton";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 import { FABBackdrop } from "./fab/FABBackdrop";
 import { TaskSelectionView } from "./fab/TaskSelectionView";
 import { WorkspaceSelectionView } from "./fab/WorkspaceSelectionView";
@@ -126,7 +128,25 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     }, []);
 
     // Handlers
+    // First-touch: two gentle pulses + a one-line bubble until the FAB is first used
+    const { ready: fabHintReady, done: fabHintDone } = useFirstTouchHint("fab_intro");
+    const pulseScale = useRef(new Animated.Value(1)).current;
+    useEffect(() => {
+        if (!fabHintReady || !visible) return;
+        const pulse = Animated.sequence([
+            Animated.delay(800),
+            Animated.timing(pulseScale, { toValue: 1.12, duration: 260, useNativeDriver: true }),
+            Animated.timing(pulseScale, { toValue: 1, duration: 260, useNativeDriver: true }),
+            Animated.delay(300),
+            Animated.timing(pulseScale, { toValue: 1.12, duration: 260, useNativeDriver: true }),
+            Animated.timing(pulseScale, { toValue: 1, duration: 260, useNativeDriver: true }),
+        ]);
+        pulse.start();
+        return () => pulse.stop();
+    }, [fabHintReady, visible]);
+
     const handleFABPress = () => {
+        if (fabHintReady) fabHintDone();
         capture(AnalyticsEvents.FAB_PRESSED, {});
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         animations.animateFABPress().start();
@@ -455,11 +475,19 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                         transform: [{ translateX: visibilityTranslateX }],
                     },
                 ]}>
+                {fabHintReady && visible && fabState === "collapsed" && (
+                    <HintBubble
+                        text="Create anything from here"
+                        onDone={fabHintDone}
+                        autoDismissMs={6000}
+                        style={{ position: "absolute", right: 16, bottom: bottomOffset + 76 }}
+                    />
+                )}
                 <FABButton
                     isOpen={fabState !== "collapsed"}
                     onPress={handleFABPress}
                     rotation={animations.rotation}
-                    scale={animations.fabScale}
+                    scale={Animated.multiply(animations.fabScale, pulseScale)}
                     opacity={animations.fabOpacity}
                     bottomOffset={bottomOffset}
                     isKeyboardVisible={keyboardVisible}

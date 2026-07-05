@@ -6,7 +6,7 @@ interface FABButtonProps {
     isOpen: boolean;
     onPress: () => void;
     rotation: Animated.AnimatedInterpolation<string | number>;
-    scale: Animated.Value;
+    scale: Animated.Value | Animated.AnimatedMultiplication<number>;
     opacity: Animated.Value;
     bottomOffset: number;
     isKeyboardVisible: boolean;

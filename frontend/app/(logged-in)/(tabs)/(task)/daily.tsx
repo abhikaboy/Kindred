@@ -11,7 +11,6 @@ import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { router, useLocalSearchParams } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
@@ -30,6 +29,7 @@ import UnscheduledTray from "@/components/daily/UnscheduledTray";
 
 // Hooks + utils
 import { useDailyTasks } from "@/hooks/useDailyTasks";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { useTaskCountsByDay } from "@/hooks/useTaskCountsByDay";
 import { fromDayKey } from "@/utils/taskCountsByDay";
 import { rectAtPoint } from "@/utils/dragHitTest";
@@ -136,10 +136,8 @@ const Daily = (props: Props) => {
 
     const [hoverKey, setHoverKey] = useState<string | null>(null);
     const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
-    const [hintDone, setHintDone] = useState(true);
-    useEffect(() => {
-        AsyncStorage.getItem("planner_drag_hint_done").then((v) => setHintDone(v === "1"));
-    }, []);
+    // Dismissed by the first successful drag-schedule, not by timeout
+    const { ready: dragHintReady, done: dragHintDone } = useFirstTouchHint("planner_drag");
 
     const rectsArray = () => Array.from(dropRects.current, ([key, r]) => ({ key, ...r }));
 
@@ -155,8 +153,7 @@ const Daily = (props: Props) => {
         setHiddenIds((prev) => new Set(prev).add(task.id)); // optimistic
         try {
             await updateTaskDeadlineAPI(task.categoryID, task.id, date);
-            AsyncStorage.setItem("planner_drag_hint_done", "1");
-            setHintDone(true);
+            dragHintDone();
             fetchWorkspaces();
         } catch (e) {
             setHiddenIds((prev) => {
@@ -312,7 +309,7 @@ const Daily = (props: Props) => {
                     onDragMove={handleDragMove}
                     onDragEnd={handleDragEnd}
                     onPressChip={(t) => handleQuickSchedule(t, "deadline")}
-                    hintVisible={!hintDone}
+                    hintVisible={dragHintReady}
                 />
 
                 <ScheduleTaskSheet

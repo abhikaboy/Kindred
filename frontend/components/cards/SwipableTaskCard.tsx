@@ -1,11 +1,12 @@
 // Wrapper for TaskCard that allows for swiping to delete
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import TaskCard from "./TaskCard";
 
 import { Task } from "@/api/types";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -35,6 +36,9 @@ type Props = {
     tutorial?: boolean; // suppress real completion overlays — the tutorial fakes them
 };
 
+// Module-level claim so only the first mounted card plays the swipe demo
+let peekClaimed = false;
+
 const SwipableTaskCard = ({
     redirect = false,
     categoryId,
@@ -52,6 +56,22 @@ const SwipableTaskCard = ({
     const { showRingUpdate } = useRingUpdate();
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
+
+    // First-touch demo: exactly one card app-wide peeks both swipe sides open
+    const swipeableRef = useRef<SwipeableMethods>(null);
+    const { ready: swipeHintReady, done: swipeHintDone } = useFirstTouchHint("swipe_actions");
+    useEffect(() => {
+        if (!swipeHintReady || tutorial || peekClaimed) return;
+        peekClaimed = true;
+        swipeHintDone();
+        const timers = [
+            setTimeout(() => swipeableRef.current?.openLeft(), 600),
+            setTimeout(() => swipeableRef.current?.close(), 1500),
+            setTimeout(() => swipeableRef.current?.openRight(), 2100),
+            setTimeout(() => swipeableRef.current?.close(), 3000),
+        ];
+        return () => timers.forEach(clearTimeout);
+    }, [swipeHintReady]);
 
     const openDeadline = () => {
         loadTaskData(task);
@@ -206,6 +226,7 @@ const SwipableTaskCard = ({
     return (
         <>
             <ReanimatedSwipeable
+                ref={swipeableRef}
                 containerStyle={styles.swipeable}
                 friction={2}
                 enableTrackpadTwoFingerGesture
