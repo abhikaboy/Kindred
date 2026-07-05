@@ -28,7 +28,8 @@ export function DonutChart({ slices, total, size = 140 }: DonutChartProps) {
             donut
             radius={size / 2}
             innerRadius={size / 2 - 22}
-            innerCircleColor={ThemedColor.lightenedCard}
+            // lightenedCard carries alpha; the donut hole must stay opaque
+            innerCircleColor={ThemedColor.lightenedCard.slice(0, 7)}
             centerLabelComponent={() => (
                 <View style={{ alignItems: "center" }}>
                     <ThemedText type="fancyFrauncesSubheading">{String(total)}</ThemedText>

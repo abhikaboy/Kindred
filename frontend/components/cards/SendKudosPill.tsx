@@ -13,7 +13,8 @@ type Props = {
 const SendKudosPill = ({ variant, onPress }: Props) => {
     const ThemedColor = useThemeColor();
     const isOverlay = variant === "overlay";
-    const bg = isOverlay ? ThemedColor.lightenedCard : ThemedColor.primary;
+    // lightenedCard carries alpha; the pill floats over media so it must stay opaque
+    const bg = isOverlay ? ThemedColor.lightenedCard.slice(0, 7) : ThemedColor.primary;
     const fg = isOverlay ? ThemedColor.primary : ThemedColor.buttonText;
 
     return (

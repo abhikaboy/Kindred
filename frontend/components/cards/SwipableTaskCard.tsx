@@ -427,7 +427,13 @@ export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
         prevProps.task.active === nextProps.task.active &&
         prevProps.highlightContent === nextProps.highlightContent &&
         prevProps.task.isPhantom === nextProps.task.isPhantom &&
-        prevProps.task.nextGenerated === nextProps.task.nextGenerated
+        prevProps.task.nextGenerated === nextProps.task.nextGenerated &&
+        prevProps.task.workingOnSince === nextProps.task.workingOnSince &&
+        prevProps.task.startTime === nextProps.task.startTime &&
+        prevProps.task.recurring === nextProps.task.recurring &&
+        prevProps.task.flexInfo?.instanceNumber === nextProps.task.flexInfo?.instanceNumber &&
+        prevProps.task.flexInfo?.target === nextProps.task.flexInfo?.target &&
+        prevProps.task.integration === nextProps.task.integration
     );
 });
 
