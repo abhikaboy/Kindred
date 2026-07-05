@@ -15,6 +15,8 @@ import ThemedSlider from "@/components/inputs/ThemedSlider";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AdvancedOption from "./AdvancedOption";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
 import type { components } from "@/api/generated/types";
@@ -43,6 +45,8 @@ type Props = {
 };
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
+    // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
+    const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
     const { request } = useRequest();
     const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
@@ -543,8 +547,17 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             </View>
             <PrimaryOptionRow goTo={goTo} />
             <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} tutorial={tutorial} />
+            {createHintReady && !edit && !tutorial && !showAdvanced && (
+                <HintBubble
+                    text="Deadlines, reminders & repeats live in Advanced Options"
+                    onDone={createHintDone}
+                    autoDismissMs={8000}
+                    style={{ marginTop: 12 }}
+                />
+            )}
             <TouchableOpacity
                 onPress={() => {
+                    if (!showAdvanced) createHintDone();
                     setShowAdvanced(!showAdvanced);
                 }}
                 style={{
