@@ -13,8 +13,9 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { isAfter, formatDistanceToNow, parseISO, isBefore, isToday, isTomorrow, differenceInDays, format, isThisWeek } from "date-fns";
-import { Sparkle, Timer, Repeat, Camera } from "phosphor-react-native";
+import { Sparkle, Timer, Repeat, Camera, Clock, CalendarBlank, Play } from "phosphor-react-native";
+import { getTimeChipInfo } from "@/utils/timeChip";
+import TaskChip from "./TaskChip";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -135,129 +136,10 @@ const TaskCard = ({
 
     // Timer state check removed for performance - was unused
 
-    // Calculate date display text and color
-    const dateDisplay = useMemo(() => {
-        if (task?.isPhantom && task?.nextGenerated) {
-            const nextDate = parseISO(task.nextGenerated);
-            let label: string;
-            if (isToday(nextDate)) {
-                label = "today";
-            } else if (isTomorrow(nextDate)) {
-                label = "tomorrow";
-            } else {
-                const days = differenceInDays(nextDate, new Date());
-                if (days <= 6) {
-                    label = format(nextDate, "EEEE"); // "Monday", "Tuesday", etc.
-                } else {
-                    label = format(nextDate, "MMM d"); // "Apr 2", "Mar 30"
-                }
-            }
-            return { text: label, color: "caption" as const };
-        }
-
-        if (!detailed) return null;
-
-        const now = new Date();
-
-        // Priority 1: If task has both startTime and deadline, decide based on whether
-        // we're before or after the start time
-        if (task?.startTime && task?.deadline) {
-            try {
-                const startDate = parseISO(task.startTime);
-                const deadlineDate = parseISO(task.deadline);
-
-                if (isBefore(now, startDate)) {
-                    // Still before the start — show when it starts
-                    const duration = formatDistanceToNow(startDate, { addSuffix: true });
-                    return {
-                        text: `(starts ${duration})`,
-                        color: 'caption' as const
-                    };
-                } else {
-                    // Start has passed — focus on the deadline
-                    const isOverdue = isAfter(now, deadlineDate);
-                    if (isOverdue) {
-                        const duration = formatDistanceToNow(deadlineDate, { addSuffix: false });
-                        return {
-                            text: `Due ${duration} ago`,
-                            color: 'error' as const
-                        };
-                    } else {
-                        let text = formatDistanceToNow(deadlineDate, { addSuffix: true });
-                        text = text.replace(/^in /, 'due in ');
-                        return {
-                            text: `(${text})`,
-                            color: 'caption' as const
-                        };
-                    }
-                }
-            } catch (error) {
-                console.error("Error parsing start/end time:", error);
-            }
-        }
-
-        // Priority 2: Show deadline if it exists (no startTime)
-        if (task?.deadline) {
-            try {
-                const deadlineDate = parseISO(task.deadline);
-                const isOverdue = isAfter(now, deadlineDate);
-
-                if (isOverdue) {
-                    const duration = formatDistanceToNow(deadlineDate, { addSuffix: false });
-                    return {
-                        text: `Due ${duration} ago`,
-                        color: 'error' as const
-                    };
-                } else {
-                    let text = formatDistanceToNow(deadlineDate, { addSuffix: true });
-                    text = text.replace(/^in /, 'due in ');
-                    return {
-                        text: `(${text})`,
-                        color: 'caption' as const
-                    };
-                }
-            } catch (error) {
-                console.error("Error parsing deadline:", error);
-                return null;
-            }
-        }
-
-        // Priority 3: Show start date if it exists and no deadline
-        if (task?.startDate && !task?.deadline) {
-            try {
-                const startDate = parseISO(task.startDate);
-
-                if (isToday(startDate)) {
-                    return {
-                        text: '(today)',
-                        color: 'caption' as const
-                    };
-                } else if (isTomorrow(startDate)) {
-                    return {
-                        text: '(tomorrow)',
-                        color: 'caption' as const
-                    };
-                } else if (isAfter(now, startDate)) {
-                    const duration = formatDistanceToNow(startDate, { addSuffix: false });
-                    return {
-                        text: `(${duration} ago)`,
-                        color: 'caption' as const
-                    };
-                } else {
-                    const duration = formatDistanceToNow(startDate, { addSuffix: true });
-                    return {
-                        text: `(${duration})`,
-                        color: 'caption' as const
-                    };
-                }
-            } catch (error) {
-                console.error("Error parsing start date:", error);
-                return null;
-            }
-        }
-
-        return null;
-    }, [task?.deadline, task?.startDate, task?.startTime, task?.isPhantom, task?.nextGenerated, detailed]);
+    const timeChip = useMemo(
+        () => getTimeChipInfo(task, detailed),
+        [task?.deadline, task?.startDate, task?.startTime, task?.isPhantom, task?.nextGenerated, detailed]
+    );
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -481,30 +363,13 @@ const TaskCard = ({
 
             <View style={styles.row}>
                 <View style={styles.contentContainer}>
-                    {highlightContent ? (
-                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={[styles.content, encouraged ? { color: encColors.text } : null]} type="default">
-                            {content}
-                            {dateDisplay && (
-                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor[dateDisplay.color] }}>
-                                    {" "}{dateDisplay.text}
-                                </ThemedText>
-                            )}
-                        </ThemedText>
-                    ) : (
-                        <ThemedText numberOfLines={2} ellipsizeMode="tail" style={[styles.content, encouraged ? { color: encColors.text } : null]} type="default">
-                            {content}
-                            {task?.workingOnSince && (
-                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor.primary }}>
-                                    {" "}(active)
-                                </ThemedText>
-                            )}
-                            {dateDisplay && (
-                                <ThemedText type="default" style={{ color: encouraged ? encColors.secondaryText : ThemedColor[dateDisplay.color] }}>
-                                    {" "}{dateDisplay.text}
-                                </ThemedText>
-                            )}
-                        </ThemedText>
-                    )}
+                    <ThemedText
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        style={[styles.content, encouraged ? { color: encColors.text } : null]}
+                        type="default">
+                        {content}
+                    </ThemedText>
                     {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                 </View>
                 <View style={styles.iconRow}>
@@ -528,18 +393,26 @@ const TaskCard = ({
                         </TouchableOpacity>
                     )}
                     <ConditionalView condition={!encourage}>
+                        {timeChip && (
+                            <TaskChip
+                                label={timeChip.label}
+                                tone={timeChip.tone}
+                                Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
+                            />
+                        )}
+                        <ConditionalView condition={task?.recurring}>
+                            <TaskChip
+                                Icon={Repeat}
+                                label={
+                                    task?.flexInfo
+                                        ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
+                                        : undefined
+                                }
+                            />
+                        </ConditionalView>
+                        {task?.workingOnSince && <TaskChip Icon={Play} label="active" tone="active" />}
                         <ConditionalView condition={isRunningState}>
                             <Timer size={20} color={ThemedColor.caption} weight="regular" />
-                        </ConditionalView>
-                        <ConditionalView condition={task?.recurring}>
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                                <Repeat size={20} color={ThemedColor.caption} weight="regular" />
-                                {task?.flexInfo && (
-                                    <ThemedText type="caption" style={{ color: encouraged ? encColors.secondaryText : ThemedColor.primary, fontWeight: "600", fontSize: 12 }}>
-                                        {task.flexInfo.instanceNumber}/{task.flexInfo.target}
-                                    </ThemedText>
-                                )}
-                            </View>
                         </ConditionalView>
                         <ConditionalView condition={!!task?.integration}>
                             {getIntegrationIcon(task?.integration, ThemedColor.caption)}
@@ -651,7 +524,8 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.task?.flexInfo?.instanceNumber === nextProps.task?.flexInfo?.instanceNumber &&
         prevProps.task?.integration === nextProps.task?.integration &&
         prevProps.task?.isPhantom === nextProps.task?.isPhantom &&
-        prevProps.task?.nextGenerated === nextProps.task?.nextGenerated
+        prevProps.task?.nextGenerated === nextProps.task?.nextGenerated &&
+        prevProps.task?.workingOnSince === nextProps.task?.workingOnSince
     );
 });
 
