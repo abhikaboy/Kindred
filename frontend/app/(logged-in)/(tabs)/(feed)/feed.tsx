@@ -42,6 +42,8 @@ import { HeartStraightIcon } from "phosphor-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { Handshake } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -108,6 +110,8 @@ export default function Feed() {
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
+    // First-touch: the notifications pager page is invisible until swiped; visiting it dismisses
+    const { ready: notifHintReady, done: notifHintDone } = useFirstTouchHint("feed_notifications");
     const [refreshing, setRefreshing] = useState(false);
     const [posts, setPosts] = useState<PostData[]>([]);
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -748,6 +752,7 @@ export default function Feed() {
                 setActivePage(position);
                 if (position === 1) {
                     setNotificationsMounted(true);
+                    notifHintDone();
                 }
             }}
             onPageScrollStateChanged={(e) => {
@@ -759,6 +764,14 @@ export default function Feed() {
                 }
             }}>
             <View key="feed" style={styles.container}>
+            {notifHintReady && (
+                <HintBubble
+                    text="Swipe left for kudos & notifications"
+                    onDone={notifHintDone}
+                    autoDismissMs={7000}
+                    style={{ position: "absolute", top: insets.top + 52, right: 20, zIndex: 100 }}
+                />
+            )}
             <Animated.View
                 style={[
                     styles.animatedHeader,

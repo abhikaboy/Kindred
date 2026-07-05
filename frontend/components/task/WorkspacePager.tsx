@@ -12,6 +12,8 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import type { Workspace } from "@/api/types";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
 
 const TAB_BAR_HEIGHT = 83;
 const MAX_VISIBLE_DOTS = 5;
@@ -69,6 +71,9 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
         }
     }, [selected, workspaces]);
 
+    // First-touch (multi-workspace only): a real swipe dismisses it
+    const { ready: swipeHintReady, done: swipeHintDone } = useFirstTouchHint("workspace_swipe");
+
     const onPageSelected = useCallback(
         (e: { nativeEvent: { position: number } }) => {
             const position = e.nativeEvent.position;
@@ -79,15 +84,17 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
                 return;
             }
 
+            swipeHintDone();
             const workspace = workspaces[position];
             if (workspace && workspace.name !== selected) {
                 onWorkspaceChange(workspace.name);
             }
         },
-        [workspaces, selected, onWorkspaceChange]
+        [workspaces, selected, onWorkspaceChange, swipeHintDone]
     );
 
     const { showConfetti } = useTasks();
+    const insets = useSafeAreaInsets();
     const { width: screenWidth, height: screenHeight } = Dimensions.get("screen");
 
     if (workspaces.length === 0) return null;
@@ -131,6 +138,23 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
                         pagerRef.current?.setPage(index);
                     }}
                 />
+            )}
+
+            {workspaces.length > 1 && swipeHintReady && (
+                <View
+                    style={[
+                        styles.hintContainer,
+                        // Directly above the workspace dots
+                        { bottom: insets.bottom + TAB_BAR_HEIGHT + 16 + 32 },
+                    ]}
+                    pointerEvents="box-none"
+                >
+                    <HintBubble
+                        text="Swipe to switch workspaces"
+                        onDone={swipeHintDone}
+                        autoDismissMs={7000}
+                    />
+                </View>
             )}
         </View>
     );
@@ -266,5 +290,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
+    },
+    hintContainer: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        alignItems: "center",
+        zIndex: 50,
     },
 });
