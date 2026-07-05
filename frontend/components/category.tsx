@@ -106,15 +106,15 @@ export const Category: React.FC<CategoryProps> = ({
                     fillStyle,
                 ]}
             />
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <TouchableOpacity
-                    style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}
-                    onLongPress={() => onLongPress(id)}
-                    disabled={viewOnly}
-                    onPress={() => {
-                        onPress(id);
-                        setCreateCategory({ label: name, id: id, special: false });
-                    }}>
+            <TouchableOpacity
+                style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}
+                onLongPress={() => onLongPress(id)}
+                disabled={viewOnly}
+                onPress={() => {
+                    onPress(id);
+                    setCreateCategory({ label: name, id: id, special: false });
+                }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
                     {categoryNameText}
                     {tags.length > 0 && (
                         <ScrollView
@@ -131,9 +131,9 @@ export const Category: React.FC<CategoryProps> = ({
                             ))}
                         </ScrollView>
                     )}
-                </TouchableOpacity>
+                </View>
                 {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
-            </View>
+            </TouchableOpacity>
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;
 
