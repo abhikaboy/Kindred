@@ -39,7 +39,7 @@ export const Colors = {
     dark: {
         text: "#FFFFFF",
         header: "#F9EAFF",
-        background: "#13121F",
+        background: "#0c0c1a",
         disabled: "#66666633",
         buttonText: "#FFFFFF",
         input: "#66666633",
