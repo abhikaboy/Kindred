@@ -33,7 +33,10 @@ const HintBubble = ({ text, onDone, autoDismissMs = 5000, style }: Props) => {
             <TouchableOpacity
                 onPress={dismiss}
                 activeOpacity={0.8}
-                style={[styles.pill, { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary }]}
+                style={[
+                    styles.pill,
+                    { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.primary + "40" },
+                ]}
             >
                 <Sparkle size={14} weight="fill" color={ThemedColor.primary} />
                 <ThemedText type="caption">{text}</ThemedText>
@@ -48,10 +51,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 6,
         alignSelf: "flex-start",
-        borderWidth: StyleSheet.hairlineWidth,
+        borderWidth: 1,
         borderRadius: 16,
         paddingHorizontal: 12,
         paddingVertical: 7,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 4,
     },
 });
 

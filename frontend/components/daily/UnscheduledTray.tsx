@@ -61,7 +61,7 @@ const UnscheduledTray = ({ tasks, hiddenIds, onDragStart, onDragMove, onDragEnd,
                 ))}
             </ScrollView>
             {hintVisible && (
-                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
                     Hold and drag a task onto a day to schedule it
                 </ThemedText>
             )}
