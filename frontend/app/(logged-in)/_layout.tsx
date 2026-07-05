@@ -22,7 +22,6 @@ import {
     sendPushTokenToBackend,
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
-import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 import { ThemedView } from "@/components/ThemedView";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
@@ -481,7 +480,6 @@ const LayoutContent = () => {
 
     return (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-            <BlueprintCreationProvider>
                 <Stack
                     screenOptions={{
                         headerShown: false,
@@ -508,7 +506,6 @@ const LayoutContent = () => {
                         {...modalConfig}
                     />
                 )}
-            </BlueprintCreationProvider>
         </Animated.View>
     );
 };

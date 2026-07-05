@@ -19,6 +19,7 @@ import { TaskCreationProvider } from "@/contexts/taskCreationContext";
 import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { applyStoredThemePreference } from "@/hooks/useThemePreference";
+import { BlueprintCreationProvider } from "@/contexts/blueprintContext";
 // Import router after the components to avoid potential circular dependencies
 import { router } from "expo-router";
 import { DrawerProvider } from "@/contexts/drawerContext";
@@ -185,6 +186,10 @@ export default Sentry.wrap(function RootLayout() {
                                             <SelectedGroupProvider>
                                                 <DrawerProvider>
                                                     <GestureHandlerRootView style={{ flex: 1 }}>
+                                                        {/* Must sit above PortalProvider/BottomSheetModalProvider:
+                                                            gorhom sheets portal their content to those hosts, so
+                                                            any provider below them is invisible to sheet content */}
+                                                        <BlueprintCreationProvider>
                                                         <PortalProvider>
                                                             <BottomSheetModalProvider>
                                                                 <AlertProvider>
@@ -204,6 +209,7 @@ export default Sentry.wrap(function RootLayout() {
                                                                 </AlertProvider>
                                                             </BottomSheetModalProvider>
                                                         </PortalProvider>
+                                                        </BlueprintCreationProvider>
                                                     </GestureHandlerRootView>
                                                 </DrawerProvider>
                                             </SelectedGroupProvider>
