@@ -28,3 +28,4 @@ backend/task.test
 
 # Local build artifacts
 backend/delete_accounts
+backend/server
