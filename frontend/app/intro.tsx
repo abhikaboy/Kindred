@@ -1,13 +1,14 @@
-import React, { useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Platform, Pressable, StyleSheet, Vibration, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEventListener } from "expo";
+import * as Haptics from "expo-haptics";
 import { PlayIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { hapticLight } from "@/utils/haptics";
+import { hapticMedium, hapticSuccess } from "@/utils/haptics";
 
 const INTRO_VIDEO_URL = "https://kindred.nyc3.cdn.digitaloceanspaces.com/output.mp4";
 export const INTRO_SEEN_KEY = "hasSeenIntroVideo";
@@ -27,10 +28,32 @@ export default function Intro() {
         p.muted = false;
     });
 
+    // Rumble for the whole playback: a rolling heartbeat of impacts on iOS,
+    // a repeating vibration pattern on Android.
+    useEffect(() => {
+        if (!started) return;
+        if (Platform.OS !== "ios") {
+            Vibration.vibrate([0, 220, 240, 120, 340], true);
+            return () => Vibration.cancel();
+        }
+        const BEAT = [
+            Haptics.ImpactFeedbackStyle.Heavy,
+            Haptics.ImpactFeedbackStyle.Soft,
+            Haptics.ImpactFeedbackStyle.Medium,
+            Haptics.ImpactFeedbackStyle.Soft,
+        ];
+        let beat = 0;
+        const interval = setInterval(() => {
+            Haptics.impactAsync(BEAT[beat++ % BEAT.length]).catch(() => {});
+        }, 350);
+        return () => clearInterval(interval);
+    }, [started]);
+
     const finish = () => {
         if (finished.current) return;
         finished.current = true;
         player.pause();
+        hapticSuccess();
         // The video replaces the old intro screens as the pre-login step, so
         // mark both flags — otherwise a later open falls back into the old flow.
         AsyncStorage.multiSet([
@@ -44,7 +67,7 @@ export default function Intro() {
 
     const handleTap = () => {
         if (!started) {
-            hapticLight();
+            hapticMedium();
             setStarted(true);
             player.play();
         } else {
