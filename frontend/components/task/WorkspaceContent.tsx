@@ -30,7 +30,6 @@ import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
 import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
-import WorkspaceGlow from "./WorkspaceGlow";
 
 /**
  * While a task is being dragged, scroll the workspace when the finger nears the
@@ -269,8 +268,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                 }}
             />
 
-            <ThemedView style={{ flex: 1 }}>
-                <WorkspaceGlow />
+            {/* Transparent so the single glow behind the pager shows through (Home paints the bg) */}
+            <View style={{ flex: 1 }}>
                 {/* Workspace color trim — 3px bar pinned to the very bottom edge. */}
                 {currentWorkspace?.color && (
                     <View
@@ -510,7 +509,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                         </ConditionalView>
                     </View>
                 </ScrollView>
-            </ThemedView>
+            </View>
             <DragAutoScroll scrollViewRef={scrollViewRef} scrollOffsetRef={scrollOffsetRef} />
         </>
     );

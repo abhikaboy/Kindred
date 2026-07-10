@@ -18,6 +18,7 @@ import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
+import { hapticCompletionBurst } from "@/utils/haptics";
 import { Bell, Flag, Trash } from "phosphor-react-native";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -294,7 +295,7 @@ const SwipableTaskCard = ({
 }
 
 // Swipe distance between haptic ticks (~16 ticks across a full swipe).
-const HAPTIC_STEP = 24;
+const HAPTIC_STEP = 14;
 
 function LeftAction(
     prog: SharedValue<number>,
@@ -321,8 +322,7 @@ function LeftAction(
     };
 
     const completionHaptic = () => {
-        if (Platform.OS !== "ios") return;
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        hapticCompletionBurst();
     };
 
     // Use useAnimatedReaction to watch the drag value

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
+import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -14,14 +15,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart, uploadVideo, KUDOS_VIDEO_MAX_BYTES, KUDOS_VIDEO_MAX_DURATION_MS } from "@/api/upload";
-import { Images, Gif, Sparkle, VideoCamera } from "phosphor-react-native";
+import { Images, Gif, VideoCamera } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
 import KudosVideoRecorder from "./KudosVideoRecorder";
 import KudosVideoPreview from "./KudosVideoPreview";
 import { formatVideoDuration } from "@/api/media";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
+import KudosPreviewAvatar from "@/components/cards/KudosPreviewAvatar";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
@@ -29,6 +32,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useKudosSent } from "@/contexts/kudosSentContext";
 import { useTimeouts } from "@/hooks/useTimeouts";
+
+// single soft bloom behind the sheet header; same language as the page glows
+const KUDOS_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.07, light: 0.05 }, cx: 50, cy: 18, rx: 45, ry: 22, falloff: "60%" },
+];
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -196,6 +204,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
     };
 
     const handleSendEncouragement = async () => {
+        hapticLight();
         // Validation for profile vs task level
         if (isProfileLevel) {
             if (!encouragementConfig?.receiverId) {
@@ -329,10 +338,8 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 }
             });
 
-            // Haptic feedback on successful send
-            if (Platform.OS === "ios") {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
+            // Strong payoff burst on successful send
+            hapticCompletionBurst();
 
             // Show the global "kudos sent" overlay. Media sends have no text body.
             showKudosSent({
@@ -420,24 +427,22 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             {/* Confetti Cannon - Full screen overlay, same as task completion */}
             {showConfetti && (
                 <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, height: Dimensions.get("screen").height }} pointerEvents="none">
-                    <ConfettiCannon
-                        ref={confettiRef}
-                        count={50}
-                        origin={{
-                            x: Dimensions.get("screen").width / 2,
-                            y: (Dimensions.get("screen").height / 4) * 3.7,
-                        }}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                        autoStart={false}
-                        fallSpeed={1200}
-                    />
+                    <Confetti ref={confettiRef} autoStart={false} />
                 </View>
             )}
 
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
-                {/* Task Card - Only show for task-level encouragements */}
+                <GlowBackground blobs={KUDOS_GLOW} />
+                {/* Title */}
+                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
+                    {isProfileLevel ? "Send Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
+                </ThemedText>
+                <ThemedText type="captionLight" style={styles.subtitleStyled}>
+                    A little goes a long way
+                </ThemedText>
+
+                {/* Task context sits between the header and the compose box */}
                 {!isProfileLevel && (
                     <View style={styles.taskCardContainer}>
                         {task && (
@@ -446,25 +451,12 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                                     <ThemedText type="default" style={styles.taskTextStyled}>
                                         {task.content}
                                     </ThemedText>
-                                    <View style={styles.taskCardRight}>
-                                        <ThemedText type="caption" style={styles.taskValueStyled}>
-                                            {task.value}
-                                        </ThemedText>
-                                        <Sparkle size={24} color="#9333EA" weight="regular" />
-                                    </View>
+                                    <KudosPreviewAvatar />
                                 </View>
                             </View>
                         )}
                     </View>
                 )}
-
-                {/* Title */}
-                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
-                    {isProfileLevel ? "Send Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
-                </ThemedText>
-                <ThemedText type="captionLight" style={styles.subtitleStyled}>
-                    A little goes a long way
-                </ThemedText>
 
                 {/* Text Input or Media Preview */}
                 {!selectedMedia ? (
@@ -606,15 +598,6 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             marginBottom: 12,
             width: "100%",
         },
-        taskCard: {
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            borderRadius: 16,
-            borderWidth: 1,
-            minHeight: 55,
-            justifyContent: "center",
-            boxShadow: "0px 0px 5px 2px " + "#9333EA" + "30",
-        },
         taskCardStyled: {
             paddingHorizontal: 20,
             paddingVertical: 16,
@@ -624,7 +607,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             justifyContent: "center",
             backgroundColor: ThemedColor.lightened,
             borderColor: ThemedColor.tertiary,
-            boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
+
         },
         taskCardContent: {
             flexDirection: "row",
@@ -667,7 +650,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         subtitleStyled: {
             textAlign: "center",
-            marginBottom: 16,
+            marginBottom: 12,
             color: ThemedColor.caption,
         },
         inputContainer: {

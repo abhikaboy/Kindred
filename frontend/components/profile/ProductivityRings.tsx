@@ -196,9 +196,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
         <View
             style={[
                 styles.card,
-                {
-                    backgroundColor: ThemedColor.background,
-                },
                 // Home rings card is visually borderless — interior side padding
                 // just reads as extra page gutter there
                 variant === "rings" && { paddingHorizontal: 0 },
@@ -346,14 +343,8 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     card: {
-        borderRadius: 16,
-        padding: 20,
+        paddingHorizontal: 20,
         gap: 20,
-        shadowColor: "#000",
-        shadowOpacity: 0.04,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 6,
-        elevation: 1,
     },
     cardExpanded: {
         zIndex: 999,

@@ -363,7 +363,7 @@ const TaskCard = ({
             <View style={styles.row}>
                 <View style={styles.contentContainer}>
                     <ThemedText
-                        numberOfLines={1}
+                        numberOfLines={2}
                         ellipsizeMode="tail"
                         style={[styles.content, encouraged ? { color: encColors.text } : null]}
                         type="default">

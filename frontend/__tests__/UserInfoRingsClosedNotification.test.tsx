@@ -22,15 +22,15 @@ jest.mock("@/components/modals/CongratulateModal", () => {
 });
 
 describe("UserInfoRingsClosedNotification", () => {
-    test("renders rings header, message and the Send congrats action", () => {
+    test("renders the sentence and the Send congrats action", () => {
         const { getByText } = render(
             <UserInfoRingsClosedNotification
                 notificationId="n1" name="Sarah" userId="u1"
                 content="Sarah closed all their rings" icon="https://x/a.png" time={Date.now()}
             />,
         );
-        getByText("🎉 Closed all rings");
-        getByText("closed all their rings");
+        getByText("Sarah");
+        getByText(/closed all their rings/);
         getByText("Send congrats");
     });
 

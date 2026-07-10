@@ -1,8 +1,6 @@
 import React from "react";
 import { router } from "expo-router";
-import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
-import { getNotificationTimeLabel } from "./notificationTime";
+import NotificationCard, { SentenceBold, SentenceText } from "@/components/notifications/NotificationCard";
 
 type Props = {
     name: string;
@@ -15,20 +13,24 @@ type Props = {
 };
 
 const UserInfoTaskCopiedNotification = ({ name, userId, content, icon, time, referenceId }: Props) => {
-    // The title carries the verb; surface only the quoted task name as the body.
     const taskName = content.match(/"([^"]+)"/)?.[1];
 
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {" added "}
+            {taskName ? <SentenceBold>{taskName}</SentenceBold> : null}
+            {taskName ? " from your blueprint 💪" : "a task from your blueprint 💪"}
+        </SentenceText>
+    );
+
     return (
-        <SpeechBubbleCard
-            sender={{ name, picture: icon, id: userId }}
-            badge={<NotificationBadgeIcon type="task_copied" />}
-            title="copied your task 💪"
-            message={taskName ? `"${taskName}"` : undefined}
-            timeLabel={getNotificationTimeLabel(time)}
-            read
+        <NotificationCard
+            time={time}
+            icon={icon}
+            userId={userId}
+            sentence={sentence}
             onPress={() => router.push(`/(logged-in)/(tabs)/(task)/task/${referenceId}`)}
-            onAvatarPress={() => router.push(`/account/${userId}`)}
-            visible
         />
     );
 };

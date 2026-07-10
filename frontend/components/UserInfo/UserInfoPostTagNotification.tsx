@@ -1,8 +1,6 @@
 import React from "react";
 import { router } from "expo-router";
-import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
-import { getNotificationTimeLabel } from "./notificationTime";
+import NotificationCard, { SentenceBold, SentenceText } from "@/components/notifications/NotificationCard";
 
 type Props = {
     name: string;
@@ -14,20 +12,21 @@ type Props = {
     referenceId: string;
 };
 
-const UserInfoPostTagNotification = ({ name, userId, icon, time, image, referenceId }: Props) => {
-    const showThumbnail = !!image && image !== icon;
+const UserInfoPostTagNotification = ({ name, userId, icon, time, referenceId }: Props) => {
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {" tagged you in a post"}
+        </SentenceText>
+    );
 
     return (
-        <SpeechBubbleCard
-            sender={{ name, picture: icon, id: userId }}
-            badge={<NotificationBadgeIcon type="post_tag" />}
-            title="tagged you in a post"
-            thumbnailUri={showThumbnail ? image : undefined}
-            timeLabel={getNotificationTimeLabel(time)}
-            read
+        <NotificationCard
+            time={time}
+            icon={icon}
+            userId={userId}
+            sentence={sentence}
             onPress={() => router.push(`/posting/${referenceId}`)}
-            onAvatarPress={() => router.push(`/account/${userId}`)}
-            visible
         />
     );
 };

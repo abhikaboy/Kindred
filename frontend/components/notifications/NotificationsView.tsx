@@ -23,6 +23,13 @@ import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTa
 import ForYouTab from "@/components/forYou/ForYouTab";
 import { useForYou } from "@/hooks/useForYou";
 import RequestsTab from "@/components/requests/RequestsTab";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
+
+// centered-high arrangement for notifications; strengths match the other page glows
+const NOTIFICATIONS_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.075, light: 0.065 }, cx: 55, cy: 30, rx: 40, ry: 20, falloff: "60%" },
+    { color: "#4D9EFF", opacity: { dark: 0.07, light: 0.07 }, cx: 15, cy: 82, rx: 32, ry: 15 },
+];
 import {
     type ProcessedNotification,
     type ActivityFilter,
@@ -203,7 +210,7 @@ const NotificationItem = ({
     onNotificationPress: (notification: ProcessedNotification) => void;
 }) => {
     return (
-        <TouchableOpacity key={`${notification.type}-${index}`} style={styles.listItem} onPress={() => onNotificationPress(notification)} activeOpacity={1}>
+        <View key={`${notification.type}-${index}`} style={styles.listItem}>
             {notification.type === "comment" ? (
                 <UserInfoCommentNotification
                     name={notification.name}
@@ -291,7 +298,7 @@ const NotificationItem = ({
                     referenceId={notification.referenceId}
                 />
             ) : null}
-        </TouchableOpacity>
+        </View>
     );
 };
 
@@ -605,6 +612,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
 
     return (
         <ThemedView style={styles.container}>
+            <GlowBackground blobs={NOTIFICATIONS_GLOW} />
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={onBack} style={styles.headerSide}>
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
@@ -684,7 +692,7 @@ const stylesheet = (ThemedColor: any) => {
             // tight against the first item.
         },
         itemSeparator: {
-            height: 10,
+            height: 12,
         },
         sectionHeader: {
             marginBottom: 12,

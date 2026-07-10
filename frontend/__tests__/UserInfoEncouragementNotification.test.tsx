@@ -39,11 +39,11 @@ const base = {
 };
 
 describe("UserInfoEncouragementNotification", () => {
-    test("renders a text message as text", () => {
+    test("renders a text message as a quote", () => {
         const { getByText, queryByTestId } = render(
             <UserInfoEncouragementNotification {...base} message="you crushed it" />,
         );
-        getByText("you crushed it");
+        getByText('"you crushed it"');
         expect(queryByTestId("bubble-image")).toBeNull();
     });
 

@@ -1,8 +1,6 @@
 import React from "react";
 import { router } from "expo-router";
-import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
-import { getNotificationTimeLabel } from "./notificationTime";
+import NotificationCard, { SentenceBold, SentenceText } from "@/components/notifications/NotificationCard";
 
 type Props = {
     name: string;
@@ -14,16 +12,20 @@ type Props = {
 };
 
 const UserInfoFriendAcceptedNotification = ({ name, userId, icon, time }: Props) => {
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {" accepted your friend request"}
+        </SentenceText>
+    );
+
     return (
-        <SpeechBubbleCard
-            sender={{ name, picture: icon, id: userId }}
-            badge={<NotificationBadgeIcon type="friend_request_accepted" />}
-            title="accepted your friend request"
-            timeLabel={getNotificationTimeLabel(time)}
-            read
+        <NotificationCard
+            time={time}
+            icon={icon}
+            userId={userId}
+            sentence={sentence}
             onPress={() => router.push(`/account/${userId}`)}
-            onAvatarPress={() => router.push(`/account/${userId}`)}
-            visible
         />
     );
 };

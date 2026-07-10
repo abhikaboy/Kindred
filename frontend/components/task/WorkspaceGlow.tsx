@@ -1,37 +1,19 @@
-import React, { useId } from "react";
-import { StyleSheet, View, useColorScheme } from "react-native";
-import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
+import React from "react";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
 
-const PURPLE = "#854DFF";
-const BLUE = "#4D9EFF";
-// ponytail: all tuning lives here — adjust after on-device check (OLEDs crush faint tints)
-const PEAK = {
-    dark: { purple: 0.08, blue: 0.05 },
-    light: { purple: 0.1, blue: 0.06 },
-};
+// hand-tuned strengths — verify on OLED before changing
+const WORKSPACE_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.08, light: 0.06 }, cx: 30, cy: 25, rx: 38, ry: 19, falloff: "60%" },
+    { color: "#4D9EFF", opacity: { dark: 0.06, light: 0.075 }, cx: 85, cy: 80, rx: 33, ry: 16 },
+];
 
-/** Static two-hue ambient glow behind the workspace list. known-app inspired; deliberately faint. */
-export default function WorkspaceGlow() {
-    const scheme = useColorScheme() ?? "light";
-    const peak = PEAK[scheme];
-    const baseId = useId().replace(/:/g, "");
+// home view: glow lives behind the dashboard cards (mid-lower band), clear of the rings up top
+const HOME_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.075, light: 0.06 }, cx: 45, cy: 62, rx: 40, ry: 20, falloff: "60%" },
+    { color: "#4D9EFF", opacity: { dark: 0.06, light: 0.075 }, cx: 82, cy: 90, rx: 30, ry: 14 },
+];
 
-    return (
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <Defs>
-                    <RadialGradient id={`${baseId}-purple`} cx="50%" cy="50%" r="50%">
-                        <Stop offset="0" stopColor={PURPLE} stopOpacity={peak.purple} />
-                        <Stop offset="1" stopColor={PURPLE} stopOpacity="0" />
-                    </RadialGradient>
-                    <RadialGradient id={`${baseId}-blue`} cx="50%" cy="50%" r="50%">
-                        <Stop offset="0" stopColor={BLUE} stopOpacity={peak.blue} />
-                        <Stop offset="1" stopColor={BLUE} stopOpacity="0" />
-                    </RadialGradient>
-                </Defs>
-                <Ellipse cx="30" cy="25" rx="38" ry="19" fill={`url(#${baseId}-purple)`} />
-                <Ellipse cx="85" cy="80" rx="33" ry="16" fill={`url(#${baseId}-blue)`} />
-            </Svg>
-        </View>
-    );
+/** Static two-hue ambient glow behind the task tab. known-app inspired; deliberately faint. */
+export default function WorkspaceGlow({ variant = "workspace" }: { variant?: "workspace" | "home" }) {
+    return <GlowBackground blobs={variant === "home" ? HOME_GLOW : WORKSPACE_GLOW} />;
 }

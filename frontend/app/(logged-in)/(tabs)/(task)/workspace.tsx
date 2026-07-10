@@ -10,7 +10,7 @@ import EditCategory from "@/components/modals/edit/EditCategory";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Category } from "@/components/category";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
 import ConditionalView from "@/components/ui/ConditionalView";
 import SlidingText from "@/components/ui/SlidingText";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -224,16 +224,7 @@ const WorkspaceContent = ({
                         zIndex: 10,
                         height: Dimensions.get("screen").height,
                     }}>
-                    <ConfettiCannon
-                        count={50}
-                        origin={{
-                            x: Dimensions.get("screen").width / 2,
-                            y: (Dimensions.get("screen").height / 4) * 3.7,
-                        }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
+                    <Confetti />
                 </View>
             </ConditionalView>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />

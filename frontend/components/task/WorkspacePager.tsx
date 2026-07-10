@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import PagerView from "react-native-pager-view";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
 import { WorkspaceContent } from "./WorkspaceContent";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -103,13 +103,7 @@ export const WorkspacePager: React.FC<WorkspacePagerProps> = ({
         <View style={styles.container}>
             {showConfetti && (
                 <View style={styles.confettiContainer}>
-                    <ConfettiCannon
-                        count={50}
-                        origin={{ x: screenWidth / 2, y: (screenHeight / 4) * 3.7 }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
+                    <Confetti />
                 </View>
             )}
             <PagerView

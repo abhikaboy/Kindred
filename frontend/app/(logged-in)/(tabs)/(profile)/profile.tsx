@@ -17,9 +17,9 @@ import MemoriesCalendar from "@/components/profile/MemoriesCalendar";
 import TaskList from "@/components/profile/TaskList";
 import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
+import ProfileGlow from "@/components/profile/ProfileGlow";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
-import ReferralCard from "@/components/profile/ReferralCard";
 import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
@@ -99,12 +99,14 @@ export default function Profile() {
 
 
     return (
+        <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+        <ProfileGlow />
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
             onScroll={handleScroll}
-            style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
+            style={styles.scrollView}>
             <ParallaxBanner
                 scrollRef={scrollRef}
                 backgroundImage={user?.profile_picture || Icons.luffy}
@@ -125,8 +127,6 @@ export default function Profile() {
                 {/* Productivity score lives on the profile; rings moved to home */}
                 <ProductivityRingsCard variant="score" />
 
-                <ReferralCard />
-
                 <MemoriesCalendar userId={user?._id} />
 
                 <AnimatedTabs tabs={["Tasks", "Gallery"]} activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -137,6 +137,7 @@ export default function Profile() {
                 </AnimatedTabContent>
             </View>
         </Animated.ScrollView>
+        </View>
     );
 }
 

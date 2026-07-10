@@ -3,17 +3,13 @@ import { View, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 import TinderCard from "react-tinder-card";
+import { CalendarBlank, Clock, Repeat } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Task } from "@/api/types";
-import ReviewTaskRow from "./ReviewTaskRow";
+import TaskChip from "./TaskChip";
+import { getTimeChipInfo } from "@/utils/timeChip";
 
-// priority: 1 = low (green), 2 = medium (yellow), 3 = high (red)
-const PRIORITY_COLORS: Record<number, string> = {
-    1: "#4CAF50",
-    2: "#FFC107",
-    3: "#F44336",
-};
 const PRIORITY_LABELS: Record<number, string> = {
     1: "Low",
     2: "Medium",
@@ -42,6 +38,12 @@ const ReviewTaskCard = ({
     cardRef,
 }: Props) => {
     const ThemedColor = useThemeColor();
+    const priorityColor: Record<number, string> = {
+        1: ThemedColor.success,
+        2: ThemedColor.warning,
+        3: ThemedColor.error,
+    };
+    const timeChip = getTimeChipInfo(task, true);
 
     return (
         <Animated.View
@@ -60,69 +62,51 @@ const ReviewTaskCard = ({
                     styles.cardContent,
                     {
                         borderColor: ThemedColor.tertiary,
-                        backgroundColor: ThemedColor.background,
+                        backgroundColor: ThemedColor.lightenedCard,
                     },
                 ]}>
-                    {/* Metadata rows — top of card */}
-                    <View style={styles.rows}>
-                        <ReviewTaskRow
-                            label="Priority"
-                            value=""
-                            empty={!task?.priority}
-                            rightContent={
-                                <View style={styles.priorityRow}>
-                                    <View style={[
-                                        styles.trafficDot,
-                                        { backgroundColor: PRIORITY_COLORS[task?.priority ?? 2] ?? PRIORITY_COLORS[2] },
-                                    ]} />
-                                    <ThemedText type="default" style={styles.priorityLabel}>
-                                        {PRIORITY_LABELS[task?.priority ?? 2] ?? "Medium"}
-                                    </ThemedText>
-                                </View>
-                            }
-                        />
-                        <ReviewTaskRow
-                            label="Notes"
-                            value={task?.notes || "No notes"}
-                            empty={!task?.notes}
-                            numberOfLines={2}
-                        />
-                        <ReviewTaskRow
-                            label="Start"
-                            value={
-                                task?.startDate
-                                    ? new Date(task.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-                                    : "No start date"
-                            }
-                            empty={!task?.startDate}
-                            numberOfLines={1}
-                        />
-                        <ReviewTaskRow
-                            label="Deadline"
-                            value={
-                                task?.deadline
-                                    ? new Date(task.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-                                    : "No deadline"
-                            }
-                            empty={!task?.deadline}
-                            numberOfLines={1}
-                        />
-                    </View>
-
-                    {/* Spacer pushes title to bottom */}
-                    <View style={{ flex: 1 }} />
-
-                    <View style={styles.bottomSection}>
+                    {/* Hero: category eyebrow, big title, chips for what actually exists */}
+                    <View style={styles.hero}>
                         <ThemedText
+                            type="caption"
                             style={[styles.categoryName, { color: ThemedColor.caption }]}
                             numberOfLines={1}
                         >
                             {task?.categoryName || "Uncategorized"}
                         </ThemedText>
-                        <ThemedText type="title" numberOfLines={3} style={styles.taskTitle}>
+                        <ThemedText type="fancyFrauncesSubheading" numberOfLines={4} style={styles.taskTitle}>
                             {task?.content || ""}
                         </ThemedText>
+                        <View style={styles.chipsRow}>
+                            {!!task?.priority && (
+                                <TaskChip
+                                    label={PRIORITY_LABELS[task.priority]}
+                                    color={priorityColor[task.priority]}
+                                />
+                            )}
+                            {timeChip && (
+                                <TaskChip
+                                    label={timeChip.label}
+                                    tone={timeChip.tone}
+                                    Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
+                                />
+                            )}
+                            {task?.recurring && <TaskChip Icon={Repeat} label="repeats" />}
+                        </View>
                     </View>
+
+                    <View style={{ flex: 1 }} />
+
+                    {task?.notes ? (
+                        <View style={styles.notesSection}>
+                            <ThemedText type="caption" style={[styles.notesLabel, { color: ThemedColor.caption }]}>
+                                NOTES
+                            </ThemedText>
+                            <ThemedText type="lightBody" numberOfLines={4} style={{ color: ThemedColor.caption }}>
+                                {task.notes}
+                            </ThemedText>
+                        </View>
+                    ) : null}
 
                     {/* Directional gradient wash — fills the full card */}
                     {swipeDirection && (
@@ -185,41 +169,36 @@ const styles = StyleSheet.create({
         height: "100%",
         borderRadius: 20,
         borderWidth: 1,
-        padding: 20,
+        padding: 24,
         overflow: "hidden",
         flexDirection: "column",
     },
-    rows: {
-        gap: 0,
-    },
-    bottomSection: {
+    hero: {
+        gap: 12,
         paddingTop: 8,
-        paddingBottom: 16,
     },
     categoryName: {
         fontSize: 12,
-        fontWeight: "500",
-        letterSpacing: 0.5,
+        letterSpacing: 1.2,
         textTransform: "uppercase",
-        marginBottom: 4,
     },
     taskTitle: {
-        fontSize: 28,
-        lineHeight: 34,
+        fontSize: 30,
+        lineHeight: 38,
     },
-    priorityRow: {
-        flex: 1,
+    chipsRow: {
         flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
+        flexWrap: "wrap",
+        gap: 6,
+        marginTop: 4,
     },
-    trafficDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+    notesSection: {
+        gap: 6,
+        paddingBottom: 4,
     },
-    priorityLabel: {
-        fontSize: 16,
+    notesLabel: {
+        fontSize: 11,
+        letterSpacing: 1.2,
     },
     swipeIndicator: {
         position: "absolute",

@@ -7,11 +7,11 @@ type PhosphorComponent = React.ComponentType<{ size?: number; weight?: string; c
 import { Skeleton } from "moti/skeleton";
 import ConditionalView from "@/components/ui/ConditionalView";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import { CaretRight, CaretDown, ArrowRight } from "phosphor-react-native";
+import { CaretRight, CaretDown } from "phosphor-react-native";
 import { useTasks } from "@/contexts/tasksContext";
 import { MotiView, AnimatePresence } from "moti";
-import { useRouter } from "expo-router";
-import { parseISO, isToday, isTomorrow, differenceInDays, format } from "date-fns";
+import WorkspaceTaskPreview from "./WorkspaceTaskPreview";
+import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
 
 interface Workspace {
     name: string;
@@ -37,8 +37,6 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
     ThemedColor,
 }) => {
     const [expandedWorkspaces, setExpandedWorkspaces] = useState<Set<string>>(new Set());
-    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-    const router = useRouter();
 
     // Expand each workspace by default the first time it appears, while still
     // letting the user collapse it afterward.
@@ -68,34 +66,6 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
         setExpandedWorkspaces(newExpanded);
     };
 
-    const toggleCategory = (categoryId: string) => {
-        const newExpanded = new Set(expandedCategories);
-
-        if (newExpanded.has(categoryId)) {
-            newExpanded.delete(categoryId);
-        } else {
-            newExpanded.add(categoryId);
-        }
-
-        setExpandedCategories(newExpanded);
-    };
-
-    const handleCategoryPress = (workspaceName: string, categoryId: string) => {
-        onWorkspacePress(workspaceName);
-        onCategoryPress?.(workspaceName, categoryId);
-    };
-
-    const handleTaskPress = (task: any, categoryId: string) => {
-        router.push({
-            pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-            params: {
-                id: task.id,
-                categoryId: categoryId,
-                name: task.content,
-            },
-        });
-    };
-
     const getWorkspaceData = (workspaceName: string) => {
         const workspace = allWorkspaces.find((ws) => ws.name === workspaceName);
         return workspace ? workspace.categories : [];
@@ -112,13 +82,7 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                             const colorAccent = workspace.color ?? null;
                             const validCategories = categories?.filter((cat: any) => cat.name !== "!-proxy-!") || [];
 
-                            const pendingTaskCount = categories
-                                ? categories.reduce(
-                                      (sum: number, cat: any) =>
-                                          sum + (cat.tasks?.filter((t: any) => t.active !== false).length ?? 0),
-                                      0
-                                  )
-                                : 0;
+                            const pendingTaskCount = pendingWorkspaceTaskCount(categories);
 
                             return (
                                 <Skeleton
@@ -166,166 +130,11 @@ export const WorkspaceGrid: React.FC<WorkspaceGridProps> = ({
                                                               }
                                                             : undefined,
                                                     ]}>
-                                                    {categories && categories.length > 0 ? (
-                                                        validCategories.length > 0 ? (
-                                                            validCategories.map((category: any) => {
-                                                                const hasTasks =
-                                                                    category.tasks &&
-                                                                    category.tasks.length > 0;
-                                                                const isCategoryExpanded = expandedCategories.has(
-                                                                    category.id
-                                                                );
-
-                                                                return (
-                                                                    <View key={category.id}>
-                                                                        <View style={styles.categoryRow}>
-                                                                            <TouchableOpacity
-                                                                                onPress={() =>
-                                                                                    toggleCategory(category.id)
-                                                                                }
-                                                                                style={styles.categoryCaretButton}>
-                                                                                {isCategoryExpanded ? (
-                                                                                    <CaretDown
-                                                                                        size={16}
-                                                                                        color={ThemedColor.caption}
-                                                                                    />
-                                                                                ) : (
-                                                                                    <CaretRight
-                                                                                        size={16}
-                                                                                        color={ThemedColor.caption}
-                                                                                    />
-                                                                                )}
-                                                                            </TouchableOpacity>
-
-                                                                            <TouchableOpacity
-                                                                                style={styles.categoryContent}
-                                                                                onPress={() =>
-                                                                                    handleCategoryPress(
-                                                                                        workspace.name,
-                                                                                        category.id
-                                                                                    )
-                                                                                }>
-                                                                                <ThemedText type="larger_default">
-                                                                                    {category.name}
-                                                                                </ThemedText>
-                                                                            </TouchableOpacity>
-                                                                        </View>
-
-                                                                        <AnimatePresence>
-                                                                            {isCategoryExpanded && (
-                                                                                <MotiView
-                                                                                    from={{
-                                                                                        opacity: 0,
-                                                                                        maxHeight: 0,
-                                                                                    }}
-                                                                                    animate={{
-                                                                                        opacity: 1,
-                                                                                        maxHeight: 2000,
-                                                                                    }}
-                                                                                    exit={{
-                                                                                        opacity: 0,
-                                                                                        maxHeight: 0,
-                                                                                    }}
-                                                                                    transition={{
-                                                                                        type: "timing",
-                                                                                        duration: 150,
-                                                                                    }}
-                                                                                    style={{ overflow: "hidden" }}>
-                                                                                    <View style={styles.tasksContainer}>
-                                                                                        {hasTasks ? (
-                                                                                            category.tasks.map(
-                                                                                                (task: any) => (
-                                                                                                    <TouchableOpacity
-                                                                                                        key={task.id}
-                                                                                                        style={[
-                                                                                                            styles.taskItem,
-                                                                                                            task.isPhantom && {
-                                                                                                                opacity: 0.45,
-                                                                                                            },
-                                                                                                        ]}
-                                                                                                        disabled={
-                                                                                                            task.isPhantom
-                                                                                                        }
-                                                                                                        onPress={() =>
-                                                                                                            handleTaskPress(
-                                                                                                                task,
-                                                                                                                category.id
-                                                                                                            )
-                                                                                                        }>
-                                                                                                        <ArrowRight
-                                                                                                            size={12}
-                                                                                                            color={
-                                                                                                                ThemedColor.caption
-                                                                                                            }
-                                                                                                            style={
-                                                                                                                styles.taskArrow
-                                                                                                            }
-                                                                                                        />
-                                                                                                        <ThemedText
-                                                                                                            type="larger_default_light"
-                                                                                                            style={
-                                                                                                                styles.taskText
-                                                                                                            }
-                                                                                                            numberOfLines={
-                                                                                                                1
-                                                                                                            }>
-                                                                                                            {task.content ||
-                                                                                                                "Untitled task"}
-                                                                                                            {task.isPhantom &&
-                                                                                                                task.nextGenerated &&
-                                                                                                                (() => {
-                                                                                                                    const d = parseISO(task.nextGenerated);
-                                                                                                                    const label = isToday(d)
-                                                                                                                        ? "today"
-                                                                                                                        : isTomorrow(d)
-                                                                                                                          ? "tomorrow"
-                                                                                                                          : differenceInDays(d, new Date()) <= 6
-                                                                                                                            ? format(d, "EEEE")
-                                                                                                                            : format(d, "MMM d");
-                                                                                                                    return (
-                                                                                                                        <ThemedText
-                                                                                                                            type="caption"
-                                                                                                                            style={{ opacity: 0.7 }}>
-                                                                                                                            {" · " + label}
-                                                                                                                        </ThemedText>
-                                                                                                                    );
-                                                                                                                })()}
-                                                                                                        </ThemedText>
-                                                                                                    </TouchableOpacity>
-                                                                                                )
-                                                                                            )
-                                                                                        ) : (
-                                                                                            <View
-                                                                                                style={
-                                                                                                    styles.emptyTasksContainer
-                                                                                                }>
-                                                                                                <ThemedText
-                                                                                                    type="larger_default"
-                                                                                                    style={
-                                                                                                        styles.emptyText
-                                                                                                    }>
-                                                                                                    No tasks in this
-                                                                                                    category
-                                                                                                </ThemedText>
-                                                                                            </View>
-                                                                                        )}
-                                                                                    </View>
-                                                                                </MotiView>
-                                                                            )}
-                                                                        </AnimatePresence>
-                                                                    </View>
-                                                                );
-                                                            })
-                                                        ) : // All categories are proxy, so don't show anything
-                                                        null
-                                                    ) : categories && categories.length === 0 ? (
-                                                        // Only show this when there are truly NO categories
-                                                        <View style={styles.emptyContainer}>
-                                                            <ThemedText type="default" style={styles.emptyText}>
-                                                                No categories in this workspace
-                                                            </ThemedText>
-                                                        </View>
-                                                    ) : null}
+                                                    <WorkspaceTaskPreview
+                                                        categories={validCategories}
+                                                        onShowAll={() => onWorkspacePress(workspace.name)}
+                                                        ThemedColor={ThemedColor}
+                                                    />
                                                 </MotiView>
                                             )}
                                         </AnimatePresence>
@@ -379,8 +188,10 @@ const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ workspace, isExpanded, on
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onPress} style={styles.workspaceCountButton}>
-                {pendingTaskCount != null && pendingTaskCount > 0 && (
-                    <ThemedText type="caption" style={{ opacity: 0.6 }}>
+                {pendingTaskCount != null && (
+                    <ThemedText
+                        type="caption"
+                        style={{ color: pendingTaskCount > 0 ? ThemedColor.primary : ThemedColor.caption }}>
                         {pendingTaskCount}
                     </ThemedText>
                 )}
@@ -426,32 +237,19 @@ const styles = StyleSheet.create({
         // Align category content under the workspace name (caret 16 + margin 8).
         marginLeft: 24,
     },
-    categoryRow: {
-        flexDirection: "row",
-        alignItems: "center",
+    previewContainer: {
+        gap: 8,
         paddingVertical: 4,
     },
-    categoryCaretButton: {
-        width: 20,
-        marginRight: 4,
-    },
-    categoryContent: {
-        flex: 1,
-    },
-    tasksContainer: {
-        marginLeft: 15,
-    },
-    taskItem: {
-        flexDirection: "row",
+    stack: {
         alignItems: "center",
-        paddingVertical: 4,
-        paddingLeft: 8,
+        gap: 3,
+        marginTop: -2,
     },
-    taskArrow: {
-        marginRight: 8,
-    },
-    taskText: {
-        flex: 1,
+    stackEdge: {
+        height: 10,
+        borderRadius: 10,
+        borderWidth: 1,
     },
     emptyContainer: {
         paddingVertical: 8,
@@ -467,9 +265,5 @@ const styles = StyleSheet.create({
         width: "100%",
         alignItems: "center",
         marginTop: 12,
-    },
-    emptyTasksContainer: {
-        paddingVertical: 4,
-        paddingLeft: 8,
     },
 });

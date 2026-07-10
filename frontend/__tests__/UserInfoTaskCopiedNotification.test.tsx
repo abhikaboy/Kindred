@@ -11,7 +11,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 describe("UserInfoTaskCopiedNotification", () => {
-    test("weaves the name into a 'copied your task' title and shows the task name", () => {
+    test("weaves the name into a 'added from your blueprint' sentence and shows the task name", () => {
         const { getByText } = render(
             <UserInfoTaskCopiedNotification
                 name="Sarah"
@@ -23,7 +23,7 @@ describe("UserInfoTaskCopiedNotification", () => {
             />,
         );
         getByText("Sarah");
-        getByText(/copied your task/);
+        getByText(/from your blueprint/);
         getByText(/Morning Run/);
     });
 });

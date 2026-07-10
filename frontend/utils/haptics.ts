@@ -19,3 +19,12 @@ export const hapticSelect = () => {
 export const hapticSuccess = () => {
     if (ios) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 };
+
+// Task-completion payoff: thud → sharp snap → success da-dum.
+// Steps spaced ≥80ms apart or iOS coalesces them into one buzz.
+export const hapticCompletionBurst = () => {
+    if (!ios) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {}), 80);
+    setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}), 170);
+};

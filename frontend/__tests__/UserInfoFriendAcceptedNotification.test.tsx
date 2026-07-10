@@ -24,13 +24,13 @@ describe("UserInfoFriendAcceptedNotification", () => {
     });
 
     test("taps through to the sender's profile", () => {
-        const { getByTestId } = render(
+        const { getByText } = render(
             <UserInfoFriendAcceptedNotification
                 name="Sarah" userId="u1"
                 content="Sarah accepted your friend request" icon="https://x/a.png" time={Date.now()}
             />,
         );
-        fireEvent.press(getByTestId("speech-bubble-card"));
+        fireEvent.press(getByText("Sarah"));
         expect(router.push).toHaveBeenCalledWith("/account/u1");
     });
 });

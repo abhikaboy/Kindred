@@ -9,7 +9,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
 import * as Haptics from "expo-haptics";
 import { Check } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
@@ -326,21 +326,7 @@ export const RingUpdateOverlay: React.FC = () => {
                     style={StyleSheet.absoluteFill}
                     pointerEvents="none"
                 >
-                    <ConfettiCannon
-                        count={currentDelta.just_closed_all ? 110 : 60}
-                        // Pop at the ring's vertical center. Low explosion speed
-                        // + high fall speed keeps the burst from launching
-                        // particles visibly upward — they spread outward and
-                        // immediately rain down past the ring.
-                        origin={{
-                            x: SCREEN_WIDTH / 2,
-                            y: insets.top + 80,
-                        }}
-                        fallSpeed={3400}
-                        explosionSpeed={140}
-                        fadeOut
-                        autoStart
-                    />
+                    <Confetti autoStart />
                 </View>
             )}
         </View>

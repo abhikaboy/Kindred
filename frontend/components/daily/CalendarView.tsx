@@ -17,6 +17,7 @@ import { isSameDay } from "date-fns";
 import { clampWindowToDay } from "@/utils/taskCountsByDay";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import * as Haptics from "expo-haptics";
+import { hapticCompletionBurst } from "@/utils/haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
@@ -460,9 +461,7 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                 } as any);
             }
 
-            if (Platform.OS === "ios") {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
+            hapticCompletionBurst();
             setContextMenuVisible(false);
         } catch (error) {
             logger.error("Failed to complete task", error);

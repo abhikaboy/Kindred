@@ -72,7 +72,7 @@ const stylesheet = (ThemedColor: any) =>
             marginTop: 12,
         },
         tasksContainer: {
-            gap: 12,
+            gap: 8,
         },
     });
 

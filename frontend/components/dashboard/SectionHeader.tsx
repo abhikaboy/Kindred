@@ -14,10 +14,9 @@ interface SectionHeaderProps {
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, visible, onToggleVisibility, right }) => {
     const ThemedColor = useThemeColor();
-
     return (
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <ThemedText type="caption">{title}</ThemedText>
+            <ThemedText type="caption" style={{ letterSpacing: 0.5 }}>{title}</ThemedText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 {right}
                 <TouchableOpacity onPress={onToggleVisibility} hitSlop={8} style={{ opacity: 0.35 }}>

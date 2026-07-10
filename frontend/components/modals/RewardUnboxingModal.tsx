@@ -17,7 +17,7 @@ import {
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
 import * as Haptics from "expo-haptics";
 import { useTimeouts } from "@/hooks/useTimeouts";
 
@@ -314,16 +314,7 @@ export default function RewardUnboxingModal({
                     </View>
                 )}
 
-                <ConfettiCannon
-                    ref={confettiRef}
-                    count={120}
-                    origin={{ x: screenWidth / 2, y: -screenHeight / 2 }}
-                    explosionSpeed={350}
-                    fadeOut
-                    autoStart={false}
-                    fallSpeed={2500}
-                    colors={["#854DFF", "#A855F7", "#C084FC", "#E9D5FF", "#FFD700", "#fff"]}
-                />
+                <Confetti ref={confettiRef} autoStart={false} />
             </View>
         </Modal>
     );

@@ -1,13 +1,16 @@
 import React, { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { CheckCircle } from "phosphor-react-native";
+import { CheckCircle, HandsClapping } from "phosphor-react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
 import CongratulateModal from "@/components/modals/CongratulateModal";
-import { getNotificationTimeLabel } from "./notificationTime";
+import NotificationCard, {
+    ActionCircle,
+    FooterRow,
+    SentenceBold,
+    SentenceText,
+} from "@/components/notifications/NotificationCard";
 
 type Props = {
     notificationId: string;
@@ -41,37 +44,40 @@ const UserInfoRingsClosedNotification = ({
         setCongratsSent(true);
     };
 
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {" closed all their rings 🎉"}
+        </SentenceText>
+    );
+
+    const footer = congratsSent ? (
+        <View style={styles.sentRow}>
+            <CheckCircle size={16} color={ThemedColor.primary} weight="fill" />
+            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 13 }}>
+                Congrats sent
+            </ThemedText>
+        </View>
+    ) : (
+        <FooterRow>
+            <ActionCircle
+                label={`Send congrats to ${name}`}
+                caption="Send congrats"
+                onPress={() => setShowCongrats(true)}>
+                <HandsClapping size={20} color={ThemedColor.text} />
+            </ActionCircle>
+        </FooterRow>
+    );
+
     return (
         <>
-            <SpeechBubbleCard
-                sender={{ name, picture: icon, id: userId }}
-                badge={<NotificationBadgeIcon type="rings_closed" />}
-                title="closed all their rings 🎉"
-                timeLabel={getNotificationTimeLabel(time)}
-                read
+            <NotificationCard
+                time={time}
+                icon={icon}
+                userId={userId}
+                sentence={sentence}
+                footer={footer}
                 onPress={() => router.push(`/account/${userId}`)}
-                onAvatarPress={() => router.push(`/account/${userId}`)}
-                visible
-                footerSlot={
-                    congratsSent ? (
-                        <View style={styles.sentRow}>
-                            <CheckCircle size={16} color={ThemedColor.primary} weight="fill" />
-                            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 13 }}>
-                                Congrats sent
-                            </ThemedText>
-                        </View>
-                    ) : (
-                        <TouchableOpacity
-                            onPress={() => setShowCongrats(true)}
-                            style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Send congrats to ${name}`}>
-                            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 13 }}>
-                                Send congrats
-                            </ThemedText>
-                        </TouchableOpacity>
-                    )
-                }
             />
 
             {showCongrats && (
@@ -90,8 +96,5 @@ const UserInfoRingsClosedNotification = ({
 export default UserInfoRingsClosedNotification;
 
 const styles = StyleSheet.create({
-    // alignSelf keeps the chip hugging its label — the footer slot's flex
-    // container otherwise stretches it across the full bubble width.
-    ctaButton: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, alignSelf: "flex-start" },
     sentRow: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" },
 });

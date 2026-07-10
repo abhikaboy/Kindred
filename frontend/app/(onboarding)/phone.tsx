@@ -17,6 +17,8 @@ import { useVerification } from "@/hooks/useVerification";
 import { useAuth } from "@/hooks/useAuth";
 import { Ionicons } from "@expo/vector-icons";
 import { OtpInput } from "react-native-otp-entry";
+import { showToastable } from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -95,6 +97,13 @@ const PhoneOnboarding = () => {
     // After OTP verified, check if account exists — login or continue to registration
     useEffect(() => {
         if (!isVerified) return;
+
+        showToastable({
+            message: "Phone number verified",
+            status: "success",
+            duration: 2000,
+            renderContent: (props) => <DefaultToast {...props} />,
+        });
 
         const checkExistingAccount = async () => {
             try {
@@ -429,9 +438,6 @@ const PhoneOnboarding = () => {
                                     {verifyOTPError && (
                                         <ThemedText style={styles.errorText}>{verifyOTPError}</ThemedText>
                                     )}
-                                    {isVerified && (
-                                        <ThemedText style={styles.successText}>Verified successfully!</ThemedText>
-                                    )}
                                     {sendOTPError && (
                                         <ThemedText style={styles.errorText}>{sendOTPError}</ThemedText>
                                     )}
@@ -591,14 +597,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Outfit',
         marginTop: 16,
         textAlign: 'center',
-    },
-    successText: {
-        color: '#34c759',
-        fontSize: 16,
-        fontFamily: 'Outfit',
-        fontWeight: '600',
-        textAlign: 'center',
-        marginTop: 16,
     },
     resendContainer: {
         flexDirection: 'row',

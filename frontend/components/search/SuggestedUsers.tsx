@@ -20,6 +20,7 @@ const SuggestedUsersComponent: React.FC<SuggestedUsersProps> = ({ users, onSeeMo
                 handle={item.handle}
                 following={false} // We can enhance this later to check actual friendship status
                 id={item._id}
+                width={100}
             />
         ),
         []
@@ -67,6 +68,7 @@ const styles = StyleSheet.create({
     usersList: {
         paddingHorizontal: 16,
         paddingBottom: 3,
+        gap: 10,
     },
 });
 

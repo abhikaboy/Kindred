@@ -1,29 +1,32 @@
 import React from "react";
 import { router } from "expo-router";
-import SpeechBubbleCard from "@/components/cards/SpeechBubbleCard";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
-import { getNotificationTimeLabel } from "./notificationTime";
+import NotificationCard, { SentenceBold, SentenceText } from "@/components/notifications/NotificationCard";
 
 type Props = {
     name: string;
     userId: string;
-    /** Kept for caller compatibility; the title says it all, so it isn't rendered. */
+    /** Backend phrase incl. the emoji, e.g. 'reacted 🎉 to your encouragement'. */
     content?: string;
     icon: string;
     time: number;
 };
 
-const UserInfoKudosReactionNotification = ({ name, userId, icon, time }: Props) => {
+const UserInfoKudosReactionNotification = ({ name, userId, content, icon, time }: Props) => {
+    const tail = content?.startsWith("reacted") ? content : "reacted to your kudos";
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {` ${tail}`}
+        </SentenceText>
+    );
+
     return (
-        <SpeechBubbleCard
-            sender={{ name, picture: icon, id: userId }}
-            badge={<NotificationBadgeIcon type="kudos_reaction" />}
-            title="reacted to your kudos"
-            timeLabel={getNotificationTimeLabel(time)}
-            read
+        <NotificationCard
+            time={time}
+            icon={icon}
+            userId={userId}
+            sentence={sentence}
             onPress={() => router.push(`/account/${userId}`)}
-            onAvatarPress={() => router.push(`/account/${userId}`)}
-            visible
         />
     );
 };

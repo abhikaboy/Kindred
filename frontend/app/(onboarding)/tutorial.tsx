@@ -16,7 +16,7 @@ const CURSOR_EASE = Easing.inOut(Easing.cubic);
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
 import { BlurView } from "expo-blur";
 
 import { ThemedView } from "@/components/ThemedView";
@@ -581,14 +581,7 @@ export default function TutorialOnboarding() {
 
             {showConfetti && (
                 <View style={styles.confettiContainer}>
-                    <ConfettiCannon
-                        ref={confettiRef}
-                        count={50}
-                        origin={{ x: screenWidth / 2, y: (screenHeight / 4) * 3.7 }}
-                        fallSpeed={1200}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                    />
+                    <Confetti />
                 </View>
             )}
 

@@ -3,6 +3,8 @@ import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, 
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
+import WorkspaceTaskPreview from "@/components/dashboard/WorkspaceTaskPreview";
+import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
 import DashboardCards from "@/components/dashboard/DashboardCards";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
@@ -349,22 +351,15 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 <TaggedTaskBanners />
 
-                {/* Dashboard Stats */}
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 10 }}>
+                {/* Dashboard Stats
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 10 }}>
                     <SectionHeader
                         title="STATS"
                         visible={dashboardConfig.stats}
                         onToggleVisibility={() => toggleSection("stats")}
                     />
-                    {hideHintReady && (
-                        <HintBubble
-                            text="Tap the eye to hide any home section"
-                            onDone={hideHintDone}
-                            autoDismissMs={7000}
-                        />
-                    )}
                     {dashboardConfig.stats && <DashboardStats onExpandChange={handleStatsExpandChange} />}
-                </View>
+                </View> */}
 
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
@@ -380,6 +375,13 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     <View style={{ paddingRight: HORIZONTAL_PADDING }}>
                         <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
                     </View>
+                    {hideHintReady && (
+                        <HintBubble
+                            text="Tap the eye to hide any home section"
+                            onDone={hideHintDone}
+                            autoDismissMs={7000}
+                        />
+                    )}
                     {dashboardConfig.jump_back_in && <DashboardCards />}
                 </View>
 
@@ -403,7 +405,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 )}
 
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 12, marginBottom: 12, }}>
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 8, marginBottom: 12, }}>
                     <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
                         <SectionHeader
                             title="UPCOMING"
@@ -470,24 +472,35 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         <View style={{ marginBottom: 18 }}>
                             {workspaces
                                 .filter((workspace: any) => !workspace.isBlueprint)
-                                .map((workspace: any) => {
-                                    const taskCount = workspace.categories.reduce(
-                                        (total: number, category: any) =>
-                                            total + (category.tasks?.filter((task: any) => task.active !== false).length || 0),
-                                        0
-                                    );
-                                    return (
+                                .map((workspace: any) => (
+                                    <View key={workspace.name}>
+                                        {/* Section-spanning accent rail at 40% — covers the row and its task cards */}
+                                        <View
+                                            style={{
+                                                position: "absolute",
+                                                left: 20,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: 3,
+                                                borderRadius: 3,
+                                                backgroundColor: (workspace.color ?? ThemedColor.tertiary) + "66",
+                                            }}
+                                        />
                                         <WorkspaceDrawerItem
-                                            key={workspace.name}
                                             title={workspace.name}
                                             selected=""
-                                            taskCount={taskCount}
+                                            taskCount={pendingWorkspaceTaskCount(workspace.categories)}
                                             workspaceIcon={workspace.icon ?? undefined}
                                             workspaceColor={workspace.color ?? undefined}
                                             onPress={() => onWorkspaceSelect(workspace.name)}
                                         />
-                                    );
-                                })}
+                                        <WorkspaceTaskPreview
+                                            categories={workspace.categories}
+                                            onShowAll={() => onWorkspaceSelect(workspace.name)}
+                                            ThemedColor={ThemedColor}
+                                        />
+                                    </View>
+                                ))}
                         </View>
                     )}
                 {/* Recently Completed Tasks */}

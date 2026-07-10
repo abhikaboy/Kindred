@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showToastable } from 'react-native-toastable';
 import * as Haptics from 'expo-haptics';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import Confetti from "@/components/ui/Confetti";
 import { CaretRight, ArrowRight } from 'phosphor-react-native';
 import { ThemedText } from '@/components/ThemedText';
 import DefaultToast from '@/components/ui/DefaultToast';
@@ -293,14 +293,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
             {/* Outside the card so the burst isn't clipped by the card's overflow:hidden. */}
             {celebrating && (
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                    <ConfettiCannon
-                        count={120}
-                        origin={{ x: cardWidth / 2, y: 0 }}
-                        fallSpeed={2600}
-                        explosionSpeed={320}
-                        fadeOut
-                        autoStart
-                    />
+                    <Confetti autoStart />
                 </View>
             )}
 

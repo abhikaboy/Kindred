@@ -14,10 +14,76 @@ import ConditionalView from "@/components/ui/ConditionalView";
 import { markAsCompletedAPI } from "@/api/task";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useDebounce } from "@/hooks/useDebounce";
-import ReviewSkeletonCard from "@/components/cards/ReviewSkeletonCard";
+import ReviewCardStack from "@/components/cards/ReviewCardStack";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
 import { useQueryClient } from "@tanstack/react-query";
+import { Check, Trash, X } from "phosphor-react-native";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
+import { hapticCompletionBurst } from "@/utils/haptics";
 type Props = {};
+
+// hugs the exposed edges — the card covers the screen center, so a centered glow vanishes
+const REVIEW_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.08, light: 0.08 }, cx: 50, cy: 6, rx: 48, ry: 18, falloff: "60%" },
+    { color: "#4D9EFF", opacity: { dark: 0.06, light: 0.09 }, cx: 50, cy: 94, rx: 42, ry: 16 },
+];
+
+type ReviewActionsProps = {
+    onSkip: () => void;
+    onDelete: () => void;
+    onDone: () => void;
+    ThemedColor: any;
+};
+
+// Tinder-style controls mirroring the swipe directions: skip ← / delete ↓ / done →
+const ReviewActions = ({ onSkip, onDelete, onDone, ThemedColor }: ReviewActionsProps) => (
+    <View style={styles.actionsRow}>
+        <View style={styles.actionItem}>
+            <TouchableOpacity
+                onPress={onSkip}
+                accessibilityRole="button"
+                accessibilityLabel="Skip this task"
+                style={[
+                    styles.actionButton,
+                    styles.actionMedium,
+                    { borderColor: ThemedColor.tertiary, backgroundColor: ThemedColor.background },
+                ]}>
+                <X size={24} color={ThemedColor.caption} weight="bold" />
+            </TouchableOpacity>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                skip
+            </ThemedText>
+        </View>
+        <View style={styles.actionItem}>
+            <TouchableOpacity
+                onPress={onDelete}
+                accessibilityRole="button"
+                accessibilityLabel="Delete this task"
+                style={[
+                    styles.actionButton,
+                    styles.actionSmall,
+                    { borderColor: ThemedColor.error + "66", backgroundColor: ThemedColor.background },
+                ]}>
+                <Trash size={20} color={ThemedColor.error} weight="regular" />
+            </TouchableOpacity>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                delete
+            </ThemedText>
+        </View>
+        <View style={styles.actionItem}>
+            <TouchableOpacity
+                onPress={onDone}
+                accessibilityRole="button"
+                accessibilityLabel="Mark task as done"
+                style={[styles.actionButton, styles.actionLarge, { backgroundColor: ThemedColor.primary }]}>
+                <Check size={30} color="#FFFFFF" weight="bold" />
+            </TouchableOpacity>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                done
+            </ThemedText>
+        </View>
+    </View>
+);
 
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
@@ -181,6 +247,7 @@ const Review = (props: Props) => {
         };
 
         const res = await markAsCompletedAPI(task.categoryID, task.id, completeData);
+        hapticCompletionBurst();
         queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
         // If backend returned the next flex instance, insert it immediately
@@ -284,10 +351,16 @@ const Review = (props: Props) => {
 
     const windowHeight = Dimensions.get("window").height;
     const windowWidth = Dimensions.get("window").width;
-    const cardHeight = windowHeight * 0.6;
+    const cardHeight = windowHeight * 0.44;
+
+    // Buttons drive the same TinderCard fling + pipeline as a physical swipe.
+    const triggerSwipe = (direction: "left" | "right" | "down") => {
+        childRefs.current[0]?.swipe(direction);
+    };
 
     return (
         <ThemedView style={{ flex: 1 }}>
+            <GlowBackground blobs={REVIEW_GLOW} />
             <View style={[styles.container, { flex: 1 }]}>
                 {/* Back button + count */}
                 <View style={styles.topRow}>
@@ -309,7 +382,6 @@ const Review = (props: Props) => {
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                     >
-                        <ReviewSkeletonCard />
                         <ReviewTaskCard
                             task={currentTask!}
                             animatedCardStyle={animatedCardStyle}
@@ -330,12 +402,14 @@ const Review = (props: Props) => {
                         />
                     </View>
 
-                    {/* Hint row below card */}
-                    <View style={styles.hintRow}>
-                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>← skip</ThemedText>
-                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>↓ delete</ThemedText>
-                        <ThemedText style={[styles.hint, { color: ThemedColor.caption }]}>done →</ThemedText>
-                    </View>
+                    <ReviewCardStack upNext={cards.slice(1, 3)} />
+
+                    <ReviewActions
+                        onSkip={() => triggerSwipe("left")}
+                        onDelete={() => triggerSwipe("down")}
+                        onDone={() => triggerSwipe("right")}
+                        ThemedColor={ThemedColor}
+                    />
                 </ConditionalView>
 
                 {/* Empty states */}
@@ -384,17 +458,36 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
     },
-    hintRow: {
+    actionsRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        width: "100%",
-        paddingHorizontal: 4,
-        marginTop: 20,
+        alignItems: "flex-start",
+        justifyContent: "center",
+        gap: 28,
+        marginTop: 24,
     },
-    hint: {
-        fontSize: 13,
-        fontWeight: "400",
+    actionItem: {
+        alignItems: "center",
+        gap: 6,
+    },
+    actionButton: {
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 999,
+    },
+    actionMedium: {
+        width: 56,
+        height: 56,
+        borderWidth: 1.5,
+    },
+    actionSmall: {
+        width: 48,
+        height: 48,
+        borderWidth: 1.5,
+        marginTop: 4,
+    },
+    actionLarge: {
+        width: 64,
+        height: 64,
     },
     hintCount: {
         fontSize: 15,

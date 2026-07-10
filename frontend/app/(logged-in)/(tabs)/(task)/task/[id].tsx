@@ -783,36 +783,38 @@ export default function Task() {
                                         </DataCard>
                                     </TouchableOpacity>
                                 </ConditionalView>
-                                <View key="start-working" style={{ marginTop: 0 }}>
-                                    <PrimaryButton
-                                        title={activeTaskLiveActivity ? "Stop Working" : "Start Working"}
-                                        secondary={!activeTaskLiveActivity}
-                                        style={{
-                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                        }}
-                                        onPress={handleStartWorking}
-                                    />
+                                <View style={{ gap: 8 }}>
+                                    <View key="start-working" style={{ marginTop: 0 }}>
+                                        <PrimaryButton
+                                            title={activeTaskLiveActivity ? "Stop Working" : "Start Working"}
+                                            secondary={!activeTaskLiveActivity}
+                                            style={{
+                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                            }}
+                                            onPress={handleStartWorking}
+                                            />
+                                    </View>
+                                    <View key="mark-complete" style={{ marginTop: 0 }}>
+                                        <PrimaryButton
+                                            title={isCompleting ? "Completing..." : "Mark as Completed"}
+                                            secondary
+                                            style={{
+                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                            }}
+                                            onPress={handleMarkAsCompleted}
+                                            disabled={isCompleting}
+                                            />
+                                    </View>
+                                    <ConditionalView condition={task?.deadline == null} key="deadline-2">
+                                        <PrimaryButton
+                                            title="Set Deadline"
+                                            style={{
+                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                            }}
+                                            onPress={handleDeadlineModalPress}
+                                            />
+                                    </ConditionalView>
                                 </View>
-                                <View key="mark-complete" style={{ marginTop: 0 }}>
-                                    <PrimaryButton
-                                        title={isCompleting ? "Completing..." : "Mark as Completed"}
-                                        secondary
-                                        style={{
-                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                        }}
-                                        onPress={handleMarkAsCompleted}
-                                        disabled={isCompleting}
-                                    />
-                                </View>
-                                <ConditionalView condition={task?.deadline == null} key="deadline-2">
-                                    <PrimaryButton
-                                        title="Set Deadline"
-                                        style={{
-                                            boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                        }}
-                                        onPress={handleDeadlineModalPress}
-                                    />
-                                </ConditionalView>
                                 <ConditionalView condition={task?.deadline != null} key="track-deadline">
                                     <PrimaryButton
                                         title={deadlineLiveActivity ? "Stop Tracking Deadline" : "Track Deadline"}

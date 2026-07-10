@@ -1,13 +1,22 @@
-import React, { useMemo } from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { router, type Href } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { Heart, PaperPlaneTilt, Play } from "phosphor-react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import KudosItem from "@/components/cards/KudosItem";
-import NotificationBadgeIcon from "@/components/notifications/NotificationBadgeIcon";
+import NotificationCard, {
+    ActionCircle,
+    FooterRow,
+    SentenceBold,
+    SentenceFocus,
+    SentenceText,
+} from "@/components/notifications/NotificationCard";
+import ReactionTray from "@/components/cards/ReactionTray";
+import KudosVideoPlayerModal from "@/components/modals/KudosVideoPlayerModal";
 import { useKudosOptional } from "@/contexts/kudosContext";
-import { getNotificationTimeLabel } from "./notificationTime";
-import { mediaTypeFromUri } from "@/api/media";
+import { formatVideoDuration } from "@/api/media";
+import { KUDOS_HEART_EMOJI, type KudosReactionEmoji } from "@/constants/kudos";
 
 type Props = {
     name: string;
@@ -27,6 +36,86 @@ type Props = {
     type?: "encouragement" | "congratulation";
 };
 
+type MediaPreviewProps = {
+    imageUri?: string;
+    videoUri?: string;
+    videoThumbnailUri?: string;
+    durationMs?: number;
+};
+
+// Rounded media body for image/video kudos; video opens fullscreen playback.
+const KudosMediaPreview = ({ imageUri, videoUri, videoThumbnailUri, durationMs }: MediaPreviewProps) => {
+    const [playerOpen, setPlayerOpen] = useState(false);
+
+    if (videoUri && videoThumbnailUri) {
+        return (
+            <>
+                <TouchableOpacity testID="bubble-video" onPress={() => setPlayerOpen(true)} activeOpacity={0.85}>
+                    <Image source={{ uri: videoThumbnailUri }} style={styles.media} />
+                    <View style={styles.playOverlay}>
+                        <Play size={32} color="#fff" weight="fill" />
+                    </View>
+                    {durationMs ? (
+                        <View style={styles.durationPill}>
+                            <ThemedText type="caption" style={styles.durationText}>
+                                {formatVideoDuration(durationMs)}
+                            </ThemedText>
+                        </View>
+                    ) : null}
+                </TouchableOpacity>
+                {playerOpen ? <KudosVideoPlayerModal uri={videoUri} onClose={() => setPlayerOpen(false)} /> : null}
+            </>
+        );
+    }
+    if (imageUri) {
+        return <Image testID="bubble-image" source={{ uri: imageUri }} style={styles.media} />;
+    }
+    return null;
+};
+
+type ReactActionProps = {
+    reaction?: string | null;
+    onReact: (emoji: KudosReactionEmoji) => void;
+};
+
+// Reaction circle — tap opens the tray; the reaction only sends on tray selection.
+const ReactAction = ({ reaction, onReact }: ReactActionProps) => {
+    const ThemedColor = useThemeColor();
+    const [trayOpen, setTrayOpen] = useState(false);
+
+    const handleTap = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setTrayOpen(true);
+    };
+
+    const handleSelect = (emoji: KudosReactionEmoji) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onReact(emoji);
+    };
+
+    return (
+        <>
+            <ActionCircle testID="kudos-reaction-button" label="React to kudos" onPress={handleTap}>
+                {reaction === KUDOS_HEART_EMOJI ? (
+                    <Heart size={20} color={ThemedColor.error} weight="fill" />
+                ) : reaction ? (
+                    <ThemedText type="default" style={styles.reactionEmoji}>
+                        {reaction}
+                    </ThemedText>
+                ) : (
+                    <Heart size={20} color={ThemedColor.text} />
+                )}
+            </ActionCircle>
+            <ReactionTray
+                visible={trayOpen}
+                currentReaction={reaction}
+                onSelect={handleSelect}
+                onDismiss={() => setTrayOpen(false)}
+            />
+        </>
+    );
+};
+
 const UserInfoEncouragementNotification = ({
     name,
     userId,
@@ -42,15 +131,13 @@ const UserInfoEncouragementNotification = ({
     const ThemedColor = useThemeColor();
     const kudosCtx = useKudosOptional();
     const isCongrats = type === "congratulation";
-    // Notification content carries no kudos type, so a media kudos arrives as
-    // its URL in `message`. Classify by extension so KudosItem renders the
-    // image/video, not the URL. Video needs a thumbnail to render as video.
+    // Notification content carries no kudos type, so a media kudos arrives as its URL
+    // in `message`. Backend sets `thumbnail` only for videos — that's the video signal
+    // (extension sniffing fails on extension-less CDN urls).
     const isMediaUrl = !!message && /^https?:\/\//i.test(message.trim());
-    const isVideo = isMediaUrl && !!thumbnail && mediaTypeFromUri(message!.trim()) === "video";
-    const isImage = isMediaUrl && !isVideo;
-    // Profile-scope (ring) encouragements arrive with no taskName and no
-    // referenceId — KudosItem renders a "Profile Encouragement" header
-    // instead of an empty category/task row when we pass scope: "profile".
+    const isVideo = isMediaUrl && !!thumbnail;
+    const isImage = isMediaUrl && !thumbnail;
+    // Profile-scope (ring) encouragements arrive with no taskName and no referenceId.
     const isProfileScope = !referenceId && !taskName;
 
     // The notification row doesn't carry the kudos document ID, so match it back to the
@@ -73,60 +160,76 @@ const UserInfoEncouragementNotification = ({
 
     const handleReact = useMemo(() => {
         if (!matched || !kudosCtx) return undefined;
-        return (id: string, emoji: string) =>
-            isCongrats ? kudosCtx.reactToCongratulation(id, emoji) : kudosCtx.reactToEncouragement(id, emoji);
+        return (emoji: string) =>
+            isCongrats
+                ? kudosCtx.reactToCongratulation(matched.id, emoji)
+                : kudosCtx.reactToEncouragement(matched.id, emoji);
     }, [matched, kudosCtx, isCongrats]);
 
-    const kudos = {
-        id: matched?.id ?? `${type}-${time}`,
-        sender: { name, picture: icon, id: userId },
-        message: message || (isCongrats ? "Congratulated you!" : "Sent you an encouragement"),
-        scope: isProfileScope ? "profile" : "task",
-        // The title carries the verb now, so the context line is just the task.
-        categoryName: "",
-        taskName: isProfileScope ? "" : taskName,
-        timestamp: new Date(time).toISOString(),
-        read: true,
-        type: isVideo ? "video" : isImage ? "image" : "message",
-        thumbnailUrl: isVideo ? thumbnail : undefined,
-        durationMs: isVideo ? durationMs : undefined,
-        reaction: matched?.reaction,
-    };
+    const showTask = !isProfileScope && !!taskName;
+    // Text kudos flow inline, Venmo-style: ... for **Task**: "message"
+    const textMessage = message && !isMediaUrl ? message : undefined;
+    const sentence = (
+        <SentenceText>
+            <SentenceBold>{name}</SentenceBold>
+            {isCongrats ? " congratulated you" : " sent you encouragement"}
+            {showTask ? (isCongrats ? " on " : " for ") : ""}
+            {showTask ? <SentenceBold>{taskName}</SentenceBold> : null}
+            {textMessage ? ": " : ""}
+            {textMessage ? <SentenceFocus>{`"${textMessage}"`}</SentenceFocus> : null}
+        </SentenceText>
+    );
+
+    const body =
+        isImage || isVideo ? (
+            <KudosMediaPreview
+                imageUri={isImage ? message!.trim() : undefined}
+                videoUri={isVideo ? message!.trim() : undefined}
+                videoThumbnailUri={isVideo ? thumbnail : undefined}
+                durationMs={isVideo ? durationMs : undefined}
+            />
+        ) : undefined;
+
+    const footer = (
+        <FooterRow>
+            {handleReact ? <ReactAction reaction={matched?.reaction} onReact={handleReact} /> : null}
+            <ActionCircle label={`Send kudos back to ${name}`} caption="Send kudos back" onPress={handlePress}>
+                <PaperPlaneTilt size={20} color={ThemedColor.text} />
+            </ActionCircle>
+        </FooterRow>
+    );
 
     return (
-        <KudosItem
-            kudos={kudos}
-            formatTime={(iso) => getNotificationTimeLabel(new Date(iso).getTime())}
-            visible
-            title={isCongrats ? "congratulated you" : "sent you encouragement"}
-            badge={<NotificationBadgeIcon type={type} />}
-            onReact={handleReact}
-            footerSlot={
-                <TouchableOpacity
-                    onPress={handlePress}
-                    activeOpacity={0.8}
-                    style={[styles.ctaButton, { borderColor: ThemedColor.primary }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Send kudos back to ${name}`}>
-                    <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 13 }}>
-                        Send kudos back
-                    </ThemedText>
-                </TouchableOpacity>
-            }
-        />
+        <NotificationCard time={time} icon={icon} userId={userId} sentence={sentence} footer={footer}>
+            {body}
+        </NotificationCard>
     );
 };
 
 export default UserInfoEncouragementNotification;
 
 const styles = StyleSheet.create({
-    // alignSelf keeps the chip hugging its label — the footer slot's flex
-    // container otherwise stretches it across the full bubble width.
-    ctaButton: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-        alignSelf: "flex-start",
+    // Media is the hero of the card: full width, generous ~16:10 frame.
+    media: {
+        width: "100%",
+        aspectRatio: 16 / 10,
+        borderRadius: 16,
+        resizeMode: "cover",
     },
+    playOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    durationPill: {
+        position: "absolute",
+        bottom: 8,
+        right: 8,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        borderRadius: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+    },
+    durationText: { color: "#fff", fontSize: 12 },
+    reactionEmoji: { fontSize: 18 },
 });

@@ -12,6 +12,8 @@ import React, { useEffect, useCallback, useMemo, useRef, useReducer, useState } 
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { SearchBox, AutocompleteSuggestion } from "@/components/SearchBox";
+import ReferralCard from "@/components/profile/ReferralCard";
+import { getFriendsAPI } from "@/api/connection";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import {
@@ -45,6 +47,13 @@ import { useContactConsent } from "@/hooks/useContactConsent";
 import FriendsList from "@/components/search/FriendsList";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
+
+// centered arrangement for search/friends; strengths match the workspace glow
+const SEARCH_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.08, light: 0.065 }, cx: 50, cy: 38, rx: 42, ry: 22, falloff: "60%" },
+    { color: "#4D9EFF", opacity: { dark: 0.06, light: 0.08 }, cx: 50, cy: 88, rx: 36, ry: 15 },
+];
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -142,6 +151,14 @@ const Search = (props: Props) => {
         staleTime: 1000 * 60 * 5, // 5 minutes
         refetchOnWindowFocus: false,
     });
+
+    // Shares FriendsList's cache; gates the getting-started card to friendless users.
+    const { data: friendsForGate } = useQuery({
+        queryKey: ["friends"],
+        queryFn: getFriendsAPI,
+        staleTime: 1000 * 60 * 2,
+    });
+    const hasFriends = (friendsForGate ?? []).length > 0;
 
     // Store contacts map ref to access in mutation callback
     const contactsMapRef = useRef<{ [phoneNumber: string]: string }>({});
@@ -592,6 +609,7 @@ const Search = (props: Props) => {
     return (
         <View style={[styles.container, { paddingBottom: insets.bottom }]}>
             <ThemedView style={{ flex: 1 }}>
+                <GlowBackground blobs={SEARCH_GLOW} />
                 {/* Gradient fade overlay behind header, extending into scroll area */}
                 {headerHeight > 0 && (
                     <LinearGradient
@@ -677,11 +695,16 @@ const Search = (props: Props) => {
                                         onSeeMore={() => router.push("/(logged-in)/(tabs)/(search)/discover")}
                                     />
                                 )}
-                                <BetterTogetherCard
-                                    onSyncContacts={handleAddContacts}
-                                    isLoadingContacts={isLoadingContacts}
-                                    isFindingFriends={findUsersMutation.isPending}
-                                />
+                                <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
+                                    <ReferralCard />
+                                </View>
+                                {!hasFriends && (
+                                    <BetterTogetherCard
+                                        onSyncContacts={handleAddContacts}
+                                        isLoadingContacts={isLoadingContacts}
+                                        isFindingFriends={findUsersMutation.isPending}
+                                    />
+                                )}
                             </View>
                         </AnimatedTabContent>
                     )}

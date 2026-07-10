@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import ProfileStats from "@/components/profile/ProfileStats";
+import ProfileGlow from "@/components/profile/ProfileGlow";
 import TodayStats from "@/components/profile/TodayStats";
 import { FriendRings } from "@/components/profile/ProductivityRings";
 import ProfileGallery, { type ProfileGalleryHandle } from "@/components/profile/ProfileGallery";
@@ -192,11 +193,12 @@ export default function Profile() {
 
     return (
         <View style={{ flex: 1, backgroundColor: ThemedColor.background }}>
+        <ProfileGlow />
         <Animated.ScrollView
             ref={scrollRef}
             scrollEventThrottle={16}
             onScroll={handleScroll}
-            style={[styles.scrollView, { backgroundColor: ThemedColor.background }]}>
+            style={styles.scrollView}>
             <ParallaxBanner
                 scrollRef={scrollRef}
                 backgroundImage={profile?.profile_picture || Icons.luffy}

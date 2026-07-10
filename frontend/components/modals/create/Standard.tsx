@@ -48,7 +48,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
     const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
     const { request } = useRequest();
-    const { categories, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
+    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
         taskName,
@@ -147,15 +147,15 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     }, [screen]);
 
     // Set the selected category when categoryId is provided (for both edit and create modes).
-    // Falls back to task.categoryID when the prop is missing/empty so edit flows that
-    // pass `task.categoryID || ""` still resolve to the correct category.
+    // `categories` is workspace-scoped, but tasks get edited from cross-workspace surfaces
+    // (home previews, review) — so fall back to searching every workspace's categories.
     useEffect(() => {
-        if (!availableCategories || availableCategories.length === 0) return;
-
         const resolvedId = categoryId || task?.categoryID;
         if (!resolvedId) return;
 
-        const taskCategory = availableCategories.find((cat) => cat.id === resolvedId);
+        const taskCategory =
+            availableCategories?.find((cat) => cat.id === resolvedId) ??
+            workspaces.flatMap((ws) => ws.categories).find((cat) => cat.id === resolvedId);
         if (taskCategory) {
             setCreateCategory({
                 label: taskCategory.name,
@@ -165,7 +165,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         } else {
             console.warn("Category not found for edit", { resolvedId });
         }
-    }, [categoryId, availableCategories, task?.categoryID]);
+    }, [categoryId, availableCategories, task?.categoryID, workspaces]);
 
     const createPost = async () => {
         if (!availableCategories || availableCategories.length === 0) return;
@@ -375,6 +375,12 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         });
     } catch (error) {
         console.error("Failed to update task:", error);
+        const { showToastable } = await import("react-native-toastable");
+        showToastable({
+            message: "Failed to update task. Please try again.",
+            status: "danger",
+            duration: 3000,
+        });
     }
 };
     const handleUpdateOrTemplate = async () => {

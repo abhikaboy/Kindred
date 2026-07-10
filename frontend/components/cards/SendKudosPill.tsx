@@ -36,8 +36,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         borderRadius: 24,
     },
     shadow: {

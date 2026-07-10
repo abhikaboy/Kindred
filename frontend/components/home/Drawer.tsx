@@ -18,6 +18,7 @@ import {
 } from "phosphor-react-native";
 import { router, usePathname, type Href } from "expo-router";
 import { WorkspaceDrawerItem } from "./WorkspaceDrawerItem";
+import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
 import {
     House,
     Calendar,
@@ -252,10 +253,7 @@ const DrawerContent = ({
                     {workspaces
                         .filter((workspace) => !workspace.isBlueprint)
                         .map((workspace) => {
-                            const taskCount = workspace.categories.reduce(
-                                (total, category) => total + (category.tasks?.filter(task => task.active !== false).length || 0),
-                                0
-                            );
+                            const taskCount = pendingWorkspaceTaskCount(workspace.categories);
                             return (
                                 <WorkspaceDrawerItem
                                     onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}

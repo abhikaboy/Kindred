@@ -26,6 +26,7 @@ import HintBubble from "@/components/ui/HintBubble";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
+import WorkspaceGlow from "@/components/task/WorkspaceGlow";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import FriendsContent from "@/components/dashboard/FriendsContent";
 import { List } from "phosphor-react-native";
@@ -341,9 +342,11 @@ const HomeContent = ({
 
                 {/* Container for cross-fading views */}
                 <View style={styles.viewsContainer}>
+                    {/* One glow for the whole tab — blobs shift per view (behind dashboard cards on home) */}
+                    <WorkspaceGlow variant={isHome ? "home" : "workspace"} />
                     {/* Home View - Dashboard with workspaces */}
                     <AnimatedView visible={isHome}>
-                        <ThemedView style={[styles.viewContainer, { paddingTop: insets.top }]}>
+                        <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
                             <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
                                 <WelcomeHeader
                                     userName={user?.display_name}
@@ -360,14 +363,7 @@ const HomeContent = ({
                                 )}
                             </Animated.View>
 
-                            <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
-                                <AnimatedTabs
-                                    tabs={["Home", "Friends"]}
-                                    activeTab={homeTab}
-                                    setActiveTab={setHomeTab}
-                                />
-                            </View>
-
+                            {/* Home/Friends switcher hidden for now — homeTab stays 0, FriendsContent never mounts (lazy) */}
                             <View style={{ height: 8 }} />
 
                             <AnimatedTabContent activeTab={homeTab} setActiveTab={setHomeTab} flex lazy>
@@ -397,7 +393,7 @@ const HomeContent = ({
                                 </View>
                                 <FriendsContent />
                             </AnimatedTabContent>
-                        </ThemedView>
+                        </View>
                     </AnimatedView>
 
                     {/* Today View - Tasks due/scheduled for today */}

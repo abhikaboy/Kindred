@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Share, Dimensions, StyleSheet, type ImageSourcePropType } from 'react-native';
 import { Image } from 'expo-image';
-import ConfettiCannon from 'react-native-confetti-cannon';
+import Confetti from "@/components/ui/Confetti";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -274,15 +274,7 @@ export const OnboardingStepSheet: React.FC<OnboardingStepSheetProps> = ({ active
                 Sibling of the scroll view so it doesn't scroll away. */}
             {isKudos && (
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                    <ConfettiCannon
-                        key={kudosBurst}
-                        count={80}
-                        origin={{ x: SCREEN_WIDTH / 2, y: 90 }}
-                        explosionSpeed={420}
-                        fallSpeed={2600}
-                        fadeOut
-                        autoStart
-                    />
+                    <Confetti autoStart />
                 </View>
             )}
         </BottomSheetModal>

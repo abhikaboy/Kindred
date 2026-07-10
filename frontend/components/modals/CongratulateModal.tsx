@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform, Switch } from "react-native";
 import * as Haptics from "expo-haptics";
+import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
@@ -12,20 +13,27 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserKudos } from "@/hooks/useUserKudos";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { uploadImageSmart, uploadVideo, KUDOS_VIDEO_MAX_BYTES, KUDOS_VIDEO_MAX_DURATION_MS } from "@/api/upload";
-import { Images, Gif, Sparkle, VideoCamera } from "phosphor-react-native";
+import { Images, Gif, VideoCamera } from "phosphor-react-native";
 import GifPicker from "./GifPicker";
 import KudosVideoRecorder from "./KudosVideoRecorder";
 import KudosVideoPreview from "./KudosVideoPreview";
 import { formatVideoDuration } from "@/api/media";
 import { LinearGradient } from "expo-linear-gradient";
 import { Portal } from "@gorhom/portal";
-import ConfettiCannon from "react-native-confetti-cannon";
+import Confetti from "@/components/ui/Confetti";
+import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
+import KudosPreviewAvatar from "@/components/cards/KudosPreviewAvatar";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useKudosSent } from "@/contexts/kudosSentContext";
+
+// single soft bloom behind the sheet header; same language as the page glows
+const KUDOS_GLOW: GlowBlob[] = [
+    { color: "#854DFF", opacity: { dark: 0.07, light: 0.05 }, cx: 50, cy: 18, rx: 45, ry: 22, falloff: "60%" },
+];
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -208,6 +216,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     };
 
     const handleSendCongratulation = async () => {
+        hapticLight();
         if (!congratulationConfig?.receiverId || !task || !congratulationConfig?.categoryName) {
             setAlertTitle("Error");
             setAlertMessage("Missing required information to send congratulation");
@@ -321,10 +330,8 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 }
             });
 
-            // Haptic feedback on successful send
-            if (Platform.OS === "ios") {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
+            // Strong payoff burst on successful send
+            hapticCompletionBurst();
 
             // Show the global "kudos sent" overlay. Media sends have no text body.
             showKudosSent({
@@ -413,42 +420,13 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             {/* Confetti Cannon - Full screen overlay, same as task completion */}
             {showConfetti && (
                 <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, height: Dimensions.get("screen").height }} pointerEvents="none">
-                    <ConfettiCannon
-                        ref={confettiRef}
-                        count={50}
-                        origin={{
-                            x: Dimensions.get("screen").width / 2,
-                            y: (Dimensions.get("screen").height / 4) * 3.7,
-                        }}
-                        explosionSpeed={300}
-                        fadeOut={true}
-                        autoStart={false}
-                        fallSpeed={1200}
-                    />
+                    <Confetti ref={confettiRef} autoStart={false} />
                 </View>
             )}
 
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
-                {/* Task Card */}
-                <View style={styles.taskCardContainer}>
-                    {task && (
-                        <View style={styles.taskCardStyled}>
-                            <View style={styles.taskCardContent}>
-                                <ThemedText type="default" style={styles.taskTextStyled}>
-                                    {task.content}
-                                </ThemedText>
-                                <View style={styles.taskCardRight}>
-                                    <ThemedText type="caption" style={styles.taskValueStyled}>
-                                        {task.value}
-                                    </ThemedText>
-                                    <Sparkle size={24} color="#9333EA" weight="regular" />
-                                </View>
-                            </View>
-                        </View>
-                    )}
-                </View>
-
+                <GlowBackground blobs={KUDOS_GLOW} />
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
                     {tutorialPrefill
@@ -458,6 +436,20 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 <ThemedText type="captionLight" style={styles.subtitleStyled}>
                     A little goes a long way
                 </ThemedText>
+
+                {/* Task context sits between the header and the compose box */}
+                <View style={styles.taskCardContainer}>
+                    {task && (
+                        <View style={styles.taskCardStyled}>
+                            <View style={styles.taskCardContent}>
+                                <ThemedText type="default" style={styles.taskTextStyled}>
+                                    {task.content}
+                                </ThemedText>
+                                <KudosPreviewAvatar />
+                            </View>
+                        </View>
+                    )}
+                </View>
 
                 {/* Text Input or Media Preview */}
                 {!selectedMedia ? (
@@ -638,7 +630,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             justifyContent: "center",
             backgroundColor: ThemedColor.lightened,
             borderColor: ThemedColor.tertiary,
-            boxShadow: "0px 0px 5px 2px " + ThemedColor.error + "30",
+
         },
         taskCardContent: {
             flexDirection: "row",
@@ -668,7 +660,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         subtitleStyled: {
             textAlign: "center",
-            marginBottom: 16,
+            marginBottom: 12,
             color: ThemedColor.caption,
         },
         inputContainer: {
