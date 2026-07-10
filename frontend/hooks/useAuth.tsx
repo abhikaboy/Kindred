@@ -77,6 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const lastFetchTime = useRef<number>(0);
     const fetchPromiseRef = useRef<Promise<any> | null>(null);
 
+    // Whether a session existed this launch — a stray 401 with no session must
+    // not hijack entry routing (e.g. stomping the intro screen at cold start).
+    const hadSessionRef = useRef(false);
+    useEffect(() => {
+        if (user) hadSessionRef.current = true;
+    }, [user]);
+
     // Register 401 handler so API client can trigger logout
     useEffect(() => {
         setUnauthorizedHandler(() => {
@@ -84,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             SecureStore.deleteItemAsync("auth_data");
             queryClient.clear();
-            router.replace("/login");
+            if (hadSessionRef.current) router.replace("/login");
         });
         return () => clearUnauthorizedHandler();
     }, [queryClient]);

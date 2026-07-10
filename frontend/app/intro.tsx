@@ -63,7 +63,11 @@ export default function Intro() {
         router.replace("/login");
     };
 
-    useEventListener(player, "playToEnd", finish);
+    // Only a real watched-to-the-end counts — a failed/empty source can emit
+    // playToEnd before the user ever taps play, which would burn the flag.
+    useEventListener(player, "playToEnd", () => {
+        if (started) finish();
+    });
 
     const handleTap = () => {
         if (!started) {
