@@ -31,6 +31,13 @@ export default function Index() {
                 return;
             }
 
+            // First open ever: full-screen intro video, then login
+            const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
+            if (!hasSeenIntro) {
+                setNextRoute('/intro');
+                return;
+            }
+
             // Check if user has seen onboarding screens
             const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
             if (!hasSeenOnboarding) {

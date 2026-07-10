@@ -220,9 +220,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
                 // Check if we got a user back
                 if (!userData) {
+                    // First open ever: intro video precedes login
+                    const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
                     // Check if user has seen onboarding before redirecting to login
                     const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-                    if (!hasSeenOnboarding) {
+                    if (!hasSeenIntro) {
+                        setRedirectPath("/intro");
+                    } else if (!hasSeenOnboarding) {
                         setRedirectPath("/(onboarding)/productivity");
                     } else {
                         setRedirectPath("/login");
