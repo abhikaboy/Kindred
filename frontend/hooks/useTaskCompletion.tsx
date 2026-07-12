@@ -1,6 +1,4 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { markAsCompletedAPI, setWorkingAPI, type RingDelta } from '@/api/task';
 import {
     ActiveTaskActivityFactory,
@@ -95,10 +93,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             confettiTimeoutRef.current = setTimeout(() => {
                 setShowConfetti(false);
             }, 2000);
-
-            if (Platform.OS === "ios") {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
+            // Haptic rides on the confetti burst now (Confetti.onAnimationStart).
 
             const finalCategoryName =
                 categoryName ||

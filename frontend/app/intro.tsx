@@ -8,7 +8,7 @@ import { useEventListener } from "expo";
 import * as Haptics from "expo-haptics";
 import { PlayIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { hapticMedium, hapticSuccess } from "@/utils/haptics";
+import { hapticCompletionBurst, hapticHeavy } from "@/utils/haptics";
 
 const INTRO_VIDEO_URL = "https://kindred.nyc3.cdn.digitaloceanspaces.com/output.mp4";
 export const INTRO_SEEN_KEY = "hasSeenIntroVideo";
@@ -53,19 +53,15 @@ export default function Intro() {
     useEffect(() => {
         if (!started) return;
         if (Platform.OS !== "ios") {
-            Vibration.vibrate([0, 220, 240, 120, 340], true);
+            // Longer on-times, shorter gaps → a heavier continuous rumble.
+            Vibration.vibrate([0, 500, 120, 500, 120], true);
             return () => Vibration.cancel();
         }
-        const BEAT = [
-            Haptics.ImpactFeedbackStyle.Heavy,
-            Haptics.ImpactFeedbackStyle.Soft,
-            Haptics.ImpactFeedbackStyle.Medium,
-            Haptics.ImpactFeedbackStyle.Soft,
-        ];
-        let beat = 0;
+        // Double-hit each beat (Heavy thud + Rigid snap ~40ms later) for a punchy rumble.
         const interval = setInterval(() => {
-            Haptics.impactAsync(BEAT[beat++ % BEAT.length]).catch(() => {});
-        }, 350);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+            setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid).catch(() => {}), 40);
+        }, 320);
         return () => clearInterval(interval);
     }, [started]);
 
@@ -73,7 +69,7 @@ export default function Intro() {
         if (finished.current) return;
         finished.current = true;
         player.pause();
-        hapticSuccess();
+        hapticCompletionBurst();
         // The video replaces the old intro screens as the pre-login step, so
         // mark both flags — otherwise a later open falls back into the old flow.
         AsyncStorage.multiSet([
@@ -91,7 +87,7 @@ export default function Intro() {
 
     const handleTap = () => {
         if (!started) {
-            hapticMedium();
+            hapticHeavy();
             setStarted(true);
             player.play();
         } else {

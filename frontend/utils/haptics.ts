@@ -12,6 +12,10 @@ export const hapticMedium = () => {
     if (ios) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 };
 
+export const hapticHeavy = () => {
+    if (ios) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+};
+
 export const hapticSelect = () => {
     if (ios) Haptics.selectionAsync().catch(() => {});
 };
