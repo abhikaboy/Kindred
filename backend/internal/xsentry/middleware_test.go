@@ -3,6 +3,7 @@ package xsentry
 import (
 	"context"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -46,6 +47,19 @@ func bindMockTransport(t *testing.T) *mockTransport {
 	sentry.CurrentHub().BindClient(client)
 	t.Cleanup(func() { sentry.CurrentHub().BindClient(prev) })
 	return transport
+}
+
+func TestRedactBody(t *testing.T) {
+	got := redactBody([]byte(`{"email":"a@b.com","idToken":"secret-jwt","handle":"","password":"pw"}`))
+	if strings.Contains(got, "secret-jwt") || strings.Contains(got, `"pw"`) {
+		t.Fatalf("credentials leaked: %s", got)
+	}
+	if !strings.Contains(got, "a@b.com") || !strings.Contains(got, `"handle":""`) {
+		t.Fatalf("non-sensitive fields dropped: %s", got)
+	}
+	if redactBody([]byte("not json")) != "" {
+		t.Fatalf("non-JSON body should return empty, got %q", redactBody([]byte("not json")))
+	}
 }
 
 func TestFiberMiddleware_CapturesByStatus(t *testing.T) {

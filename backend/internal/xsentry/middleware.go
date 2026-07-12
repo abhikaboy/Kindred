@@ -1,7 +1,9 @@
 package xsentry
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -12,6 +14,11 @@ const (
 	sentryHubContextKey = "sentry_hub"
 	maxErrorBodyLen     = 500
 )
+
+// sensitiveKeys: a request-body field whose (lowercased) name contains any of
+// these is masked before reaching Sentry. "token" covers idToken / id_token /
+// refresh_token / access_token / push_token.
+var sensitiveKeys = []string{"password", "token", "secret"}
 
 // FiberMiddleware returns Fiber middleware that creates a request-scoped
 // Sentry hub with rich context. Place it after panic recovery, before auth.
@@ -32,13 +39,7 @@ func FiberMiddleware() fiber.Handler {
 		hub.ConfigureScope(func(scope *sentry.Scope) {
 			scope.SetTag("http.method", c.Method())
 			scope.SetTag("http.route", c.Route().Path)
-			scope.SetContext("request", map[string]interface{}{
-				"ip":         c.IP(),
-				"user_agent": c.Get("User-Agent"),
-				"url":        c.OriginalURL(),
-				"method":     c.Method(),
-				"route":      c.Route().Path,
-			})
+			scope.SetContext("request", requestContext(c))
 		})
 
 		// Store hub in Go context so SentryHandler and handlers can use it
@@ -77,6 +78,14 @@ func FiberMiddleware() fiber.Handler {
 					body = body[:maxErrorBodyLen] + "..."
 				}
 				responseCtx["body"] = body
+
+				// Attach the request body (redacted) so we can see exactly what
+				// the client sent — the other half of a failed request.
+				reqCtx := requestContext(c)
+				if rb := redactBody(c.Body()); rb != "" {
+					reqCtx["body"] = rb
+				}
+				scope.SetContext("request", reqCtx)
 			}
 			scope.SetContext("response", responseCtx)
 		})
@@ -116,6 +125,45 @@ func shouldReportServerError(status int) bool {
 // conditions and stay quiet to keep the signal high.
 func shouldReportClientError(status int) bool {
 	return status == fiber.StatusBadRequest || status == fiber.StatusUnprocessableEntity
+}
+
+// requestContext is the request metadata attached to every event's "request" card.
+func requestContext(c *fiber.Ctx) map[string]interface{} {
+	return map[string]interface{}{
+		"ip":         c.IP(),
+		"user_agent": c.Get("User-Agent"),
+		"url":        c.OriginalURL(),
+		"method":     c.Method(),
+		"route":      c.Route().Path,
+	}
+}
+
+// redactBody parses a JSON object, masks sensitive fields, and re-marshals.
+// Non-JSON / non-object bodies return "" so raw credentials or file uploads
+// never reach Sentry. Redaction is shallow — deepen if nested secrets appear.
+func redactBody(raw []byte) string {
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return ""
+	}
+	for k := range m {
+		lk := strings.ToLower(k)
+		for _, s := range sensitiveKeys {
+			if strings.Contains(lk, s) {
+				m[k] = "[redacted]"
+				break
+			}
+		}
+	}
+	out, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	body := string(out)
+	if len(body) > maxErrorBodyLen {
+		body = body[:maxErrorBodyLen] + "..."
+	}
+	return body
 }
 
 // GetHub retrieves the request-scoped Sentry hub from Fiber locals.

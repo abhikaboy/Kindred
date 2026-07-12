@@ -89,10 +89,12 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		},
 	}))
 
+	// Compress BEFORE xsentry: on the way out this runs last, so xsentry reads
+	// the plaintext JSON error body instead of gzip/brotli bytes.
+	app.Use(compress.New())
+
 	// Add Sentry request context middleware (after recovery, before auth)
 	app.Use(xsentry.FiberMiddleware())
-
-	app.Use(compress.New())
 
 	// Add CORS middleware
 	app.Use(cors.New(cors.Config{
