@@ -1,6 +1,6 @@
 import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import ThemedInput from "@/components/inputs/ThemedInput";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { ThemedText } from "@/components/ThemedText";
 import Feather from "@expo/vector-icons/Feather";
@@ -28,6 +28,10 @@ const NewWorkspace = ({ hide, onIconPickerVisibilityChange }: Props) => {
     const handleCreateWorkspace = async () => {
         if (name.length === 0) {
             Alert.alert("Invalid Workspace Name", "Workspace name cannot be empty");
+            return;
+        }
+        if (!iconName || !iconColor) {
+            Alert.alert("Pick an icon", "Choose an icon so your workspace stands out.");
             return;
         }
         try {
@@ -69,26 +73,10 @@ const NewWorkspace = ({ hide, onIconPickerVisibilityChange }: Props) => {
                 </View>
                 <View style={{ gap: 16 }}>
                     {/* Name input + icon button inline */}
-                    <View style={styles.inputRow}>
-                        <View style={{ flex: 1 }}>
-                            <ThemedInput
-                                useBottomSheetInput={true}
-                                autofocus
-                                placeHolder="Enter workspace name"
-                                onSubmit={handleCreateWorkspace}
-                                onChangeText={setName}
-                                value={name}
-                                setValue={setName}
-                            />
-                        </View>
+                    {/* Icon picker + name field share one pill */}
+                    <View style={[styles.combinedInput, { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.lightened }]}>
                         <TouchableOpacity
-                            style={[
-                                styles.iconButton,
-                                {
-                                    backgroundColor: ThemedColor.lightened,
-                                    borderColor: ThemedColor.lightened,
-                                },
-                            ]}
+                            style={styles.iconInline}
                             onPress={() => { setShowIconPicker(true); onIconPickerVisibilityChange?.(true); }}
                             activeOpacity={0.75}>
                             {IconPreview && iconColor ? (
@@ -111,10 +99,29 @@ const NewWorkspace = ({ hide, onIconPickerVisibilityChange }: Props) => {
                                 </TouchableOpacity>
                             )}
                         </TouchableOpacity>
+                        <BottomSheetTextInput
+                            autoFocus
+                            placeholder="Enter workspace name"
+                            placeholderTextColor={ThemedColor.caption}
+                            onSubmitEditing={handleCreateWorkspace}
+                            onChangeText={setName}
+                            value={name}
+                            style={[styles.combinedTextInput, { color: ThemedColor.text }]}
+                        />
                     </View>
 
+                    {!iconName && (
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                            Tap the icon to pick one — it's required.
+                        </ThemedText>
+                    )}
+
                     <View style={styles.buttonContainer}>
-                        <PrimaryButton title="Create Workspace" onPress={handleCreateWorkspace} />
+                        <PrimaryButton
+                            title="Create Workspace"
+                            onPress={handleCreateWorkspace}
+                            disabled={name.length === 0 || !iconName}
+                        />
                     </View>
                 </View>
             </View>
@@ -150,17 +157,25 @@ const styles = StyleSheet.create({
         width: "100%",
         alignItems: "center",
     },
-    inputRow: {
+    combinedInput: {
         flexDirection: "row",
-        alignItems: "stretch",
-        gap: 8,
-    },
-    iconButton: {
-        width: 52,
+        alignItems: "center",
         borderRadius: 12,
-        borderWidth: 1.5,
+        borderWidth: 1,
+        paddingLeft: 6,
+        paddingRight: 12,
+    },
+    iconInline: {
+        width: 44,
+        height: 52,
         alignItems: "center",
         justifyContent: "center",
+    },
+    combinedTextInput: {
+        flex: 1,
+        fontSize: 16,
+        fontFamily: "OutfitLight",
+        paddingVertical: 16,
     },
     clearBadge: {
         position: "absolute",

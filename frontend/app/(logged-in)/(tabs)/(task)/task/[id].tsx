@@ -44,6 +44,7 @@ import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetMod
 // import { Picker } from "@react-native-picker/picker";
 import { useTaskCompletion } from "@/hooks/useTaskCompletion";
 import RecurringInfoCard from "@/components/task/RecurringInfoCard";
+import ReminderCard from "@/components/task/ReminderCard";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
@@ -723,11 +724,12 @@ export default function Task() {
                                         icon={<Bell size={20} color={ThemedColor.text} weight="regular" />}
                                     >
                                         {task?.reminders?.map((reminder) => (
-                                            <View key={reminder.triggerTime.toString()}>
-                                                <ThemedText type="lightBody">
-                                                    {new Date(reminder.triggerTime).toLocaleString()}
-                                                </ThemedText>
-                                            </View>
+                                            <ReminderCard
+                                                key={reminder.triggerTime.toString()}
+                                                reminder={reminder}
+                                                start={task?.startTime ?? task?.startDate}
+                                                deadline={task?.deadline}
+                                            />
                                         ))}
                                     </DataCard>
                                 </ConditionalView>

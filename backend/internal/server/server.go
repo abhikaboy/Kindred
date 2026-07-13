@@ -124,7 +124,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	app.Use(posthog.FiberMiddleware())
 
 	// Create Huma API with Fiber adapter
-	config := huma.DefaultConfig("Kindred API", "1.0.0")
+	config := huma.DefaultConfig("Kindred API", "1.0.8")
 	config.Info.Description = "Kindred API built with Huma v2 and Fiber"
 	api := humafiber.New(app, config)
 

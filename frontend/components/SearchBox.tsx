@@ -524,8 +524,11 @@ const useStyles = (ThemedColor: any) =>
         input: {
             flex: 1,
             fontSize: 16 * scale,
+            // lineHeight + vertical padding so descenders (p, g, y) aren't clipped
+            // when `scale` inflates the font on wider screens.
+            lineHeight: 22 * scale,
+            paddingVertical: 8,
             fontFamily: "OutfitLight",
-            alignItems: "flex-start",
             zIndex: 5,
         },
         iconButton: {

@@ -13,6 +13,8 @@ import { OnboardingStepSheet } from './OnboardingStepSheet';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateModal } from '@/contexts/createModalContext';
+import { useTasks } from '@/contexts/tasksContext';
+import { useRings } from '@/hooks/useRings';
 import { HORIZONTAL_PADDING } from '@/constants/spacing';
 import {
     computeCompletion,
@@ -69,6 +71,9 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
     const ThemedColor = useThemeColor();
     const { user, refresh } = useAuth();
     const { openModal } = useCreateModal();
+    const { unnestedTasks } = useTasks();
+    const { allClosed } = useRings();
+    const hasAnyTask = unnestedTasks.length > 0;
 
     // Re-fetch the user each time home gains focus so the checks (esp. "Add a
     // friend") don't go stale after acting elsewhere. refresh() is rate-limited.
@@ -110,8 +115,15 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
 
     const completion = useMemo(() => {
         if (!user) return null;
-        return computeCompletion(user as unknown as ChecklistUser);
-    }, [user]);
+        // Prefer live local/query signals over the auth user object, which only
+        // refreshes on focus — so items check off the moment the user acts.
+        const base = computeCompletion(user as unknown as ChecklistUser);
+        return {
+            ...base,
+            task: base.task || hasAnyTask,
+            rings: base.rings || allClosed,
+        };
+    }, [user, hasAnyTask, allClosed]);
 
     const computedVisible = useMemo(() => (completion ? computeVisibleItems(completion) : []), [completion]);
     const computedCompleted = useMemo(() => (completion ? computeCompletedItems(completion) : []), [completion]);

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
+	"strings"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
@@ -21,6 +22,12 @@ func (h *Handler) CreateCategory(ctx context.Context, input *CreateCategoryInput
 	validate := validator.New()
 	if err := validate.Struct(input.Body); err != nil {
 		return nil, huma.Error400BadRequest("Validation failed", err)
+	}
+
+	// Guard against blank name/workspace — GetWorkspaces groups categories by
+	// workspaceName, so an empty one materializes a phantom empty workspace.
+	if strings.TrimSpace(input.Body.Name) == "" || strings.TrimSpace(input.Body.WorkspaceName) == "" {
+		return nil, huma.Error400BadRequest("Category name and workspace are required")
 	}
 
 	// Extract user_id from context (set by auth middleware)

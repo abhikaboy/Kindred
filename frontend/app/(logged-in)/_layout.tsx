@@ -295,19 +295,24 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!user) return;
 
-        registerForPushNotificationsAsync().then((result) => {
-            if (!result) return;
+        // Prompt for push a few seconds after the user lands in-app (never during
+        // onboarding) so it doesn't interrupt the first-touch home tour.
+        const t = setTimeout(() => {
+            registerForPushNotificationsAsync().then((result) => {
+                if (!result) return;
 
-            setExpoPushToken(result.token);
+                setExpoPushToken(result.token);
 
-            // Check against auth response token stored in context
-            const userPushToken = (user as any)?.push_token;
+                // Check against auth response token stored in context
+                const userPushToken = (user as any)?.push_token;
 
-            // Only send if token is different from what backend has
-            if (result.token && userPushToken !== result.token) {
-                sendPushTokenToBackend(result.token);
-            }
-        });
+                // Only send if token is different from what backend has
+                if (result.token && userPushToken !== result.token) {
+                    sendPushTokenToBackend(result.token);
+                }
+            });
+        }, 4000);
+        return () => clearTimeout(t);
     }, [user]);
 
     useEffect(() => {

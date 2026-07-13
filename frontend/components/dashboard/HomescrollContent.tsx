@@ -34,6 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
+import type { HomeTour } from "@/hooks/useHomeTour";
 
 interface HomeScrollContentProps {
     encouragementCount: number;
@@ -54,6 +55,7 @@ interface HomeScrollContentProps {
     onKudosLayout?: (layout: { y: number; height: number }) => void;
     onStatsExpandChange?: (expanded: boolean) => void;
     kudosOffsetRef: React.MutableRefObject<number>;
+    tour: HomeTour;
 }
 
 // Temporarily hidden from the dashboard (kept in code for easy re-enable).
@@ -79,6 +81,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     onKudosLayout,
     onStatsExpandChange,
     kudosOffsetRef,
+    tour,
 }) => {
     const router = useRouter();
     const { showAlert } = useAlert();
@@ -335,6 +338,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             style={{ gap: 16 }}
             contentContainerStyle={{ gap: 16 }}
             showsVerticalScrollIndicator={false}
+            onScroll={tour.onScroll}
+            scrollEventThrottle={16}
             refreshControl={
                 onRefresh ? (
                     <RefreshControl
@@ -349,7 +354,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
             <MotiView style={{ gap: 16, marginTop: 0 }}>
 
-                <TaggedTaskBanners />
+                {!tour.active && <TaggedTaskBanners />}
 
                 {/* Dashboard Stats
                 <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 10 }}>
@@ -362,20 +367,21 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 </View> */}
 
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8 }}>
+                <View ref={(node) => tour.registerSection("rings", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, zIndex: ringsExpanded ? 999 : 0 }}>
                     <ProductivityRingsCard variant="rings" expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
                 </View>
 
-                {scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
-                <WorkingOnRow />
+                {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
+                {!tour.active && <WorkingOnRow />}
 
                 <Animated.View style={{ opacity: dimAnim }}>
                 {/* Dashboard Cards */}
-                <View style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
+                {tour.visibleUpTo("jumpBackIn") && (
+                <View ref={(node) => tour.registerSection("jumpBackIn", node)} style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
                     <View style={{ paddingRight: HORIZONTAL_PADDING }}>
                         <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
                     </View>
-                    {hideHintReady && (
+                    {!tour.active && hideHintReady && (
                         <HintBubble
                             text="Tap the eye to hide any home section"
                             onDone={hideHintDone}
@@ -384,6 +390,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     )}
                     {dashboardConfig.jump_back_in && <DashboardCards />}
                 </View>
+                )}
 
                 {/* Kudos Cards (Encouragements & Congratulations) — temporarily hidden via SHOW_KUDOS_ROW */}
                 {SHOW_KUDOS_ROW && (
@@ -405,7 +412,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 )}
 
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 8, marginBottom: 12, }}>
+                {tour.visibleUpTo("upcoming") && (
+                <View ref={(node) => tour.registerSection("upcoming", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 8, marginBottom: 12, }}>
                     <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
                         <SectionHeader
                             title="UPCOMING"
@@ -416,11 +424,12 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </TouchableOpacity>
                     {dashboardConfig.upcoming && <TodaySection />}
                 </View>
+                )}
 
                 {/* Google Calendar Connection Card */}
                 {/* Once Google Calendar is linked, the whole section is hidden from the
                     home page — there's nothing left to prompt. (Sync still lives elsewhere.) */}
-                {showGoogleCalendarCard && !isCalendarLinked && (
+                {!tour.active && showGoogleCalendarCard && !isCalendarLinked && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
                         <View style={{ marginBottom: 8 }}>
                             <SectionHeader title="GOOGLE CALENDAR" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
@@ -438,7 +447,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 )}
 
                 {/* Personal Workspaces Section (replaces Recent Workspaces; WorkspaceGrid kept but unused) */}
+                {tour.visibleUpTo("workspaces") && (
                 <View
+                    ref={(node) => tour.registerSection("workspaces", node)}
                     style={{
                         marginHorizontal: HORIZONTAL_PADDING,
                         gap: 16,
@@ -454,7 +465,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                                 </TouchableOpacity>
                             }
                         />
-                        {workspacesHintReady && dashboardConfig.recent_workspaces && (
+                        {!tour.active && workspacesHintReady && dashboardConfig.recent_workspaces && (
                             <HintBubble
                                 text="Workspaces keep parts of your life separate — tap + to add one"
                                 onDone={workspacesHintDone}
@@ -464,6 +475,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         )}
                     </View>
                 </View>
+                )}
+                {tour.visibleUpTo("workspaces") && (
                 <ScrollView
                     horizontal={false}
                     showsVerticalScrollIndicator={false}
@@ -504,8 +517,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                         </View>
                     )}
                 {/* Recently Completed Tasks */}
-                {dashboardConfig.recently_completed && <RecentlyCompletedTasks onToggleVisibility={() => toggleSection("recently_completed")} />}
+                {!tour.active && dashboardConfig.recently_completed && <RecentlyCompletedTasks onToggleVisibility={() => toggleSection("recently_completed")} />}
                 </ScrollView>
+                )}
                 </Animated.View>
             </MotiView>
 

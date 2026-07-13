@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from "react"
 import { TouchableOpacity, View, StyleSheet, Dimensions, Platform } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import EditPost from "../modals/edit/EditPost";
 import { Task } from "@/api/types";
@@ -113,13 +114,23 @@ const TaskCard = ({
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
+    // Block a second tap from stacking a duplicate detail screen (the bug that
+    // forced two back-swipes). Cleared on focus so the card reopens after return.
+    const navigatingRef = useRef(false);
     const debouncedRedirect = useDebounce(() => {
-        if (!redirect) return;
+        if (!redirect || navigatingRef.current) return;
+        navigatingRef.current = true;
         router.push({
             pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
             params: { name: content, id: id, categoryId: categoryId },
         });
     }, 200);
+
+    useFocusEffect(
+        useCallback(() => {
+            navigatingRef.current = false;
+        }, [])
+    );
 
     useEffect(() => {
         return () => {

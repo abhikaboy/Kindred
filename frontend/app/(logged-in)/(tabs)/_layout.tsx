@@ -14,6 +14,7 @@ import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
+import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
 
 // Import Phosphor icons
 import {
@@ -37,14 +38,19 @@ export default function TabLayout() {
     const segments = useSegments();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
-    const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
+    const { startTodayTasks, dueTodayTasks, windowTasks, setSelected } = useTasks();
     const currentIndex = useTabIndex();
     const { capture } = useAnalytics();
     const isOnFeedTab = segments?.some((segment) => segment === "(feed)");
     const [scrollVisible, setScrollVisible] = useState(true);
+    const [homeTourActive, setHomeTourActive] = useState(false);
 
     useEffect(() => {
         return feedScrollVisibilityEvents.subscribe(setScrollVisible);
+    }, []);
+
+    useEffect(() => {
+        return homeTourVisibilityEvents.subscribe(setHomeTourActive);
     }, []);
 
     const prevTabIndex = useRef(currentIndex);
@@ -76,6 +82,7 @@ export default function TabLayout() {
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
         isDrawerOpen ||
         focusMode ||
+        homeTourActive ||
         (isOnFeedTab && !scrollVisible);
 
     const shouldHideFAB =
@@ -106,6 +113,12 @@ export default function TabLayout() {
                 }}>
                 <Tabs.Screen
                     name="(task)"
+                    // Re-tapping the Tasks tab while already on it drops back to home.
+                    listeners={({ navigation }) => ({
+                        tabPress: () => {
+                            if (navigation.isFocused()) setSelected("");
+                        },
+                    })}
                     options={{
                         title: "Tasks",
                         tabBarIcon: ({ color, focused }) =>

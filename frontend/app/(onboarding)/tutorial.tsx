@@ -47,7 +47,6 @@ import TaskToast from "@/components/ui/TaskToast";
 import { Task, RingState } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
-import { registerForPushNotificationsAsync, sendPushTokenToBackend } from "@/utils/notificationService";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -114,7 +113,7 @@ const BEAK = {
 };
 const DISPLAY_WORKSPACE = "Example Workspace";
 const PREFILL_CATEGORY = "My Tasks";
-const PREFILL_TASK = "Finish Kindred Onboarding";
+const PREFILL_TASK = "Go for a 15-minute walk";
 const CONGRATS_MESSAGE = "it's beak, one of kindred's founders; welcome! and congrats on finishing your first (of many!) tasks :)";
 const CONGRATS_GIF = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnp1MHYxaTN0aG1sdHI5aWNleDA0MmV4cXR6Z3ZtbmcxdnM3MmlxNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4LibSc90N18FBLvMJd/giphy.gif";
 
@@ -157,7 +156,7 @@ export default function TutorialOnboarding() {
     const router = useRouter();
     const { capture } = useAnalytics();
     const { user } = useAuth();
-    const { workspaces, fetchWorkspaces, setCreateCategory, categories } = useTasks();
+    const { workspaces, fetchWorkspaces, setCreateCategory, categories, setSelected } = useTasks();
     const { setTaskName, resetTaskCreation } = useTaskCreation();
     const { request } = useRequest();
 
@@ -209,12 +208,8 @@ export default function TutorialOnboarding() {
     // ─── Init ───────────────────────────────────────────────────────
     useEffect(() => {
         const init = async () => {
-            // Request push notification permission early so the beak congrats
-            // notification can actually be delivered
-            registerForPushNotificationsAsync().then((result) => {
-                if (result?.token) sendPushTokenToBackend(result.token);
-            });
-
+            // Push permission is prompted later, once the user lands in-app
+            // (see (logged-in)/_layout) — not during onboarding.
             // The Kindred Guide workspace is seeded server-side at registration
             // (auth.SetupDefaultWorkspace); just load it here.
             await fetchWorkspaces(true);
@@ -474,6 +469,7 @@ export default function TutorialOnboarding() {
     // ─── Feed step: enter on the "post" phase and store the real beak kudos ──
     useEffect(() => {
         if (step !== STEP_CONGRATS) return;
+        setSelected(""); // land on the home page after onboarding, not the Guide workspace
         setCongratsPhase("post");
         sendCongratulation();
         feedAnim.setValue(0);
@@ -929,32 +925,34 @@ export default function TutorialOnboarding() {
                             <View style={{ marginBottom: 16 }}>
                                 <PhaseProgress label="Share it" current={2} />
                             </View>
-                            <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
-                                Your feed
-                            </ThemedText>
-
-                            {/* Your post */}
-                            <View style={styles.postPreview}>
-                                <PostCardHeader
-                                    icon={user?.profile_picture}
-                                    name={user?.display_name ?? "You"}
-                                    username={user?.handle ?? undefined}
-                                    timeLabel="Just now"
-                                    disableNavigation
-                                />
-                                <PostCardMedia
-                                    images={[SHARE_PHOTO]}
-                                    media={[{ type: "image", url: SHARE_PHOTO, thumbnailUrl: SHARE_PHOTO, width: 0, height: 0 }]}
-                                    dual={null}
-                                    imageHeight={180}
-                                />
-                                <PostCardFooter category={categoryName ?? PREFILL_CATEGORY} taskName={taskData?.content ?? PREFILL_TASK} readOnly />
-                            </View>
-
-                            {/* beak's own post — the user sends kudos on it, the real direction */}
-                            {congratsPhase === "beakPost" && (
+                            {congratsPhase !== "beakPost" ? (
                                 <>
-                                    <ThemedText type="subtitle" style={{ marginTop: 24, marginBottom: 12 }}>
+                                    <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
+                                        Your feed
+                                    </ThemedText>
+
+                                    {/* Your post */}
+                                    <View style={styles.postPreview}>
+                                        <PostCardHeader
+                                            icon={user?.profile_picture}
+                                            name={user?.display_name ?? "You"}
+                                            username={user?.handle ?? undefined}
+                                            timeLabel="Just now"
+                                            disableNavigation
+                                        />
+                                        <PostCardMedia
+                                            images={[SHARE_PHOTO]}
+                                            media={[{ type: "image", url: SHARE_PHOTO, thumbnailUrl: SHARE_PHOTO, width: 0, height: 0 }]}
+                                            dual={null}
+                                            imageHeight={180}
+                                        />
+                                        <PostCardFooter category={categoryName ?? PREFILL_CATEGORY} taskName={taskData?.content ?? PREFILL_TASK} readOnly />
+                                    </View>
+                                </>
+                            ) : (
+                                /* "Send kudos back" step: show ONLY beak's accomplishment so the ask is unambiguous */
+                                <>
+                                    <ThemedText type="subtitle" style={{ marginBottom: 12 }}>
                                         beak completed a task
                                     </ThemedText>
                                     <View style={styles.postPreview}>

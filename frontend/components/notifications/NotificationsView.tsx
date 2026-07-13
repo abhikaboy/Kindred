@@ -42,8 +42,11 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
 const ONE_MONTH = 30 * ONE_DAY;
 
-const NOTIFICATION_TABS = ["For You", "Activity", "Requests"];
-const ACTIVITY_TAB_INDEX = 1;
+// "For You" is hidden for now (Activity is the default). To restore: re-add
+// "For You" as the first tab here, set ACTIVITY_TAB_INDEX back to 1, and
+// un-comment the <ForYouTab> child in the render below.
+const NOTIFICATION_TABS = ["Activity", "Requests"];
+const ACTIVITY_TAB_INDEX = 0;
 
 const NotificationFilterChips = ({
     active,
@@ -353,7 +356,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
     const [activeChip, setActiveChip] = useState<ActivityFilter>("all");
     const { feed: forYouFeed, loading: forYouLoading, error: forYouError, refresh: refreshForYou, recordInteraction: recordForYouInteraction, dismissCard: dismissForYouCard } = useForYou();
     const forYouUnreadCount = forYouFeed?.unreadCount ?? 0;
-    const tabBadges = [activeTab !== 0 && forYouUnreadCount > 0, false, false];
+    const tabBadges = [false, false];
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -635,15 +638,8 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                 />
             </View>
             <AnimatedTabContent activeTab={activeTab} setActiveTab={setActiveTab} flex lazy>
-                <ForYouTab
-                    horizontalPadding={Dimensions.get("window").width * 0.05}
-                    feed={forYouFeed}
-                    loading={forYouLoading}
-                    error={forYouError}
-                    refresh={refreshForYou}
-                    onInteraction={recordForYouInteraction}
-                    onDismiss={dismissForYouCard}
-                />
+                {/* "For You" hidden for now — restore by re-adding <ForYouTab .../> as the first child.
+                    (useForYou() above still runs so restore is a one-line change; remove it too to drop the fetch.) */}
                 <View style={{ flex: 1 }}>{activityTabContent}</View>
                 <RequestsTab horizontalPadding={Dimensions.get("window").width * 0.05} />
             </AnimatedTabContent>

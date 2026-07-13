@@ -124,8 +124,11 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     const [alertMessage, setAlertMessage] = React.useState("");
     const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
 
-    // Check if categories are available, redirect if not
+    // Check if categories are available, redirect if not. Skip when a category is
+    // explicitly targeted (tutorial/edit/create-from-category) — it may live in a
+    // different workspace than the selected one, so an empty `categories` is fine.
     useEffect(() => {
+        if (categoryId || task?.categoryID) return;
         if (availableCategories) {
             if (availableCategories.filter((c) => c.name !== "!-proxy-!").length === 0) {
                 goTo(Screen.NEW_CATEGORY);
@@ -133,7 +136,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         } else {
             console.warn("Categories is null", availableCategories);
         }
-    }, [availableCategories, goTo]);
+    }, [availableCategories, goTo, categoryId, task?.categoryID]);
 
     // Set the blueprint flag when component mounts or when the prop changes
     useEffect(() => {
@@ -168,7 +171,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     }, [categoryId, availableCategories, task?.categoryID, workspaces]);
 
     const createPost = async () => {
-        if (!availableCategories || availableCategories.length === 0) return;
+        // The task is created against selectedCategory.id (resolved cross-workspace),
+        // so an empty selected-workspace list must not block it.
         if (!selectedCategory?.id) return;
 
         // Trim trailing newlines and whitespace from task name

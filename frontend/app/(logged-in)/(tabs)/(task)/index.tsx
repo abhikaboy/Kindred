@@ -1,5 +1,6 @@
 import { StyleSheet, View, TouchableOpacity, Animated } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +25,10 @@ import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
+import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
+import { useHomeTour } from "@/hooks/useHomeTour";
+import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
+import { ThemedText } from "@/components/ThemedText";
 import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspacePager } from "@/components/task/WorkspacePager";
 import WorkspaceGlow from "@/components/task/WorkspaceGlow";
@@ -37,7 +42,7 @@ import { useKudos } from "@/contexts/kudosContext";
 type Props = {};
 
 const Home = (props: Props) => {
-    const { user } = useAuth();
+    const { user, refresh } = useAuth();
     let ThemedColor = useThemeColor();
 
     const {
@@ -214,6 +219,9 @@ const Home = (props: Props) => {
                 fetchWorkspaces(true),
                 fetchKudosCounts(true),
                 fetchKudosData(),
+                // refresh() re-pulls the user so friends/kudos/rings counts (and the
+                // onboarding checks that read them) reflect actions taken elsewhere.
+                refresh(),
                 queryClient.invalidateQueries(),
             ]);
         } catch (error) {
@@ -221,7 +229,7 @@ const Home = (props: Props) => {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkspaces, fetchKudosCounts, fetchKudosData, queryClient, capture]);
+    }, [fetchWorkspaces, fetchKudosCounts, fetchKudosData, refresh, queryClient, capture]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 
@@ -291,6 +299,15 @@ const HomeContent = ({
     const menuRef = useRef<View>(null);
     const kudosOffsetRef = useRef<number>(0);
 
+    // Guided first-touch home tour. Lives here (not in HomeScrollContent) so the
+    // overlay can cover the whole home view — header included — and so the tabs
+    // layout can hide the tab bar + FAB while it runs.
+    const tour = useHomeTour(homeScrollRef);
+    useEffect(() => {
+        homeTourVisibilityEvents.emit(tour.active);
+    }, [tour.active]);
+    useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
+
     // Determine which view to show
     const isHome = selected === "";
     const isToday = selected === "Today";
@@ -350,17 +367,11 @@ const HomeContent = ({
                             <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
                                 <WelcomeHeader
                                     userName={user?.display_name}
-                                    onMenuPress={() => drawerRef.current?.openDrawer()}
                                     ThemedColor={ThemedColor}
-                                    menuRef={menuRef}
+                                    homeTab={homeTab}
+                                    onFriendsPress={() => setHomeTab(homeTab === 0 ? 1 : 0)}
+                                    onSettingsPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
                                 />
-                                {drawerHintReady && (
-                                    <HintBubble
-                                        text="Tap the menu to switch or add workspaces"
-                                        onDone={drawerHintDone}
-                                        autoDismissMs={7000}
-                                    />
-                                )}
                             </Animated.View>
 
                             {/* Home/Friends switcher hidden for now — homeTab stays 0, FriendsContent never mounts (lazy) */}
@@ -383,6 +394,7 @@ const HomeContent = ({
                                         refreshing={refreshing}
                                         onRefresh={onRefresh}
                                         scrollRef={homeScrollRef}
+                                        tour={tour}
                                         kudosRef={kudosRef}
                                         kudosOffsetRef={kudosOffsetRef}
                                         onKudosLayout={(layout) => {
@@ -410,6 +422,42 @@ const HomeContent = ({
                                 onWorkspaceChange={setSelected}
                             />
                         </AnimatedView>
+                    )}
+
+                    {/* Guided tour overlay — covers the whole home view (header included) */}
+                    {isHome && (
+                        <HomeTourOverlay
+                            active={tour.active}
+                            activeSectionTop={tour.activeSectionTop}
+                            copy={tour.step?.copy ?? ""}
+                            stepIndex={tour.stepIndex}
+                            totalSteps={tour.totalSteps}
+                            isCreateStep={tour.isCreateStep}
+                            onNext={tour.next}
+                            onSkip={tour.skip}
+                            onCreate={() => {
+                                tour.skip();
+                                setCreatingWorkspace(true);
+                            }}
+                        />
+                    )}
+                    {__DEV__ && isHome && !tour.active && (
+                        <TouchableOpacity
+                            onPress={tour.start}
+                            style={{
+                                position: "absolute",
+                                left: 16,
+                                bottom: 110,
+                                backgroundColor: ThemedColor.primary,
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                                borderRadius: 20,
+                                zIndex: 999,
+                            }}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.buttonText ?? "#fff" }}>
+                                ▶ Replay tour
+                            </ThemedText>
+                        </TouchableOpacity>
                     )}
                 </View>
             </ThemedView>

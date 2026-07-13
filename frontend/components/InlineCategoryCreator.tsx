@@ -36,9 +36,11 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
     const cursorSlide = useRef(new Animated.Value(-50)).current;
     const cursorScale = useRef(new Animated.Value(1)).current;
     const ThemedColor = useThemeColor();
-    const { selected, addToWorkspace } = useTasks();
+    const { selected, addToWorkspace, workspaces } = useTasks();
     const { request } = useRequest();
-    const targetWorkspace = workspaceName ?? selected;
+    // `selected` is "" on the home page — fall back to a real workspace so we
+    // never persist a blank workspaceName (which spawns a phantom workspace).
+    const targetWorkspace = workspaceName || selected || workspaces.find((w) => !w.isBlueprint)?.name || "";
     const setT = useTimeouts();
 
     const tagsSheetRef = useRef<BottomSheetModal>(null);
@@ -100,6 +102,7 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
     const handleCreate = async () => {
         const trimmed = name.trim();
         if (trimmed.length === 0 || loading) return;
+        if (!targetWorkspace) { setError(true); return; }
 
         setLoading(true);
         setError(false);

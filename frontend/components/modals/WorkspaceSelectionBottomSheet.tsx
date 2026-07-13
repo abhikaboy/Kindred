@@ -4,16 +4,12 @@ import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { createCategory } from "@/api/category";
+import { createWorkspace } from "@/api/workspace";
 import { useTasks } from "@/contexts/tasksContext";
+import * as PhosphorIcons from "phosphor-react-native";
 import { showToast } from "@/utils/showToast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/hooks/useAuth";
-
-interface WorkspaceOption {
-    name: string;
-    emoji: string;
-}
 
 interface WorkspaceSelectionBottomSheetProps {
     isVisible: boolean;
@@ -21,37 +17,16 @@ interface WorkspaceSelectionBottomSheetProps {
     onComplete: () => void;
 }
 
+type WorkspaceOption = { name: string; icon: string; color: string };
+
+// Six broad starters, each with a fun icon + color (no emoji).
 const WORKSPACE_OPTIONS: WorkspaceOption[] = [
-    { name: "Classes", emoji: "📚" },
-    { name: "School", emoji: "📚" },
-    { name: "Household", emoji: "🏠" },
-    { name: "Daily", emoji: "☀" },
-    { name: "Work", emoji: "🧳" },
-    { name: "Hygiene", emoji: "🧼" },
-    { name: "Internship Applications", emoji: "💼" },
-    { name: "Friendships", emoji: "🫰" },
-    { name: "Wishlist", emoji: "⭐" },
-    { name: "Family", emoji: "🫶" },
-    { name: "Fitness", emoji: "💪" },
-    { name: "Health", emoji: "❤️" },
-    { name: "Hobbies", emoji: "🎨" },
-    { name: "Reading", emoji: "📖" },
-    { name: "Learning", emoji: "🎓" },
-    { name: "Cooking", emoji: "👨‍🍳" },
-    { name: "Travel", emoji: "✈️" },
-    { name: "Finance", emoji: "💰" },
-    { name: "Side Projects", emoji: "🚀" },
-    { name: "Music", emoji: "🎵" },
-    { name: "Sports", emoji: "⚽" },
-    { name: "Self Care", emoji: "🧘" },
-    { name: "Career", emoji: "📊" },
-    { name: "Social Life", emoji: "🎉" },
-    { name: "Volunteering", emoji: "🤝" },
-    { name: "Gaming", emoji: "🎮" },
-    { name: "Pet Care", emoji: "🐾" },
-    { name: "Garden", emoji: "🌱" },
-    { name: "Shopping", emoji: "🛍️" },
-    { name: "Events", emoji: "📅" },
+    { name: "Work", icon: "Briefcase", color: "#4E7BEF" },
+    { name: "School", icon: "GraduationCap", color: "#A855F7" },
+    { name: "Fitness", icon: "Barbell", color: "#F97316" },
+    { name: "Finance", icon: "Wallet", color: "#10B981" },
+    { name: "Household", icon: "House", color: "#EC4899" },
+    { name: "Hobbies", icon: "Palette", color: "#EAB308" },
 ];
 
 export default function WorkspaceSelectionBottomSheet({
@@ -63,7 +38,7 @@ export default function WorkspaceSelectionBottomSheet({
     const styles = stylesheet(ThemedColor);
     const { addWorkspace, fetchWorkspaces } = useTasks();
     const { user } = useAuth();
-    
+
     const [selectedWorkspaces, setSelectedWorkspaces] = useState<string[]>([]);
     const [isCreating, setIsCreating] = useState(false);
 
@@ -114,21 +89,18 @@ export default function WorkspaceSelectionBottomSheet({
             // Create all selected workspaces in parallel (silent mode to avoid individual toasts)
             const createPromises = selectedWorkspaces.map(async (workspaceName) => {
                 try {
-                    // Find the emoji for this workspace
-                    const workspaceOption = WORKSPACE_OPTIONS.find(opt => opt.name === workspaceName);
-                    const workspaceNameWithEmoji = workspaceOption ? `${workspaceOption.emoji} ${workspaceName}` : workspaceName;
-                    
-                    const response = await createCategory("!-proxy-!", workspaceNameWithEmoji, true);
+                    const opt = WORKSPACE_OPTIONS.find((o) => o.name === workspaceName);
+                    const response = await createWorkspace(workspaceName, opt?.icon, opt?.color);
                     // Convert CategoryDocument to Categories type
                     const categoryForWorkspace = {
                         id: response.id,
                         name: response.name,
-                        tasks: response.tasks.map(task => ({
+                        tasks: (response.tasks ?? []).map(task => ({
                             ...task,
                             recurDetails: task.recurDetails || { every: 0 }
                         }))
                     };
-                    addWorkspace(workspaceNameWithEmoji, categoryForWorkspace as any);
+                    addWorkspace(workspaceName, categoryForWorkspace as any, opt?.icon, opt?.color);
                     return { success: true, workspaceName };
                 } catch (error) {
                     console.error(`Failed to create workspace ${workspaceName}:`, error);
@@ -137,7 +109,7 @@ export default function WorkspaceSelectionBottomSheet({
             });
 
             const results = await Promise.all(createPromises);
-            
+
             // Check if all workspaces were created successfully
             const successCount = results.filter(r => r.success).length;
             const failCount = results.length - successCount;
@@ -145,17 +117,17 @@ export default function WorkspaceSelectionBottomSheet({
             if (successCount > 0) {
                 showToast(`Successfully created ${successCount} workspace${successCount > 1 ? 's' : ''}!`, "success");
             }
-            
+
             if (failCount > 0) {
                 showToast(`Failed to create ${failCount} workspace${failCount > 1 ? 's' : ''}`, "danger");
             }
 
             // Refresh workspaces list
             await fetchWorkspaces();
-            
+
             // Mark quick setup as complete
             await markQuickSetupComplete();
-            
+
             // Close the modal and call completion handler
             handleDismiss();
             onComplete();
@@ -211,25 +183,31 @@ export default function WorkspaceSelectionBottomSheet({
                 </View>
 
                 {/* Workspace Grid */}
-                <ScrollView 
+                <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollViewContent}
                     showsVerticalScrollIndicator={false}>
                     <View style={styles.workspaceGrid}>
-                        {WORKSPACE_OPTIONS.map((workspace) => (
-                            <TouchableOpacity
-                                key={workspace.name}
-                                style={[
-                                    styles.workspaceCard,
-                                    isSelected(workspace.name) && styles.workspaceCardSelected,
-                                ]}
-                                onPress={() => toggleWorkspace(workspace.name)}
-                                activeOpacity={0.7}>
-                                <ThemedText style={styles.workspaceText}>
-                                    {workspace.emoji} {workspace.name}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        ))}
+                        {WORKSPACE_OPTIONS.map((workspace) => {
+                            const Icon = (PhosphorIcons as any)[workspace.icon];
+                            const selected = isSelected(workspace.name);
+                            return (
+                                <TouchableOpacity
+                                    key={workspace.name}
+                                    style={[
+                                        styles.workspaceCard,
+                                        { backgroundColor: workspace.color + "1A" },
+                                        selected && { borderColor: workspace.color, backgroundColor: workspace.color + "2E" },
+                                    ]}
+                                    onPress={() => toggleWorkspace(workspace.name)}
+                                    activeOpacity={0.7}>
+                                    <View style={styles.cardRow}>
+                                        {Icon && <Icon size={22} color={workspace.color} weight="fill" />}
+                                        <ThemedText style={styles.workspaceText}>{workspace.name}</ThemedText>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </ScrollView>
 
@@ -238,9 +216,9 @@ export default function WorkspaceSelectionBottomSheet({
                     <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
                         <ThemedText style={styles.skipText}>Skip for now</ThemedText>
                     </TouchableOpacity>
-                    <PrimaryButton 
-                        title={isCreating ? "Creating..." : "Continue"} 
-                        onPress={handleContinue} 
+                    <PrimaryButton
+                        title={isCreating ? "Creating..." : "Continue"}
+                        onPress={handleContinue}
                         style={styles.button}
                         disabled={isCreating}
                     />
@@ -320,6 +298,11 @@ const stylesheet = (ThemedColor: any) =>
             borderColor: ThemedColor.primary || "#854dff",
             borderWidth: 1,
         },
+        cardRow: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 10,
+        },
         workspaceText: {
             fontSize: 16,
             color: ThemedColor.text,
@@ -349,4 +332,3 @@ const stylesheet = (ThemedColor: any) =>
             elevation: 4,
         },
     });
-
