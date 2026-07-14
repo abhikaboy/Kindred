@@ -584,9 +584,11 @@ const styles = StyleSheet.create({
     },
     iconRow: {
         flexDirection: "row",
+        flexWrap: "wrap",
         alignItems: "center",
+        justifyContent: "flex-end",
         gap: 6,
         minHeight: 20,
-        height: "100%"
+        maxWidth: "55%",
     },
 });
