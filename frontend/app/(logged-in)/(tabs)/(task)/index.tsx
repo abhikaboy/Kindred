@@ -492,24 +492,6 @@ const HomeContent = ({
                             }}
                         />
                     )}
-                    {__DEV__ && isHome && !tour.active && (
-                        <TouchableOpacity
-                            onPress={tour.start}
-                            style={{
-                                position: "absolute",
-                                left: 16,
-                                bottom: 110,
-                                backgroundColor: ThemedColor.primary,
-                                paddingHorizontal: 14,
-                                paddingVertical: 8,
-                                borderRadius: 20,
-                                zIndex: 999,
-                            }}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.buttonText ?? "#fff" }}>
-                                ▶ Replay tour
-                            </ThemedText>
-                        </TouchableOpacity>
-                    )}
                 </View>
             </ThemedView>
         </DrawerLayout>
