@@ -298,7 +298,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                     scrollEnabled={!isDragging}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}
-                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingTop: insets.top + 40 }}>
+                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingTop: insets.top + 8 }}>
                         <ConditionalView condition={selected !== ""} animated={true}>
                             <View style={styles.headerContainer}>
                                 <View

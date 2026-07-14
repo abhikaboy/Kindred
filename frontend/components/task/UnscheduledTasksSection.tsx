@@ -72,18 +72,15 @@ const UnscheduledTasksSection = ({
     const content = tasks.length === 0 ? (
         <>
             {description ? (
-                <ThemedText type="lightBody" style={styles.description}>
+                <ThemedText type="lightBody">
                     {description}
                 </ThemedText>
             ) : null}
             {onEmptyPress ? (
                 <TouchableOpacity onPress={onEmptyPress} activeOpacity={0.7}>
-                    <ThemedText type="caption" style={styles.emptyText}>
-                        {emptyMessage}
                         <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
                             {"  ·  tap to create a task"}
                         </ThemedText>
-                    </ThemedText>
                 </TouchableOpacity>
             ) : (
                 <ThemedText type="caption" style={styles.emptyText}>
@@ -94,7 +91,7 @@ const UnscheduledTasksSection = ({
     ) : (
         <>
             {description ? (
-                <ThemedText type="lightBody" style={styles.description}>
+                <ThemedText type="lightBody">
                     {description}
                 </ThemedText>
             ) : null}
@@ -147,9 +144,6 @@ const styles = StyleSheet.create({
     collapsibleContent: {
         gap: 12,
         paddingTop: 12,
-    },
-    description: {
-        marginBottom: 8,
     },
     taskItem: {
         marginBottom: 8,

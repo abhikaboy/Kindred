@@ -15,6 +15,9 @@ import Animated, {
     useSharedValue,
     useAnimatedScrollHandler,
     useAnimatedRef,
+    useAnimatedStyle,
+    interpolate,
+    Extrapolation,
 } from "react-native-reanimated";
 
 // Components
@@ -50,9 +53,12 @@ const dayLabel = (date: Date): string => {
     return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 };
 
-type Props = {};
+type Props = {
+    // When embedded (e.g. as a pager page) skip the DrawerLayout wrapper + back button.
+    embedded?: boolean;
+};
 
-const Daily = (props: Props) => {
+const Daily = ({ embedded }: Props) => {
     const drawerRef = useRef<DrawerLayout>(null);
     const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
 
@@ -97,6 +103,18 @@ const Daily = (props: Props) => {
     const animatedScrollY = useSharedValue(0);
     const calendarAnimatedScrollY = useSharedValue(0);
     const calendarScrollViewRef = useAnimatedRef<Animated.ScrollView>();
+
+    // Sticky header that minimizes on scroll: the week strip collapses (height +
+    // opacity) as the active list scrolls down, giving the timeline/list more room.
+    const weekStripH = useSharedValue(0);
+    const weekStripStyle = useAnimatedStyle(() => {
+        const y = dayDetail === "timeline" ? calendarAnimatedScrollY.value : animatedScrollY.value;
+        if (weekStripH.value === 0) return {};
+        return {
+            height: interpolate(y, [0, 90], [weekStripH.value, 0], Extrapolation.CLAMP),
+            opacity: interpolate(y, [0, 60], [1, 0], Extrapolation.CLAMP),
+        };
+    });
 
     const {
         tasksForSelectedDate,
@@ -201,37 +219,30 @@ const Daily = (props: Props) => {
         },
     });
 
-    return (
-        <DrawerLayout
-            ref={drawerRef}
-            hideStatusBar
-            edgeWidth={50}
-            drawerWidth={DRAWER_WIDTH}
-            renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
-            drawerPosition="left"
-            drawerType="front"
-            onDrawerOpen={() => setIsDrawerOpen(true)}
-            onDrawerClose={() => setIsDrawerOpen(false)}>
-
+    const content = (
             <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
                 <PlannerHeader
                     anchorDate={viewMode === "week" ? selectedDate : monthAnchor}
                     mode={viewMode}
                     onStep={handleStep}
                     onModeChange={setViewMode}
-                    onBack={() => router.back()}
+                    onBack={embedded ? undefined : () => router.back()}
                 />
 
                 {viewMode === "week" ? (
                     <>
-                        <WeekStrip
-                            weekStart={weekStart}
-                            selectedDate={selectedDate}
-                            onSelectDate={setSelectedDate}
-                            density={density}
-                            registerDropRect={registerDropRect}
-                            hoverKey={hoverKey}
-                        />
+                        <Animated.View style={[{ overflow: "hidden" }, weekStripStyle]}>
+                            <View onLayout={(e) => { if (weekStripH.value === 0) weekStripH.value = e.nativeEvent.layout.height; }}>
+                                <WeekStrip
+                                    weekStart={weekStart}
+                                    selectedDate={selectedDate}
+                                    onSelectDate={setSelectedDate}
+                                    density={density}
+                                    registerDropRect={registerDropRect}
+                                    hoverKey={hoverKey}
+                                />
+                            </View>
+                        </Animated.View>
                         <View style={styles.dayHeader}>
                             {/* Off-today the label tints primary and taps back to today */}
                             <TouchableOpacity
@@ -244,7 +255,7 @@ const Daily = (props: Props) => {
                                 hitSlop={8}
                             >
                                 <ThemedText
-                                    type="defaultSemiBold"
+                                    type="subtitle"
                                     style={dayLabel(selectedDate) !== "Today" && { color: ThemedColor.primary }}
                                 >
                                     {dayLabel(selectedDate)}
@@ -334,6 +345,22 @@ const Daily = (props: Props) => {
                     onCreateNew={handleCreateNewFromRange}
                 />
             </View>
+    );
+
+    if (embedded) return content;
+
+    return (
+        <DrawerLayout
+            ref={drawerRef}
+            hideStatusBar
+            edgeWidth={50}
+            drawerWidth={DRAWER_WIDTH}
+            renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
+            drawerPosition="left"
+            drawerType="front"
+            onDrawerOpen={() => setIsDrawerOpen(true)}
+            onDrawerClose={() => setIsDrawerOpen(false)}>
+            {content}
         </DrawerLayout>
     );
 };

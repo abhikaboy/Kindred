@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import TaskSection from "@/components/task/TaskSection";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -25,6 +26,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     unscheduledTasks,
     onQuickSchedule,
 }) => {
+    const ThemedColor = useThemeColor();
     const renderTaskItem = React.useCallback(({ item }: { item: any }) => (
         <View style={styles.taskItem}>
             <SwipableTaskCard
@@ -94,7 +96,7 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
                     />
                 </View>
             ) : (
-                <ThemedText type="caption" style={styles.emptyText}>
+                <ThemedText type="lightBody" style={[styles.emptyText, { color: ThemedColor.caption }]}>
                     No tasks for this date
                 </ThemedText>
             )}
@@ -130,7 +132,7 @@ export const TaskListView = React.memo(TaskListViewComponent, (prevProps, nextPr
 
 const styles = StyleSheet.create({
     container: {
-        gap: 24,
+        gap: 16,
         paddingHorizontal: HORIZONTAL_PADDING,
     },
     taskItem: {
@@ -138,7 +140,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         textAlign: "left",
-        marginTop: 12,
-        marginBottom: 4,
+        marginTop: 4,
+        marginBottom: 0,
     },
 });

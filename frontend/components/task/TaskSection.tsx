@@ -54,14 +54,9 @@ const TaskSection = ({
     if (tasks.length === 0) {
         return (
             <View style={{...styles.section, opacity: 0.15}}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                <ThemedText type="subtitle">
                     {title}
                 </ThemedText>
-                {description && (
-                    <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.caption }]}>
-                        {description}
-                    </ThemedText>
-                )}
                 <ThemedText type="lightBody">
                     {emptyMessage}
                 </ThemedText>
@@ -71,14 +66,9 @@ const TaskSection = ({
 
     return (
         <View style={styles.section}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
+            <ThemedText type="subtitle">
                 {title}
             </ThemedText>
-            {description && (
-                <ThemedText type="lightBody" style={[styles.description, { color: ThemedColor.caption }]}>
-                    {description}
-                </ThemedText>
-            )}
             <View style={{ minHeight: 2 }}>
                 <FlashList
                     data={tasks}

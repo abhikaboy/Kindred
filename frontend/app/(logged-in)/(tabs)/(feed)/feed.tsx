@@ -613,19 +613,6 @@ export default function Feed() {
     const renderHeader = useCallback(() => {
         return (
             <View style={styles.listHeader}>
-                <View style={styles.headerContainer}>
-                    <Image source={logoSource} style={{ width: 32, height: 32 }} />
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => pagerRef.current?.setPage(1)}
-                        style={{ position: "relative" }}>
-                        <HeartStraightIcon size={32} weight="regular" color={ThemedColor.text} />
-                        <View style={{ position: "absolute", top: -8, right: -8 }}>
-                            <NotificationBadge />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
                 <View style={styles.feedTabsContainer}>
                     <View style={{ minHeight: 2, flex: 1 }}>
                         <FlashList
@@ -637,6 +624,15 @@ export default function Feed() {
                             contentContainerStyle={styles.feedTabsContent}
                         />
                     </View>
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => pagerRef.current?.setPage(1)}
+                        style={{ position: "relative", marginLeft: 12 }}>
+                        <HeartStraightIcon size={32} weight="regular" color={ThemedColor.text} />
+                        <View style={{ position: "absolute", top: -8, right: -8 }}>
+                            <NotificationBadge />
+                        </View>
+                    </TouchableOpacity>
                 </View>
 
                 <EndOfDayCard />
@@ -786,19 +782,6 @@ export default function Feed() {
                     },
                 ]}>
                 <View>
-                    <View style={styles.headerContainer}>
-                        <Image source={logoSource} style={{ width: 32, height: 32 }} />
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => pagerRef.current?.setPage(1)}
-                            style={{ position: "relative" }}>
-                            <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
-                            <View style={{ position: "absolute", top: -8, right: -8 }}>
-                                <NotificationBadge />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
                     <View style={styles.feedTabsContainer}>
                         <View style={{ minHeight: 2, flex: 1 }}>
                             <FlashList
@@ -810,6 +793,15 @@ export default function Feed() {
                                 contentContainerStyle={styles.feedTabsContent}
                             />
                         </View>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => pagerRef.current?.setPage(1)}
+                            style={{ position: "relative", marginLeft: 12 }}>
+                            <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                            <View style={{ position: "absolute", top: -8, right: -8 }}>
+                                <NotificationBadge />
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Animated.View>
@@ -902,6 +894,9 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             paddingBottom: 8,
         },
         feedTabsContainer: {
+            flexDirection: "row",
+            alignItems: "center",
+            paddingRight: HORIZONTAL_PADDING,
             paddingBottom: 8,
             paddingTop: 8,
         },

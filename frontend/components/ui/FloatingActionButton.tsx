@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Animated, Keyboard, Modal } from "react-native";
+import { StyleSheet, Animated, Keyboard, Modal, TouchableOpacity } from "react-native";
+import { House } from "phosphor-react-native";
 import * as Haptics from "expo-haptics";
 import { useTasks } from "@/contexts/tasksContext";
 import { useCreateModal } from "@/contexts/createModalContext";
@@ -75,6 +76,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 
     // Detect if we're on the feed tab
     const isOnFeedTab = segments?.some(segment => segment === "(feed)");
+    const isOnTaskTab = segments?.some(segment => segment === "(task)");
 
     // Animations
     const animations = useFABAnimations();
@@ -483,6 +485,23 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                         style={{ position: "absolute", right: 16, bottom: bottomOffset + 76 }}
                     />
                 )}
+                {/* Outlined home button above the FAB — returns to the home dashboard
+                    from a workspace/Today view (replaces the old hamburger). */}
+                {visible &&
+                    fabState === "collapsed" &&
+                    !keyboardVisible &&
+                    isOnTaskTab &&
+                    selected !== "" && (
+                        <TouchableOpacity
+                            onPress={() => setSelected("")}
+                            activeOpacity={0.85}
+                            style={[
+                                styles.homeButton,
+                                { bottom: bottomOffset + 68, borderColor: ThemedColor.tertiary, backgroundColor: ThemedColor.background },
+                            ]}>
+                            <House size={20} color={ThemedColor.text} weight="regular" />
+                        </TouchableOpacity>
+                    )}
                 <FABButton
                     isOpen={fabState !== "collapsed"}
                     onPress={handleFABPress}
@@ -499,6 +518,22 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 };
 
 const styles = StyleSheet.create({
+    homeButton: {
+        position: "absolute",
+        right: 22,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 4,
+    },
     menuContainer: {
         position: "absolute",
         left: 16,

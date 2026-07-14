@@ -1,23 +1,15 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { GearSix, CaretRight, CaretLeft } from "phosphor-react-native";
+import { GearSix } from "phosphor-react-native";
 
 interface WelcomeHeaderProps {
     userName?: string;
     ThemedColor: any;
-    homeTab: number; // 0 = home, 1 = friends
-    onFriendsPress: () => void;
     onSettingsPress: () => void;
 }
 
-export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
-    userName,
-    ThemedColor,
-    homeTab,
-    onFriendsPress,
-    onSettingsPress,
-}) => {
+export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, ThemedColor, onSettingsPress }) => {
     const currentHour = new Date().getHours();
 
     let greeting;
@@ -28,8 +20,6 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     } else {
         greeting = "Time to unwind,";
     }
-
-    const onHome = homeTab === 0;
 
     return (
         <View style={styles.headerContainer}>
@@ -47,16 +37,6 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={onSettingsPress} hitSlop={8} activeOpacity={0.7} style={styles.gearBtn}>
                         <GearSix size={22} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={onFriendsPress}
-                        activeOpacity={0.7}
-                        style={[styles.chip, { backgroundColor: ThemedColor.primary + "1A" }]}>
-                        {!onHome && <CaretLeft size={14} color={ThemedColor.primary} weight="bold" />}
-                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                            {onHome ? "Friends" : "Home"}
-                        </ThemedText>
-                        {onHome && <CaretRight size={14} color={ThemedColor.primary} weight="bold" />}
                     </TouchableOpacity>
                 </View>
             </View>

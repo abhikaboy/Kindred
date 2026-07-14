@@ -2,7 +2,8 @@ import React, { useCallback } from "react";
 import { FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { CaretRightIcon, HandshakeIcon } from "phosphor-react-native";
+import { CaretRightIcon, HandshakeIcon, UsersThreeIcon } from "phosphor-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFriendsAPI } from "@/api/connection";
@@ -70,6 +71,24 @@ function FriendCard({ friend }: { friend: Friend }) {
     );
 }
 
+// Matches the workspace page header (icon + title + subtitle) for consistency
+// across the pager.
+function FriendsHeader() {
+    const ThemedColor = useThemeColor();
+    const insets = useSafeAreaInsets();
+    return (
+        <View style={{ paddingTop: insets.top + 8, paddingBottom: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <UsersThreeIcon size={28} color={ThemedColor.primary} weight="regular" />
+                <ThemedText type="title">Friends</ThemedText>
+            </View>
+            <ThemedText type="lightBody" style={{ color: ThemedColor.caption, marginTop: 4 }}>
+                See what your friends are up to
+            </ThemedText>
+        </View>
+    );
+}
+
 export default function FriendsContent() {
     const ThemedColor = useThemeColor();
     const router = useRouter();
@@ -93,6 +112,7 @@ export default function FriendsContent() {
     if (isLoading) {
         return (
             <View style={styles.listContent}>
+                <FriendsHeader />
                 {[0, 1, 2, 3].map((i) => (
                     <View
                         key={i}
@@ -114,6 +134,7 @@ export default function FriendsContent() {
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
+            ListHeaderComponent={<FriendsHeader />}
             refreshControl={
                 <RefreshControl
                     refreshing={isRefetching}
@@ -147,7 +168,6 @@ export default function FriendsContent() {
 const styles = StyleSheet.create({
     listContent: {
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingTop: 16,
         paddingBottom: 150,
         gap: 12,
     },

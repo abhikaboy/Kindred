@@ -56,15 +56,14 @@ export const WorkspaceDrawerItem = (props: Props) => {
                 {props.title}
             </ThemedText>
             {props.taskCount !== undefined && (
-                <ThemedText
-                    type="default"
-                    style={{
-                        color: props.taskCount > 0 ? ThemedColor.primary : ThemedColor.caption,
-                        marginLeft: "auto",
-                        flexShrink: 0,
-                    }}>
-                    {props.taskCount}
-                </ThemedText>
+                <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <ThemedText
+                        type="default"
+                        style={{ color: props.taskCount > 0 ? ThemedColor.primary : ThemedColor.caption }}>
+                        {props.taskCount}
+                    </ThemedText>
+                    <PhosphorIcons.CaretRight size={16} color={ThemedColor.caption} />
+                </View>
             )}
         </TouchableOpacity>
     );

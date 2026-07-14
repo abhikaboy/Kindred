@@ -488,18 +488,29 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
             >
                 <View>{headerContent}</View>
 
-                <View style={{ backgroundColor: ThemedColor.background }}>
-                    <View style={{ paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
-                        <UnscheduledTasksSection
-                            tasks={tasksForTodayNoTime}
-                            title="Tasks"
-                            description=""
-                            collapsible
-                            useSchedulable={false}
-                            emptyMessage="No tasks with specific times"
-                            onEmptyPress={() => openModal()}
-                        />
-                    </View>
+                <View style={{ paddingBottom: 16,backgroundColor: ThemedColor.background }}>
+                    {tasksForTodayNoTime.length === 0 ? (
+                        <TouchableOpacity
+                            onPress={() => openModal()}
+                            style={{ paddingHorizontal: HORIZONTAL_PADDING }}
+                            activeOpacity={0.7}>
+                            <ThemedText type="lightBody" style={{ color: ThemedColor.primary }}>
+                                Tap on a time slot to create a task
+                            </ThemedText>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={{ paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
+                            <UnscheduledTasksSection
+                                tasks={tasksForTodayNoTime}
+                                title="Tasks"
+                                description=""
+                                collapsible
+                                useSchedulable={false}
+                                emptyMessage="No tasks with specific times"
+                                onEmptyPress={() => openModal()}
+                            />
+                        </View>
+                    )}
                 </View>
 
                 {/* Schedule grid */}

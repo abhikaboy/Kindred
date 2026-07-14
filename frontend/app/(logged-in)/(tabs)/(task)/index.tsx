@@ -30,7 +30,11 @@ import { useHomeTour } from "@/hooks/useHomeTour";
 import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
 import { ThemedText } from "@/components/ThemedText";
 import { AnimatedView } from "@/components/ui/AnimatedView";
-import { WorkspacePager } from "@/components/task/WorkspacePager";
+import { WorkspaceContent } from "@/components/task/WorkspaceContent";
+import { PagerDots } from "@/components/task/PagerDots";
+import PagerView from "react-native-pager-view";
+import Confetti from "@/components/ui/Confetti";
+import Daily from "./daily";
 import WorkspaceGlow from "@/components/task/WorkspaceGlow";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import FriendsContent from "@/components/dashboard/FriendsContent";
@@ -279,8 +283,7 @@ const HomeContent = ({
     refreshing,
     onRefresh,
 }: any) => {
-    const { selected } = useTasks();
-    const [homeTab, setHomeTab] = useState(0);
+    const { selected, showConfetti } = useTasks();
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
     // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
@@ -308,18 +311,75 @@ const HomeContent = ({
     }, [tour.active]);
     useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
 
-    // Determine which view to show
-    const isHome = selected === "";
-    const isToday = selected === "Today";
-    const isWorkspace = selected !== "" && selected !== "Today";
+    // ── Unified pager: [Today, Home, Friends, ...workspaces] ──────────────
+    // Page index is the source of truth; `selected` is kept in sync as the
+    // external API. Home + Friends both map to selected "" (Friends is swipe-only).
+    type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string };
+    const HOME_INDEX = 1;
+    const wsPages = React.useMemo(() => (workspaces as any[]).filter((w) => !w.isBlueprint), [workspaces]);
+    const pages = React.useMemo<Page[]>(
+        () => [{ key: "today" }, { key: "home" }, { key: "friends" }, ...wsPages.map((w) => ({ key: "workspace" as const, name: w.name }))],
+        [wsPages]
+    );
+    const selectedToIndex = React.useCallback(
+        (sel: string) => {
+            if (sel === "Today") return 0;
+            if (sel === "") return HOME_INDEX;
+            const wi = wsPages.findIndex((w) => w.name === sel);
+            return wi >= 0 ? 3 + wi : HOME_INDEX;
+        },
+        [wsPages]
+    );
+    const indexToSelected = React.useCallback(
+        (index: number) => (index === 0 ? "Today" : index <= 2 ? "" : wsPages[index - 3]?.name ?? ""),
+        [wsPages]
+    );
 
-    // Only mount the pager after a workspace has been visited at least once
-    const [pagerMounted, setPagerMounted] = React.useState(false);
-    React.useEffect(() => {
-        if (isWorkspace && !pagerMounted) {
-            setPagerMounted(true);
-        }
-    }, [isWorkspace, pagerMounted]);
+    const pagerRef = useRef<PagerView>(null);
+    const isExternalChange = useRef(false);
+    const [activeIndex, setActiveIndex] = useState(() => selectedToIndex(selected));
+    const [mountedIndices, setMountedIndices] = useState<Set<number>>(() => {
+        const idx = selectedToIndex(selected);
+        const s = new Set<number>();
+        for (let i = Math.max(0, idx - 1); i <= idx + 1; i++) s.add(i);
+        return s;
+    });
+
+    // Keep adjacent pages mounted once visited.
+    useEffect(() => {
+        setMountedIndices((prev) => {
+            const next = new Set(prev);
+            for (let i = Math.max(0, activeIndex - 1); i <= Math.min(pages.length - 1, activeIndex + 1); i++) next.add(i);
+            return next.size !== prev.size ? next : prev;
+        });
+    }, [activeIndex, pages.length]);
+
+    // External setSelected → move the pager. Skip when the current page already
+    // represents `selected` (home + friends both are ""), so friends isn't yanked.
+    useEffect(() => {
+        if (indexToSelected(activeIndex) === selected) return;
+        const target = selectedToIndex(selected);
+        isExternalChange.current = true;
+        setActiveIndex(target);
+        pagerRef.current?.setPage(target);
+    }, [selected, activeIndex, indexToSelected, selectedToIndex]);
+
+    const onPageSelected = React.useCallback(
+        (e: { nativeEvent: { position: number } }) => {
+            const pos = e.nativeEvent.position;
+            setActiveIndex(pos);
+            if (isExternalChange.current) {
+                isExternalChange.current = false;
+                return;
+            }
+            const sel = indexToSelected(pos);
+            if (sel !== selected) setSelected(sel);
+        },
+        [indexToSelected, selected, setSelected]
+    );
+
+    const isHome = activeIndex === HOME_INDEX;
+    const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === 2;
 
     return (
         <DrawerLayout
@@ -344,85 +404,76 @@ const HomeContent = ({
             />
 
             <ThemedView style={styles.container}>
-                {/* Menu button overlay - shown for Today and Workspace views */}
-                <ConditionalView condition={!isHome}>
-                    <View
-                        style={[
-                            styles.menuButtonContainer,
-                            { paddingTop: insets.top + 10, paddingLeft: HORIZONTAL_PADDING },
-                        ]}>
-                        <TouchableOpacity onPress={() => drawerRef.current?.openDrawer()}>
-                            <List size={24} color={ThemedColor.caption} weight="regular" />
-                        </TouchableOpacity>
-                    </View>
-                </ConditionalView>
-
-                {/* Container for cross-fading views */}
+                {/* One swipeable surface: Today · Home · Friends · workspaces */}
                 <View style={styles.viewsContainer}>
-                    {/* One glow for the whole tab — blobs shift per view (behind dashboard cards on home) */}
-                    <WorkspaceGlow variant={isHome ? "home" : "workspace"} />
-                    {/* Home View - Dashboard with workspaces */}
-                    <AnimatedView visible={isHome}>
-                        <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
-                            <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
-                                <WelcomeHeader
-                                    userName={user?.display_name}
-                                    ThemedColor={ThemedColor}
-                                    homeTab={homeTab}
-                                    onFriendsPress={() => setHomeTab(homeTab === 0 ? 1 : 0)}
-                                    onSettingsPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
-                                />
-                            </Animated.View>
+                    {/* One glow for the whole tab — blobs shift per view */}
+                    <WorkspaceGlow variant={onHomeOrFriends ? "home" : "workspace"} />
 
-                            {/* Home/Friends switcher hidden for now — homeTab stays 0, FriendsContent never mounts (lazy) */}
-                            <View style={{ height: 8 }} />
-
-                            <AnimatedTabContent activeTab={homeTab} setActiveTab={setHomeTab} flex lazy>
-                                <View style={{ flex: 1 }}>
-                                    <HomeScrollContent
-                                        encouragementCount={encouragementCount}
-                                        congratulationCount={congratulationCount}
-                                        workspaces={workspaces}
-                                        displayWorkspaces={displayWorkspaces}
-                                        fetchingWorkspaces={fetchingWorkspaces}
-                                        onWorkspaceSelect={setSelected}
-                                        onCreateWorkspace={() => setCreatingWorkspace(true)}
-                                        drawerRef={drawerRef}
-                                        ThemedColor={ThemedColor}
-                                        focusMode={focusMode}
-                                        toggleFocusMode={toggleFocusMode}
-                                        refreshing={refreshing}
-                                        onRefresh={onRefresh}
-                                        scrollRef={homeScrollRef}
-                                        tour={tour}
-                                        kudosRef={kudosRef}
-                                        kudosOffsetRef={kudosOffsetRef}
-                                        onKudosLayout={(layout) => {
-                                            kudosOffsetRef.current = layout.y;
-                                        }}
-                                        onStatsExpandChange={setStatsExpanded}
-                                    />
-                                </View>
-                                <FriendsContent />
-                            </AnimatedTabContent>
+                    {showConfetti && (
+                        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} pointerEvents="none">
+                            <Confetti />
                         </View>
-                    </AnimatedView>
-
-                    {/* Today View - Tasks due/scheduled for today */}
-                    <AnimatedView visible={isToday}>
-                        <TodayContent />
-                    </AnimatedView>
-
-                    {/* Workspace Views - Swipeable pager with dot indicators */}
-                    {pagerMounted && (
-                        <AnimatedView visible={isWorkspace}>
-                            <WorkspacePager
-                                workspaces={workspaces}
-                                selected={selected}
-                                onWorkspaceChange={setSelected}
-                            />
-                        </AnimatedView>
                     )}
+
+                    <PagerView
+                        ref={pagerRef}
+                        style={{ flex: 1 }}
+                        initialPage={activeIndex}
+                        offscreenPageLimit={1}
+                        scrollEnabled={!tour.active}
+                        onPageSelected={onPageSelected}>
+                        {pages.map((page, index) => {
+                            const key = page.key === "workspace" ? `ws-${page.name}` : page.key;
+                            const mounted = mountedIndices.has(index);
+                            return (
+                                <View key={key} style={{ flex: 1 }} collapsable={false}>
+                                    {!mounted ? null : page.key === "home" ? (
+                                        <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
+                                            <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
+                                                <WelcomeHeader
+                                                    userName={user?.display_name}
+                                                    ThemedColor={ThemedColor}
+                                                    onSettingsPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
+                                                />
+                                            </Animated.View>
+                                            <View style={{ height: 8 }} />
+                                            <HomeScrollContent
+                                                encouragementCount={encouragementCount}
+                                                congratulationCount={congratulationCount}
+                                                workspaces={workspaces}
+                                                displayWorkspaces={displayWorkspaces}
+                                                fetchingWorkspaces={fetchingWorkspaces}
+                                                onWorkspaceSelect={setSelected}
+                                                onCreateWorkspace={() => setCreatingWorkspace(true)}
+                                                drawerRef={drawerRef}
+                                                ThemedColor={ThemedColor}
+                                                focusMode={focusMode}
+                                                toggleFocusMode={toggleFocusMode}
+                                                refreshing={refreshing}
+                                                onRefresh={onRefresh}
+                                                scrollRef={homeScrollRef}
+                                                tour={tour}
+                                                kudosRef={kudosRef}
+                                                kudosOffsetRef={kudosOffsetRef}
+                                                onKudosLayout={(layout) => {
+                                                    kudosOffsetRef.current = layout.y;
+                                                }}
+                                                onStatsExpandChange={setStatsExpanded}
+                                            />
+                                        </View>
+                                    ) : page.key === "today" ? (
+                                        <Daily embedded />
+                                    ) : page.key === "friends" ? (
+                                        <FriendsContent />
+                                    ) : (
+                                        <WorkspaceContent workspaceName={page.name} />
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </PagerView>
+
+                    <PagerDots count={pages.length} activeIndex={activeIndex} onDotPress={(i) => pagerRef.current?.setPage(i)} />
 
                     {/* Guided tour overlay — covers the whole home view (header included) */}
                     {isHome && (
