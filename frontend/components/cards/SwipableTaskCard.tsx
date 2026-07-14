@@ -7,9 +7,10 @@ import TaskCard from "./TaskCard";
 import { Task } from "@/api/types";
 import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
-import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS } from "react-native-reanimated";
+import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS, interpolate, Extrapolation } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { ThemedText } from "@/components/ThemedText";
 import { markAsCompletedAPI, activateTaskAPI, setWorkingAPI } from "@/api/task";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { useTasks } from "@/contexts/tasksContext";
@@ -19,7 +20,7 @@ import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
 import * as Haptics from "expo-haptics";
 import { hapticCompletionBurst } from "@/utils/haptics";
-import { Bell, Flag, Trash } from "phosphor-react-native";
+import { Bell, Flag, Trash, Check } from "phosphor-react-native";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
@@ -363,6 +364,12 @@ function LeftAction(
         };
     });
 
+    // Fade the "Completing" label in as the swipe progresses so it's clear what
+    // the green action does. Sits at the revealed edge, tracking the card.
+    const labelStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(drag.value, [width * 0.12, width * 0.45], [0, 1], Extrapolation.CLAMP),
+    }));
+
     return (
         <Reanimated.View
             style={[
@@ -370,10 +377,19 @@ function LeftAction(
                 {
                     backgroundColor: ThemedColor.success,
                     width: width,
-                    justifyContent: "center",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
                     alignItems: "center",
+                    paddingRight: 28,
                 },
-            ]}></Reanimated.View>
+            ]}>
+            <Reanimated.View style={[labelStyle, { flexDirection: "row", alignItems: "center", gap: 8 }]}>
+                <Check size={22} color="white" weight="bold" />
+                <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+                    Completing
+                </ThemedText>
+            </Reanimated.View>
+        </Reanimated.View>
     );
 }
 
