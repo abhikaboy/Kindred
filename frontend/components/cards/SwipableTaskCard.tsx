@@ -235,37 +235,34 @@ const SwipableTaskCard = ({
                 leftThreshold={Dimensions.get("window").width / 3}
                 overshootLeft={true}
                 overshootFriction={2.7}
-                renderLeftActions={(prog, drag) =>
-                    LeftAction(prog, drag, categoryId, task.id, () => markAsCompleted(categoryId, task.id))
-                }
+                renderLeftActions={(prog, drag) => (
+                    <LeftAction drag={drag} onComplete={() => markAsCompleted(categoryId, task.id)} />
+                )}
                 rightThreshold={100}
                 overshootRight={true}
                 renderRightActions={(prog, drag) => (
                     <View style={{ flexDirection: "row" }}>
-                        {RightAction(
-                            prog,
-                            drag,
-                            openReminder,
-                            3,
-                            <Bell size={24} color="white" weight="regular" />,
-                            ThemedColor.primary
-                        )}
-                        {RightAction(
-                            prog,
-                            drag,
-                            openDeadline,
-                            3,
-                            <Flag size={24} color="white" weight="regular" />,
-                            ThemedColor.primary
-                        )}
-                        {RightAction(
-                            prog,
-                            drag,
-                            () => deleteWithUndo(task, categoryId),
-                            3,
-                            <Trash size={24} color="white" weight="regular" />,
-                            ThemedColor.error
-                        )}
+                        <RightAction
+                            drag={drag}
+                            callback={openReminder}
+                            index={3}
+                            icon={<Bell size={24} color="white" weight="regular" />}
+                            color={ThemedColor.primary}
+                        />
+                        <RightAction
+                            drag={drag}
+                            callback={openDeadline}
+                            index={3}
+                            icon={<Flag size={24} color="white" weight="regular" />}
+                            color={ThemedColor.primary}
+                        />
+                        <RightAction
+                            drag={drag}
+                            callback={() => deleteWithUndo(task, categoryId)}
+                            index={3}
+                            icon={<Trash size={24} color="white" weight="regular" />}
+                            color={ThemedColor.error}
+                        />
                     </View>
                 )}>
                 {taskCard}
@@ -298,13 +295,13 @@ const SwipableTaskCard = ({
 // Swipe distance between haptic ticks (~16 ticks across a full swipe).
 const HAPTIC_STEP = 14;
 
-function LeftAction(
-    prog: SharedValue<number>,
-    drag: SharedValue<number>,
-    categoryId: string,
-    id: string,
-    markAsCompleted: (categoryId: string, id: string) => Promise<void>
-) {
+function LeftAction({
+    drag,
+    onComplete,
+}: {
+    drag: SharedValue<number>;
+    onComplete: () => void;
+}) {
     let width = Dimensions.get("window").width;
     const [isCompleting, setIsCompleting] = React.useState(false);
     const ThemedColor = useThemeColor();
@@ -347,7 +344,7 @@ function LeftAction(
             if (opacity <= 0 && !isCompleting) {
                 runOnJS(setIsCompleting)(true);
                 runOnJS(completionHaptic)(); // instant thud — don't wait for the API
-                runOnJS(markAsCompleted)(categoryId, id); // runs only once
+                runOnJS(onComplete)(); // runs only once
             }
         }
     );
@@ -395,14 +392,19 @@ function LeftAction(
 
 const RIGHT_ACTION_WIDTH = 75;
 
-function RightAction(
-    prog: SharedValue<number>,
-    drag: SharedValue<number>,
-    callback: () => void,
-    index: number,
-    icon: React.ReactNode,
-    color: string
-) {
+function RightAction({
+    drag,
+    callback,
+    index,
+    icon,
+    color,
+}: {
+    drag: SharedValue<number>;
+    callback: () => void;
+    index: number;
+    icon: React.ReactNode;
+    color: string;
+}) {
     const ThemedColor = useThemeColor();
 
     const styleAnimation = useAnimatedStyle(() => {
