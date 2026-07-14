@@ -24,7 +24,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
-import { setWorkingAPI } from "@/api/task";
+import { setWorkingAPI, markInProgressAPI } from "@/api/task";
 import * as Haptics from "expo-haptics";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -184,11 +184,12 @@ const TaskCard = ({
             taskId: id,
         });
 
-        // Update local state immediately so WorkingOnRow shows
-        updateTask(categoryId, id, { workingOnSince: now });
+        // Start working also marks the task In Progress (durable `active`).
+        updateTask(categoryId, id, { workingOnSince: now, active: true });
 
-        // Persist working state to backend
+        // Persist working state + in-progress to backend
         setWorkingAPI(categoryId, id, true).catch(() => {});
+        markInProgressAPI(categoryId, id).catch(() => {});
 
         showToastable({
             title: "Let's go!",
@@ -351,6 +352,10 @@ const TaskCard = ({
                           borderWidth: 1,
                           borderColor: ThemedColor.tertiary,
                       },
+                // In progress: outline the whole card in primary so it reads as active.
+                !encouraged && task?.active
+                    ? { borderColor: ThemedColor.primary, borderWidth: 2 }
+                    : null,
                 task?.isPhantom
                     ? { opacity: 0.45, borderStyle: "dashed" as const }
                     : null,
