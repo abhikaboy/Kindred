@@ -20,6 +20,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Check, PlayCircle, Trash, X } from "phosphor-react-native";
 import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
 import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
+import { showToastable } from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 type Props = {};
 
 // hugs the exposed edges — the card covers the screen center, so a centered glow vanishes
@@ -294,8 +296,15 @@ const Review = (props: Props) => {
         }
         // Optimistic: durable in-progress flag.
         updateTask(task.categoryID, task.id, { active: true });
-        await markInProgressAPI(task.categoryID, task.id);
         hapticLight();
+        showToastable({
+            title: "In progress",
+            message: `Started "${task.content}"`,
+            status: "success",
+            duration: 2500,
+            renderContent: (props) => <DefaultToast {...props} />,
+        });
+        await markInProgressAPI(task.categoryID, task.id);
     };
 
     const resetAnimationAndProcessing = (taskId: string) => {

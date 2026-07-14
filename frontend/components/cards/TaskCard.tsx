@@ -424,10 +424,10 @@ const TaskCard = ({
                                 backgroundColor={encouraged ? "transparent" : undefined}
                             />
                         </ConditionalView>
-                        {task?.workingOnSince ? (
+                        {task?.active || task?.workingOnSince ? (
                             <TaskChip
                                 Icon={Play}
-                                label="active"
+                                label="in progress"
                                 tone="active"
                                 color={encouraged ? encColors.secondaryText : undefined}
                                 backgroundColor={encouraged ? "transparent" : undefined}
