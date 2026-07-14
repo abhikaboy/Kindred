@@ -364,7 +364,7 @@ function LeftAction({
     // Fade the "Completing" label in as the swipe progresses so it's clear what
     // the green action does. Sits at the revealed edge, tracking the card.
     const labelStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(drag.value, [width * 0.12, width * 0.45], [0, 1], Extrapolation.CLAMP),
+        opacity: interpolate(drag.value, [width * 0.04, width * 0.18], [0, 1], Extrapolation.CLAMP),
     }));
 
     return (
