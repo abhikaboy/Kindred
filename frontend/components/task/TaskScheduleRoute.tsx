@@ -1,11 +1,11 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { Flag, PencilSimple } from "phosphor-react-native";
+import { Flag, PencilSimple, Plus } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
-// A start -> deadline "route" (pins + dotted connector), instead of two separate
-// label:value rows. Meant to sit inside a DataCard.
+// A start -> deadline "route" (pins + dotted connector) instead of two separate
+// label:value rows. Empty slots show a subtle CTA to add the time.
 
 const dayPart = (d: Date): string => {
     const today = new Date();
@@ -21,14 +21,38 @@ const dayPart = (d: Date): string => {
 
 const timePart = (d: Date): string => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
+// Muted "add" affordance for an empty slot — present but not emphasized.
+const ScheduleSlotCTA: React.FC<{ label: string; onPress?: () => void }> = ({ label, onPress }) => {
+    const ThemedColor = useThemeColor();
+    return (
+        <TouchableOpacity onPress={onPress} disabled={!onPress} activeOpacity={0.6} style={styles.row}>
+            <View style={styles.iconWrap}>
+                <Plus size={13} color={ThemedColor.caption} weight="bold" />
+            </View>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                {label}
+            </ThemedText>
+        </TouchableOpacity>
+    );
+};
+
 type Props = {
     startDate?: string;
     startTime?: string;
     deadline?: string;
     onEditDeadline?: () => void;
+    onAddStart?: () => void;
+    onAddDeadline?: () => void;
 };
 
-export const TaskScheduleRoute: React.FC<Props> = ({ startDate, startTime, deadline, onEditDeadline }) => {
+export const TaskScheduleRoute: React.FC<Props> = ({
+    startDate,
+    startTime,
+    deadline,
+    onEditDeadline,
+    onAddStart,
+    onAddDeadline,
+}) => {
     const ThemedColor = useThemeColor();
     const hasStart = !!startDate;
     const hasDeadline = !!deadline;
@@ -42,7 +66,7 @@ export const TaskScheduleRoute: React.FC<Props> = ({ startDate, startTime, deadl
 
     return (
         <View style={{ paddingTop: 4 }}>
-            {hasStart && (
+            {hasStart ? (
                 <View style={styles.row}>
                     <View style={styles.iconWrap}>
                         <View style={[styles.dot, { borderColor: ThemedColor.primary }]} />
@@ -54,11 +78,13 @@ export const TaskScheduleRoute: React.FC<Props> = ({ startDate, startTime, deadl
                         <ThemedText type="defaultSemiBold">{startLabel}</ThemedText>
                     </View>
                 </View>
+            ) : (
+                <ScheduleSlotCTA label="Add a start time" onPress={onAddStart} />
             )}
 
-            {hasStart && hasDeadline && <View style={[styles.connector, { borderColor: ThemedColor.tertiary }]} />}
+            <View style={[styles.connector, { borderColor: ThemedColor.tertiary }]} />
 
-            {hasDeadline && (
+            {hasDeadline ? (
                 <View style={styles.row}>
                     <View style={styles.iconWrap}>
                         <Flag size={16} color={ThemedColor.primary} weight="fill" />
@@ -78,16 +104,18 @@ export const TaskScheduleRoute: React.FC<Props> = ({ startDate, startTime, deadl
                         </TouchableOpacity>
                     )}
                 </View>
+            ) : (
+                <ScheduleSlotCTA label="Add a deadline" onPress={onAddDeadline} />
             )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    row: { flexDirection: "row", alignItems: "center", gap: 12 },
+    row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 2 },
     iconWrap: { width: 20, alignItems: "center" },
     dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
     content: { flex: 1, gap: 1 },
-    connector: { marginLeft: 9, height: 16, width: 0, borderLeftWidth: 1.5, borderStyle: "dashed" },
+    connector: { marginLeft: 9, height: 14, width: 0, borderLeftWidth: 1.5, borderStyle: "dashed" },
     edit: { padding: 8, borderRadius: 8 },
 });

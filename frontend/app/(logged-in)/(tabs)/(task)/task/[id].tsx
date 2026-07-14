@@ -678,19 +678,20 @@ export default function Task() {
                                         }}
                                     />
                                 </DataCard> */}
-                                <ConditionalView condition={task?.startDate != null || task?.deadline != null} key="schedule">
-                                    <DataCard
-                                        title="Schedule"
-                                        icon={<Calendar size={20} color={ThemedColor.text} weight="regular" />}
-                                    >
-                                        <TaskScheduleRoute
-                                            startDate={task?.startDate}
-                                            startTime={task?.startTime}
-                                            deadline={task?.deadline}
-                                            onEditDeadline={handleDeadlineModalPress}
-                                        />
-                                    </DataCard>
-                                </ConditionalView>
+                                <DataCard
+                                    title="Schedule"
+                                    key="schedule"
+                                    icon={<Calendar size={20} color={ThemedColor.text} weight="regular" />}
+                                >
+                                    <TaskScheduleRoute
+                                        startDate={task?.startDate}
+                                        startTime={task?.startTime}
+                                        deadline={task?.deadline}
+                                        onEditDeadline={handleDeadlineModalPress}
+                                        onAddStart={handleEditPress}
+                                        onAddDeadline={handleDeadlineModalPress}
+                                    />
+                                </DataCard>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
                                     <RecurringInfoCard
                                         recurDetails={recurDetails!}
