@@ -27,6 +27,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI } from "@/api/task";
+import { TaskScheduleRoute } from "@/components/task/TaskScheduleRoute";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
@@ -677,58 +678,17 @@ export default function Task() {
                                         }}
                                     />
                                 </DataCard> */}
-                                <ConditionalView condition={task?.startDate != null} key="startDate">
+                                <ConditionalView condition={task?.startDate != null || task?.deadline != null} key="schedule">
                                     <DataCard
-                                        title="Start Date"
+                                        title="Schedule"
                                         icon={<Calendar size={20} color={ThemedColor.text} weight="regular" />}
                                     >
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                justifyContent: "space-between",
-                                            }}>
-                                            <ThemedText type="lightBody">
-                                                {new Date(task?.startDate).toLocaleDateString()}
-                                            </ThemedText>
-                                            <ThemedText type="lightBody">
-                                                {task?.startTime
-                                                    ? new Date(task?.startTime).toLocaleTimeString()
-                                                    : "No Start Time"}
-                                            </ThemedText>
-                                        </View>
-                                    </DataCard>
-                                </ConditionalView>
-                                <ConditionalView condition={task?.deadline != null} key="deadline">
-                                    <DataCard
-                                        title="Deadline"
-                                        icon={<Flag size={20} color={ThemedColor.text} weight="regular" />}
-                                    >
-                                        <View
-                                            style={{
-                                                flexDirection: "row",
-                                                justifyContent: "space-between",
-                                                alignItems: "center",
-                                            }}>
-                                            <View style={{ flexDirection: "column" }}>
-                                                <ThemedText type="lightBody">
-                                                    {new Date(task?.deadline).toLocaleDateString()}
-                                                </ThemedText>
-                                                <ThemedText type="lightBody">
-                                                    {task?.deadline
-                                                        ? new Date(task?.deadline).toLocaleTimeString()
-                                                        : "No Deadline Time"}
-                                                </ThemedText>
-                                            </View>
-                                            <TouchableOpacity
-                                                onPress={handleDeadlineModalPress}
-                                                style={{
-                                                    padding: 8,
-                                                    borderRadius: 4,
-                                                    backgroundColor: ThemedColor.lightened,
-                                                }}>
-                                                <PencilSimple size={16} color={ThemedColor.text} weight="regular" />
-                                            </TouchableOpacity>
-                                        </View>
+                                        <TaskScheduleRoute
+                                            startDate={task?.startDate}
+                                            startTime={task?.startTime}
+                                            deadline={task?.deadline}
+                                            onEditDeadline={handleDeadlineModalPress}
+                                        />
                                     </DataCard>
                                 </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
