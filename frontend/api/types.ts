@@ -151,6 +151,9 @@ export interface Task {
 
     flexInfo?: FlexInstanceInfo;
 
+    // In Progress lifecycle — first time `active` flipped true (write-once)
+    startedAt?: string;
+
     // Working state — set when user starts working
     workingOnSince?: string;
 

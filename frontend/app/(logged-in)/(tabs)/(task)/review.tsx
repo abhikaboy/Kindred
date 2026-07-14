@@ -11,15 +11,15 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTasks } from "@/contexts/tasksContext";
 import { Task } from "@/api/types";
 import ConditionalView from "@/components/ui/ConditionalView";
-import { markAsCompletedAPI } from "@/api/task";
+import { markAsCompletedAPI, markInProgressAPI } from "@/api/task";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { useDebounce } from "@/hooks/useDebounce";
 import ReviewCardStack from "@/components/cards/ReviewCardStack";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Trash, X } from "phosphor-react-native";
+import { Check, PlayCircle, Trash, X } from "phosphor-react-native";
 import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
-import { hapticCompletionBurst } from "@/utils/haptics";
+import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
 type Props = {};
 
 // hugs the exposed edges — the card covers the screen center, so a centered glow vanishes
@@ -31,12 +31,13 @@ const REVIEW_GLOW: GlowBlob[] = [
 type ReviewActionsProps = {
     onSkip: () => void;
     onDelete: () => void;
+    onInProgress: () => void;
     onDone: () => void;
     ThemedColor: any;
 };
 
-// Tinder-style controls mirroring the swipe directions: skip ← / delete ↓ / done →
-const ReviewActions = ({ onSkip, onDelete, onDone, ThemedColor }: ReviewActionsProps) => (
+// Tinder-style controls mirroring the swipe directions: skip ← / delete ↓ / done → / in progress ↑
+const ReviewActions = ({ onSkip, onDelete, onInProgress, onDone, ThemedColor }: ReviewActionsProps) => (
     <View style={styles.actionsRow}>
         <View style={styles.actionItem}>
             <TouchableOpacity
@@ -72,6 +73,22 @@ const ReviewActions = ({ onSkip, onDelete, onDone, ThemedColor }: ReviewActionsP
         </View>
         <View style={styles.actionItem}>
             <TouchableOpacity
+                onPress={onInProgress}
+                accessibilityRole="button"
+                accessibilityLabel="Mark task as in progress"
+                style={[
+                    styles.actionButton,
+                    styles.actionSmall,
+                    { borderColor: ThemedColor.primary + "66", backgroundColor: ThemedColor.background },
+                ]}>
+                <PlayCircle size={20} color={ThemedColor.primary} weight="regular" />
+            </TouchableOpacity>
+            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                in progress
+            </ThemedText>
+        </View>
+        <View style={styles.actionItem}>
+            <TouchableOpacity
                 onPress={onDone}
                 accessibilityRole="button"
                 accessibilityLabel="Mark task as done"
@@ -88,7 +105,7 @@ const ReviewActions = ({ onSkip, onDelete, onDone, ThemedColor }: ReviewActionsP
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { fetchWorkspaces, unnestedTasks, addToCategory } = useTasks();
+    const { fetchWorkspaces, unnestedTasks, addToCategory, updateTask } = useTasks();
     const queryClient = useQueryClient();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const [isLoading, setIsLoading] = useState(false);
@@ -123,7 +140,7 @@ const Review = (props: Props) => {
 
     // Swipe tracking using shared values (runs on UI thread, no re-renders)
     const swipeProgress = useSharedValue(0); // 0 to 1, based on swipe distance
-    const swipeDirectionValue = useSharedValue<'left' | 'right' | 'down' | null>(null);
+    const swipeDirectionValue = useSharedValue<'left' | 'right' | 'down' | 'up' | null>(null);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
     const screenWidth = Dimensions.get("window").width;
 
@@ -178,7 +195,7 @@ const Review = (props: Props) => {
 
         // Calculate progress based on distance (0 to 1)
         let progress = 0;
-        let direction: 'left' | 'right' | 'down' | null = null;
+        let direction: 'left' | 'right' | 'down' | 'up' | null = null;
 
         if (absX > absY) {
             // Horizontal swipe
@@ -193,6 +210,8 @@ const Review = (props: Props) => {
             progress = Math.min(absY / maxDistance, 1);
             if (dy > threshold) {
                 direction = 'down';
+            } else if (dy < -threshold) {
+                direction = 'up';
             }
         }
 
@@ -269,6 +288,16 @@ const Review = (props: Props) => {
         deleteWithUndo(task, task.categoryID);
     };
 
+    const handleMarkInProgress = async (task: Task): Promise<void> => {
+        if (!task.categoryID) {
+            throw new Error("Task category ID is missing");
+        }
+        // Optimistic: durable in-progress flag.
+        updateTask(task.categoryID, task.id, { active: true });
+        await markInProgressAPI(task.categoryID, task.id);
+        hapticLight();
+    };
+
     const resetAnimationAndProcessing = (taskId: string) => {
         fadeOpacity.value = withTiming(1, { duration: 300 });
         setProcessingTasks((prev) => {
@@ -322,6 +351,9 @@ const Review = (props: Props) => {
                 case 'down':
                     await handleDelete(task);
                     break;
+                case 'up':
+                    await handleMarkInProgress(task);
+                    break;
                 default:
                     console.warn(`Unknown swipe direction: ${direction}`);
                     resetAnimationAndProcessing(task.id);
@@ -333,7 +365,7 @@ const Review = (props: Props) => {
         } catch (error) {
             console.error(`Failed to handle swipe ${direction}:`, error);
 
-            const actionName = direction === 'right' ? 'complete' : direction === 'down' ? 'delete' : 'skip';
+            const actionName = direction === 'right' ? 'complete' : direction === 'down' ? 'delete' : direction === 'up' ? 'mark in progress for' : 'skip';
             const errorMessage = error instanceof Error ? error.message : `Failed to ${actionName} task. Please try again.`;
 
             Alert.alert("Error", errorMessage);
@@ -354,7 +386,7 @@ const Review = (props: Props) => {
     const cardHeight = windowHeight * 0.44;
 
     // Buttons drive the same TinderCard fling + pipeline as a physical swipe.
-    const triggerSwipe = (direction: "left" | "right" | "down") => {
+    const triggerSwipe = (direction: "left" | "right" | "down" | "up") => {
         childRefs.current[0]?.swipe(direction);
     };
 
@@ -407,6 +439,7 @@ const Review = (props: Props) => {
                     <ReviewActions
                         onSkip={() => triggerSwipe("left")}
                         onDelete={() => triggerSwipe("down")}
+                        onInProgress={() => triggerSwipe("up")}
                         onDone={() => triggerSwipe("right")}
                         ThemedColor={ThemedColor}
                     />

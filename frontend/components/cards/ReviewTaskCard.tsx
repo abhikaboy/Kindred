@@ -120,16 +120,20 @@ const ReviewTaskCard = ({
                                         ? [ThemedColor.success + 'BB', ThemedColor.success + '00']
                                         : swipeDirection === 'down'
                                         ? [ThemedColor.error + 'CC', ThemedColor.error + '00']
+                                        : swipeDirection === 'up'
+                                        ? [ThemedColor.primary + '00', ThemedColor.primary + 'CC']
                                         : [ThemedColor.text + '00', ThemedColor.text + '66']
                                 }
                                 start={
                                     swipeDirection === 'right' ? { x: 0, y: 0.5 }
                                     : swipeDirection === 'down' ? { x: 0.5, y: 0 }
+                                    : swipeDirection === 'up' ? { x: 0.5, y: 0 }
                                     : { x: 0, y: 0.5 }
                                 }
                                 end={
                                     swipeDirection === 'right' ? { x: 1, y: 0.5 }
                                     : swipeDirection === 'down' ? { x: 0.5, y: 1 }
+                                    : swipeDirection === 'up' ? { x: 0.5, y: 1 }
                                     : { x: 1, y: 0.5 }
                                 }
                                 style={styles.swipeGradient}
@@ -140,12 +144,14 @@ const ReviewTaskCard = ({
                                     animatedIndicatorTextStyle as any,
                                     swipeDirection === 'right' ? styles.labelLeft
                                     : swipeDirection === 'down' ? styles.labelTop
+                                    : swipeDirection === 'up' ? styles.labelBottom
                                     : styles.labelRight,
                                 ]}
                             >
                                 {swipeDirection === 'left' && 'skip'}
                                 {swipeDirection === 'right' && 'done ✓'}
                                 {swipeDirection === 'down' && 'delete'}
+                                {swipeDirection === 'up' && 'in progress'}
                             </Animated.Text>
                         </Animated.View>
                     )}
@@ -235,6 +241,12 @@ const styles = StyleSheet.create({
     },
     labelTop: {
         top: 24,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+    },
+    labelBottom: {
+        bottom: 24,
         left: 0,
         right: 0,
         textAlign: "center",

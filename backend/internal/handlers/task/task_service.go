@@ -23,6 +23,30 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// iso8601Duration formats a duration as an ISO-8601 duration string (e.g.
+// "PT1H30M15S"), matching the timeTaken format the client uses (e.g. "PT0S").
+// Sub-second precision is truncated to whole seconds.
+func iso8601Duration(d time.Duration) string {
+	if d < 0 {
+		d = 0
+	}
+	total := int64(d.Seconds())
+	h := total / 3600
+	m := (total % 3600) / 60
+	s := total % 60
+	out := "PT"
+	if h > 0 {
+		out += fmt.Sprintf("%dH", h)
+	}
+	if m > 0 {
+		out += fmt.Sprintf("%dM", m)
+	}
+	if s > 0 || (h == 0 && m == 0) {
+		out += fmt.Sprintf("%dS", s)
+	}
+	return out
+}
+
 func getTasksByUserPipeline(userId primitive.ObjectID) []bson.D {
 	var pipeline []bson.D = []bson.D{
 		{
@@ -429,6 +453,15 @@ func (s *Service) CompleteTask(
 	}
 	userBefore := *userBeforePtr
 
+	// Compute timeTaken server-side from startedAt when present, rather than
+	// trusting the (often zero) client-passed value. Falls back to the client
+	// value when the task was never marked in progress.
+	completedNow := xutils.NowUTC()
+	timeTaken := completed.TimeTaken
+	if taskToComplete.StartedAt != nil {
+		timeTaken = iso8601Duration(completedNow.Sub(*taskToComplete.StartedAt))
+	}
+
 	// Move task to completed-tasks collection
 	pipeline := getTasksByUserPipeline(userId)
 	pipeline = append(pipeline,
@@ -438,8 +471,8 @@ func (s *Service) CompleteTask(
 		bson.D{
 			{Key: "$set", Value: bson.M{
 				"active":        false,
-				"timeTaken":     completed.TimeTaken,
-				"timeCompleted": xutils.NowUTC(),
+				"timeTaken":     timeTaken,
+				"timeCompleted": completedNow,
 				"categoryID":    categoryId,
 				"user":          userId,
 			}},
@@ -704,6 +737,13 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 		mapping := taskIDMap[taskID]
 		completeData := completionDataByTask[taskID]
 
+		// Compute timeTaken from startedAt when present, rather than trusting the
+		// client-passed value; fall back to the client value otherwise.
+		timeTaken := completeData.TimeTaken
+		if fetched, ok := fetchedTaskMap[taskID]; ok && fetched.StartedAt != nil {
+			timeTaken = iso8601Duration(nowUTC.Sub(*fetched.StartedAt))
+		}
+
 		pipeline := getTasksByUserPipeline(userId)
 		pipeline = append(pipeline,
 			bson.D{
@@ -712,7 +752,7 @@ func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkComple
 			bson.D{
 				{Key: "$set", Value: bson.M{
 					"active":        false,
-					"timeTaken":     completeData.TimeTaken,
+					"timeTaken":     timeTaken,
 					"timeCompleted": nowUTC,
 					"categoryID":    mapping.categoryID,
 					"user":          userId,
@@ -1203,6 +1243,29 @@ func (s *Service) ActivateTask(userId primitive.ObjectID, categoryId primitive.O
 
 	resultDecoded := *result
 	fmt.Println(resultDecoded)
+
+	// When entering In Progress, stamp startedAt write-once: only set it on the
+	// matched task if it isn't already present. The $elemMatch guard on the task
+	// (startedAt missing) makes this a no-op once startedAt exists.
+	if newStatus {
+		_, err := s.Tasks.UpdateOne(ctx,
+			bson.M{
+				"_id": userId,
+				"categories": bson.M{"$elemMatch": bson.M{
+					"_id":   categoryId,
+					"tasks": bson.M{"$elemMatch": bson.M{"_id": id, "startedAt": bson.M{"$exists": false}}},
+				}},
+			},
+			bson.D{{
+				Key: "$set", Value: bson.D{
+					{Key: "categories.$.tasks.$[t].startedAt", Value: xutils.NowUTC()}},
+			}},
+			&options,
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	s.enqueuePushUpsertIfEnabled(context.Background(), id, categoryId, userId)
 

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
     title: Kindred API
     description: Kindred API built with Huma v2 and Fiber
-    version: 1.0.0
+    version: 1.0.8
 paths:
     /v1/activity:
         get:
@@ -9666,6 +9666,9 @@ components:
                 startTime:
                     type: string
                     format: date-time
+                startedAt:
+                    type: string
+                    format: date-time
                 taggedUsers:
                     type: array
                     items:
@@ -13779,6 +13782,9 @@ components:
                     type: string
                     format: date-time
                 startTime:
+                    type: string
+                    format: date-time
+                startedAt:
                     type: string
                     format: date-time
                 taggedUsers:

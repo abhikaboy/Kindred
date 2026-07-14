@@ -248,6 +248,9 @@ export const activateTaskAPI = async (categoryId: string, taskId: string, active
     }
 };
 
+// Semantic wrapper: mark a task as In Progress (durable active:true).
+export const markInProgressAPI = (categoryId: string, taskId: string) => activateTaskAPI(categoryId, taskId, true);
+
 /**
  * Start or stop working on a task
  */

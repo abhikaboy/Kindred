@@ -4980,6 +4980,8 @@ export interface components {
             startDate: string;
             /** Format: date-time */
             startTime?: string;
+            /** Format: date-time */
+            startedAt?: string;
             taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             templateID?: string;
             /** Format: date-time */
@@ -7228,6 +7230,8 @@ export interface components {
             startDate: string;
             /** Format: date-time */
             startTime?: string;
+            /** Format: date-time */
+            startedAt?: string;
             taggedUsers?: components["schemas"]["TaggedTaskUser"][];
             templateID?: string;
             /** Format: date-time */

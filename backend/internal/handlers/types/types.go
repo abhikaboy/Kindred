@@ -83,6 +83,10 @@ type TaskDocument struct {
 	// Working state — set when user starts working, cleared on complete/stop
 	WorkingOnSince *time.Time `bson:"workingOnSince,omitempty" json:"workingOnSince,omitempty"`
 
+	// StartedAt — first time the task was marked in progress (active=true).
+	// Write-once; used to compute cycle time on completion.
+	StartedAt *time.Time `bson:"startedAt,omitempty" json:"startedAt,omitempty"`
+
 	// Completion tracking fields (only populated for completed tasks)
 	TimeCompleted *time.Time `bson:"timeCompleted,omitempty" json:"timeCompleted,omitempty"`
 	TimeTaken     *string    `bson:"timeTaken,omitempty" json:"timeTaken,omitempty"`
