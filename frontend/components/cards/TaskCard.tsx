@@ -352,10 +352,6 @@ const TaskCard = ({
                           borderWidth: 1,
                           borderColor: ThemedColor.tertiary,
                       },
-                // In progress: outline the whole card in primary so it reads as active.
-                !encouraged && task?.active
-                    ? { borderColor: ThemedColor.primary, borderWidth: 2 }
-                    : null,
                 task?.isPhantom
                     ? { opacity: 0.45, borderStyle: "dashed" as const }
                     : null,

@@ -26,11 +26,11 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI } from "@/api/task";
+import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI } from "@/api/task";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play } from "phosphor-react-native";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
@@ -211,6 +211,10 @@ export default function Task() {
                 renderContent: (props) => <DefaultToast {...props} />,
             });
         }
+
+        // Starting work also marks the task In Progress (durable, sticky).
+        updateTask(categoryId as string, id as string, { active: true });
+        markInProgressAPI(categoryId as string, id as string).catch(() => {});
 
         startTimer(id);
     };
@@ -591,6 +595,25 @@ export default function Task() {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    {task?.active && (
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                                alignSelf: "flex-start",
+                                marginTop: 10,
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 100,
+                                backgroundColor: ThemedColor.primary + "1A",
+                            }}>
+                            <Play size={14} color={ThemedColor.primary} weight="fill" />
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                In Progress
+                            </ThemedText>
+                        </View>
+                    )}
                     <View style={{ paddingBottom: 16 }} />
                 </View>
                 <KeyboardAvoidingView
