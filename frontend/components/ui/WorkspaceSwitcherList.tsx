@@ -16,7 +16,7 @@ type Props = {
 const activeTaskCount = (workspace: Workspace) =>
     workspace.categories.reduce(
         (total, category) =>
-            total + (category.tasks?.filter((task) => task.active !== false).length || 0),
+            total + (category.tasks?.filter((task) => !task.isPhantom).length || 0),
         0
     );
 

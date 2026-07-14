@@ -69,7 +69,7 @@ export const WorkspaceSelectionView: React.FC<WorkspaceSelectionViewProps> = ({
                     {filteredWorkspaces.map((workspace) => {
                         const taskCount = workspace.categories?.reduce(
                             (total, category) =>
-                                total + (category.tasks?.filter((task) => task.active !== false).length || 0),
+                                total + (category.tasks?.filter((task) => !task.isPhantom).length || 0),
                             0
                         );
                         return (

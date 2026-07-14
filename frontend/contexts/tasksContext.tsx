@@ -550,7 +550,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     // Sync Today's Tasks widget and lock screen circular widget
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
-            const incompleteTasks = unnestedTasks.filter(t => t.active);
+            // Everything in unnestedTasks is open (completed tasks move to a
+            // separate collection); `active` now means in-progress, so don't
+            // filter the list on it — show all open tasks.
+            const incompleteTasks = unnestedTasks;
             const completedCount = unnestedTasks.filter(t => !t.active).length;
             const totalCount = unnestedTasks.length;
 
@@ -571,7 +574,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             LockScreenCircularWidget.updateSnapshot({ completedCount, totalCount });
 
             const nextDue = dueTodayTasks
-                .filter(t => t.active !== false && t.deadline)
+                .filter(t => t.deadline)
                 .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())[0];
 
             if (nextDue) {
