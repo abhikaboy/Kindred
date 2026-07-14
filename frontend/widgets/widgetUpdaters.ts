@@ -102,10 +102,21 @@ const createLiveActivityFactory = <TProps>(
         start: (props, url?) => {
             resolve();
             if (loadError) {
-                throw new Error(`Live activity "${name}" is not available: ${loadError}`);
+                console.error(`[Widgets] ${name} unavailable:`, loadError);
+                return noopLiveActivityInstance<TProps>();
             }
-            // Let errors from native start() propagate so callers can show feedback
-            return instance!.start(props, url);
+            // iOS caps concurrent Live Activities per target — best-effort end any
+            // existing one so starting replaces it instead of throwing "maximum
+            // number of activities already exists".
+            try {
+                instance!.getInstances().forEach((a) => a.end().catch(() => {}));
+            } catch {}
+            try {
+                return instance!.start(props, url);
+            } catch (e) {
+                console.error(`[Widgets] ${name} start failed:`, e);
+                return noopLiveActivityInstance<TProps>();
+            }
         },
         getInstances: () => {
             try { return resolve().getInstances(); }
