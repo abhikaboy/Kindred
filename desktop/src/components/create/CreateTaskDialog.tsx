@@ -59,7 +59,7 @@ const localToIso = (local: string): string | null => (local ? new Date(local).to
 export function CreateTaskDialog({
     open,
     onOpenChange,
-    initialCategoryId,
+    prefill,
     onRequestNewCategory,
 }: CreateTaskDialogProps) {
     const [form, setForm] = useState<TaskFormState>(emptyTaskForm);
@@ -84,13 +84,18 @@ export function CreateTaskDialog({
     );
     const firstWorkspaceName = workspaces?.[0]?.name;
 
-    // Reset form + preselect initialCategoryId each time the dialog opens.
+    // Reset form + preselect category + seed date/time fields from prefill each time the dialog opens.
     useEffect(() => {
         if (!open) return;
-        setForm(emptyTaskForm());
-        setAdvanced(false);
-        const initial = initialCategoryId
-            ? categories.find((c) => c.id === initialCategoryId) ?? null
+        setForm({
+            ...emptyTaskForm(),
+            deadline: prefill?.deadline ?? null,
+            startDate: prefill?.startDate ?? null,
+            startTime: prefill?.startTime ?? null,
+        });
+        setAdvanced(Boolean(prefill?.startTime || prefill?.startDate));
+        const initial = prefill?.categoryId
+            ? categories.find((c) => c.id === prefill.categoryId) ?? null
             : null;
         setSelectedCategory(initial);
         const raf = requestAnimationFrame(() => titleRef.current?.focus());

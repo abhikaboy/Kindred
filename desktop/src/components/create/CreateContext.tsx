@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create/CreateTaskDialog";
 import { CreateCategoryDialog } from "@/components/create/CreateCategoryDialog";
-import type { SelectedCategory } from "@/components/create/types";
+import type { SelectedCategory, TaskPrefill } from "@/components/create/types";
 
 type CreateContextValue = {
-  openCreateTask: (categoryId?: string) => void;
+  openCreateTask: (prefill?: TaskPrefill) => void;
   openCreateCategory: (workspaceName?: string) => void;
 };
 
@@ -25,15 +25,15 @@ function isTypingTarget(el: EventTarget | null): boolean {
 
 export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [taskOpen, setTaskOpen] = useState(false);
-  const [taskCategoryId, setTaskCategoryId] = useState<string | undefined>();
+  const [taskPrefill, setTaskPrefill] = useState<TaskPrefill | undefined>();
 
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryWorkspace, setCategoryWorkspace] = useState<string | undefined>();
   // Inline-create callback: set when the task dialog requests a new category.
   const categoryOnCreated = useRef<((cat: SelectedCategory) => void) | undefined>(undefined);
 
-  const openCreateTask = useCallback((categoryId?: string) => {
-    setTaskCategoryId(categoryId);
+  const openCreateTask = useCallback((prefill?: TaskPrefill) => {
+    setTaskPrefill(prefill);
     setTaskOpen(true);
   }, []);
 
@@ -72,7 +72,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       <CreateTaskDialog
         open={taskOpen}
         onOpenChange={setTaskOpen}
-        initialCategoryId={taskCategoryId}
+        prefill={taskPrefill}
         onRequestNewCategory={requestNewCategory}
       />
       <CreateCategoryDialog

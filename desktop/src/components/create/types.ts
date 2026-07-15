@@ -6,11 +6,18 @@ export type SelectedCategory = {
   workspaceName: string;
 };
 
+export type TaskPrefill = {
+  categoryId?: string;
+  deadline?: string;
+  startDate?: string;
+  startTime?: string;
+};
+
 export type CreateTaskDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // Category to preselect when the dialog opens (from a category's "+ New task").
-  initialCategoryId?: string;
+  // Prefill data (category, deadline, start time) when the dialog opens.
+  prefill?: TaskPrefill;
   // Opens the category dialog inline; onCreated fires with the real created
   // category so the task form can select it (real id, post-server).
   onRequestNewCategory: (

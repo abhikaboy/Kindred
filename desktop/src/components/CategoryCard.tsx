@@ -41,7 +41,7 @@ export function CategoryCard({
         <Button
           variant="ghost"
           size="xs"
-          onClick={() => openCreateTask(category.id)}
+          onClick={() => openCreateTask({ categoryId: category.id })}
           className="ml-auto text-muted-foreground opacity-0 transition-opacity group-focus-within/category:opacity-100 group-hover/category:opacity-100 focus-visible:opacity-100"
         >
           <Plus />
