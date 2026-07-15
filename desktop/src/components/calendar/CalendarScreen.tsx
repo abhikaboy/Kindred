@@ -12,6 +12,7 @@ import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
 import { useAllTasks } from "@/hooks/useHomeTasks";
 import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTaskActions";
+import { yToMinutes } from "@/lib/timeline";
 
 const dropKeyFor = (d: Date) => `day:${dayKey(d)}`;
 
@@ -108,7 +109,22 @@ export function CalendarScreen() {
   const allTasks = useAllTasks();
   const updateTask = useUpdateTask();
 
-  const handleDrop = (taskId: string, dropKey: string) => {
+  const handleDrop = (taskId: string, dropKey: string, point: { x: number; y: number }) => {
+    if (dropKey.startsWith("timeline:")) {
+      const task = allTasks.find((t) => t.id === taskId);
+      if (!task || !task.categoryID) return;
+      const gridEl = document.querySelector<HTMLElement>('[data-timeline-grid="true"]');
+      if (!gridEl) return;
+      const minutes = yToMinutes(point.y - gridEl.getBoundingClientRect().top);
+      const when = fromDayKey(dropKey.slice("timeline:".length));
+      when.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+      const iso = when.toISOString();
+      updateTask.mutate({
+        params: { header: AUTH_HEADER, path: { category: task.categoryID, id: task.id } },
+        body: taskToUpdateDocument(task, { startTime: iso, startDate: iso }),
+      });
+      return;
+    }
     if (!dropKey.startsWith("day:")) return;
     const task = allTasks.find((t) => t.id === taskId);
     if (!task || !task.categoryID) return;
