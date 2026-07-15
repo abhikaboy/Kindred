@@ -383,7 +383,7 @@ const TaskCard = ({
                     </ThemedText>
                     {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                 </View>
-                <View style={styles.iconRow}>
+                <View style={styles.indicatorRow}>
                     <ConditionalView condition={encouraged}>
                         <EncouragerAvatars
                             encouragements={task?.encouragements ?? []}
@@ -404,43 +404,9 @@ const TaskCard = ({
                         </TouchableOpacity>
                     )}
                     <ConditionalView condition={!encourage}>
-                        {timeChip && (
-                            <TaskChip
-                                label={timeChip.label}
-                                tone={timeChip.tone}
-                                Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
-                                color={encouraged ? encColors.secondaryText : undefined}
-                                backgroundColor={encouraged ? "transparent" : undefined}
-                            />
-                        )}
-                        <ConditionalView condition={task?.recurring}>
-                            <TaskChip
-                                Icon={Repeat}
-                                label={
-                                    task?.flexInfo
-                                        ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
-                                        : undefined
-                                }
-                                color={encouraged ? encColors.secondaryText : undefined}
-                                backgroundColor={encouraged ? "transparent" : undefined}
-                            />
-                        </ConditionalView>
-                        {task?.active || task?.workingOnSince ? (
-                            <TaskChip
-                                Icon={Play}
-                                label="in progress"
-                                tone="active"
-                                color={encouraged ? encColors.secondaryText : undefined}
-                                backgroundColor={encouraged ? "transparent" : undefined}
-                            />
-                        ) : null}
                         <ConditionalView condition={!!task?.integration}>
                             {getIntegrationIcon(task?.integration, ThemedColor.caption)}
                         </ConditionalView>
-                        {/* <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                        {value}
-                    </ThemedText> */}
-
                         {/* Encouraged tasks show a sparkle in place of the priority dot */}
                         {encouraged ? (
                             <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
@@ -467,6 +433,40 @@ const TaskCard = ({
                     </ConditionalView>
                 </View>
             </View>
+            <ConditionalView condition={!encourage && !!(timeChip || task?.recurring || task?.workingOnSince)}>
+                <View style={styles.chipRow}>
+                    {timeChip && (
+                        <TaskChip
+                            label={timeChip.label}
+                            tone={timeChip.tone}
+                            Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
+                            color={encouraged ? encColors.secondaryText : undefined}
+                            backgroundColor={encouraged ? "transparent" : undefined}
+                        />
+                    )}
+                    <ConditionalView condition={task?.recurring}>
+                        <TaskChip
+                            Icon={Repeat}
+                            label={
+                                task?.flexInfo
+                                    ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
+                                    : undefined
+                            }
+                            color={encouraged ? encColors.secondaryText : undefined}
+                            backgroundColor={encouraged ? "transparent" : undefined}
+                        />
+                    </ConditionalView>
+                    {task?.workingOnSince ? (
+                        <TaskChip
+                            Icon={Play}
+                            label="in progress"
+                            tone="active"
+                            color={encouraged ? encColors.secondaryText : undefined}
+                            backgroundColor={encouraged ? "transparent" : undefined}
+                        />
+                    ) : null}
+                </View>
+            </ConditionalView>
         </TouchableOpacity>
     );
 
@@ -572,8 +572,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: "row",
         alignItems: "center",
-        width: "90%",
-        margin: "auto",
         gap: 6,
     },
     content: {
@@ -583,13 +581,20 @@ const styles = StyleSheet.create({
     inlineWrapper: {
         marginTop: 2,
     },
-    iconRow: {
+    indicatorRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        flexShrink: 0,
+        gap: 6,
+        minHeight: 20,
+    },
+    chipRow: {
         flexDirection: "row",
         flexWrap: "wrap",
         alignItems: "center",
-        justifyContent: "flex-end",
+        justifyContent: "flex-start",
         gap: 6,
-        minHeight: 20,
-        maxWidth: "55%",
+        marginTop: 8,
     },
 });
