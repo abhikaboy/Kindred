@@ -40,7 +40,7 @@ export function MonthGrid({ monthAnchor, density, onSelectDay, dropKeyFor }: Pro
                 inMonth ? "border-border" : "border-transparent opacity-40"
               )}
             >
-              <ThemedText type="caption" className={cn(isToday(day) && "font-semibold text-primary")}>
+              <ThemedText type="caption" className={cn(isToday(day) && "text-primary")}>
                 {day.getDate()}
               </ThemedText>
               {density_ && density_.count > 0 && (

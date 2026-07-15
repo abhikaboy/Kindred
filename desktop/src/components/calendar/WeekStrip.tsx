@@ -30,7 +30,7 @@ export function WeekStrip({ weekStart, selectedDate, density, onSelectDate, drop
               selected ? "border-primary bg-primary/10" : "border-border hover:bg-muted"
             )}
           >
-            <ThemedText type="caption" className="text-muted-foreground">
+            <ThemedText type="caption" className={cn(!selected && "text-muted-foreground")}>
               {WEEKDAYS[day.getDay()]}
             </ThemedText>
             <ThemedText type="default" className={cn(isToday(day) && !selected && "text-primary")}>
