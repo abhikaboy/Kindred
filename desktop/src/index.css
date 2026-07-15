@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/outfit";
+@import "@fontsource-variable/fraunces";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: 'Fraunces Variable', serif;
+    --font-sans: 'Outfit Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* Kindred shadows: looser + more diffuse (bigger blur) at low opacity. */
+    --shadow-2xs: 0 1px 4px 0 rgb(0 0 0 / 0.03);
+    --shadow-xs: 0 2px 8px 0 rgb(0 0 0 / 0.03);
+    --shadow-sm: 0 4px 16px 0 rgb(0 0 0 / 0.04);
+    --shadow: 0 4px 16px 0 rgb(0 0 0 / 0.04);
+    --shadow-md: 0 6px 24px 0 rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 12px 40px 0 rgb(0 0 0 / 0.06);
+    --shadow-xl: 0 20px 56px 0 rgb(0 0 0 / 0.08);
+    --shadow-2xl: 0 28px 72px 0 rgb(0 0 0 / 0.10);
+}
+
+:root {
+    /* Kindred light palette */
+    --background: #FFFFFF;
+    --foreground: #13121F;
+    --card: #FFFFFF;
+    --card-foreground: #13121F;
+    --popover: #FFFFFF;
+    --popover-foreground: #13121F;
+    --primary: #854DFF;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F5F5F5;
+    --secondary-foreground: #13121F;
+    --muted: #F5F5F5;
+    --muted-foreground: #919090;
+    --accent: #E5E5E5;
+    --accent-foreground: #13121F;
+    --destructive: #FF5C5F;
+    --border: #66666633;
+    --input: #66666633;
+    --ring: #854DFF;
+    --chart-1: #854DFF;
+    --chart-2: #A17FFF;
+    --chart-3: #C0AAFF;
+    --chart-4: #FF5C5F;
+    --chart-5: #919090;
+    --radius: 0.625rem;
+    --sidebar: #F5F5F5;
+    --sidebar-foreground: #13121F;
+    --sidebar-primary: #854DFF;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #E5E5E5;
+    --sidebar-accent-foreground: #13121F;
+    --sidebar-border: #66666633;
+    --sidebar-ring: #854DFF;
+}
+
+.dark {
+    /* Kindred dark palette */
+    --background: #0c0c1a;
+    --foreground: #FFFFFF;
+    --card: #171626;
+    --card-foreground: #FFFFFF;
+    --popover: #171626;
+    --popover-foreground: #FFFFFF;
+    --primary: #854DFF;
+    --primary-foreground: #FFFFFF;
+    --secondary: #171626;
+    --secondary-foreground: #FFFFFF;
+    --muted: #1F1D2E;
+    --muted-foreground: #919090;
+    --accent: #1F1D2E;
+    --accent-foreground: #FFFFFF;
+    --destructive: #FF5C5F;
+    --border: #1F1D2E;
+    --input: #66666633;
+    --ring: #854DFF;
+    --chart-1: #854DFF;
+    --chart-2: #A17FFF;
+    --chart-3: #C0AAFF;
+    --chart-4: #FF5C5F;
+    --chart-5: #919090;
+    --sidebar: #171626;
+    --sidebar-foreground: #FFFFFF;
+    --sidebar-primary: #854DFF;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #1F1D2E;
+    --sidebar-accent-foreground: #FFFFFF;
+    --sidebar-border: #1F1D2E;
+    --sidebar-ring: #854DFF;
+}
+
+/* Swipe-to-complete: pulse the card once dragged past the completion threshold.
+   Scale down (not up) so it never clips inside the row's overflow-hidden. */
+@keyframes threshold-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+}
+.animate-threshold-pulse {
+  animation: threshold-pulse 600ms ease-in-out infinite;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-style: normal;
+    }
+}

@@ -1,0 +1,373 @@
+import { useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  CalendarBlank,
+  Check,
+  Flag,
+  Note,
+  PencilSimple,
+  Play,
+  Repeat,
+  Sparkle,
+  Trash,
+} from "@phosphor-icons/react";
+import { ThemedText } from "@/components/ThemedText";
+import ThemedInput from "@/components/ThemedInput";
+import PrimaryButton from "@/components/PrimaryButton";
+import { DataCard } from "@/components/task/DataCard";
+import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
+import type { PickedDateTime } from "@/components/task/DateTimePicker";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { fireConfetti } from "@/lib/confetti";
+import { useWorkspaces, type TaskDocument } from "@/hooks/useWorkspaces";
+import {
+  AUTH_HEADER,
+  taskToUpdateDocument,
+  useActivateTask,
+  useCompleteTask,
+  useDeleteTask,
+  useUpdateTask,
+} from "@/hooks/useTaskActions";
+
+const PRIORITIES: { value: number; label: string; active: string }[] = [
+  { value: 1, label: "Low", active: "bg-emerald-500 text-white border-emerald-500" },
+  { value: 2, label: "Medium", active: "bg-amber-500 text-white border-amber-500" },
+  { value: 3, label: "High", active: "bg-destructive text-white border-destructive" },
+];
+
+function PrioritySelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex gap-2">
+      {PRIORITIES.map((p) => {
+        const isActive = value === p.value;
+        return (
+          <button
+            key={p.value}
+            type="button"
+            onClick={() => onChange(p.value)}
+            className={cn(
+              "flex-1 rounded-full border px-4 py-2 text-[15px] font-medium transition-colors",
+              isActive ? p.active : "border-border text-muted-foreground hover:bg-secondary"
+            )}
+          >
+            {p.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Midnight (local) of the given date, as an ISO string — the "date only" start value.
+const midnightIso = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+
+// Resolve a task and its parent category id from the cached workspace tree.
+function findTask(
+  data: ReturnType<typeof useWorkspaces>["data"],
+  id: string | undefined
+): { task: TaskDocument; categoryId: string } | undefined {
+  if (!data || !id) return undefined;
+  for (const ws of data) {
+    for (const category of ws.categories ?? []) {
+      const task = category.tasks?.find((t) => t.id === id);
+      if (task) return { task, categoryId: category.id };
+    }
+  }
+  return undefined;
+}
+
+function BackLink() {
+  return (
+    <Link to="/" className="flex w-fit items-center gap-1 text-muted-foreground hover:text-foreground">
+      <ArrowLeft className="size-5" />
+    </Link>
+  );
+}
+
+type EditFields = {
+  content: string;
+  notes: string;
+  priority: number;
+  startDate?: string;
+  startTime?: string;
+  deadline?: string;
+};
+
+function TaskEditor({ task, categoryId }: { task: TaskDocument; categoryId: string }) {
+  const navigate = useNavigate();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const completeBtnRef = useRef<HTMLSpanElement>(null);
+  const initialContent = useRef(task.content).current;
+
+  // Pencil is a focus cue — put the caret at the end of the editable title.
+  const focusTitle = () => {
+    const el = headerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]');
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
+
+  const [content, setContent] = useState(task.content);
+  const [notes, setNotes] = useState(task.notes ?? "");
+  const [priority, setPriority] = useState(task.priority);
+  const [startDate, setStartDate] = useState<string | undefined>(task.startDate);
+  const [startTime, setStartTime] = useState<string | undefined>(task.startTime);
+  const [deadline, setDeadline] = useState<string | undefined>(task.deadline);
+
+  const updateTask = useUpdateTask();
+  const completeTask = useCompleteTask();
+  const deleteTask = useDeleteTask();
+  const activateTask = useActivateTask();
+
+  const path = { category: categoryId, id: task.id };
+  const isActive = Boolean(task.active || task.workingOnSince);
+
+  // Autosave: always send the full current local state so edits never clobber each other.
+  const save = (patch: Partial<EditFields> = {}) => {
+    const f: EditFields = { content, notes, priority, startDate, startTime, deadline, ...patch };
+    updateTask.mutate(
+      {
+        params: { header: AUTH_HEADER, path },
+        body: taskToUpdateDocument(task, {
+          content: f.content.trim() || task.content,
+          notes: f.notes,
+          priority: f.priority,
+          startDate: f.startDate,
+          startTime: f.startTime,
+          deadline: f.deadline,
+        }),
+      },
+      { onError: () => window.alert("Couldn't save changes. Please try again.") }
+    );
+  };
+
+  const handleTitleBlur = () => {
+    const trimmed = content.trim();
+    if (trimmed && trimmed !== task.content) save({ content: trimmed });
+  };
+
+  const handleNotesBlur = () => {
+    if (notes !== (task.notes ?? "")) save({ notes });
+  };
+
+  // Start date is required, so it's never cleared; deadline is optional (null clears it).
+  const handleStartChange = (r: PickedDateTime | null) => {
+    if (!r) return;
+    const date = midnightIso(r.date);
+    const time = r.hasTime ? r.date.toISOString() : undefined;
+    setStartDate(date);
+    setStartTime(time);
+    save({ startDate: date, startTime: time });
+  };
+
+  const handleDeadlineChange = (r: PickedDateTime | null) => {
+    const dl = r ? r.date.toISOString() : undefined;
+    setDeadline(dl);
+    save({ deadline: dl });
+  };
+
+  const handleStart = () => {
+    activateTask.mutate(
+      { params: { header: AUTH_HEADER, path, query: isActive ? { active: "false" } : undefined } },
+      { onError: () => window.alert("Couldn't update task. Please try again.") }
+    );
+  };
+
+  const handleComplete = () => {
+    completeTask.mutate(
+      {
+        params: { header: AUTH_HEADER, path },
+        body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
+      },
+      {
+        onSuccess: () => {
+          fireConfetti(completeBtnRef.current);
+          navigate(-1);
+        },
+        onError: () => window.alert("Couldn't complete task. Please try again."),
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    if (!window.confirm("Delete this task? This cannot be undone.")) return;
+    deleteTask.mutate(
+      { params: { header: AUTH_HEADER, path } },
+      {
+        onSuccess: () => navigate(-1),
+        onError: () => window.alert("Couldn't delete task. Please try again."),
+      }
+    );
+  };
+
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-6">
+      <BackLink />
+
+      <div className="flex flex-col gap-4">
+        <div ref={headerRef} className="flex items-start gap-2">
+          <ThemedText
+            as="h1"
+            type="title"
+            contentEditable
+            suppressContentEditableWarning
+            spellCheck={false}
+            onInput={(e) => setContent((e.currentTarget as HTMLElement).textContent ?? "")}
+            onBlur={handleTitleBlur}
+            className="flex-1 rounded-md outline-none focus:bg-secondary/40"
+          >
+            {initialContent}
+          </ThemedText>
+          <button
+            type="button"
+            onClick={focusTitle}
+            aria-label="Edit task"
+            className="mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <PencilSimple size={20} weight="regular" />
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleteTask.isPending}
+            aria-label="Delete task"
+            className="mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+          >
+            <Trash size={20} weight="regular" />
+          </button>
+        </div>
+
+        {isActive && (
+          <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-primary/10 px-3 py-1.5">
+            <Play size={14} weight="fill" className="text-primary" />
+            <ThemedText type="caption" className="text-primary">
+              In Progress
+            </ThemedText>
+          </span>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <PrimaryButton
+            title={isActive ? "Stop Working" : "Start Working"}
+            secondary
+            disabled={activateTask.isPending}
+            onClick={handleStart}
+            className="w-auto px-5 py-2.5"
+          >
+            <Play size={16} weight={isActive ? "fill" : "regular"} />
+          </PrimaryButton>
+          <PrimaryButton
+            title={completeTask.isPending ? "Completing…" : "Mark Complete"}
+            disabled={completeTask.isPending}
+            onClick={handleComplete}
+            className="w-auto px-5 py-2.5"
+          >
+            <span ref={completeBtnRef} className="flex items-center">
+              <Check size={16} weight="bold" />
+            </span>
+          </PrimaryButton>
+        </div>
+      </div>
+
+      <DataCard title="Notes" icon={<Note size={20} weight="regular" className="text-foreground" />}>
+        <ThemedInput
+          ghost
+          textArea
+          value={notes}
+          onChange={setNotes}
+          onBlur={handleNotesBlur}
+          placeholder="Add notes"
+        />
+      </DataCard>
+
+      <DataCard title="Schedule" icon={<CalendarBlank size={20} weight="regular" className="text-foreground" />}>
+        <ScheduleTimeline
+          startDate={startDate}
+          startTime={startTime}
+          deadline={deadline}
+          onChangeStart={handleStartChange}
+          onChangeDeadline={handleDeadlineChange}
+        />
+      </DataCard>
+
+      <DataCard title="Priority" icon={<Flag size={20} weight="regular" className="text-foreground" />}>
+        <PrioritySelector
+          value={priority}
+          onChange={(p) => {
+            setPriority(p);
+            save({ priority: p });
+          }}
+        />
+      </DataCard>
+
+      {task.recurring && (
+        <DataCard title="Recurring" icon={<Repeat size={20} weight="regular" className="text-foreground" />}>
+          <ThemedText type="lightBody" className="text-muted-foreground">
+            This task repeats.
+          </ThemedText>
+        </DataCard>
+      )}
+
+      {(task.encouragements?.length ?? 0) > 0 && (
+        <DataCard
+          title={`Encouragements · ${task.encouragements!.length}`}
+          icon={<Sparkle size={20} weight="regular" className="text-foreground" />}
+        >
+          <div className="flex flex-col gap-3">
+            {task.encouragements!.map((k) => (
+              <div key={k.encouragementId} className="flex flex-col gap-0.5">
+                <ThemedText type="defaultSemiBold">
+                  {k.sender.name || k.sender.handle}
+                </ThemedText>
+                <ThemedText type="lightBody" className="text-muted-foreground">
+                  {k.message}
+                </ThemedText>
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
+
+    </div>
+  );
+}
+
+export default function TaskDetailScreen() {
+  const { id } = useParams();
+  const { data, isLoading } = useWorkspaces();
+  const found = useMemo(() => findTask(data, id), [data, id]);
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-6">
+        <Skeleton className="h-5 w-10 rounded-md" />
+        <Skeleton className="h-9 w-2/3 rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!found) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 pt-6">
+        <BackLink />
+        <ThemedText type="title" as="h1">
+          Task not found
+        </ThemedText>
+        <ThemedText type="lightBody" className="text-muted-foreground">
+          This task may have been completed or deleted.
+        </ThemedText>
+      </div>
+    );
+  }
+
+  return <TaskEditor key={found.task.id} task={found.task} categoryId={found.categoryId} />;
+}
