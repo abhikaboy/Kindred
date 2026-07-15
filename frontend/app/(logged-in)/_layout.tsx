@@ -96,22 +96,22 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
 
     switch (data.type) {
         case "encouragement":
-            // Task-scope encouragements deep-link to the task; profile-scope go to the kudos tab.
+            // Task-scope encouragements deep-link to the task; profile-scope open notifications.
             if (data.task_id) {
                 return `/(logged-in)/(tabs)/(task)/task/${data.task_id}`;
             }
-            return "/(logged-in)/(tabs)/(task)/kudos?tab=encouragements";
+            return "/(logged-in)/(tabs)/(feed)/feed?page=notifications";
         case "congratulation":
-            // If the congratulation references a post, open it; otherwise show the kudos tab.
+            // If the congratulation references a post, open it; otherwise open notifications.
             if (data.post_id) {
                 return `/(logged-in)/posting/${data.post_id}`;
             }
-            return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
+            return "/(logged-in)/(tabs)/(feed)/feed?page=notifications";
         case "task_completion":
             if (data.task_id) {
                 return `/(logged-in)/(tabs)/(task)/task/${data.task_id}`;
             }
-            return "/(logged-in)/(tabs)/(task)/kudos?tab=congratulations";
+            return "/(logged-in)/(tabs)/(feed)/feed?page=notifications";
         case "friend_request":
             return "/(logged-in)/(tabs)/(activity)";
         case "friend_request_accepted":

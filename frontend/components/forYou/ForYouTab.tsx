@@ -43,7 +43,7 @@ export default function ForYouTab({ horizontalPadding, feed, loading, error, ref
                     if (action.targetUserId) {
                         router.push(`/account/${action.targetUserId}` as never);
                     } else {
-                        router.push("/(logged-in)/(tabs)/(task)/kudos" as never);
+                        router.push("/(logged-in)/(tabs)/(feed)/feed?page=notifications" as never);
                     }
                     return;
                 case "react":
