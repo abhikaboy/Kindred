@@ -70,12 +70,8 @@ export default function Intro() {
         finished.current = true;
         player.pause();
         hapticCompletionBurst();
-        // The video replaces the old intro screens as the pre-login step, so
-        // mark both flags — otherwise a later open falls back into the old flow.
-        AsyncStorage.multiSet([
-            [INTRO_SEEN_KEY, "true"],
-            ["hasSeenOnboarding", "true"],
-        ]).catch(() => {});
+        // The video is the pre-login step now.
+        AsyncStorage.setItem(INTRO_SEEN_KEY, "true").catch(() => {});
         router.replace("/login");
     };
 

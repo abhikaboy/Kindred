@@ -38,15 +38,9 @@ export default function Index() {
                 return;
             }
 
-            // Check if user has seen onboarding screens
-            const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-            if (!hasSeenOnboarding) {
-                // First time user - show productivity onboarding
-                setNextRoute('/(onboarding)/productivity');
-            } else {
-                // Returning user - go to login
-                setNextRoute('/login');
-            }
+            // Intro already seen → login. (The old pre-login onboarding cluster
+            // was removed; the intro video is the sole pre-login step now.)
+            setNextRoute('/login');
         } catch (error) {
             console.error('Error checking initial route:', error);
             // Default to login on error
