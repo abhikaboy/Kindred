@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 // Named imports tree-shake; the full set is only pulled via WorkspaceIcon's lazy import.
 import {
   House,
+  CalendarBlank,
   Newspaper,
   Bell,
   MagnifyingGlass,
@@ -34,6 +35,7 @@ import {
 
 const MAIN = [
   { title: "Home", url: "/", icon: House },
+  { title: "Calendar", url: "/calendar", icon: CalendarBlank },
   { title: "Feed", url: "/feed", icon: Newspaper },
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Search", url: "/search", icon: MagnifyingGlass },

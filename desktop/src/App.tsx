@@ -5,6 +5,7 @@ import AppLayout from "@/routes/Layout";
 import LoginScreen from "@/routes/login";
 import RegisterScreen from "@/routes/register";
 import HomeScreen from "@/routes/home";
+import CalendarScreen from "@/routes/calendar";
 import FeedScreen from "@/routes/feed";
 import SearchScreen from "@/routes/search";
 import FriendsScreen from "@/routes/friends";
@@ -44,6 +45,7 @@ function App() {
 
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomeScreen />} />
+            <Route path="/calendar" element={<CalendarScreen />} />
             <Route path="/feed" element={<FeedScreen />} />
             <Route path="/search" element={<SearchScreen />} />
             <Route path="/friends" element={<FriendsScreen />} />
