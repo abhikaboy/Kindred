@@ -5,13 +5,30 @@ import { WeekStrip } from "@/components/calendar/WeekStrip";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { Agenda } from "@/components/calendar/Agenda";
 import { DayTimeline } from "@/components/calendar/DayTimeline";
+import { UnscheduledTray } from "@/components/calendar/UnscheduledTray";
+import { DragProvider, useDragState } from "@/components/calendar/DragContext";
 import { ThemedText } from "@/components/ThemedText";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
-import { useTaskCountsByDay, dayKey } from "@/hooks/useTaskCountsByDay";
+import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
+import { useAllTasks } from "@/hooks/useHomeTasks";
+import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTaskActions";
 
 const dropKeyFor = (d: Date) => `day:${dayKey(d)}`;
 
-export function CalendarScreen() {
+function DragGhost() {
+  const { dragging, pointer } = useDragState();
+  if (!dragging || !pointer) return null;
+  return (
+    <div
+      className="pointer-events-none fixed z-50 rounded-full bg-primary px-3 py-1.5 text-primary-foreground shadow-lg"
+      style={{ left: pointer.x + 12, top: pointer.y + 12 }}
+    >
+      Scheduling…
+    </div>
+  );
+}
+
+function CalendarBody() {
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
@@ -82,6 +99,32 @@ export function CalendarScreen() {
           dropKeyFor={dropKeyFor}
         />
       )}
+      <UnscheduledTray tasks={buckets.listUnscheduledTasks} />
     </div>
+  );
+}
+
+export function CalendarScreen() {
+  const allTasks = useAllTasks();
+  const updateTask = useUpdateTask();
+
+  const handleDrop = (taskId: string, dropKey: string) => {
+    if (!dropKey.startsWith("day:")) return;
+    const task = allTasks.find((t) => t.id === taskId);
+    if (!task || !task.categoryID) return;
+    const day = fromDayKey(dropKey.slice(4));
+    const deadline = new Date(day);
+    deadline.setHours(17, 0, 0, 0); // default 5 pm, mirrors mobile quick-schedule
+    updateTask.mutate({
+      params: { header: AUTH_HEADER, path: { category: task.categoryID, id: task.id } },
+      body: taskToUpdateDocument(task, { deadline: deadline.toISOString() }),
+    });
+  };
+
+  return (
+    <DragProvider onDrop={handleDrop}>
+      <CalendarBody />
+      <DragGhost />
+    </DragProvider>
   );
 }
