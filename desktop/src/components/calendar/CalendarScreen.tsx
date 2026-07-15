@@ -4,6 +4,8 @@ import { PlannerHeader, type ViewMode } from "@/components/calendar/PlannerHeade
 import { WeekStrip } from "@/components/calendar/WeekStrip";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { Agenda } from "@/components/calendar/Agenda";
+import { DayTimeline } from "@/components/calendar/DayTimeline";
+import { ThemedText } from "@/components/ThemedText";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey } from "@/hooks/useTaskCountsByDay";
 
@@ -13,6 +15,7 @@ export function CalendarScreen() {
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
+  const [dayDetail, setDayDetail] = useState<"agenda" | "timeline">("agenda");
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
   const range = useMemo(
@@ -54,7 +57,19 @@ export function CalendarScreen() {
             onSelectDate={setSelectedDate}
             dropKeyFor={dropKeyFor}
           />
-          <Agenda selectedDate={selectedDate} buckets={buckets} />
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setDayDetail((v) => (v === "agenda" ? "timeline" : "agenda"))}
+              className="rounded-full border px-3 py-1 hover:bg-muted"
+            >
+              <ThemedText type="caption">{dayDetail === "agenda" ? "Timeline" : "Agenda"}</ThemedText>
+            </button>
+          </div>
+          {dayDetail === "agenda" ? (
+            <Agenda selectedDate={selectedDate} buckets={buckets} />
+          ) : (
+            <DayTimeline selectedDate={selectedDate} timedTasks={buckets.tasksWithSpecificTime} />
+          )}
         </div>
       ) : (
         <MonthGrid
