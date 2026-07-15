@@ -379,19 +379,16 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
 
         switch (notification.type) {
             case "encouragement":
-                // referenceId is the task ID (task-scope) or empty (profile-scope).
+                // Task-scope encouragements open the task; profile-scope kudos already live on
+                // this notifications surface, so there's nowhere further to go.
                 if (notification.referenceId) {
                     router.push(`/(logged-in)/(tabs)/(task)/task/${notification.referenceId}`);
-                } else {
-                    router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=encouragements");
                 }
                 break;
             case "congratulation":
-                // referenceId is the post the congratulation is on.
+                // referenceId is the post the congratulation is on; otherwise stay here.
                 if (notification.referenceId) {
                     router.push(`/(logged-in)/posting/${notification.referenceId}`);
-                } else {
-                    router.navigate("/(logged-in)/(tabs)/(task)/kudos?tab=congratulations");
                 }
                 break;
             case "kudos_reaction":

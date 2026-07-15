@@ -86,14 +86,6 @@ export default function Profile() {
         }
     }, [blueprint, setSelectedBlueprint]);
 
-    const fallback_profile = {
-        id: "67ef139d4931ee7a9fb630fc",
-        display_name: "Coffee!~",
-        handle: "@coffee",
-        profile_picture: Icons.coffee,
-        friends: [{ id: "friend-1", display_name: "Jane Doe", handle: "jane_doe", profile_picture: Icons.luffy }],
-    };
-    // 67ef139d4931ee7a9fb630fc
     let ThemedColor = useThemeColor();
 
     const [activeTab, setActiveTab] = useState(0);

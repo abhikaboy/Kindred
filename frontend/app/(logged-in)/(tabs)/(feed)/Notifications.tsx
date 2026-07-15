@@ -1,3 +1,4 @@
+import React from "react";
 import { Redirect } from "expo-router";
 
 // Notifications now lives as a page inside the feed pager (see feed.tsx), not as a
