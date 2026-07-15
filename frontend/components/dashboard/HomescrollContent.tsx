@@ -351,8 +351,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 ) : undefined
             }
         >
-            <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
             <MotiView style={{ gap: 16, marginTop: 0 }}>
+                {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
+                <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
 
                 {!tour.active && <TaggedTaskBanners />}
 
