@@ -37,11 +37,11 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
             key={m}
             onClick={() => onModeChange(m)}
             className={cn(
-              "rounded-full px-3 py-1 text-sm capitalize transition-colors",
+              "rounded-full px-3 py-1 capitalize transition-colors",
               mode === m ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"
             )}
           >
-            {m}
+            <ThemedText type="caption">{m}</ThemedText>
           </button>
         ))}
       </div>

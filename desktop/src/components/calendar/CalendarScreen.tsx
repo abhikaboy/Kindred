@@ -1,20 +1,18 @@
 import { useMemo, useState } from "react";
 import { addMonths, addWeeks, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 import { PlannerHeader, type ViewMode } from "@/components/calendar/PlannerHeader";
-import { WeekStrip } from "@/components/calendar/WeekStrip";
+import { WeekGrid } from "@/components/calendar/WeekGrid";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
-import { Agenda } from "@/components/calendar/Agenda";
-import { DayTimeline } from "@/components/calendar/DayTimeline";
+import { AgendaPanel } from "@/components/calendar/AgendaPanel";
 import { UnscheduledTray } from "@/components/calendar/UnscheduledTray";
 import { DragProvider, useDragState } from "@/components/calendar/DragContext";
-import { ThemedText } from "@/components/ThemedText";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
 import { useAllTasks } from "@/hooks/useHomeTasks";
 import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTaskActions";
+import { tasksForWeek } from "@/lib/weekTasks";
 import { yToMinutes } from "@/lib/timeline";
-
-const dropKeyFor = (d: Date) => `day:${dayKey(d)}`;
+import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 function DragGhost() {
   const { dragging, pointer } = useDragState();
@@ -29,13 +27,14 @@ function DragGhost() {
   );
 }
 
-function CalendarBody() {
+function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
-  const [dayDetail, setDayDetail] = useState<"agenda" | "timeline">("agenda");
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
+  const week = useMemo(() => tasksForWeek(allTasks, weekStart), [allTasks, weekStart]);
+
   const range = useMemo(
     () =>
       mode === "week"
@@ -66,40 +65,24 @@ function CalendarBody() {
         onModeChange={setMode}
         onToday={onToday}
       />
-      {mode === "week" ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <WeekStrip
-            weekStart={weekStart}
-            selectedDate={selectedDate}
+      <div className="flex min-h-0 flex-1 gap-4">
+        {mode === "week" ? (
+          <>
+            <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+            <AgendaPanel buckets={buckets} />
+          </>
+        ) : (
+          <MonthGrid
+            monthAnchor={monthAnchor}
             density={density}
-            onSelectDate={setSelectedDate}
-            dropKeyFor={dropKeyFor}
+            onSelectDay={(d) => {
+              setSelectedDate(d);
+              setMode("week");
+            }}
+            dropKeyFor={(d) => `day:${dayKey(d)}`}
           />
-          <div className="flex items-center justify-end">
-            <button
-              onClick={() => setDayDetail((v) => (v === "agenda" ? "timeline" : "agenda"))}
-              className="rounded-full border px-3 py-1 hover:bg-muted"
-            >
-              <ThemedText type="caption">{dayDetail === "agenda" ? "Timeline" : "Agenda"}</ThemedText>
-            </button>
-          </div>
-          {dayDetail === "agenda" ? (
-            <Agenda selectedDate={selectedDate} buckets={buckets} />
-          ) : (
-            <DayTimeline selectedDate={selectedDate} timedTasks={buckets.tasksWithSpecificTime} />
-          )}
-        </div>
-      ) : (
-        <MonthGrid
-          monthAnchor={monthAnchor}
-          density={density}
-          onSelectDay={(d) => {
-            setSelectedDate(d);
-            setMode("week");
-          }}
-          dropKeyFor={dropKeyFor}
-        />
-      )}
+        )}
+      </div>
       <UnscheduledTray tasks={buckets.listUnscheduledTasks} />
     </div>
   );
@@ -110,13 +93,14 @@ export function CalendarScreen() {
   const updateTask = useUpdateTask();
 
   const handleDrop = (taskId: string, dropKey: string, point: { x: number; y: number }) => {
-    if (dropKey.startsWith("timeline:")) {
+    if (dropKey.startsWith("weekcol:")) {
       const task = allTasks.find((t) => t.id === taskId);
       if (!task || !task.categoryID) return;
-      const gridEl = document.querySelector<HTMLElement>('[data-timeline-grid="true"]');
-      if (!gridEl) return;
-      const minutes = yToMinutes(point.y - gridEl.getBoundingClientRect().top);
-      const when = fromDayKey(dropKey.slice("timeline:".length));
+      const key = dropKey.slice("weekcol:".length);
+      const colEl = document.querySelector<HTMLElement>(`[data-weekcol="${key}"]`);
+      if (!colEl) return;
+      const minutes = yToMinutes(point.y - colEl.getBoundingClientRect().top);
+      const when = fromDayKey(key);
       when.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
       const iso = when.toISOString();
       updateTask.mutate({
@@ -139,7 +123,7 @@ export function CalendarScreen() {
 
   return (
     <DragProvider onDrop={handleDrop}>
-      <CalendarBody />
+      <CalendarBody allTasks={allTasks} />
       <DragGhost />
     </DragProvider>
   );
