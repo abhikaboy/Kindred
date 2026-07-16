@@ -7,7 +7,6 @@ import {
   Bell,
   MagnifyingGlass,
   Users,
-  ChartBar,
   Plus,
   User,
   GearSix,
@@ -40,11 +39,10 @@ const MAIN = [
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Search", url: "/search", icon: MagnifyingGlass },
   { title: "Friends", url: "/friends", icon: Users },
-  { title: "Activity", url: "/activity", icon: ChartBar },
+  { title: "Profile", url: "/profile", icon: User },
 ] as const;
 
 const ACCOUNT = [
-  { title: "Profile", url: "/profile", icon: User },
   { title: "Settings", url: "/settings", icon: GearSix },
 ] as const;
 
