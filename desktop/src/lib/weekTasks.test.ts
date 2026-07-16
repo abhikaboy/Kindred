@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { startOfWeek } from "date-fns";
-import { isMultiDay, tasksForWeek, spanningTasksForWeek, dayKey } from "@/lib/weekTasks";
+import { isMultiDay, tasksForWeek, spanningTasksForWeek, spanningEdgesForWeek, dayKey } from "@/lib/weekTasks";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 const task = (o: Partial<TaskDocument>): TaskDocument =>
@@ -128,5 +128,33 @@ describe("spanningTasksForWeek – lane packing", () => {
     const bars = spanningTasksForWeek([taskA, taskC], SUN_JUL12);
     expect(bars).toHaveLength(2);
     expect(bars.every((b) => b.row === 0)).toBe(true);
+  });
+});
+
+describe("spanningEdgesForWeek", () => {
+  const t = task({ id: "span", startTime: iso(2026, 6, 16, 9), deadline: iso(2026, 6, 23, 17) });
+
+  it("start day gets a start-edge from the start time to end of day", () => {
+    const edges = spanningEdgesForWeek([t], SUN_JUL12);
+    const startEdges = edges[dayKey(new Date(2026, 6, 16))];
+    expect(startEdges).toHaveLength(1);
+    expect(startEdges[0]).toMatchObject({ kind: "start", startMin: 9 * 60, endMin: 1440 });
+    // Deadline (Jul 23) is outside this week → no end edge anywhere in week 1.
+    expect(Object.values(edges).flat().some((e) => e.kind === "end")).toBe(false);
+  });
+
+  it("deadline day gets an end-edge from midnight to the deadline time", () => {
+    const edges = spanningEdgesForWeek([t], SUN_JUL19);
+    const endEdges = edges[dayKey(new Date(2026, 6, 23))];
+    expect(endEdges).toHaveLength(1);
+    expect(endEdges[0]).toMatchObject({ kind: "end", startMin: 0, endMin: 17 * 60 });
+    // Start day (Jul 16) is outside this week → no start edge.
+    expect(Object.values(edges).flat().some((e) => e.kind === "start")).toBe(false);
+  });
+
+  it("ignores single-day tasks", () => {
+    const single = task({ startTime: iso(2026, 6, 16, 9), deadline: iso(2026, 6, 16, 17) });
+    const edges = spanningEdgesForWeek([single], SUN_JUL12);
+    expect(Object.values(edges).flat()).toHaveLength(0);
   });
 });

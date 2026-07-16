@@ -92,3 +92,40 @@ export function spanningTasksForWeek(allTasks: TaskDocument[], weekStart: Date):
 
   return result;
 }
+
+const minuteOfDay = (iso: string): number => {
+  const d = new Date(iso);
+  return d.getHours() * 60 + d.getMinutes();
+};
+
+// A partial-day block for a spanning task's endpoint, shown in the hourly grid so
+// the start/deadline time reads clearly: "end" runs from midnight to the deadline
+// minute; "start" runs from the start minute to midnight.
+export type SpanningEdge = { task: TaskDocument; startMin: number; endMin: number; kind: "start" | "end" };
+
+// Per-day edge blocks for spanning tasks whose endpoints fall within the visible week.
+export function spanningEdgesForWeek(allTasks: TaskDocument[], weekStart: Date): Record<string, SpanningEdge[]> {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(weekStart), i));
+  const out: Record<string, SpanningEdge[]> = {};
+  for (const day of days) out[dayKey(day)] = [];
+
+  for (const task of allTasks) {
+    if (!isMultiDay(task) || !task.deadline) continue;
+    const startIso = task.startTime ?? task.startDate;
+    if (!startIso) continue;
+
+    // Deadline day → block up to the deadline time.
+    const deadlineDay = startOfDay(new Date(task.deadline));
+    const endBucket = out[dayKey(deadlineDay)];
+    if (endBucket) endBucket.push({ task, startMin: 0, endMin: minuteOfDay(task.deadline), kind: "end" });
+
+    // Start day → block from the start time to end of day (only when it has a real time).
+    if (task.startTime) {
+      const startDay = startOfDay(new Date(task.startTime));
+      const startBucket = out[dayKey(startDay)];
+      if (startBucket) startBucket.push({ task, startMin: minuteOfDay(task.startTime), endMin: 1440, kind: "start" });
+    }
+  }
+
+  return out;
+}

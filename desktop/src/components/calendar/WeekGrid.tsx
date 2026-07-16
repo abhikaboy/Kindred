@@ -5,7 +5,7 @@ import { HOUR_HEIGHT, layoutDayEvents, minutesToY, nowMinutes, yToMinutes } from
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
-import type { SpanningBar } from "@/lib/weekTasks";
+import type { SpanningBar, SpanningEdge } from "@/lib/weekTasks";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
@@ -55,7 +55,32 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
 const minuteLabel = (min: number) => format(new Date(0, 0, 0, Math.floor(min / 60), min % 60), "h:mm a");
 
-function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tasks: WeekDayTasks; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule }) {
+// A spanning task's endpoint drawn in the hourly grid: the deadline day fills down
+// to the due time; the start day fills from the start time onward. Sits behind
+// normal events and is non-interactive.
+function SpanningEdgeBlock({ edge }: { edge: SpanningEdge }) {
+  const top = minutesToY(edge.startMin);
+  const height = Math.max(minutesToY(15), minutesToY(edge.endMin - edge.startMin));
+  const label =
+    edge.kind === "end"
+      ? `Due · ${minuteLabel(edge.endMin)}`
+      : minuteLabel(edge.startMin);
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-1 flex overflow-hidden bg-primary/10 px-1.5 py-0.5",
+        edge.kind === "end" ? "items-end rounded-b-lg" : "items-start rounded-t-lg"
+      )}
+      style={{ top, height }}
+    >
+      <ThemedText type="caption" className="truncate text-primary">
+        {label} · {edge.task.content || "Untitled"}
+      </ThemedText>
+    </div>
+  );
+}
+
+function DayColumn({ day, tasks, edges, onCreateRange, onReschedule }: { day: Date; tasks: WeekDayTasks; edges: SpanningEdge[]; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule }) {
   const dropKey = `weekcol:${dayKey(day)}`;
   const ref = useDropTarget(dropKey);
   const { dragging, hoverKey, pointer, grabOffsetY, previewHeightPx } = useDragState();
@@ -103,6 +128,9 @@ function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tas
       {isToday(day) && (
         <div className="absolute inset-x-0 z-10 border-t-2 border-destructive" style={{ top: minutesToY(nowMinutes()) }} />
       )}
+      {edges.map((edge, i) => (
+        <SpanningEdgeBlock key={`edge-${edge.task.id}-${i}`} edge={edge} />
+      ))}
       {layoutDayEvents(tasks.timed, day).map((p) => (
         <CalendarEventCard key={p.task.id} task={p.task} top={p.top} height={p.height} leftPct={p.leftPct} widthPct={p.widthPct} onReschedule={onReschedule} />
       ))}
@@ -130,13 +158,14 @@ type Props = {
   weekStart: Date;
   week: Record<string, WeekDayTasks>;
   spanning: SpanningBar[];
+  edges: Record<string, SpanningEdge[]>;
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   onCreateRange: (day: Date, startMin: number, endMin: number) => void;
   onReschedule: Reschedule;
 };
 
-export function WeekGrid({ weekStart, week, spanning, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
+export function WeekGrid({ weekStart, week, spanning, edges, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const scrollRef = useRef<HTMLDivElement>(null);
   // On mount, scroll so the current time sits near the top with a little context above.
@@ -201,7 +230,7 @@ export function WeekGrid({ weekStart, week, spanning, selectedDate, onSelectDate
         </div>
         <div className="flex flex-1">
           {days.map((day) => (
-            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} onCreateRange={onCreateRange} onReschedule={onReschedule} />
+            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} edges={edges[dayKey(day)] ?? []} onCreateRange={onCreateRange} onReschedule={onReschedule} />
           ))}
         </div>
       </div>
