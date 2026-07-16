@@ -19,11 +19,11 @@ export function KudosViewer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in-0 duration-200"
       onClick={onClose}
     >
       <div
-        className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl"
+        className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <ThemedText type="subtitle" as="h2">

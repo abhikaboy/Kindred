@@ -44,7 +44,7 @@ function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element 
   return (
     <div className={busy ? "flex gap-3 opacity-50" : "flex gap-3"}>
       {status === "connected" ? (
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary/15 px-4 py-2 text-primary">
+        <span className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-primary/15 px-5 text-primary">
           <Check size={16} weight="bold" />
           <ThemedText type="defaultSemiBold" className="text-primary">
             Friends
@@ -54,27 +54,27 @@ function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element 
         <PrimaryButton
           title="Requested"
           secondary
-          className="w-auto px-5 py-2"
+          className="h-11 w-auto px-5 py-0"
           disabled={busy || !requestId}
           onClick={() => requestId && remove.mutate({ params: { header: AUTH, path: { id: requestId } } })}
         />
       ) : status === "received" ? (
         <PrimaryButton
           title="Accept"
-          className="w-auto px-5 py-2"
+          className="h-11 w-auto px-5 py-0"
           disabled={busy || !requestId}
           onClick={() => requestId && accept.mutate({ params: { header: AUTH, path: { id: requestId } } })}
         />
       ) : (
         <PrimaryButton
           title="Add friend"
-          className="w-auto px-5 py-2"
+          className="h-11 w-auto px-5 py-0"
           disabled={busy}
           onClick={() => send.mutate({ params: { header: AUTH }, body: { receiver_id: profile.id } })}
         />
       )}
 
-      <Button variant="outline" onClick={() => setKudosOpen(true)}>
+      <Button variant="outline" onClick={() => setKudosOpen(true)} className="h-11 px-5">
         <Sparkle weight="duotone" /> Encourage
       </Button>
 
@@ -101,7 +101,7 @@ export default function AccountScreen() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl pt-4">
+      <div className="mx-auto max-w-5xl pt-6">
         <div className="flex items-end gap-4 px-2 pt-2">
           <Skeleton className="size-28 rounded-full" />
           <Skeleton className="mb-2 h-8 w-48" />
@@ -128,7 +128,7 @@ export default function AccountScreen() {
   const activeTasks = (profile.tasks ?? []).filter((t) => t.public);
 
   return (
-    <div className="mx-auto max-w-5xl pt-4">
+    <div className="mx-auto max-w-5xl pt-6">
       <ProfileIdentity
         displayName={profile.display_name}
         handle={profile.handle}

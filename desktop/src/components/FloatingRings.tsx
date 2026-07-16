@@ -4,8 +4,8 @@ import { Check } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday, type RingProgress } from "@/hooks/useRings";
 
-const SIZE = 36;
-const STROKE = 4;
+const SIZE = 48;
+const STROKE = 5;
 const R = (SIZE - STROKE) / 2;
 const CIRC = 2 * Math.PI * R;
 
@@ -57,15 +57,15 @@ function MiniRing({
         </svg>
         {progress.closed ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Check size={14} weight="bold" style={{ color }} />
+            <Check size={18} weight="bold" style={{ color }} />
           </div>
         ) : null}
       </div>
-      <ThemedText type="caption" className="text-[10px] leading-none">
+      <ThemedText type="caption" className="text-[11px] leading-none">
         {label}
       </ThemedText>
       <Reveal>
-        <ThemedText type="caption" className="pt-0.5 text-[10px] leading-none tabular-nums">
+        <ThemedText type="caption" className="pt-0.5 text-[11px] leading-none tabular-nums">
           {progress.current}/{progress.target}
         </ThemedText>
       </Reveal>
@@ -98,14 +98,14 @@ export function FloatingRings(): JSX.Element | null {
       onClick={() => navigate("/")}
       title={`${open} ring${open === 1 ? "" : "s"} left today`}
       aria-label={`${open} rings left today — go to home`}
-      className="group fixed bottom-6 right-6 z-40 flex flex-col rounded-2xl border bg-card px-3.5 py-2.5 text-left shadow-lg transition-shadow hover:shadow-xl"
+      className="group fixed bottom-6 right-6 z-40 flex flex-col rounded-2xl border bg-card px-4 py-3 text-left shadow-lg transition-shadow hover:shadow-xl"
     >
       <Reveal>
-        <ThemedText type="defaultSemiBold" className="pb-1.5 text-xs">
+        <ThemedText type="defaultSemiBold" className="pb-2 text-sm">
           {open > 0 ? `Today · ${open} left` : "All rings closed 🎉"}
         </ThemedText>
       </Reveal>
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         {RINGS.map((r) => (
           <MiniRing key={r.key} label={r.label} color={r.color} progress={data.ring_state[r.key]} reveal={reveal} />
         ))}

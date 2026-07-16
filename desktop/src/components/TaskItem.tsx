@@ -52,7 +52,8 @@ export function TaskItem({ task, completed }: { task: TaskDocument; completed?: 
 
   return (
     <TaskContextMenu task={task}>
-      <div className="rounded-2xl border bg-card/60 px-4 py-4">
+      <div className="rounded-2xl border border-border/60 bg-card px-4 py-3.5 transition-colors hover:border-border">
+
         <div className="flex items-start gap-3">
           {!completed && <CompleteCheckbox className="mt-0.5" />}
           <div className="flex min-w-0 flex-1 flex-col">

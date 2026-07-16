@@ -42,30 +42,19 @@ function RowSkeletons({ count = 3 }: { count?: number }) {
   );
 }
 
-export default function FriendsScreen() {
+// People half of the combined Search page: find people + browse friends/requests/suggested.
+export function PeopleTab() {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounced(query.trim(), 300);
   const searching = debouncedQuery.length > 0;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 pt-6">
-      <ThemedText type="titleFraunces" as="h1">
-        Friends
-      </ThemedText>
-
+    <div className="flex flex-col gap-6">
       <div className="max-w-2xl">
-        <SearchBox
-          value={query}
-          onChange={setQuery}
-          placeholder="Search people"
-        />
+        <SearchBox value={query} onChange={setQuery} placeholder="Search people" />
       </div>
 
-      {searching ? (
-        <SearchSection query={debouncedQuery} />
-      ) : (
-        <BrowseSections />
-      )}
+      {searching ? <SearchSection query={debouncedQuery} /> : <BrowseSections />}
     </div>
   );
 }
@@ -153,3 +142,5 @@ function BrowseSections() {
     </div>
   );
 }
+
+export default PeopleTab;

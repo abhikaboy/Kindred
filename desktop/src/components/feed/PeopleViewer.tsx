@@ -15,11 +15,11 @@ export function PeopleViewer({ open, onClose, title, groups }: PeopleViewerProps
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in-0 duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border bg-card p-5 shadow-xl max-h-[70vh] overflow-y-auto"
+        className="w-full max-w-sm rounded-2xl border bg-card p-5 shadow-xl max-h-[70vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <ThemedText type="subtitle" as="h2">

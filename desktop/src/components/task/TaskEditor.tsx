@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarBlank,
@@ -21,6 +22,7 @@ import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
 import { cn } from "@/lib/utils";
 import { fireConfetti } from "@/lib/confetti";
+import { useCreate } from "@/components/create/CreateContext";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 import {
   AUTH_HEADER,
@@ -120,6 +122,7 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
   const completeTask = useCompleteTask();
   const deleteTask = useDeleteTask();
   const activateTask = useActivateTask();
+  const { openCreatePost } = useCreate();
 
   const path = { category: categoryId, id: task.id };
   const isActive = Boolean(task.active || task.workingOnSince);
@@ -178,8 +181,21 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
         body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           fireConfetti(completeBtnRef.current);
+          // Same "share your win" prompt as the task rows — on every completion.
+          const title =
+            data?.streakChanged && data.currentStreak
+              ? `🔥 ${data.currentStreak} day streak!`
+              : "Task completed! 🎉";
+          toast.success(title, {
+            description: "Share your win and document your task",
+            duration: 6000,
+            action: {
+              label: "Share",
+              onClick: () => openCreatePost({ id: task.id, content: task.content, categoryId }),
+            },
+          });
           done();
         },
       }
