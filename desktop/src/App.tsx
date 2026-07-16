@@ -9,7 +9,6 @@ import HomeScreen from "@/routes/home";
 import CalendarScreen from "@/routes/calendar";
 import FeedScreen from "@/routes/feed";
 import SearchScreen from "@/routes/search";
-import FriendsScreen from "@/routes/friends";
 import ActivityScreen from "@/routes/activity";
 import NotificationsScreen from "@/routes/notifications";
 import WorkspaceScreen from "@/routes/workspace";
@@ -50,7 +49,8 @@ function App() {
             <Route path="/calendar" element={<CalendarScreen />} />
             <Route path="/feed" element={<FeedScreen />} />
             <Route path="/search" element={<SearchScreen />} />
-            <Route path="/friends" element={<FriendsScreen />} />
+            {/* Friends merged into Search (People tab). */}
+            <Route path="/friends" element={<Navigate to="/search" replace />} />
             <Route path="/notifications" element={<NotificationsScreen />} />
             <Route path="/activity" element={<ActivityScreen />} />
             <Route path="/workspace/:name" element={<WorkspaceScreen />} />

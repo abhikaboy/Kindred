@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ThemedText";
 import { EmojiPicker } from "@/components/feed/EmojiPicker";
 import { PeopleViewer, type Person } from "@/components/feed/PeopleViewer";
+import { KudosViewer } from "@/components/kudos/KudosViewer";
 import { useUsersByIds } from "@/hooks/usePostActions";
 import type { ReactionGroup } from "@/lib/feed";
 import type { components } from "@/lib/api/types.gen";
@@ -59,12 +60,6 @@ export function ReactionRow({
     }));
     setReactionViewer(viewerGroups);
   };
-
-  const kudosPeople: Person[] = kudos.map((k) => ({
-    name: k.sender.name,
-    handle: k.sender.handle,
-    icon: k.sender.icon,
-  }));
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -151,12 +146,7 @@ export function ReactionRow({
         </ThemedText>
       </Button>
 
-      <PeopleViewer
-        open={kudosViewer}
-        onClose={() => setKudosViewer(false)}
-        title="Kudos"
-        groups={[{ people: kudosPeople }]}
-      />
+      <KudosViewer open={kudosViewer} onClose={() => setKudosViewer(false)} kudos={kudos} />
       <PeopleViewer
         open={reactionViewer !== null}
         onClose={() => setReactionViewer(null)}

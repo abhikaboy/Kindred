@@ -1,5 +1,6 @@
 import { ArrowSquareOut, Check, Play, Stop, Trash } from "@phosphor-icons/react"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -13,6 +14,7 @@ import {
   useCompleteTask,
   useDeleteTask,
 } from "@/hooks/useTaskActions"
+import { useCreate } from "@/components/create/CreateContext"
 import type { TaskDocument } from "@/hooks/useWorkspaces"
 
 export function TaskContextMenu({
@@ -26,6 +28,7 @@ export function TaskContextMenu({
   const activateTask = useActivateTask()
   const completeTask = useCompleteTask()
   const deleteTask = useDeleteTask()
+  const { openCreatePost } = useCreate()
 
   const isActive = Boolean(task.active || task.workingOnSince)
   const hasCategoryID = Boolean(task.categoryID)
@@ -66,13 +69,32 @@ export function TaskContextMenu({
         <ContextMenuItem
           disabled={!hasCategoryID}
           onClick={() =>
-            completeTask.mutate({
-              params: {
-                header: AUTH_HEADER,
-                path: { category: task.categoryID!, id: task.id },
+            completeTask.mutate(
+              {
+                params: {
+                  header: AUTH_HEADER,
+                  path: { category: task.categoryID!, id: task.id },
+                },
+                body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
               },
-              body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
-            })
+              {
+                onSuccess: (data) => {
+                  const title =
+                    data?.streakChanged && data.currentStreak
+                      ? `🔥 ${data.currentStreak} day streak!`
+                      : "Task completed! 🎉"
+                  toast.success(title, {
+                    description: "Share your win and document your task",
+                    duration: 6000,
+                    action: {
+                      label: "Share",
+                      onClick: () =>
+                        openCreatePost({ id: task.id, content: task.content, categoryId: task.categoryID }),
+                    },
+                  })
+                },
+              }
+            )
           }
         >
           <Check size={14} />

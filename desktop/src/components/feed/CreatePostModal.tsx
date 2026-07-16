@@ -1,4 +1,4 @@
-import { useEffect, useState, type ClipboardEvent, type DragEvent, type JSX } from "react";
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type JSX } from "react";
 import { toast } from "sonner";
 import { ImageSquare, X } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
@@ -22,7 +22,18 @@ function pickImageFile(items: DataTransferItemList | FileList | null): File | nu
   return null;
 }
 
-export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () => void }): JSX.Element | null {
+// A just-completed task to share — pre-selects it so the picker starts collapsed.
+export type PostPrefill = { id: string; content: string; categoryId?: string };
+
+export function CreatePostModal({
+  open,
+  onClose,
+  prefill,
+}: {
+  open: boolean;
+  onClose: () => void;
+  prefill?: PostPrefill;
+}): JSX.Element | null {
   const workspaces = useWorkspaces();
   const create = useCreatePost();
   const completed = $api.useQuery(
@@ -39,6 +50,7 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!file) return setPreview(null);
@@ -57,9 +69,34 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
     }
   }, [open]);
 
+  // Pre-select the just-completed task when opened from the post-complete prompt.
+  useEffect(() => {
+    if (open && prefill) {
+      setTaskId(prefill.id);
+      setExpanded(false);
+    }
+  }, [open, prefill]);
+
+  const rawTasks = completed.data?.tasks ?? [];
+  // The just-completed task may not be in the cached "completed" list yet — inject it
+  // so it can be selected and posted immediately.
+  const tasks = useMemo(() => {
+    if (prefill && !rawTasks.some((t) => t.id === prefill.id)) {
+      return [
+        {
+          id: prefill.id,
+          content: prefill.content,
+          categoryID: prefill.categoryId ?? "",
+          timeCompleted: new Date().toISOString(),
+        } as (typeof rawTasks)[number],
+        ...rawTasks,
+      ];
+    }
+    return rawTasks;
+  }, [rawTasks, prefill]);
+
   if (!open) return null;
 
-  const tasks = completed.data?.tasks ?? [];
   const catName = (id?: string): string => {
     if (!id) return "";
     for (const ws of workspaces.data ?? []) for (const c of ws.categories ?? []) if (c.id === id) return c.name;
@@ -111,9 +148,12 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in-0 duration-200"
+      onClick={onClose}
+    >
       <div
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-xl"
+        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}
         onPaste={onPaste}
         onDragOver={(e) => e.preventDefault()}
@@ -197,7 +237,7 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder="Say something about it…"
-            className="min-h-32 w-full flex-1 resize-none rounded-xl border bg-background p-3 text-foreground outline-none"
+            className="min-h-40 w-full flex-1 resize-none rounded-xl border bg-background p-4 text-foreground outline-none focus:border-primary transition-colors"
           />
 
           {preview ? (
@@ -213,11 +253,26 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
               </button>
             </div>
           ) : (
-            <div className="flex shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed py-8 text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="flex shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed py-8 text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
               <ImageSquare size={24} />
-              <ThemedText type="caption">Paste or drag an image here (optional)</ThemedText>
-            </div>
+              <ThemedText type="caption">Click to upload — or paste / drag an image (optional)</ThemedText>
+            </button>
           )}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) setFile(f);
+              e.target.value = ""; // allow re-selecting the same file
+            }}
+          />
         </div>
 
         <div className="mt-4 flex shrink-0 items-center justify-between">

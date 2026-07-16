@@ -4,9 +4,7 @@ import {
   House,
   CalendarBlank,
   Newspaper,
-  Bell,
   MagnifyingGlass,
-  Users,
   Plus,
   User,
   GearSix,
@@ -18,6 +16,7 @@ import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceIcon } from "@/components/WorkspaceIcon";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   Sidebar,
   SidebarContent,
@@ -36,28 +35,26 @@ const MAIN = [
   { title: "Home", url: "/", icon: House },
   { title: "Calendar", url: "/calendar", icon: CalendarBlank },
   { title: "Feed", url: "/feed", icon: Newspaper },
-  { title: "Notifications", url: "/notifications", icon: Bell },
+  // Search now covers both people and blueprints (see routes/search.tsx).
   { title: "Search", url: "/search", icon: MagnifyingGlass },
-  { title: "Friends", url: "/friends", icon: Users },
   { title: "Profile", url: "/profile", icon: User },
-] as const;
-
-const ACCOUNT = [
-  { title: "Settings", url: "/settings", icon: GearSix },
 ] as const;
 
 export function AppSidebar() {
   const { pathname } = useLocation();
   const { logout } = useAuth();
-  const { openCreateTask, openCreateCategory } = useCreate();
+  const { openCreateTask, openCreateWorkspace } = useCreate();
   const workspaces = useWorkspaces();
 
   return (
-    <Sidebar variant="floating" collapsible="icon">
+    <Sidebar variant="floating" collapsible="offcanvas">
       <SidebarHeader className="px-2 py-2">
-        <ThemedText type="titleFraunces" className="text-2xl">
-          Kindred
-        </ThemedText>
+        <div className="flex items-center justify-between gap-2">
+          <ThemedText type="titleFraunces" className="text-2xl">
+            Kindred
+          </ThemedText>
+          <NotificationBell />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -68,7 +65,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   onClick={() => openCreateTask()}
                   tooltip="New task"
-                  className="bg-sidebar-accent text-sidebar-accent-foreground"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
                 >
                   <Plus weight="bold" />
                   <span>New task</span>
@@ -117,16 +114,10 @@ export function AppSidebar() {
               })}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => openCreateCategory()}
+                  onClick={() => openCreateWorkspace()}
                   className="text-muted-foreground"
-                  tooltip="New category"
+                  tooltip="New workspace"
                 >
-                  <Plus />
-                  <span>New category</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="text-muted-foreground" tooltip="New workspace">
                   <Plus />
                   <span>New workspace</span>
                 </SidebarMenuButton>
@@ -134,30 +125,20 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {ACCOUNT.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.url}
-                    tooltip={item.title}
-                    render={<Link to={item.url} />}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              isActive={pathname === "/settings"}
+              tooltip="Settings"
+              render={<Link to="/settings" />}
+            >
+              <GearSix />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={logout} tooltip="Log out">
               <SignOut />

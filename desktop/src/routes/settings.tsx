@@ -77,7 +77,7 @@ export default function SettingsScreen() {
     const settingsError = !settingsQuery.isLoading && !settings;
 
     return (
-        <div className="mx-auto flex max-w-2xl flex-col">
+        <div className="mx-auto flex max-w-2xl flex-col pt-6">
             <ThemedText type="titleFraunces" as="h1" className="mb-8">
                 Settings
             </ThemedText>

@@ -181,9 +181,14 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 		}
 	}
 
-	// A video kudos carries its own thumbnail; prefer it over the post image.
+	// The kudos's own media wins over the post image. A video carries its poster
+	// in ThumbnailURL. An image carries its URL in Message and has NO thumbnail —
+	// clients treat "media URL + no thumbnail" as an image (a thumbnail would make
+	// them render it as a video), so don't leak the post image in as one.
 	if r.Type == "video" && r.ThumbnailURL != nil {
 		thumbnail = *r.ThumbnailURL
+	} else if r.Type == "image" {
+		thumbnail = ""
 	}
 
 	// Append a denormalized kudos onto the post so cards can render the
