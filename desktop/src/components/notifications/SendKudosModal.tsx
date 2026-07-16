@@ -180,7 +180,7 @@ export function SendKudosModal({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write a message, paste an image, or add a GIF…"
-              className="mt-4 min-h-24 w-full rounded-xl border bg-background p-3 text-foreground outline-none"
+              className="mt-4 min-h-32 w-full rounded-xl border bg-background p-4 text-foreground outline-none focus:border-primary transition-colors resize-y"
             />
             <div className="mt-2 flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={uploading} onClick={() => fileInput.current?.click()}>

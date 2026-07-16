@@ -197,7 +197,7 @@ export function CreatePostModal({ open, onClose }: { open: boolean; onClose: () 
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder="Say something about it…"
-            className="min-h-32 w-full flex-1 resize-none rounded-xl border bg-background p-3 text-foreground outline-none"
+            className="min-h-40 w-full flex-1 resize-none rounded-xl border bg-background p-4 text-foreground outline-none focus:border-primary transition-colors"
           />
 
           {preview ? (
