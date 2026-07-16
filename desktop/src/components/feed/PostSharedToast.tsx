@@ -34,7 +34,7 @@ export function showPostSharedToast({
         className="task-toast-in flex w-[360px] max-w-[90vw] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-lg transition-transform hover:scale-[1.01]"
       >
         <div className="flex items-center justify-between px-4 pt-3">
-          <ThemedText type="fancyFrauncesSubheading" className="text-lg text-primary">
+          <ThemedText type="smallerDefault" className="font-medium text-primary">
             Shared to your feed
           </ThemedText>
           <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
