@@ -58,7 +58,7 @@ export function WeekGrid({ weekStart, week, selectedDate, onSelectDate }: Props)
               isSameDay(day, selectedDate) && "bg-primary/10"
             )}
           >
-            <ThemedText type="caption" className={cn(!isToday(day) && "text-muted-foreground")}>
+            <ThemedText type="caption" className={cn(!isToday(day) && !isSameDay(day, selectedDate) && "text-muted-foreground")}>
               {WEEKDAYS[day.getDay()]}
             </ThemedText>
             <ThemedText type="subtitle" className={cn(isToday(day) && "text-primary")}>
