@@ -140,6 +140,15 @@
   animation: threshold-pulse 600ms ease-in-out infinite;
 }
 
+/* Task-complete toast: countdown bar that shrinks over the toast's lifetime. */
+@keyframes taskToastShrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.task-toast-bar {
+  animation: taskToastShrink 6s linear forwards;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

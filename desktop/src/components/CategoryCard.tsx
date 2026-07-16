@@ -12,10 +12,12 @@ export function CategoryCard({
   category,
   accent,
   shortcutIndex,
+  selected,
 }: {
   category: CategoryDocument;
   accent?: string;
   shortcutIndex?: number;
+  selected?: boolean;
 }) {
   const { openCreateTask } = useCreate();
   const tasks = category.tasks ?? [];
@@ -24,6 +26,8 @@ export function CategoryCard({
   return (
     <section className="group/category flex flex-col gap-3">
       <div className="flex items-center gap-2">
+        {/* Subtle keyboard-selection marker. */}
+        {selected && <span className="size-2 shrink-0 rounded-full bg-primary" aria-hidden />}
         {accent && (
           <span
             className="size-2.5 shrink-0 rounded-full"

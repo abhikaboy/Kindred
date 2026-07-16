@@ -63,6 +63,7 @@ export function RingsClosedFeedCard({
         kind="congratulation"
         receiverId={ringsClosed.user._id}
         recipientName={ringsClosed.user.display_name}
+        showRings
         onSent={() => setSent(true)}
       />
     </div>

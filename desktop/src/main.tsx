@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@ta
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { toast } from "sonner";
 import { ThemeProvider } from "@/lib/theme";
+import { RingUpdateProvider } from "@/components/rings/RingUpdateContext";
 import { getErrorMessage, isAuthError } from "@/lib/errors";
 import App from "./App";
 import "./index.css";
@@ -47,7 +48,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <ThemeProvider>
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <QueryClientProvider client={queryClient}>
-          <App />
+          <RingUpdateProvider>
+            <App />
+          </RingUpdateProvider>
         </QueryClientProvider>
       </GoogleOAuthProvider>
     </ThemeProvider>

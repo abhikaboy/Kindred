@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { ThemedText } from "@/components/ThemedText";
 import { useCompleteTask, AUTH_HEADER } from "@/hooks/useTaskActions";
 import { useCreate } from "@/components/create/CreateContext";
+import { useRingUpdate } from "@/components/rings/RingUpdateContext";
+import { showTaskCompleteToast } from "@/components/TaskCompleteToast";
 import { fireConfetti } from "@/lib/confetti";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
@@ -68,6 +70,7 @@ export function SwipeToComplete({
   const navigate = useNavigate();
   const completeTask = useCompleteTask();
   const { openCreatePost } = useCreate();
+  const { showRingUpdate } = useRingUpdate();
   const rowRef = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const dragging = useRef(false);
@@ -94,19 +97,11 @@ export function SwipeToComplete({
       {
         onSuccess: (data) => {
           fireConfetti(rowRef.current);
-          // Post-complete "share your win" prompt (mirrors mobile) — on every completion.
-          const title =
-            data?.streakChanged && data.currentStreak
-              ? `🔥 ${data.currentStreak} day streak!`
-              : "Task completed! 🎉";
-          toast.success(title, {
-            description: "Share your win and document your task",
-            duration: 6000,
-            action: {
-              label: "Share",
-              onClick: () =>
-                openCreatePost({ id: task.id, content: task.content, categoryId }),
-            },
+          // Ring-fill celebration (dark gradient overlay) + the mobile-style "go post it" toast.
+          showRingUpdate(data?.ringDelta);
+          showTaskCompleteToast({
+            streak: data?.currentStreak,
+            onShare: () => openCreatePost({ id: task.id, content: task.content, categoryId }),
           });
         },
         // On failure, un-collapse the row so the task doesn't silently vanish.

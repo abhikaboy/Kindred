@@ -6,6 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { $api } from "@/lib/api/query";
 import { uploadImage } from "@/lib/upload";
 import { GifPicker } from "@/components/kudos/GifPicker";
+import { RingsCelebration } from "@/components/kudos/RingsCelebration";
 
 // Types require both auth headers; the client middleware fills the real tokens.
 const AUTH = { Authorization: "", refresh_token: "" };
@@ -31,6 +32,7 @@ type SendKudosModalProps = {
   taskName?: string;
   categoryName?: string;
   postId?: string;
+  showRings?: boolean;
 };
 
 export function SendKudosModal({
@@ -45,6 +47,7 @@ export function SendKudosModal({
   taskName,
   categoryName,
   postId,
+  showRings,
 }: SendKudosModalProps): JSX.Element | null {
   const [message, setMessage] = useState("");
   const [media, setMedia] = useState<string | null>(null); // image/GIF url when set
@@ -145,6 +148,11 @@ export function SendKudosModal({
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
       >
+        {showRings ? (
+          <div className="mb-4">
+            <RingsCelebration />
+          </div>
+        ) : null}
         <ThemedText type="subtitle" as="h2">
           Send {recipientName} kudos
         </ThemedText>

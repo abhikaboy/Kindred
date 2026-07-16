@@ -12,6 +12,9 @@ import type { components } from "@/lib/api/types.gen";
 
 type SafeUser = components["schemas"]["SafeUser"];
 
+// Backend requires a non-empty profile_picture on register; fall back to the app's default avatar.
+const DEFAULT_PICTURE = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg";
+
 interface AuthContextValue {
   user: SafeUser | null;
   isLoading: boolean;
@@ -28,6 +31,7 @@ interface AuthContextValue {
     email: string;
     phone: string;
     password: string;
+    profile_picture?: string;
   }) => Promise<void>;
   logout: () => void;
 }
@@ -208,27 +212,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string;
     phone: string;
     password: string;
+    profile_picture?: string;
   }) {
     setError(null);
-    const { error: err } = await client.POST("/v1/auth/register", {
+    const { data, error: err } = await client.POST("/v1/auth/register", {
       body: {
         display_name: input.display_name,
         handle: input.handle,
         email: input.email,
         phone: input.phone,
         password: input.password,
-        profile_picture: "",
+        profile_picture: input.profile_picture || DEFAULT_PICTURE,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
     });
-    if (err) {
+    if (err || !data) {
       const message =
-        err.detail || err.title || "Unable to create account. Please try again.";
+        (err && (err.detail || err.title)) || "Unable to create account. Please try again.";
       setError(message);
       throw new Error(message);
     }
-    // Register returns no tokens; authenticate via phone login.
-    await loginWithPhone(input.phone, input.password);
+    // Register returns the user + auth tokens (the client middleware persists the tokens
+    // from the response headers), so we're signed in immediately — no separate login.
+    setUser(data);
   }
 
   function logout() {

@@ -1,6 +1,5 @@
 import { ArrowSquareOut, Check, Play, Stop, Trash } from "@phosphor-icons/react"
 import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -15,6 +14,8 @@ import {
   useDeleteTask,
 } from "@/hooks/useTaskActions"
 import { useCreate } from "@/components/create/CreateContext"
+import { useRingUpdate } from "@/components/rings/RingUpdateContext"
+import { showTaskCompleteToast } from "@/components/TaskCompleteToast"
 import type { TaskDocument } from "@/hooks/useWorkspaces"
 
 export function TaskContextMenu({
@@ -29,6 +30,7 @@ export function TaskContextMenu({
   const completeTask = useCompleteTask()
   const deleteTask = useDeleteTask()
   const { openCreatePost } = useCreate()
+  const { showRingUpdate } = useRingUpdate()
 
   const isActive = Boolean(task.active || task.workingOnSince)
   const hasCategoryID = Boolean(task.categoryID)
@@ -79,18 +81,11 @@ export function TaskContextMenu({
               },
               {
                 onSuccess: (data) => {
-                  const title =
-                    data?.streakChanged && data.currentStreak
-                      ? `🔥 ${data.currentStreak} day streak!`
-                      : "Task completed! 🎉"
-                  toast.success(title, {
-                    description: "Share your win and document your task",
-                    duration: 6000,
-                    action: {
-                      label: "Share",
-                      onClick: () =>
-                        openCreatePost({ id: task.id, content: task.content, categoryId: task.categoryID }),
-                    },
+                  showRingUpdate(data?.ringDelta)
+                  showTaskCompleteToast({
+                    streak: data?.currentStreak,
+                    onShare: () =>
+                      openCreatePost({ id: task.id, content: task.content, categoryId: task.categoryID }),
                   })
                 },
               }
