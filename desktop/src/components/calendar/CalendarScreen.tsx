@@ -5,6 +5,7 @@ import { WeekGrid } from "@/components/calendar/WeekGrid";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { AgendaPanel } from "@/components/calendar/AgendaPanel";
 import { DragProvider, useDragState } from "@/components/calendar/DragContext";
+import { TaskPeekProvider } from "@/components/calendar/TaskPeekContext";
 import { useCreate } from "@/components/create/CreateContext";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
@@ -128,9 +129,11 @@ export function CalendarScreen() {
   };
 
   return (
-    <DragProvider onDrop={handleDrop}>
-      <CalendarBody allTasks={allTasks} />
-      <DragGhost />
-    </DragProvider>
+    <TaskPeekProvider>
+      <DragProvider onDrop={handleDrop}>
+        <CalendarBody allTasks={allTasks} />
+        <DragGhost />
+      </DragProvider>
+    </TaskPeekProvider>
   );
 }

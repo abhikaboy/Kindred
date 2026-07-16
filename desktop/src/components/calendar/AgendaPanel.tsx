@@ -1,6 +1,6 @@
 import { format, isToday } from "date-fns";
-import { Link } from "react-router-dom";
 import { useDrag } from "@/components/calendar/DragContext";
+import { useTaskPeek } from "@/components/calendar/TaskPeekContext";
 import { TaskItem } from "@/components/TaskItem";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
 
 export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; selectedDate: Date }) {
   const dayLabel = isToday(selectedDate) ? "Today" : format(selectedDate, "EEE, MMM d");
+  const { openTask } = useTaskPeek();
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-4">
       {SECTIONS.map((s) => {
@@ -46,9 +47,9 @@ export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; 
           <div key={s.key} className="flex flex-col gap-2">
             <ThemedText type="subtitle">{label} ({tasks.length})</ThemedText>
             {tasks.map((t) => (
-              <Link key={t.id} to={`/task/${t.id}`} className="block">
+              <button key={t.id} type="button" className="block w-full text-left" onClick={() => openTask(t)}>
                 <TaskItem task={t} />
-              </Link>
+              </button>
             ))}
           </div>
         );
