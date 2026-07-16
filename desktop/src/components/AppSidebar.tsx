@@ -53,7 +53,7 @@ export function AppSidebar() {
   const workspaces = useWorkspaces();
 
   return (
-    <Sidebar variant="floating" collapsible="icon">
+    <Sidebar variant="floating" collapsible="offcanvas">
       <SidebarHeader className="px-2 py-2">
         <ThemedText type="titleFraunces" className="text-2xl">
           Kindred

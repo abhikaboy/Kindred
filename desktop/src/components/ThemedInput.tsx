@@ -25,6 +25,9 @@ const baseInput =
 const ghostInput =
   "bg-transparent border-0 px-0 py-4 text-base font-sans font-light text-foreground w-full outline-none placeholder:text-muted-foreground disabled:opacity-50";
 
+const baseTextarea =
+  "bg-secondary text-foreground rounded-xl px-6 py-4 text-base font-sans font-light border border-border w-full outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-50 min-h-[120px] align-top resize-y";
+
 const ThemedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, Props>(
   function ThemedInput(
     {
@@ -45,7 +48,7 @@ const ThemedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, Props>(
     },
     ref
   ) {
-    const classes = cn(ghost ? ghostInput : baseInput, textArea && "min-h-[100px] align-top resize-y", className);
+    const classes = cn(ghost ? ghostInput : (textArea ? baseTextarea : baseInput), className);
 
     if (textArea) {
       return (

@@ -25,6 +25,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "emoji-picker-element": "^1.29.1",
     "lucide-react": "^1.24.0",
     "openapi-fetch": "^0.17.0",
     "openapi-react-query": "^0.5.4",

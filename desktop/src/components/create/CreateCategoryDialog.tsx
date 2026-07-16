@@ -108,7 +108,7 @@ export function CreateCategoryDialog(props: CreateCategoryDialogProps) {
               id="category-workspace"
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
-              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-10 w-full min-w-0 rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {workspaceNames.map((ws) => (
                 <option key={ws} value={ws}>

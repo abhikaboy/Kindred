@@ -40,6 +40,9 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  // Hover-preview of a fully-collapsed (offcanvas) sidebar, without changing `open`.
+  peek: boolean
+  setPeek: (peek: boolean) => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -68,6 +71,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
+  const [peek, setPeek] = React.useState(false)
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -122,8 +126,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      peek,
+      setPeek,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, peek, setPeek]
   )
 
   return (
@@ -162,7 +168,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, peek, setPeek } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -205,6 +211,16 @@ function Sidebar({
     )
   }
 
+  // When fully collapsed (offcanvas), hovering the screen edge peeks the sidebar
+  // back into view as an overlay — without reserving layout width or flipping `open`.
+  const canPeek = collapsible === "offcanvas" && state === "collapsed"
+  const isPeeking = canPeek && peek
+  const peekStyle: React.CSSProperties | undefined = isPeeking
+    ? side === "left"
+      ? { left: 0, zIndex: 40 }
+      : { right: 0, zIndex: 40 }
+    : undefined
+
   return (
     <div
       className="group peer hidden text-sidebar-foreground md:block"
@@ -213,7 +229,20 @@ function Sidebar({
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      onMouseLeave={canPeek ? () => setPeek(false) : undefined}
     >
+      {/* Edge hover zone: only live while collapsed, so it never blocks the open sidebar. */}
+      {canPeek && !isPeeking ? (
+        <div
+          data-slot="sidebar-peek-zone"
+          aria-hidden
+          onMouseEnter={() => setPeek(true)}
+          className={cn(
+            "fixed inset-y-0 z-30 w-3",
+            side === "left" ? "left-0" : "right-0"
+          )}
+        />
+      ) : null}
       {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
@@ -238,6 +267,7 @@ function Sidebar({
           className
         )}
         {...props}
+        style={{ ...props.style, ...peekStyle }}
       >
         <div
           data-sidebar="sidebar"
