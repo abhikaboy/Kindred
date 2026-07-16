@@ -567,9 +567,13 @@ func (s *Service) GetFriendsPosts(userID primitive.ObjectID, limit, offset int) 
 		// Stage 1: Match the specific user
 		{{Key: "$match", Value: bson.M{"_id": userID}}},
 
-		// Stage 2: Extract friend IDs for posts lookup (no need to $lookup the full friend docs)
+		// Stage 2: Extract friend IDs for posts lookup (no need to $lookup the full friend docs).
+		// Include the user's own ID so their own posts show in their feed (newest → top).
 		{{Key: "$project", Value: bson.M{
-			"friendIds": "$friends",
+			"friendIds": bson.M{"$concatArrays": []interface{}{
+				bson.M{"$ifNull": []interface{}{"$friends", bson.A{}}},
+				bson.A{userID},
+			}},
 		}}},
 
 		// Stage 3: Lookup posts with visibility filtering

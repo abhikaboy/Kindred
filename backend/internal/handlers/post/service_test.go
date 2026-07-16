@@ -1173,6 +1173,7 @@ func (s *PostServiceTestSuite) TestGetFriendsPosts_WithFriends() {
 
 func (s *PostServiceTestSuite) TestGetFriendsPosts_NoFriends() {
 	user := s.GetUser(0)
+	stranger := s.GetUser(1)
 
 	// User has no friends
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user.ID}, bson.M{
@@ -1180,12 +1181,22 @@ func (s *PostServiceTestSuite) TestGetFriendsPosts_NoFriends() {
 	})
 	s.NoError(err)
 
-	// Get friends posts
-	posts, total, err := s.service.GetFriendsPosts(user.ID, 10, 0)
-
+	// The user's own post should show in their feed even without friends…
+	ownPost := testpkg.NewPostBuilder(*user).WithCaption("My own post").Build()
+	_, _, err = s.service.CreatePost(&ownPost)
 	s.NoError(err)
-	s.Equal(0, total)
-	s.Empty(posts)
+
+	// …but a non-friend's post should not.
+	strangerPost := testpkg.NewPostBuilder(*stranger).WithCaption("Stranger's post").Build()
+	_, _, err = s.service.CreatePost(&strangerPost)
+	s.NoError(err)
+
+	posts, _, err := s.service.GetFriendsPosts(user.ID, 10, 0)
+	s.NoError(err)
+	for _, p := range posts {
+		s.Equal(user.ID.Hex(), p.User.ID.Hex(), "feed should only contain the user's own posts when they have no friends")
+	}
+	s.NotEmpty(posts, "user's own post should appear in their feed")
 }
 
 func (s *PostServiceTestSuite) TestGetFriendsPosts_Pagination() {
