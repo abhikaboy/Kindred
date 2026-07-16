@@ -16,6 +16,7 @@ import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/ThemedInput";
 import PrimaryButton from "@/components/PrimaryButton";
 import { DataCard } from "@/components/task/DataCard";
+import { KudosBubble } from "@/components/kudos/KudosBubble";
 import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
 import { cn } from "@/lib/utils";
@@ -194,7 +195,7 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
   };
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-6">
+    <div className={cn("flex flex-col gap-6 pt-6", showBackLink && "mx-auto max-w-2xl")}>
       {showBackLink && <BackLink />}
 
       <div className="flex flex-col gap-4">
@@ -230,25 +231,29 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           </button>
         </div>
 
-        {isActive && (
-          <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-primary/10 px-3 py-1.5">
-            <Play size={14} weight="fill" className="text-primary" />
-            <ThemedText type="caption" className="text-primary">
-              In Progress
-            </ThemedText>
-          </span>
-        )}
+        {/* In-progress toggle — the tag itself starts/stops working (no separate button). */}
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={activateTask.isPending}
+          aria-pressed={isActive}
+          className={cn(
+            "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 transition-colors disabled:opacity-50",
+            isActive
+              ? "bg-primary/10 text-primary hover:bg-primary/15"
+              : "bg-muted text-muted-foreground hover:bg-muted/70"
+          )}
+        >
+          <Play size={14} weight={isActive ? "fill" : "regular"} />
+          <ThemedText
+            type="caption"
+            className={isActive ? "text-primary" : "text-muted-foreground"}
+          >
+            {isActive ? "In Progress" : "Start Working"}
+          </ThemedText>
+        </button>
 
         <div className="flex flex-wrap items-center gap-2">
-          <PrimaryButton
-            title={isActive ? "Stop Working" : "Start Working"}
-            secondary
-            disabled={activateTask.isPending}
-            onClick={handleStart}
-            className="w-auto px-5 py-2.5"
-          >
-            <Play size={16} weight={isActive ? "fill" : "regular"} />
-          </PrimaryButton>
           <PrimaryButton
             title={completeTask.isPending ? "Completing…" : "Mark Complete"}
             disabled={completeTask.isPending}
@@ -306,16 +311,14 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           title={`Encouragements · ${task.encouragements!.length}`}
           icon={<Sparkle size={20} weight="regular" className="text-foreground" />}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {task.encouragements!.map((k) => (
-              <div key={k.encouragementId} className="flex flex-col gap-0.5">
-                <ThemedText type="defaultSemiBold">
-                  {k.sender.name || k.sender.handle}
-                </ThemedText>
-                <ThemedText type="lightBody" className="text-muted-foreground">
-                  {k.message}
-                </ThemedText>
-              </div>
+              <KudosBubble
+                key={k.encouragementId}
+                name={k.sender.name || k.sender.handle}
+                icon={k.sender.icon}
+                message={k.message}
+              />
             ))}
           </div>
         </DataCard>

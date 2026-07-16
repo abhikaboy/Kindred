@@ -15,6 +15,7 @@ const SECTIONS: { key: keyof DailyBuckets; label: string }[] = [
 
 function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
   const { startDrag, dragging } = useDrag();
+  const { openTask } = useTaskPeek();
   if (tasks.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
@@ -23,7 +24,7 @@ function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
         {tasks.map((t) => (
           <button
             key={t.id}
-            onPointerDown={(e) => startDrag(t.id, e)}
+            onPointerDown={(e) => startDrag(t.id, e, { onClick: () => openTask(t) })}
             className={cn("cursor-grab touch-none rounded-full border bg-card/60 px-3 py-1.5", dragging?.taskId === t.id && "opacity-40")}
           >
             <ThemedText type="caption">{t.content || "Untitled task"}</ThemedText>
@@ -37,6 +38,7 @@ function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
 export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; selectedDate: Date }) {
   const dayLabel = isToday(selectedDate) ? "Today" : format(selectedDate, "EEE, MMM d");
   const { openTask } = useTaskPeek();
+  const { startDrag, dragging } = useDrag();
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-4">
       {SECTIONS.map((s) => {
@@ -47,9 +49,13 @@ export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; 
           <div key={s.key} className="flex flex-col gap-2">
             <ThemedText type="subtitle">{label} ({tasks.length})</ThemedText>
             {tasks.map((t) => (
-              <button key={t.id} type="button" className="block w-full text-left" onClick={() => openTask(t)}>
+              <div
+                key={t.id}
+                onPointerDown={(e) => startDrag(t.id, e, { onClick: () => openTask(t) })}
+                className={cn("cursor-grab touch-none", dragging?.taskId === t.id && "opacity-40")}
+              >
                 <TaskItem task={t} />
-              </button>
+              </div>
             ))}
           </div>
         );

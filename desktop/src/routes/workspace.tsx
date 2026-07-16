@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Plus, Stack } from "@phosphor-icons/react";
 import { useParams } from "react-router-dom";
 import { CategoryCard } from "@/components/CategoryCard";
@@ -12,7 +13,15 @@ export default function WorkspaceScreen() {
   const { name: rawName } = useParams();
   const name = rawName ? decodeURIComponent(rawName) : undefined;
   const { workspace, isLoading } = useWorkspace(name);
-  const { openCreateCategory } = useCreate();
+  const { openCreateCategory, setCategoryShortcuts } = useCreate();
+
+  // Register the on-screen categories (first 9) so Shift+1..9 creates a task in each.
+  const shortcutIds = (workspace?.categories ?? []).slice(0, 9).map((c) => c.id).join(",");
+  useEffect(() => {
+    const ids = shortcutIds ? shortcutIds.split(",") : [];
+    setCategoryShortcuts(ids.map((id) => ({ id })));
+    return () => setCategoryShortcuts([]);
+  }, [shortcutIds, setCategoryShortcuts]);
 
   if (isLoading) {
     return (
@@ -72,11 +81,12 @@ export default function WorkspaceScreen() {
         />
       ) : (
         <div className="flex flex-col gap-8">
-          {categories.map((category) => (
+          {categories.map((category, i) => (
             <CategoryCard
               key={category.id}
               category={category}
               accent={workspace.color}
+              shortcutIndex={i < 9 ? i + 1 : undefined}
             />
           ))}
         </div>

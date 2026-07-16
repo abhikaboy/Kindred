@@ -65,7 +65,6 @@ export default function SettingsScreen() {
                 logout();
                 navigate("/login", { replace: true });
             },
-            onError: () => window.alert("Failed to delete account. Please try again."),
         });
     };
 

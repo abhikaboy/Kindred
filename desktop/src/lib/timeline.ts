@@ -1,7 +1,7 @@
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 export const HOUR_HEIGHT = 56; // px per hour
-const SNAP = 15; // minutes
+export const SNAP = 15; // minutes
 
 export const minutesToY = (minutes: number): number => (minutes / 60) * HOUR_HEIGHT;
 
@@ -68,5 +68,43 @@ export function layoutDayEvents(tasks: TaskDocument[], day: Date): PlacedEvent[]
     clusterBottom = Math.max(clusterBottom, item.bottom);
   }
   flush();
+  return out;
+}
+
+// New start minute when dragging the top edge by deltaPx; kept at least SNAP before the end.
+export function resizeStart(topPx: number, heightPx: number, deltaPx: number): number {
+  const endMin = yToMinutes(topPx + heightPx);
+  const startMin = yToMinutes(topPx + deltaPx);
+  return Math.min(startMin, endMin - SNAP);
+}
+
+// New end minute when dragging the bottom edge by deltaPx; kept at least SNAP after the start.
+export function resizeEnd(topPx: number, heightPx: number, deltaPx: number): number {
+  const startMin = yToMinutes(topPx);
+  const endMin = yToMinutes(topPx + heightPx + deltaPx);
+  return Math.max(endMin, startMin + SNAP);
+}
+
+// ISO for a given minute-of-day on the same calendar day as `dayIso`.
+export function minuteToIsoOnDay(dayIso: string, minute: number): string {
+  const d = new Date(dayIso);
+  d.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+  return d.toISOString();
+}
+
+// Move a task's start to `startMin` on `day`, preserving its duration if it had one.
+export function rescheduleToStart(
+  task: TaskDocument,
+  day: Date,
+  startMin: number
+): { startTime: string; startDate: string; deadline?: string } {
+  const start = new Date(day);
+  start.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
+  const iso = start.toISOString();
+  const out: { startTime: string; startDate: string; deadline?: string } = { startTime: iso, startDate: iso };
+  if (task.startTime && task.deadline) {
+    const durMs = new Date(task.deadline).getTime() - new Date(task.startTime).getTime();
+    if (durMs > 0) out.deadline = new Date(start.getTime() + durMs).toISOString();
+  }
   return out;
 }

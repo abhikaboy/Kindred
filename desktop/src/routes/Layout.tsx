@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/auth";
 import { AppSidebar } from "@/components/AppSidebar";
+import { FloatingRings } from "@/components/FloatingRings";
 import { CreateProvider } from "@/components/create/CreateContext";
 import {
   SidebarInset,
@@ -95,6 +96,7 @@ export default function AppLayout() {
           <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-12">
             <Outlet />
           </main>
+          <FloatingRings />
         </SidebarInset>
       </CreateProvider>
     </SidebarProvider>

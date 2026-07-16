@@ -5,7 +5,7 @@ type Point = { x: number; y: number };
 type DragState = { dragging: { taskId: string } | null; hoverKey: string | null; pointer: Point | null };
 
 type DragCtx = DragState & {
-  startDrag: (taskId: string, e: React.PointerEvent) => void;
+  startDrag: (taskId: string, e: React.PointerEvent, opts?: { grabOffsetY?: number; onClick?: () => void }) => void;
   registerTarget: (key: string, el: HTMLElement | null) => void;
 };
 
@@ -33,7 +33,7 @@ export function DragProvider({
   onDrop,
 }: {
   children: React.ReactNode;
-  onDrop?: (taskId: string, dropKey: string, point: Point) => void;
+  onDrop?: (taskId: string, dropKey: string, point: Point, grabOffsetY: number) => void;
 }) {
   const targets = useRef(new Map<string, HTMLElement>());
   const [dragging, setDragging] = useState<{ taskId: string } | null>(null);
@@ -52,25 +52,35 @@ export function DragProvider({
     });
 
   const startDrag = useCallback(
-    (taskId: string, e: React.PointerEvent) => {
+    (taskId: string, e: React.PointerEvent, opts?: { grabOffsetY?: number; onClick?: () => void }) => {
       e.preventDefault();
-      setDragging({ taskId });
-      setPointer({ x: e.clientX, y: e.clientY });
+      const origin = { x: e.clientX, y: e.clientY };
+      const offsetY = opts?.grabOffsetY ?? 0;
+      let started = false;
 
       const move = (ev: PointerEvent) => {
         const point = { x: ev.clientX, y: ev.clientY };
+        if (!started) {
+          if (Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) < 4) return;
+          started = true;
+          setDragging({ taskId });
+        }
         setPointer(point);
         setHoverKey(hitTest(point, liveRects()));
       };
       const up = (ev: PointerEvent) => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        if (!started) {
+          opts?.onClick?.();
+          return;
+        }
         const point = { x: ev.clientX, y: ev.clientY };
         const key = hitTest(point, liveRects());
-        if (key) onDrop?.(taskId, key, point);
+        if (key) onDrop?.(taskId, key, point, offsetY);
         setDragging(null);
         setHoverKey(null);
         setPointer(null);
-        window.removeEventListener("pointermove", move);
-        window.removeEventListener("pointerup", up);
       };
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);

@@ -8,6 +8,7 @@ import { PostCard } from "@/components/feed/PostCard";
 import { TaskFeedCard } from "@/components/feed/TaskFeedCard";
 import { RingsClosedFeedCard } from "@/components/feed/RingsClosedFeedCard";
 import { FriendActivityRail } from "@/components/feed/FriendActivityRail";
+import { FeedComposer } from "@/components/feed/FeedComposer";
 
 export default function FeedScreen() {
   const { items, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeed();
@@ -32,6 +33,8 @@ export default function FeedScreen() {
           <ThemedText type="titleFraunces" as="h1">
             Feed
           </ThemedText>
+
+          <FeedComposer />
 
           {isLoading ? (
             <div className="flex flex-col gap-4">

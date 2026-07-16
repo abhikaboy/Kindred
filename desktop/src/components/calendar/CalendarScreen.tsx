@@ -12,7 +12,7 @@ import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByD
 import { useAllTasks } from "@/hooks/useHomeTasks";
 import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTaskActions";
 import { tasksForWeek } from "@/lib/weekTasks";
-import { yToMinutes } from "@/lib/timeline";
+import { yToMinutes, rescheduleToStart } from "@/lib/timeline";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 function DragGhost() {
@@ -28,7 +28,13 @@ function DragGhost() {
   );
 }
 
-function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
+function CalendarBody({
+  allTasks,
+  onReschedule,
+}: {
+  allTasks: TaskDocument[];
+  onReschedule: (task: TaskDocument, patch: { startTime?: string; deadline?: string }) => void;
+}) {
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
@@ -76,7 +82,7 @@ function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
       <div className="flex min-h-0 flex-1 gap-4">
         {mode === "week" ? (
           <>
-            <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} onCreateRange={onCreateRange} />
+            <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} onCreateRange={onCreateRange} onReschedule={onReschedule} />
             <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
           </>
         ) : (
@@ -99,20 +105,25 @@ export function CalendarScreen() {
   const allTasks = useAllTasks();
   const updateTask = useUpdateTask();
 
-  const handleDrop = (taskId: string, dropKey: string, point: { x: number; y: number }) => {
+  const handleReschedule = (task: TaskDocument, patch: { startTime?: string; deadline?: string }) => {
+    if (!task.categoryID) return;
+    updateTask.mutate({
+      params: { header: AUTH_HEADER, path: { category: task.categoryID, id: task.id } },
+      body: taskToUpdateDocument(task, patch),
+    });
+  };
+
+  const handleDrop = (taskId: string, dropKey: string, point: { x: number; y: number }, grabOffsetY: number) => {
     if (dropKey.startsWith("weekcol:")) {
       const task = allTasks.find((t) => t.id === taskId);
       if (!task || !task.categoryID) return;
       const key = dropKey.slice("weekcol:".length);
       const colEl = document.querySelector<HTMLElement>(`[data-weekcol="${key}"]`);
       if (!colEl) return;
-      const minutes = yToMinutes(point.y - colEl.getBoundingClientRect().top);
-      const when = fromDayKey(key);
-      when.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-      const iso = when.toISOString();
+      const minutes = yToMinutes(point.y - colEl.getBoundingClientRect().top - grabOffsetY);
       updateTask.mutate({
         params: { header: AUTH_HEADER, path: { category: task.categoryID, id: task.id } },
-        body: taskToUpdateDocument(task, { startTime: iso, startDate: iso }),
+        body: taskToUpdateDocument(task, rescheduleToStart(task, fromDayKey(key), minutes)),
       });
       return;
     }
@@ -131,7 +142,7 @@ export function CalendarScreen() {
   return (
     <TaskPeekProvider>
       <DragProvider onDrop={handleDrop}>
-        <CalendarBody allTasks={allTasks} />
+        <CalendarBody allTasks={allTasks} onReschedule={handleReschedule} />
         <DragGhost />
       </DragProvider>
     </TaskPeekProvider>

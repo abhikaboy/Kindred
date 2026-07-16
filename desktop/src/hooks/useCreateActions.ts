@@ -43,9 +43,9 @@ export type TaskFormState = {
 export const emptyTaskForm = (): TaskFormState => ({
   content: "",
   notes: "",
-  priority: 0,
+  priority: 1,
   value: 1,
-  isPublic: false,
+  isPublic: true,
   deadline: null,
   startDate: null,
   startTime: null,

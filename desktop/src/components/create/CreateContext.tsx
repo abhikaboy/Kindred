@@ -6,6 +6,11 @@ import type { SelectedCategory, TaskPrefill } from "@/components/create/types";
 type CreateContextValue = {
   openCreateTask: (prefill?: TaskPrefill) => void;
   openCreateCategory: (workspaceName?: string) => void;
+  // Opens the category dialog primed for a NEW workspace (workspaces are created
+  // by adding their first category under a new name — there's no standalone flow).
+  openCreateWorkspace: () => void;
+  // Screens with an ordered category list register it here for the Shift+1..9 hotkeys.
+  setCategoryShortcuts: (categories: { id: string }[]) => void;
 };
 
 const CreateContext = createContext<CreateContextValue | null>(null);
@@ -23,6 +28,13 @@ function isTypingTarget(el: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
 }
 
+// Maps a physical number-row key code to a 0-based category index (Digit1 -> 0).
+// Uses e.code, not e.key: Shift+2 emits "@" in e.key on US layouts, but "Digit2" in e.code.
+export function shortcutCategoryIndex(code: string): number | null {
+  const m = /^Digit([1-9])$/.exec(code);
+  return m ? Number(m[1]) - 1 : null;
+}
+
 export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskPrefill, setTaskPrefill] = useState<TaskPrefill | undefined>();
@@ -31,6 +43,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [categoryWorkspace, setCategoryWorkspace] = useState<string | undefined>();
   // Inline-create callback: set when the task dialog requests a new category.
   const categoryOnCreated = useRef<((cat: SelectedCategory) => void) | undefined>(undefined);
+  // Ordered ids of the categories currently on screen, for the Shift+1..9 hotkeys.
+  const shortcutCategoriesRef = useRef<{ id: string }[]>([]);
+  const setCategoryShortcuts = useCallback((cats: { id: string }[]) => {
+    shortcutCategoriesRef.current = cats;
+  }, []);
 
   const openCreateTask = useCallback((prefill?: TaskPrefill) => {
     setTaskPrefill(prefill);
@@ -40,6 +57,12 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const openCreateCategory = useCallback((workspaceName?: string) => {
     categoryOnCreated.current = undefined;
     setCategoryWorkspace(workspaceName);
+    setCategoryOpen(true);
+  }, []);
+
+  const openCreateWorkspace = useCallback(() => {
+    categoryOnCreated.current = undefined;
+    setCategoryWorkspace(""); // empty workspace field -> user names a new workspace
     setCategoryOpen(true);
   }, []);
 
@@ -56,18 +79,35 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (anyOpen) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "c" && e.key !== "C") return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
-      e.preventDefault();
-      openCreateTask();
+
+      // Shift+T -> new task
+      if (e.code === "KeyT") {
+        e.preventDefault();
+        openCreateTask();
+        return;
+      }
+      // Shift+W -> new workspace
+      if (e.code === "KeyW") {
+        e.preventDefault();
+        openCreateWorkspace();
+        return;
+      }
+      // Shift+1..9 -> new task in the Nth on-screen category
+      const idx = shortcutCategoryIndex(e.code);
+      const cat = idx !== null ? shortcutCategoriesRef.current[idx] : undefined;
+      if (cat) {
+        e.preventDefault();
+        openCreateTask({ categoryId: cat.id });
+      }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [anyOpen, openCreateTask]);
+  }, [anyOpen, openCreateTask, openCreateWorkspace]);
 
   return (
-    <CreateContext.Provider value={{ openCreateTask, openCreateCategory }}>
+    <CreateContext.Provider value={{ openCreateTask, openCreateCategory, openCreateWorkspace, setCategoryShortcuts }}>
       {children}
       <CreateTaskDialog
         open={taskOpen}

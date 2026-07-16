@@ -6,6 +6,7 @@ import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { ProfileSongWidget } from "@/components/profile/ProfileSongWidget";
 import { CompleteProfileCard } from "@/components/profile/CompleteProfileCard";
 import { ProfileScoreArc } from "@/components/profile/ProfileScoreArc";
+import { ProfileCheerSection } from "@/components/profile/ProfileCheerSection";
 import { ProfileTasks } from "@/components/profile/ProfileTasks";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 
@@ -39,6 +40,8 @@ export default function ProfileScreen() {
                     </div>
 
                     <CompleteProfileCard />
+
+                    <ProfileCheerSection />
 
                     <ProfileTasks />
                 </div>

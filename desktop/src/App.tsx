@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Toaster } from "@/components/ui/sonner";
 import AppLayout from "@/routes/Layout";
 import LoginScreen from "@/routes/login";
 import RegisterScreen from "@/routes/register";
@@ -38,6 +39,7 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <AuthProvider>
+      <Toaster />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<AuthRoute><LoginScreen /></AuthRoute>} />

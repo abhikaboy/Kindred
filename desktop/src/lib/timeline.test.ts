@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { minutesToY, yToMinutes, HOUR_HEIGHT, layoutTimedTask, layoutDayEvents } from "./timeline";
+import {
+  minutesToY,
+  yToMinutes,
+  HOUR_HEIGHT,
+  layoutTimedTask,
+  layoutDayEvents,
+  resizeStart,
+  resizeEnd,
+  minuteToIsoOnDay,
+  rescheduleToStart,
+} from "./timeline";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 describe("timeline math", () => {
@@ -61,5 +71,48 @@ describe("layoutDayEvents", () => {
     expect(m.a.widthPct).toBe(0.5);
     expect(m.b.widthPct).toBe(0.5);
     expect(m.c.widthPct).toBe(0.5);
+  });
+});
+
+// 56px == 60 min, so 15 min == 14px.
+describe("resizeStart", () => {
+  it("clamps start to at most end - 15 when dragged past the bottom", () => {
+    const top = HOUR_HEIGHT * 9; // 09:00
+    const start = resizeStart(top, HOUR_HEIGHT, HOUR_HEIGHT * 2); // drag top down 2h
+    expect(start).toBe(10 * 60 - 15); // end is 10:00
+  });
+});
+
+describe("resizeEnd", () => {
+  it("clamps end to at least start + 15 when dragged past the top", () => {
+    const top = HOUR_HEIGHT * 9; // 09:00
+    const end = resizeEnd(top, HOUR_HEIGHT, -HOUR_HEIGHT * 2); // drag bottom up 2h
+    expect(end).toBe(9 * 60 + 15); // start is 09:00
+  });
+});
+
+describe("rescheduleToStart", () => {
+  const day = new Date(2026, 6, 15);
+  it("preserves a 60-minute duration on the new deadline", () => {
+    const task = {
+      startTime: new Date(2026, 6, 10, 8).toISOString(),
+      deadline: new Date(2026, 6, 10, 9).toISOString(),
+    } as TaskDocument;
+    const out = rescheduleToStart(task, day, 13 * 60);
+    expect(out.deadline).toBeDefined();
+    const durMin = (new Date(out.deadline!).getTime() - new Date(out.startTime).getTime()) / 60000;
+    expect(durMin).toBe(60);
+  });
+  it("leaves deadline undefined when the task has none", () => {
+    const task = { startTime: new Date(2026, 6, 10, 8).toISOString() } as TaskDocument;
+    expect(rescheduleToStart(task, day, 13 * 60).deadline).toBeUndefined();
+  });
+});
+
+describe("minuteToIsoOnDay", () => {
+  it("local hours/minutes match the given minute-of-day", () => {
+    const d = new Date(minuteToIsoOnDay(new Date(2026, 6, 15).toISOString(), 13 * 60 + 30));
+    expect(d.getHours()).toBe(13);
+    expect(d.getMinutes()).toBe(30);
   });
 });

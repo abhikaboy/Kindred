@@ -6,12 +6,15 @@ import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
+import type { TaskDocument } from "@/hooks/useWorkspaces";
+
+type Reschedule = (task: TaskDocument, patch: { startTime?: string; deadline?: string }) => void;
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
 
-function DayColumn({ day, tasks, onCreateRange }: { day: Date; tasks: WeekDayTasks; onCreateRange: (day: Date, startMin: number, endMin: number) => void }) {
+function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tasks: WeekDayTasks; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule }) {
   const dropKey = `weekcol:${dayKey(day)}`;
   const ref = useDropTarget(dropKey);
   const { dragging, hoverKey } = useDragState();
@@ -54,7 +57,7 @@ function DayColumn({ day, tasks, onCreateRange }: { day: Date; tasks: WeekDayTas
         <div className="absolute inset-x-0 z-10 border-t-2 border-destructive" style={{ top: minutesToY(nowMinutes()) }} />
       )}
       {layoutDayEvents(tasks.timed, day).map((p) => (
-        <CalendarEventCard key={p.task.id} task={p.task} top={p.top} height={p.height} leftPct={p.leftPct} widthPct={p.widthPct} />
+        <CalendarEventCard key={p.task.id} task={p.task} top={p.top} height={p.height} leftPct={p.leftPct} widthPct={p.widthPct} onReschedule={onReschedule} />
       ))}
       {draw && (
         <div
@@ -72,9 +75,10 @@ type Props = {
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   onCreateRange: (day: Date, startMin: number, endMin: number) => void;
+  onReschedule: Reschedule;
 };
 
-export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreateRange }: Props) {
+export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const scrollRef = useRef<HTMLDivElement>(null);
   // On mount, scroll so the current time sits near the top with a little context above.
@@ -132,7 +136,7 @@ export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreate
         </div>
         <div className="flex flex-1">
           {days.map((day) => (
-            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} onCreateRange={onCreateRange} />
+            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} onCreateRange={onCreateRange} onReschedule={onReschedule} />
           ))}
         </div>
       </div>

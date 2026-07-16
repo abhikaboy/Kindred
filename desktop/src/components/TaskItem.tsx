@@ -3,6 +3,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 import { TaskContextMenu } from "@/components/TaskContextMenu";
+import { CompleteCheckbox } from "@/components/SwipeToComplete";
 
 // Priority dot colors, mirroring the mobile card (none→transparent, 1→green, 2→amber, 3→red).
 const PRIORITY_DOT: Record<number, string> = {
@@ -42,40 +43,46 @@ function Chip({
   );
 }
 
-export function TaskItem({ task }: { task: TaskDocument }) {
-  const working = Boolean(task.workingOnSince);
-  const deadline = formatDeadline(task.deadline);
+export function TaskItem({ task, completed }: { task: TaskDocument; completed?: boolean }) {
+  // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
+  const working = !completed && Boolean(task.workingOnSince);
+  const deadline = completed ? null : formatDeadline(task.deadline);
   const dotColor = working ? "bg-primary" : PRIORITY_DOT[task.priority];
-  const showChips = working || Boolean(deadline) || task.recurring;
+  const showChips = !completed && (working || Boolean(deadline) || task.recurring);
 
   return (
     <TaskContextMenu task={task}>
-      <div className="flex flex-col justify-center rounded-2xl border bg-card/60 px-4 py-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <ThemedText type="default" className="line-clamp-2 break-words leading-6">
-              {task.content || "Untitled task"}
-            </ThemedText>
-            {task.notes && (
-              <ThemedText type="caption" className="line-clamp-2 break-words">
-                {task.notes}
-              </ThemedText>
-            )}
-          </div>
-          {dotColor && (
-            <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", dotColor)} />
-          )}
-        </div>
+      <div className="rounded-2xl border bg-card/60 px-4 py-4">
+        <div className="flex items-start gap-3">
+          {!completed && <CompleteCheckbox className="mt-0.5" />}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <ThemedText type="default" className="line-clamp-2 break-words leading-6">
+                  {task.content || "Untitled task"}
+                </ThemedText>
+                {task.notes && (
+                  <ThemedText type="caption" className="line-clamp-2 break-words">
+                    {task.notes}
+                  </ThemedText>
+                )}
+              </div>
+              {dotColor && (
+                <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", dotColor)} />
+              )}
+            </div>
 
-        {showChips && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {deadline && (
-              <Chip icon={task.startTime ? Clock : CalendarBlank} label={`Due ${deadline}`} />
+            {showChips && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {deadline && (
+                  <Chip icon={task.startTime ? Clock : CalendarBlank} label={`Due ${deadline}`} />
+                )}
+                {task.recurring && <Chip icon={Repeat} label="Recurring" />}
+                {working && <Chip icon={Play} label="in progress" active />}
+              </div>
             )}
-            {task.recurring && <Chip icon={Repeat} label="Recurring" />}
-            {working && <Chip icon={Play} label="in progress" active />}
           </div>
-        )}
+        </div>
       </div>
     </TaskContextMenu>
   );

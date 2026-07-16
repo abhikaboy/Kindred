@@ -21,12 +21,14 @@ export function WorkingOnRow() {
   const extra = tasks.length - shown.length;
 
   return (
-    <div className="flex flex-col gap-2">
-      {shown.map((task) => (
-        <SwipeToComplete key={task.id} task={task} categoryId={task.categoryID ?? ""}>
-          <TaskItem task={task} />
-        </SwipeToComplete>
-      ))}
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {shown.map((task) => (
+          <SwipeToComplete key={task.id} task={task} categoryId={task.categoryID ?? ""}>
+            <TaskItem task={task} />
+          </SwipeToComplete>
+        ))}
+      </div>
       {extra > 0 && (
         <ThemedText type="caption" className="text-muted-foreground">
           +{extra} more in progress

@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { ThemedText } from "@/components/ThemedText";
 import { useCompleteTask, AUTH_HEADER } from "@/hooks/useTaskActions";
 import { fireConfetti } from "@/lib/confetti";
@@ -14,8 +15,45 @@ export function shouldComplete(dx: number, width: number): boolean {
 // Movement under this many pixels on release counts as a click, not a drag.
 const CLICK_SLOP = 6;
 
-// Swipe a task row rightward to complete it; tap it to open the detail view.
-// DOM pointer events only — no gesture lib. Green "Complete" layer reveals behind the row.
+// Lets a nested card (TaskItem) render a complete checkbox without prop threading.
+type CompleteControl = { complete: () => void; pending: boolean };
+const CompleteContext = createContext<CompleteControl | null>(null);
+export const useTaskComplete = () => useContext(CompleteContext);
+
+// A one-click complete checkbox: hover reveals a check, click fills green + fires
+// the row's completion. Renders nothing outside a SwipeToComplete.
+export function CompleteCheckbox({ className }: { className?: string }) {
+  const ctx = useTaskComplete();
+  if (!ctx) return null;
+  return (
+    <button
+      type="button"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        ctx.complete();
+      }}
+      disabled={ctx.pending}
+      aria-label="Mark complete"
+      className={cn(
+        "group/check grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors",
+        ctx.pending
+          ? "border-emerald-500 bg-emerald-500 text-white"
+          : "border-muted-foreground/40 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500/10",
+        className,
+      )}
+    >
+      <Check
+        size={12}
+        weight="bold"
+        className={cn("transition-opacity", ctx.pending ? "opacity-100" : "opacity-0 group-hover/check:opacity-100")}
+      />
+    </button>
+  );
+}
+
+// Swipe a task row rightward to complete it, click the checkbox to complete, or
+// tap to open the detail view. DOM pointer events only — no gesture lib.
 export function SwipeToComplete({
   task,
   categoryId,
@@ -39,6 +77,25 @@ export function SwipeToComplete({
   const revealOpacity = width > 0 ? Math.min(dx / threshold, 1) : 0;
   // Past the 70% threshold: releasing now completes — pulse the card to signal it's armed.
   const passedThreshold = width > 0 && dx >= threshold && !done;
+
+  const complete = useCallback(() => {
+    const w = rowRef.current?.offsetWidth ?? 0;
+    setDone(true);
+    setTransition(true);
+    setDx(w); // slide fully open, then collapse the row height
+    completeTask.mutate(
+      {
+        params: { header: AUTH_HEADER, path: { category: categoryId, id: task.id } },
+        body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
+      },
+      { onSuccess: () => fireConfetti(rowRef.current) },
+    );
+  }, [categoryId, task.id, completeTask]);
+
+  const control = useMemo<CompleteControl>(
+    () => ({ complete, pending: done || completeTask.isPending }),
+    [complete, done, completeTask.isPending],
+  );
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (done || completeTask.isPending) return;
@@ -72,18 +129,6 @@ export function SwipeToComplete({
     setDx(0);
   }
 
-  function complete() {
-    setDone(true);
-    setDx(width); // slide fully open, then collapse the row height
-    completeTask.mutate(
-      {
-        params: { header: AUTH_HEADER, path: { category: categoryId, id: task.id } },
-        body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
-      },
-      { onSuccess: () => fireConfetti(rowRef.current) }
-    );
-  }
-
   return (
     <div
       ref={rowRef}
@@ -111,7 +156,9 @@ export function SwipeToComplete({
           transition: transition ? "transform 300ms ease" : undefined,
         }}
       >
-        <div className={passedThreshold ? "animate-threshold-pulse" : undefined}>{children}</div>
+        <div className={passedThreshold ? "animate-threshold-pulse" : undefined}>
+          <CompleteContext.Provider value={control}>{children}</CompleteContext.Provider>
+        </div>
       </div>
     </div>
   );

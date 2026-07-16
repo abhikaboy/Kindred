@@ -11,9 +11,11 @@ import type { CategoryDocument } from "@/hooks/useWorkspaces";
 export function CategoryCard({
   category,
   accent,
+  shortcutIndex,
 }: {
   category: CategoryDocument;
   accent?: string;
+  shortcutIndex?: number;
 }) {
   const { openCreateTask } = useCreate();
   const tasks = category.tasks ?? [];
@@ -28,15 +30,31 @@ export function CategoryCard({
             style={{ backgroundColor: accent }}
           />
         )}
-        <ThemedText
-          type="subtitle"
-          className={empty ? "text-muted-foreground" : undefined}
+        {/* Click the name to add a task to this category. */}
+        <button
+          type="button"
+          onClick={() => openCreateTask({ categoryId: category.id })}
+          title={`Add a task to ${category.name}`}
+          className="rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {category.name}
-        </ThemedText>
+          <ThemedText
+            type="subtitle"
+            className={empty ? "text-muted-foreground" : undefined}
+          >
+            {category.name}
+          </ThemedText>
+        </button>
         <ThemedText type="caption" className="text-muted-foreground">
           {tasks.length}
         </ThemedText>
+        {shortcutIndex != null && (
+          <span
+            className="text-xs text-muted-foreground opacity-50"
+            title={`Shift+${shortcutIndex}: new task here`}
+          >
+            ⇧{shortcutIndex}
+          </span>
+        )}
         {/* Quiet affordance: only surfaces on category hover/focus. */}
         <Button
           variant="ghost"

@@ -26,7 +26,7 @@ export function TaskPeekProvider({ children }: { children: React.ReactNode }) {
       {children}
       <Sheet open={!!peek} onOpenChange={(o) => { if (!o) setPeek(null); }}>
         {peek && (
-          <SheetContent side="right" className="w-[440px] overflow-y-auto px-6 sm:max-w-md">
+          <SheetContent side="right" className="w-[720px] overflow-y-auto px-6 sm:max-w-none">
             <TaskEditor
               key={peek.task.id}
               task={peek.task}
