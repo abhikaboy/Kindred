@@ -6,6 +6,7 @@ import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { AgendaPanel } from "@/components/calendar/AgendaPanel";
 import { UnscheduledTray } from "@/components/calendar/UnscheduledTray";
 import { DragProvider, useDragState } from "@/components/calendar/DragContext";
+import { useCreate } from "@/components/create/CreateContext";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
 import { useAllTasks } from "@/hooks/useHomeTasks";
@@ -31,6 +32,13 @@ function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
+
+  const { openCreateTask } = useCreate();
+  const onCreateRange = (day: Date, startMin: number, endMin: number) => {
+    const start = new Date(day); start.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
+    const end = new Date(day); end.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0);
+    openCreateTask({ startTime: start.toISOString(), startDate: start.toISOString(), deadline: end.toISOString() });
+  };
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
   const week = useMemo(() => tasksForWeek(allTasks, weekStart), [allTasks, weekStart]);
@@ -68,7 +76,7 @@ function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
       <div className="flex min-h-0 flex-1 gap-4">
         {mode === "week" ? (
           <>
-            <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+            <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} onCreateRange={onCreateRange} />
             <AgendaPanel buckets={buckets} />
           </>
         ) : (

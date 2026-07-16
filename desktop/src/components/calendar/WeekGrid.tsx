@@ -1,5 +1,6 @@
+import { useRef, useState } from "react";
 import { addDays, isSameDay, isToday } from "date-fns";
-import { HOUR_HEIGHT, layoutTimedTask, minutesToY, nowMinutes } from "@/lib/timeline";
+import { HOUR_HEIGHT, layoutTimedTask, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
@@ -10,17 +11,41 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
 
-function DayColumn({ day, tasks }: { day: Date; tasks: WeekDayTasks }) {
+function DayColumn({ day, tasks, onCreateRange }: { day: Date; tasks: WeekDayTasks; onCreateRange: (day: Date, startMin: number, endMin: number) => void }) {
   const dropKey = `weekcol:${dayKey(day)}`;
   const ref = useDropTarget(dropKey);
   const { dragging, hoverKey } = useDragState();
   const hot = dragging && hoverKey === dropKey;
+
+  const [draw, setDraw] = useState<{ start: number; end: number } | null>(null);
+  const colRef = useRef<HTMLDivElement>(null);
+  // Combine drop-target ref with local ref so both have access to the element
+  const setCol = (el: HTMLDivElement | null) => { colRef.current = el; ref(el); };
+
+  const onColPointerDown = (e: React.PointerEvent) => {
+    if (dragging) return;
+    const top = colRef.current!.getBoundingClientRect().top;
+    const startMin = yToMinutes(e.clientY - top);
+    setDraw({ start: startMin, end: startMin + 30 });
+    const move = (ev: PointerEvent) => setDraw({ start: startMin, end: Math.max(startMin + 15, yToMinutes(ev.clientY - top)) });
+    const up = (ev: PointerEvent) => {
+      const endMin = Math.max(startMin + 15, yToMinutes(ev.clientY - top));
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDraw(null);
+      onCreateRange(day, startMin, endMin);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   return (
     <div
-      ref={ref}
+      ref={setCol}
       data-weekcol={dayKey(day)}
       className={cn("relative flex-1 border-l border-border", hot && "bg-primary/5")}
       style={{ height: HOUR_HEIGHT * 24 }}
+      onPointerDown={onColPointerDown}
     >
       {HOURS.map((h) => (
         <div key={h} className="absolute inset-x-0 border-t border-border/60" style={{ top: minutesToY(h * 60) }} />
@@ -32,6 +57,12 @@ function DayColumn({ day, tasks }: { day: Date; tasks: WeekDayTasks }) {
         const { top, height } = layoutTimedTask(t, day);
         return <CalendarEventCard key={t.id} task={t} top={top} height={height} />;
       })}
+      {draw && (
+        <div
+          className="pointer-events-none absolute inset-x-1 z-20 rounded-lg border border-primary/50 bg-primary/20"
+          style={{ top: minutesToY(draw.start), height: minutesToY(draw.end - draw.start) }}
+        />
+      )}
     </div>
   );
 }
@@ -41,9 +72,10 @@ type Props = {
   week: Record<string, WeekDayTasks>;
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
+  onCreateRange: (day: Date, startMin: number, endMin: number) => void;
 };
 
-export function WeekGrid({ weekStart, week, selectedDate, onSelectDate }: Props) {
+export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreateRange }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -95,7 +127,7 @@ export function WeekGrid({ weekStart, week, selectedDate, onSelectDate }: Props)
         </div>
         <div className="flex flex-1">
           {days.map((day) => (
-            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} />
+            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} onCreateRange={onCreateRange} />
           ))}
         </div>
       </div>
