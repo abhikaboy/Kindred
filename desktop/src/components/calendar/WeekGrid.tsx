@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { addDays, isSameDay, isToday } from "date-fns";
-import { HOUR_HEIGHT, layoutTimedTask, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
+import { HOUR_HEIGHT, layoutDayEvents, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
@@ -53,10 +53,9 @@ function DayColumn({ day, tasks, onCreateRange }: { day: Date; tasks: WeekDayTas
       {isToday(day) && (
         <div className="absolute inset-x-0 z-10 border-t-2 border-destructive" style={{ top: minutesToY(nowMinutes()) }} />
       )}
-      {tasks.timed.map((t) => {
-        const { top, height } = layoutTimedTask(t, day);
-        return <CalendarEventCard key={t.id} task={t} top={top} height={height} />;
-      })}
+      {layoutDayEvents(tasks.timed, day).map((p) => (
+        <CalendarEventCard key={p.task.id} task={p.task} top={p.top} height={p.height} leftPct={p.leftPct} widthPct={p.widthPct} />
+      ))}
       {draw && (
         <div
           className="pointer-events-none absolute inset-x-1 z-20 rounded-lg border border-primary/50 bg-primary/20"

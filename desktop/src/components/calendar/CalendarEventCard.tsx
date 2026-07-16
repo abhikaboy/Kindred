@@ -3,14 +3,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { useTaskPeek } from "@/components/calendar/TaskPeekContext";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
-type Props = { task: TaskDocument; top: number; height: number };
+type Props = { task: TaskDocument; top: number; height: number; leftPct: number; widthPct: number };
 
-export function CalendarEventCard({ task, top, height }: Props) {
+export function CalendarEventCard({ task, top, height, leftPct, widthPct }: Props) {
   const { openTask } = useTaskPeek();
   return (
     <div
-      className="absolute inset-x-1 cursor-pointer overflow-hidden rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 hover:bg-primary/20"
-      style={{ top, height }}
+      className="absolute cursor-pointer overflow-hidden rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 hover:bg-primary/20"
+      style={{ top, height, left: `calc(${leftPct * 100}% + 2px)`, width: `calc(${widthPct * 100}% - 4px)` }}
       // Stop the column's draw-to-create gesture from firing when clicking a card.
       onPointerDown={(e) => e.stopPropagation()}
       onClick={() => openTask(task)}
