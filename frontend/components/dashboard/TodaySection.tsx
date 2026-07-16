@@ -13,8 +13,9 @@ const TodaySection = () => {
     const styles = stylesheet(ThemedColor);
     const { startTodayTasks, dueTodayTasks } = useTasks();
 
-    // Get total count and limit display to 3 tasks
-    const allTodayTasks = [...dueTodayTasks, ...startTodayTasks];
+    // Get total count and limit display to 3 tasks.
+    // In-progress tasks live in the "In Progress" section above, so exclude them here.
+    const allTodayTasks = [...dueTodayTasks, ...startTodayTasks].filter((t) => !(t.active || t.workingOnSince));
     const todayTasks = allTodayTasks.slice(0, 3);
     const totalCount = allTodayTasks.length;
     const displayCount = todayTasks.length;

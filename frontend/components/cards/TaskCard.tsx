@@ -14,7 +14,7 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { Sparkle, Repeat, Camera, Clock, CalendarBlank, Play } from "phosphor-react-native";
+import { Sparkle, Repeat, Camera, Clock, CalendarBlank } from "phosphor-react-native";
 import { getTimeChipInfo } from "@/utils/timeChip";
 import TaskChip from "./TaskChip";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
@@ -412,7 +412,7 @@ const TaskCard = ({
                             <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
                         ) : (
                             <View
-                                style={[styles.circle, { backgroundColor: task?.workingOnSince ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
                             />
                         )}
                     </ConditionalView>
@@ -433,7 +433,7 @@ const TaskCard = ({
                     </ConditionalView>
                 </View>
             </View>
-            <ConditionalView condition={!encourage && !!(timeChip || task?.recurring || task?.workingOnSince)}>
+            <ConditionalView condition={!encourage && !!(timeChip || task?.recurring)}>
                 <View style={styles.chipRow}>
                     {timeChip && (
                         <TaskChip
@@ -456,15 +456,6 @@ const TaskCard = ({
                             backgroundColor={encouraged ? "transparent" : undefined}
                         />
                     </ConditionalView>
-                    {task?.workingOnSince ? (
-                        <TaskChip
-                            Icon={Play}
-                            label="in progress"
-                            tone="active"
-                            color={encouraged ? encColors.secondaryText : undefined}
-                            backgroundColor={encouraged ? "transparent" : undefined}
-                        />
-                    ) : null}
                 </View>
             </ConditionalView>
         </TouchableOpacity>
