@@ -1,14 +1,19 @@
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 type Props = { task: TaskDocument; top: number; height: number };
 
 export function CalendarEventCard({ task, top, height }: Props) {
+  const navigate = useNavigate();
   return (
     <div
-      className="absolute inset-x-1 overflow-hidden rounded-lg border border-primary/30 bg-primary/10 px-2 py-1"
+      className="absolute inset-x-1 cursor-pointer overflow-hidden rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 hover:bg-primary/20"
       style={{ top, height }}
+      // Stop the column's draw-to-create gesture from firing when clicking a card.
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={() => navigate(`/task/${task.id}`)}
     >
       <ThemedText type="caption" className="text-primary">
         {task.startTime ? format(new Date(task.startTime), "h:mm a") : ""}

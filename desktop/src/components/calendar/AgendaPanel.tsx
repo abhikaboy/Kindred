@@ -1,4 +1,5 @@
 import { format, isToday } from "date-fns";
+import { Link } from "react-router-dom";
 import { useDrag } from "@/components/calendar/DragContext";
 import { TaskItem } from "@/components/TaskItem";
 import { ThemedText } from "@/components/ThemedText";
@@ -44,7 +45,11 @@ export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; 
         return (
           <div key={s.key} className="flex flex-col gap-2">
             <ThemedText type="subtitle">{label} ({tasks.length})</ThemedText>
-            {tasks.map((t) => <TaskItem key={t.id} task={t} />)}
+            {tasks.map((t) => (
+              <Link key={t.id} to={`/task/${t.id}`} className="block">
+                <TaskItem task={t} />
+              </Link>
+            ))}
           </div>
         );
       })}

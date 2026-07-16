@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { addDays, isSameDay, isToday } from "date-fns";
 import { HOUR_HEIGHT, layoutTimedTask, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
@@ -77,6 +77,12 @@ type Props = {
 
 export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreateRange }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // On mount, scroll so the current time sits near the top with a little context above.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = Math.max(0, minutesToY(nowMinutes()) - HOUR_HEIGHT * 2);
+  }, []);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Day headers */}
@@ -112,7 +118,7 @@ export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreate
         ))}
       </div>
       {/* Scrollable timed grid */}
-      <div className="relative flex min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="relative flex min-h-0 flex-1 overflow-y-auto">
         <div className="relative w-12 shrink-0" style={{ height: HOUR_HEIGHT * 24 }}>
           {HOURS.map((h) => (
             <ThemedText

@@ -88,11 +88,11 @@ export default function AppLayout() {
       <CreateProvider>
         <AppSidebar />
         <SidebarResizer onWidth={handleWidth} />
-        <SidebarInset>
+        <SidebarInset className="h-svh overflow-hidden">
           <header className="flex h-14 items-center gap-2 px-4">
             <SidebarTrigger />
           </header>
-          <main className="flex-1 px-6 pb-12">
+          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-12">
             <Outlet />
           </main>
         </SidebarInset>
