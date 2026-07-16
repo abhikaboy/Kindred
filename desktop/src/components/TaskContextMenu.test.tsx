@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { CreateProvider } from "@/components/create/CreateContext";
 import { TaskContextMenu } from "./TaskContextMenu";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
@@ -12,9 +13,11 @@ describe("TaskContextMenu", () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <TaskContextMenu task={task}>
-            <div data-testid="card">card</div>
-          </TaskContextMenu>
+          <CreateProvider>
+            <TaskContextMenu task={task}>
+              <div data-testid="card">card</div>
+            </TaskContextMenu>
+          </CreateProvider>
         </MemoryRouter>
       </QueryClientProvider>
     );
