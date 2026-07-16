@@ -7,6 +7,7 @@ import {
 } from "react";
 import client, { setUnauthorizedHandler } from "@/lib/api/client";
 import { tokens } from "@/lib/tokens";
+import { decodeIdToken, deriveHandle } from "@/lib/oauth";
 import type { components } from "@/lib/api/types.gen";
 
 type SafeUser = components["schemas"]["SafeUser"];
@@ -19,6 +20,8 @@ interface AuthContextValue {
   verifyOTP: (phoneNumber: string, code: string) => Promise<boolean>;
   loginWithOTP: (phoneNumber: string, code: string) => Promise<void>;
   loginWithPhone: (phoneNumber: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithApple: (idToken: string) => Promise<void>;
   register: (input: {
     display_name: string;
     handle: string;
@@ -141,6 +144,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }
 
+  const fail = (message: string) => {
+    setError(message);
+    return new Error(message);
+  };
+
+  // Google/Apple both: verify token → login; if no account (404) register then login.
+  async function loginWithGoogle(idToken: string) {
+    setError(null);
+    const p = decodeIdToken(idToken);
+    if (!p) throw fail("Invalid Google response. Please try again.");
+    const body = { google_id: p.sub, id_token: idToken, email: p.email };
+    let res = await client.POST("/v1/auth/login/google", { body });
+    if (res.data && !res.error) return setUser(res.data);
+    if (res.response.status === 404) {
+      const reg = await client.POST("/v1/auth/register/google", {
+        body: {
+          google_id: p.sub,
+          id_token: idToken,
+          email: p.email ?? "",
+          display_name: p.name || deriveHandle(p.email),
+          handle: deriveHandle(p.email),
+          profile_picture: p.picture ?? "",
+        },
+      });
+      if (reg.error) throw fail(reg.error.detail || reg.error.title || "Couldn't create your account.");
+      res = await client.POST("/v1/auth/login/google", { body });
+      if (res.error || !res.data) throw fail("Signed up, but couldn't sign in. Please try again.");
+      return setUser(res.data);
+    }
+    throw fail((res.error && (res.error.detail || res.error.title)) || "Unable to sign in with Google.");
+  }
+
+  async function loginWithApple(idToken: string) {
+    setError(null);
+    const p = decodeIdToken(idToken);
+    if (!p) throw fail("Invalid Apple response. Please try again.");
+    const body = { apple_id: p.sub, id_token: idToken, email: p.email };
+    let res = await client.POST("/v1/auth/login/apple", { body });
+    if (res.data && !res.error) return setUser(res.data);
+    if (res.response.status === 404) {
+      const reg = await client.POST("/v1/auth/register/apple", {
+        body: {
+          apple_id: p.sub,
+          id_token: idToken,
+          email: p.email ?? "",
+          display_name: p.name || deriveHandle(p.email),
+          handle: deriveHandle(p.email),
+          profile_picture: p.picture ?? "",
+        },
+      });
+      if (reg.error) throw fail(reg.error.detail || reg.error.title || "Couldn't create your account.");
+      res = await client.POST("/v1/auth/login/apple", { body });
+      if (res.error || !res.data) throw fail("Signed up, but couldn't sign in. Please try again.");
+      return setUser(res.data);
+    }
+    throw fail((res.error && (res.error.detail || res.error.title)) || "Unable to sign in with Apple.");
+  }
+
   async function register(input: {
     display_name: string;
     handle: string;
@@ -185,6 +246,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyOTP,
         loginWithOTP,
         loginWithPhone,
+        loginWithGoogle,
+        loginWithApple,
         register,
         logout,
       }}

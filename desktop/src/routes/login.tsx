@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { AppleLogo } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth";
+import { signInWithApple, appleConfigured } from "@/lib/oauth";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/ThemedInput";
 import PrimaryButton from "@/components/PrimaryButton";
@@ -12,7 +15,7 @@ type Step = "phone" | "otp" | "password";
 type LoginMode = "otp" | "password";
 
 export default function LoginScreen() {
-  const { sendOTP, loginWithOTP, loginWithPhone } = useAuth();
+  const { sendOTP, loginWithOTP, loginWithPhone, loginWithGoogle, loginWithApple } = useAuth();
   const navigate = useNavigate();
 
   const [phone, setPhone] = useState("");
@@ -111,6 +114,33 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogle = async (credential: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      await loginWithGoogle(credential);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError(mapLoginError(err, "Google sign-in failed. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApple = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const idToken = await signInWithApple();
+      await loginWithApple(idToken);
+      navigate("/", { replace: true });
+    } catch (err) {
+      setError(mapLoginError(err, "Apple sign-in failed. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResend = async () => {
     if (!canResend) return;
     setCanResend(false);
@@ -184,6 +214,31 @@ export default function LoginScreen() {
               }
               onClick={toggleLoginMode}
             />
+
+            <div className="flex items-center gap-3 py-1">
+              <span className="h-px flex-1 bg-border" />
+              <ThemedText type="caption">or</ThemedText>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={(cred) => cred.credential && handleGoogle(cred.credential)}
+                onError={() => setError("Google sign-in failed. Please try again.")}
+                width="320"
+              />
+            </div>
+
+            {appleConfigured && (
+              <PrimaryButton
+                outline
+                title="Continue with Apple"
+                onClick={handleApple}
+                disabled={loading}
+              >
+                <AppleLogo weight="fill" />
+              </PrimaryButton>
+            )}
           </div>
         )}
 

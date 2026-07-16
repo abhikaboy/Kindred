@@ -135,7 +135,7 @@ func (h *Handler) RegisterWithAppleHuma(ctx context.Context, input *RegisterWith
 	appleID := input.Body.AppleID
 
 	if input.Body.IDToken != "" {
-		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID, h.config.OAuth.AppleServiceID)
 		if err != nil {
 			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed during registration",
 				slog.String("error", err.Error()),
@@ -468,7 +468,7 @@ func (h *Handler) LoginWithAppleHuma(ctx context.Context, input *LoginWithAppleI
 
 	// Verify Apple identity token if provided
 	if input.Body.IDToken != "" {
-		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID)
+		claims, err := VerifyAppleIDToken(input.Body.IDToken, h.config.OAuth.AppleBundleID, h.config.OAuth.AppleServiceID)
 		if err != nil {
 			slog.LogAttrs(ctx, slog.LevelWarn, "Apple ID token verification failed",
 				slog.String("error", err.Error()),

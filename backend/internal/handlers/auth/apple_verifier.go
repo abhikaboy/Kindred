@@ -105,8 +105,10 @@ func fetchAppleJWKS() (map[string]*rsa.PublicKey, error) {
 }
 
 // VerifyAppleIDToken verifies an Apple identity token and returns the claims.
-// bundleID is the expected audience (your app's bundle ID).
-func VerifyAppleIDToken(idToken string, bundleID string) (*AppleTokenClaims, error) {
+// allowedAudiences are the accepted `aud` values — native bundle ID and/or the
+// web/desktop Services ID. Empty entries are ignored; if none are set, the audience
+// check is skipped.
+func VerifyAppleIDToken(idToken string, allowedAudiences ...string) (*AppleTokenClaims, error) {
 	if idToken == "" {
 		return nil, fmt.Errorf("id_token is required for Apple authentication")
 	}
@@ -142,8 +144,8 @@ func VerifyAppleIDToken(idToken string, bundleID string) (*AppleTokenClaims, err
 	}
 
 	aud, _ := claims["aud"].(string)
-	if bundleID != "" && aud != bundleID {
-		return nil, fmt.Errorf("Apple token audience %q does not match bundle ID %q", aud, bundleID)
+	if !isAllowedAudience(aud, allowedAudiences) {
+		return nil, fmt.Errorf("Apple token audience %q does not match any allowed audience %v", aud, allowedAudiences)
 	}
 
 	sub, _ := claims["sub"].(string)
@@ -159,4 +161,20 @@ func VerifyAppleIDToken(idToken string, bundleID string) (*AppleTokenClaims, err
 		Aud:   aud,
 		Iss:   iss,
 	}, nil
+}
+
+// isAllowedAudience reports whether aud matches one of the configured audiences.
+// Empty entries are ignored; if no audiences are configured the check is skipped (true).
+func isAllowedAudience(aud string, allowed []string) bool {
+	configured := false
+	for _, a := range allowed {
+		if a == "" {
+			continue
+		}
+		configured = true
+		if aud == a {
+			return true
+		}
+	}
+	return !configured
 }

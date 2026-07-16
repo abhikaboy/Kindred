@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { toast } from "sonner";
 import { ThemeProvider } from "@/lib/theme";
 import { getErrorMessage, isAuthError } from "@/lib/errors";
@@ -36,12 +37,19 @@ const queryClient = new QueryClient({
   },
 });
 
+// Reuses the mobile web client ID by default; override per-env with VITE_GOOGLE_CLIENT_ID.
+const GOOGLE_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ??
+  "955300435674-5jut5auaic2u4k8udu6spkqf1b13uau8.apps.googleusercontent.com";
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </GoogleOAuthProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );

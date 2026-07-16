@@ -1,4 +1,6 @@
 import createClient from "openapi-fetch";
+import { isTauri } from "@tauri-apps/api/core";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import type { paths } from "@/lib/api/types.gen";
 import { tokens, isTokenExpired } from "@/lib/tokens";
 
@@ -9,7 +11,20 @@ const logger = {
   info: console.info,
 };
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "") + "/api";
+// Dev leaves this empty → requests hit "/api" and the Vite proxy forwards them.
+// Production builds have no proxy, so default to the absolute backend (public URL,
+// not a secret). Override with VITE_API_URL for a different backend.
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://kindredtodo.com" : "");
+const API_BASE = API_ORIGIN + "/api";
+
+// The built desktop app is served from tauri:// with no dev proxy, and the webview's
+// fetch is CORS-blocked by the backend allowlist. Route through the Tauri HTTP plugin
+// (native, no CORS). Dev (localhost:1420) keeps the browser fetch + Vite proxy.
+const httpFetch: typeof fetch =
+  import.meta.env.PROD && isTauri()
+    ? (tauriFetch as typeof fetch)
+    : globalThis.fetch.bind(globalThis);
 
 // Logout handler registered by the auth layer to handle 401s
 let onUnauthorized: (() => void) | null = null;
@@ -43,8 +58,8 @@ async function performRefresh(): Promise<boolean> {
 
     logger.debug("Performing token refresh");
 
-    const response = await fetch(
-      (import.meta.env.VITE_API_URL ?? "") + "/api/v1/auth/refresh",
+    const response = await httpFetch(
+      API_ORIGIN + "/api/v1/auth/refresh",
       {
         method: "POST",
         headers: {
@@ -107,6 +122,7 @@ async function ensureValidToken(): Promise<boolean> {
 // Create the base client
 const client = createClient<paths>({
   baseUrl: API_BASE,
+  fetch: httpFetch,
 });
 
 // Add request/response interceptors
@@ -181,7 +197,7 @@ client.use({
             retryHeaders.set("Authorization", `Bearer ${newAccess}`);
             retryHeaders.set("refresh_token", newRefresh);
 
-            const retryResponse = await fetch(request.url, {
+            const retryResponse = await httpFetch(request.url, {
               method: request.method,
               headers: retryHeaders,
               body:
