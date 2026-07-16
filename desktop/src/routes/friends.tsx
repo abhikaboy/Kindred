@@ -7,7 +7,7 @@ import { SearchBox } from "@/components/SearchBox";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { UserRow } from "@/components/friends/UserRow";
 import { RequestRow } from "@/components/friends/RequestRow";
-import { SuggestedRow } from "@/components/friends/SuggestedRow";
+import { SuggestedCard } from "@/components/friends/SuggestedCard";
 import { SearchResultRow } from "@/components/friends/SearchResultRow";
 import {
   useFriends,
@@ -118,9 +118,9 @@ function BrowseSections() {
       {suggestedItems.length > 0 && (
         <section className="flex flex-col gap-4">
           <SectionHeader title="Suggested" />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="flex gap-3 overflow-x-auto pb-2">
             {suggestedItems.map((u) => (
-              <SuggestedRow key={u._id} user={u} />
+              <SuggestedCard key={u._id} user={u} />
             ))}
           </div>
         </section>
