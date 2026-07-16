@@ -2,6 +2,7 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
+import { CalendarConnectionsDrawer } from "@/components/calendar/CalendarConnectionsDrawer";
 
 export type ViewMode = "week" | "month";
 
@@ -31,7 +32,9 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
         </button>
       </div>
 
-      <div className="flex items-center rounded-full border p-0.5">
+      <div className="flex items-center gap-2">
+        <CalendarConnectionsDrawer />
+        <div className="flex items-center rounded-full border p-0.5">
         {(["week", "month"] as const).map((m) => (
           <button
             key={m}
@@ -44,6 +47,7 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
             <ThemedText type="caption">{m}</ThemedText>
           </button>
         ))}
+        </div>
       </div>
     </div>
   );
