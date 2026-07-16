@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ThemedText } from "@/components/ThemedText";
 import { useCompleteTask, AUTH_HEADER } from "@/hooks/useTaskActions";
+import { useCreate } from "@/components/create/CreateContext";
 import { fireConfetti } from "@/lib/confetti";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
@@ -65,6 +67,7 @@ export function SwipeToComplete({
 }) {
   const navigate = useNavigate();
   const completeTask = useCompleteTask();
+  const { openCreatePost } = useCreate();
   const rowRef = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const dragging = useRef(false);
@@ -88,9 +91,33 @@ export function SwipeToComplete({
         params: { header: AUTH_HEADER, path: { category: categoryId, id: task.id } },
         body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
       },
-      { onSuccess: () => fireConfetti(rowRef.current) },
+      {
+        onSuccess: (data) => {
+          fireConfetti(rowRef.current);
+          // Post-complete "share your win" prompt (mirrors mobile) — on every completion.
+          const title =
+            data?.streakChanged && data.currentStreak
+              ? `🔥 ${data.currentStreak} day streak!`
+              : "Task completed! 🎉";
+          toast.success(title, {
+            description: "Share your win and document your task",
+            duration: 6000,
+            action: {
+              label: "Share",
+              onClick: () =>
+                openCreatePost({ id: task.id, content: task.content, categoryId }),
+            },
+          });
+        },
+        // On failure, un-collapse the row so the task doesn't silently vanish.
+        onError: () => {
+          setDone(false);
+          setDx(0);
+          toast.error("Couldn't complete that task. Please try again.");
+        },
+      },
     );
-  }, [categoryId, task.id, completeTask]);
+  }, [categoryId, task.id, task.content, completeTask, openCreatePost]);
 
   const control = useMemo<CompleteControl>(
     () => ({ complete, pending: done || completeTask.isPending }),

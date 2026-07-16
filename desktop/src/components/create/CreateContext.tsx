@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create/CreateTaskDialog";
 import { CreateCategoryDialog } from "@/components/create/CreateCategoryDialog";
+import { CreatePostModal, type PostPrefill } from "@/components/feed/CreatePostModal";
 import type { SelectedCategory, TaskPrefill } from "@/components/create/types";
 
 type CreateContextValue = {
@@ -9,6 +10,8 @@ type CreateContextValue = {
   // Opens the category dialog primed for a NEW workspace (workspaces are created
   // by adding their first category under a new name — there's no standalone flow).
   openCreateWorkspace: () => void;
+  // Opens the post composer, optionally pre-selecting a just-completed task.
+  openCreatePost: (prefill?: PostPrefill) => void;
   // Screens with an ordered category list register it here for the Shift+1..9 hotkeys.
   setCategoryShortcuts: (categories: { id: string }[]) => void;
 };
@@ -39,6 +42,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskPrefill, setTaskPrefill] = useState<TaskPrefill | undefined>();
 
+  const [postOpen, setPostOpen] = useState(false);
+  const [postPrefill, setPostPrefill] = useState<PostPrefill | undefined>();
+
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryWorkspace, setCategoryWorkspace] = useState<string | undefined>();
   // Inline-create callback: set when the task dialog requests a new category.
@@ -64,6 +70,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     categoryOnCreated.current = undefined;
     setCategoryWorkspace(""); // empty workspace field -> user names a new workspace
     setCategoryOpen(true);
+  }, []);
+
+  const openCreatePost = useCallback((prefill?: PostPrefill) => {
+    setPostPrefill(prefill);
+    setPostOpen(true);
   }, []);
 
   const requestNewCategory = useCallback(
@@ -107,7 +118,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   }, [anyOpen, openCreateTask, openCreateWorkspace]);
 
   return (
-    <CreateContext.Provider value={{ openCreateTask, openCreateCategory, openCreateWorkspace, setCategoryShortcuts }}>
+    <CreateContext.Provider
+      value={{ openCreateTask, openCreateCategory, openCreateWorkspace, openCreatePost, setCategoryShortcuts }}
+    >
       {children}
       <CreateTaskDialog
         open={taskOpen}
@@ -124,6 +137,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
           categoryOnCreated.current = undefined;
         }}
       />
+      <CreatePostModal open={postOpen} onClose={() => setPostOpen(false)} prefill={postPrefill} />
     </CreateContext.Provider>
   );
 }

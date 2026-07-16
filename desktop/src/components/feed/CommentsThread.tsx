@@ -97,7 +97,7 @@ export function CommentsThread({
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Add a comment..."
-        className="mt-1 flex-1 rounded-full border bg-background px-4 h-11 text-sm text-foreground outline-none transition-colors focus:border-primary"
+        className="mt-2 h-12 w-full flex-1 rounded-full border bg-background px-5 text-sm text-foreground outline-none transition-colors focus:border-primary"
       />
     </div>
   );

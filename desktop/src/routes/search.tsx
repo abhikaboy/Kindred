@@ -1,104 +1,26 @@
-import { useEffect, useMemo, useState } from "react";
-import { SearchBox, type Suggestion } from "@/components/SearchBox";
+import { useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
-import { BlueprintCard } from "@/components/BlueprintCard";
-import { ExplorePage } from "@/components/search/ExplorePage";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  useBlueprintAutocomplete,
-  useBlueprintSearch,
-  type BlueprintDocument,
-} from "@/hooks/useBlueprints";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { PeopleTab } from "@/components/search/PeopleTab";
+import { BlueprintsTab } from "@/components/search/BlueprintsTab";
 
+const TABS = ["People", "Blueprints"] as const;
+
+// Combined discovery: people (friends) and blueprints under one Search destination.
 export default function SearchScreen() {
-  const [input, setInput] = useState("");
-  const [query, setQuery] = useState("");
-
-  // Debounce the committed query (~300ms) so we don't fire on every keystroke.
-  useEffect(() => {
-    const id = setTimeout(() => setQuery(input), 300);
-    return () => clearTimeout(id);
-  }, [input]);
-
-  const hasQuery = query.trim().length > 0;
-
-  const { data: results, isLoading, isFetching } = useBlueprintSearch(query);
-  const { data: autocomplete } = useBlueprintAutocomplete(input);
-
-  const suggestions = useMemo<Suggestion[]>(
-    () =>
-      (autocomplete ?? []).slice(0, 6).map((bp) => ({
-        id: bp.id,
-        title: bp.name,
-        subtitle: bp.category || undefined,
-        image: bp.banner || undefined,
-      })),
-    [autocomplete]
-  );
+  const [tab, setTab] = useState<string>(TABS[0]);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 pt-6">
       <ThemedText type="titleFraunces" as="h1">
-        Discover blueprints
+        Search
       </ThemedText>
 
-      <SearchBox
-        value={input}
-        onChange={setInput}
-        onSubmit={() => setQuery(input)}
-        placeholder="Search for a blueprint"
-        suggestions={suggestions}
-        onSelectSuggestion={(s) => setInput(s.title)}
-      />
-
-      {hasQuery ? (
-        <SearchResults
-          results={results ?? []}
-          loading={isLoading || isFetching}
-          query={query}
-        />
-      ) : (
-        <ExplorePage />
-      )}
-    </div>
-  );
-}
-
-function SearchResults({
-  results,
-  loading,
-  query,
-}: {
-  results: BlueprintDocument[];
-  loading: boolean;
-  query: string;
-}) {
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[16/10] w-full rounded-xl" />
-        ))}
+      <div className="max-w-xs">
+        <SegmentedControl options={[...TABS]} value={tab} onChange={setTab} accent />
       </div>
-    );
-  }
 
-  if (results.length === 0) {
-    return (
-      <div className="flex flex-col gap-1 py-12 text-center">
-        <ThemedText type="subtitle">No blueprints found</ThemedText>
-        <ThemedText type="caption">
-          Nothing matched "{query.trim()}".
-        </ThemedText>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {results.map((bp) => (
-        <BlueprintCard key={bp.id} blueprint={bp} />
-      ))}
+      {tab === "Blueprints" ? <BlueprintsTab /> : <PeopleTab />}
     </div>
   );
 }
