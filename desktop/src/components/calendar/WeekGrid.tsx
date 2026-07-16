@@ -1,23 +1,64 @@
 import { useEffect, useRef, useState } from "react";
-import { addDays, isSameDay, isToday } from "date-fns";
+import { addDays, format, isSameDay, isToday } from "date-fns";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { HOUR_HEIGHT, layoutDayEvents, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
+import type { SpanningBar } from "@/lib/weekTasks";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
 type Reschedule = (task: TaskDocument, patch: { startTime?: string; deadline?: string }) => void;
 
+const ROW_H = 22; // px per spanning-bar lane
+
+function SpanningBars({ bars }: { bars: SpanningBar[] }) {
+  if (bars.length === 0) return null;
+  const maxRow = Math.max(...bars.map((b) => b.row));
+  const regionH = (maxRow + 1) * ROW_H;
+  return (
+    <div className="relative" style={{ height: regionH }}>
+      {bars.map((bar) => {
+        const leftPct = (bar.startCol / 7) * 100;
+        const widthPct = ((bar.endCol - bar.startCol + 1) / 7) * 100;
+        return (
+          <div
+            key={bar.task.id}
+            className={cn(
+              "absolute flex items-center overflow-hidden bg-primary/10 px-1.5",
+              bar.clippedLeft ? "rounded-l-none" : "rounded-l",
+              bar.clippedRight ? "rounded-r-none" : "rounded-r"
+            )}
+            style={{
+              left: `${leftPct}%`,
+              width: `${widthPct}%`,
+              top: bar.row * ROW_H,
+              height: ROW_H - 2,
+            }}
+          >
+            {bar.clippedLeft && <CaretLeft size={10} className="shrink-0 text-primary" />}
+            <ThemedText type="caption" className="truncate text-primary">
+              {bar.task.content || "Untitled"}
+            </ThemedText>
+            {bar.clippedRight && <CaretRight size={10} className="ml-auto shrink-0 text-primary" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
+const minuteLabel = (min: number) => format(new Date(0, 0, 0, Math.floor(min / 60), min % 60), "h:mm a");
 
 function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tasks: WeekDayTasks; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule }) {
   const dropKey = `weekcol:${dayKey(day)}`;
   const ref = useDropTarget(dropKey);
-  const { dragging, hoverKey } = useDragState();
+  const { dragging, hoverKey, pointer, grabOffsetY, previewHeightPx } = useDragState();
   const hot = dragging && hoverKey === dropKey;
 
   const [draw, setDraw] = useState<{ start: number; end: number } | null>(null);
@@ -42,6 +83,12 @@ function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tas
     window.addEventListener("pointerup", up);
   };
 
+  // Dashed preview at the slot a dragged task will land (same math as handleDrop).
+  const previewStart =
+    hot && pointer && colRef.current
+      ? yToMinutes(pointer.y - colRef.current.getBoundingClientRect().top - grabOffsetY)
+      : null;
+
   return (
     <div
       ref={setCol}
@@ -65,6 +112,16 @@ function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tas
           style={{ top: minutesToY(draw.start), height: minutesToY(draw.end - draw.start) }}
         />
       )}
+      {previewStart !== null && (
+        <div
+          className="pointer-events-none absolute inset-x-1 z-30 rounded-lg border-2 border-dashed border-primary bg-primary/5"
+          style={{ top: minutesToY(previewStart), height: previewHeightPx }}
+        >
+          <ThemedText type="caption" className="text-primary px-1">
+            {minuteLabel(previewStart)}
+          </ThemedText>
+        </div>
+      )}
     </div>
   );
 }
@@ -72,13 +129,14 @@ function DayColumn({ day, tasks, onCreateRange, onReschedule }: { day: Date; tas
 type Props = {
   weekStart: Date;
   week: Record<string, WeekDayTasks>;
+  spanning: SpanningBar[];
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   onCreateRange: (day: Date, startMin: number, endMin: number) => void;
   onReschedule: Reschedule;
 };
 
-export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
+export function WeekGrid({ weekStart, week, spanning, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const scrollRef = useRef<HTMLDivElement>(null);
   // On mount, scroll so the current time sits near the top with a little context above.
@@ -109,16 +167,23 @@ export function WeekGrid({ weekStart, week, selectedDate, onSelectDate, onCreate
         ))}
       </div>
       {/* All-day row */}
-      <div className="flex border-b border-border pl-12">
-        {days.map((day) => (
-          <div key={day.toISOString()} className="flex-1 border-l border-border p-1">
-            {week[dayKey(day)].allDay.map((t) => (
-              <div key={t.id} className="mb-0.5 truncate rounded bg-primary/10 px-1.5 py-0.5">
-                <ThemedText type="caption" className="text-primary">{t.content || "Untitled"}</ThemedText>
-              </div>
-            ))}
-          </div>
-        ))}
+      <div className="border-b border-border">
+        {/* Spanning multi-day bars — positioned relative to the 7-column area */}
+        <div className="pl-12">
+          <SpanningBars bars={spanning} />
+        </div>
+        {/* Per-day all-day pills */}
+        <div className="flex pl-12">
+          {days.map((day) => (
+            <div key={day.toISOString()} className="flex-1 border-l border-border p-1">
+              {week[dayKey(day)].allDay.map((t) => (
+                <div key={t.id} className="mb-0.5 truncate rounded bg-primary/10 px-1.5 py-0.5">
+                  <ThemedText type="caption" className="text-primary">{t.content || "Untitled"}</ThemedText>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       {/* Scrollable timed grid */}
       <div ref={scrollRef} className="relative flex min-h-0 flex-1 overflow-y-auto">
