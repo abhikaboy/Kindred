@@ -4,7 +4,6 @@ import { PlannerHeader, type ViewMode } from "@/components/calendar/PlannerHeade
 import { WeekGrid } from "@/components/calendar/WeekGrid";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { AgendaPanel } from "@/components/calendar/AgendaPanel";
-import { UnscheduledTray } from "@/components/calendar/UnscheduledTray";
 import { DragProvider, useDragState } from "@/components/calendar/DragContext";
 import { useCreate } from "@/components/create/CreateContext";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
@@ -77,7 +76,7 @@ function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
         {mode === "week" ? (
           <>
             <WeekGrid weekStart={weekStart} week={week} selectedDate={selectedDate} onSelectDate={setSelectedDate} onCreateRange={onCreateRange} />
-            <AgendaPanel buckets={buckets} />
+            <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
           </>
         ) : (
           <MonthGrid
@@ -91,7 +90,6 @@ function CalendarBody({ allTasks }: { allTasks: TaskDocument[] }) {
           />
         )}
       </div>
-      <UnscheduledTray tasks={buckets.listUnscheduledTasks} />
     </div>
   );
 }

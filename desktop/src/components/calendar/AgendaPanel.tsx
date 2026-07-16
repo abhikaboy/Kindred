@@ -1,3 +1,4 @@
+import { format, isToday } from "date-fns";
 import { useDrag } from "@/components/calendar/DragContext";
 import { TaskItem } from "@/components/TaskItem";
 import { ThemedText } from "@/components/ThemedText";
@@ -32,15 +33,17 @@ function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
   );
 }
 
-export function AgendaPanel({ buckets }: { buckets: DailyBuckets }) {
+export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; selectedDate: Date }) {
+  const dayLabel = isToday(selectedDate) ? "Today" : format(selectedDate, "EEE, MMM d");
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-4">
       {SECTIONS.map((s) => {
         const tasks = buckets[s.key] as TaskDocument[];
         if (tasks.length === 0) return null;
+        const label = s.key === "tasksForSelectedDate" ? dayLabel : s.label;
         return (
           <div key={s.key} className="flex flex-col gap-2">
-            <ThemedText type="subtitle">{s.label} ({tasks.length})</ThemedText>
+            <ThemedText type="subtitle">{label} ({tasks.length})</ThemedText>
             {tasks.map((t) => <TaskItem key={t.id} task={t} />)}
           </div>
         );
