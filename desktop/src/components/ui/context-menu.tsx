@@ -1,70 +1,146 @@
-import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu"
-import { cn } from "@/lib/utils"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
 
-// ContextMenu.Trigger renders a <div>; use render prop or className to adjust layout.
-function ContextMenu({ ...props }: ContextMenuPrimitive.Root.Props) {
-  return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />
+// A small custom right-click menu. We drive it off the native `contextmenu` event
+// (preventDefault to suppress the browser menu) rather than a library primitive, so
+// it behaves consistently in the desktop webview. Same API shape as a shadcn menu.
+
+type Pos = { x: number; y: number };
+type Ctx = { open: boolean; pos: Pos; openAt: (p: Pos) => void; close: () => void };
+
+const ContextMenuCtx = createContext<Ctx | null>(null);
+
+function useCtx(): Ctx {
+  const c = useContext(ContextMenuCtx);
+  if (!c) throw new Error("ContextMenu parts must be used within <ContextMenu>");
+  return c;
 }
 
-function ContextMenuTrigger({ ...props }: ContextMenuPrimitive.Trigger.Props) {
-  return <ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" {...props} />
-}
-
-function ContextMenuContent({
-  className,
-  ...props
-}: ContextMenuPrimitive.Popup.Props) {
+export function ContextMenu({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<Pos>({ x: 0, y: 0 });
+  const openAt = useCallback((p: Pos) => {
+    setPos(p);
+    setOpen(true);
+  }, []);
+  const close = useCallback(() => setOpen(false), []);
   return (
-    <ContextMenuPrimitive.Portal>
-      <ContextMenuPrimitive.Positioner className="z-50">
-        <ContextMenuPrimitive.Popup
-          data-slot="context-menu-content"
-          className={cn(
-            "z-50 min-w-[10rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-none transition duration-150 data-ending-style:opacity-0 data-ending-style:scale-95 data-starting-style:opacity-0 data-starting-style:scale-95",
-            className
-          )}
-          {...props}
-        />
-      </ContextMenuPrimitive.Positioner>
-    </ContextMenuPrimitive.Portal>
-  )
+    <ContextMenuCtx.Provider value={{ open, pos, openAt, close }}>{children}</ContextMenuCtx.Provider>
+  );
 }
 
-function ContextMenuItem({
+export function ContextMenuTrigger({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const { openAt } = useCtx();
+  return (
+    <div
+      className={className}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openAt({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function ContextMenuContent({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
+  const { open, pos, close } = useCtx();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onScroll = () => close();
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open, close]);
+
+  if (!open) return null;
+
+  return createPortal(
+    // Full-screen catcher closes on any outside press or a new right-click.
+    <div
+      className="fixed inset-0 z-50"
+      onPointerDown={close}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        close();
+      }}
+    >
+      <div
+        role="menu"
+        style={{ position: "fixed", left: pos.x, top: pos.y }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className={cn(
+          "min-w-[10rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          className
+        )}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+export function ContextMenuItem({
   className,
   variant,
-  ...props
-}: ContextMenuPrimitive.Item.Props & { variant?: "destructive" }) {
+  disabled,
+  onClick,
+  children,
+}: {
+  className?: string;
+  variant?: "destructive";
+  disabled?: boolean;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  const { close } = useCtx();
   return (
-    <ContextMenuPrimitive.Item
-      data-slot="context-menu-item"
+    <button
+      type="button"
+      role="menuitem"
+      disabled={disabled}
+      onClick={() => {
+        onClick?.();
+        close();
+      }}
       className={cn(
-        "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-default outline-none data-disabled:pointer-events-none data-disabled:opacity-50",
+        "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50",
         variant === "destructive" && "text-destructive hover:text-destructive",
         className
       )}
-      {...props}
-    />
-  )
+    >
+      {children}
+    </button>
+  );
 }
 
-function ContextMenuSeparator({
-  className,
-  ...props
-}: ContextMenuPrimitive.Separator.Props) {
-  return (
-    <ContextMenuPrimitive.Separator
-      data-slot="context-menu-separator"
-      className={cn("-mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
-  )
-}
-
-export {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
+export function ContextMenuSeparator({ className }: { className?: string }) {
+  return <div className={cn("-mx-1 my-1 h-px bg-border", className)} />;
 }
