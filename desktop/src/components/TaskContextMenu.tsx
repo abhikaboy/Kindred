@@ -39,8 +39,8 @@ export function TaskContextMenu({
 
   return (
     <ContextMenu>
-      {/* Trigger renders a <div>; display:contents avoids disrupting card layout */}
-      <ContextMenuTrigger className="contents">{children}</ContextMenuTrigger>
+      {/* Trigger renders a wrapping <div> the card fills; right-click opens the menu. */}
+      <ContextMenuTrigger>{children}</ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onClick={() => navigate(`/task/${task.id}`)}>
           <ArrowSquareOut size={14} />

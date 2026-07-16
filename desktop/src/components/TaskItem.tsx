@@ -42,12 +42,11 @@ function Chip({
   );
 }
 
-export function TaskItem({ task, completed }: { task: TaskDocument; completed?: boolean }) {
-  // Completed tasks: keep the priority dot but drop deadline/recurring/in-progress chips.
-  const working = !completed && Boolean(task.workingOnSince);
-  const deadline = completed ? null : formatDeadline(task.deadline);
+export function TaskItem({ task }: { task: TaskDocument }) {
+  const working = Boolean(task.workingOnSince);
+  const deadline = formatDeadline(task.deadline);
   const dotColor = working ? "bg-primary" : PRIORITY_DOT[task.priority];
-  const showChips = !completed && (working || Boolean(deadline) || task.recurring);
+  const showChips = working || Boolean(deadline) || task.recurring;
 
   return (
     <TaskContextMenu task={task}>
