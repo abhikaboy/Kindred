@@ -33,7 +33,7 @@ export function RingsClosedFeedCard({
         <div className="flex flex-col">
           <ThemedText type="defaultSemiBold">{ringsClosed.user.display_name}</ThemedText>
           <ThemedText type="caption">
-            @{ringsClosed.user.handle} · {formatNotificationTime(new Date(ringsClosed.timestamp).getTime())}
+            {ringsClosed.user.handle} · {formatNotificationTime(new Date(ringsClosed.timestamp).getTime())}
           </ThemedText>
         </div>
       </div>

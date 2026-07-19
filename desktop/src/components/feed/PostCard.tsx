@@ -90,7 +90,7 @@ export function PostCard({ post }: { post: PostDocumentAPI }): JSX.Element {
             </ThemedText>
           </Link>
           <ThemedText type="caption" as="span">
-            <span className="text-primary">@{post.user.handle}</span>
+            <span className="text-primary">{post.user.handle}</span>
             {" · "}
             {formatNotificationTime(createdMs)}
             {post.taggedUsers && post.taggedUsers.length > 0 ? (
@@ -99,7 +99,7 @@ export function PostCard({ post }: { post: PostDocumentAPI }): JSX.Element {
                 {post.taggedUsers.map((t, i) => (
                   <span key={t.id}>
                     {i > 0 ? ", " : ""}
-                    <span className="text-primary">@{t.handle}</span>
+                    <span className="text-primary">{t.handle}</span>
                   </span>
                 ))}
               </>
