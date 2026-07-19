@@ -174,4 +174,11 @@
     font-weight: 600;
     font-style: normal;
     }
+  /* Tailwind v4 dropped the default pointer cursor on buttons. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  summary {
+    cursor: pointer;
+    }
 }

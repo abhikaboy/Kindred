@@ -53,7 +53,7 @@ export function RingsClosedFeedCard({
           </div>
         ) : (
           <div>
-            <Button size="sm" variant="outline" onClick={() => setKudosOpen(true)}>
+            <Button size="sm" variant="outline" className="h-auto py-2.5" onClick={() => setKudosOpen(true)}>
               <HandsClapping weight="fill" />
               Send congrats
             </Button>

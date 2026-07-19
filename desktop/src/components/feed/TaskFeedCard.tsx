@@ -57,7 +57,7 @@ export function TaskFeedCard({
 
       {!isOwn && (
         <div>
-          <Button size="sm" variant="outline" onClick={() => setKudosOpen(true)}>
+          <Button size="sm" variant="outline" className="h-auto py-2.5" onClick={() => setKudosOpen(true)}>
             <Sparkle weight="fill" />
             Encourage
           </Button>
