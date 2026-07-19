@@ -102,7 +102,8 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 
 	taskParams := input.Body
 
-	isActive := true
+	// New tasks aren't "in progress" unless the client explicitly says so.
+	isActive := false
 	if taskParams.Active != nil {
 		isActive = *taskParams.Active
 	}

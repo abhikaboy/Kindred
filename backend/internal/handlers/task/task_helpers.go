@@ -412,7 +412,8 @@ func buildTaskDocument(taskParams CreateTaskParams, userID, categoryID primitive
 		RecurFrequency: taskParams.RecurFrequency,
 		RecurDetails:   taskParams.RecurDetails,
 		Public:         taskParams.Public,
-		Active:         true,
+		// Not "in progress" by default; only if the client explicitly set it.
+		Active:         taskParams.Active != nil && *taskParams.Active,
 		UserID:         userID,
 		CategoryID:     categoryID,
 		Deadline:       taskParams.Deadline,
