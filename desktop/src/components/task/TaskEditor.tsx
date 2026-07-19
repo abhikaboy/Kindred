@@ -13,10 +13,13 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
-import ThemedInput from "@/components/ThemedInput";
 import PrimaryButton from "@/components/PrimaryButton";
+import { MentionTextarea } from "@/components/inputs/MentionTextarea";
 import { DataCard } from "@/components/task/DataCard";
+import { TaskTagsCard } from "@/components/task/TaskTagsCard";
 import { KudosBubble } from "@/components/kudos/KudosBubble";
+import { tagPayload, pendingIds } from "@/lib/tags";
+import type { FriendReference } from "@/hooks/useConnections";
 import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
 import { cn } from "@/lib/utils";
@@ -32,6 +35,7 @@ import {
   useCompleteTask,
   useDeleteTask,
   useUpdateTask,
+  useUpdateTaskTags,
 } from "@/hooks/useTaskActions";
 
 const PRIORITIES: { value: number; label: string; active: string }[] = [
@@ -120,6 +124,7 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
   const [deadline, setDeadline] = useState<string | undefined>(task.deadline);
 
   const updateTask = useUpdateTask();
+  const updateTags = useUpdateTaskTags();
   const completeTask = useCompleteTask();
   const deleteTask = useDeleteTask();
   const activateTask = useActivateTask();
@@ -152,6 +157,15 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
 
   const handleNotesBlur = () => {
     if (notes !== (task.notes ?? "")) save({ notes });
+  };
+
+  // Inline @-mention tags the picked user (explicit pick only) via the tags endpoint.
+  const handleMentionPicked = (f: FriendReference) => {
+    const current = task.taggedUsers ?? [];
+    updateTags.mutate({
+      params: { header: AUTH_HEADER, path },
+      body: { taggedUserIds: tagPayload(current, [...pendingIds(current), f._id]) },
+    });
   };
 
   // Start date is required, so it's never cleared; deadline is optional (null clears it).
@@ -278,13 +292,14 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
       </div>
 
       <DataCard title="Notes" icon={<Note size={20} weight="regular" className="text-foreground" />}>
-        <ThemedInput
-          ghost
-          textArea
+        <MentionTextarea
           value={notes}
           onChange={setNotes}
           onBlur={handleNotesBlur}
+          onMentionPicked={handleMentionPicked}
           placeholder="Add notes"
+          rows={4}
+          className="w-full resize-y bg-transparent px-0 py-4 text-base font-light text-foreground outline-none placeholder:text-muted-foreground"
         />
       </DataCard>
 
@@ -307,6 +322,8 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           }}
         />
       </DataCard>
+
+      <TaskTagsCard task={task} categoryId={categoryId} />
 
       {task.recurring && (
         <DataCard title="Recurring" icon={<Repeat size={20} weight="regular" className="text-foreground" />}>

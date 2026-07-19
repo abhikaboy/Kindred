@@ -80,3 +80,12 @@ export function useActivateTask() {
     onSuccess: () => invalidateTasks(qc),
   });
 }
+
+// PATCH .../tags merges server-side: pending tags can be removed, watching/copied/
+// untagged are preserved, new ids are added. Send the full desired id list.
+export function useUpdateTaskTags() {
+  const qc = useQueryClient();
+  return $api.useMutation("patch", "/v1/user/tasks/{category}/{id}/tags", {
+    onSuccess: () => invalidateTasks(qc),
+  });
+}

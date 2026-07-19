@@ -4,6 +4,7 @@ import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import PrimaryButton from "@/components/PrimaryButton";
+import { MentionTextarea } from "@/components/inputs/MentionTextarea";
 import { PropertyPill } from "@/components/create/PropertyPill";
 import { CategoryPopover } from "@/components/create/CategoryPopover";
 import { PriorityPopover } from "@/components/create/PriorityPopover";
@@ -19,7 +20,7 @@ import {
     type TaskFormState,
 } from "@/hooks/useCreateActions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
-import { useFriends } from "@/hooks/useConnections";
+import { useFriends, type FriendReference } from "@/hooks/useConnections";
 
 export function CreateTaskDialog({
     open,
@@ -61,6 +62,14 @@ export function CreateTaskDialog({
     }, [open]);
 
     const canSubmit = form.content.trim().length > 0 && !!selectedCategory;
+
+    // Inline @-mention adds to the same tag list the MorePopover checklist writes.
+    const addTag = (f: FriendReference) =>
+        setForm((prev) =>
+            prev.taggedUserIds.includes(f._id)
+                ? prev
+                : { ...prev, taggedUserIds: [...prev.taggedUserIds, f._id] },
+        );
 
     const submit = () => {
         if (!canSubmit || !selectedCategory) return;
@@ -104,19 +113,21 @@ export function CreateTaskDialog({
                 </div>
 
                 <div className="flex flex-col gap-3 py-5">
-                    <textarea
-                        ref={titleRef}
+                    <MentionTextarea
+                        textareaRef={titleRef}
                         rows={1}
                         value={form.content}
-                        onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
+                        onChange={(v) => setForm((prev) => ({ ...prev, content: v }))}
+                        onMentionPicked={addTag}
                         onKeyDown={onTitleKeyDown}
                         placeholder="Task title"
                         className="w-full resize-none bg-transparent text-2xl font-medium leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
                     />
-                    <textarea
+                    <MentionTextarea
                         rows={4}
                         value={form.notes}
-                        onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+                        onChange={(v) => setForm((prev) => ({ ...prev, notes: v }))}
+                        onMentionPicked={addTag}
                         placeholder="Add a description…"
                         className="min-h-24 w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
                     />

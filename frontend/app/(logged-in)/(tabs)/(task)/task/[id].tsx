@@ -31,8 +31,9 @@ import { TaskScheduleRoute } from "@/components/task/TaskScheduleRoute";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users } from "phosphor-react-native";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
+import TaggedUsersChips from "@/components/inputs/TaggedUsersChips";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 // import PagerView from "react-native-pager-view"; // Removed - was causing modal issue
@@ -692,6 +693,25 @@ export default function Task() {
                                         onAddDeadline={handleDeadlineModalPress}
                                     />
                                 </DataCard>
+                                <ConditionalView
+                                    condition={(task?.taggedUsers?.length ?? 0) > 0}
+                                    key="tagged">
+                                    {/* Tap the row to open the same tag editor as the header icon */}
+                                    <TouchableOpacity activeOpacity={0.7} onPress={() => setShowTagModal(true)}>
+                                        <DataCard
+                                            title="Tagged"
+                                            icon={<Users size={20} color={ThemedColor.text} weight="regular" />}
+                                        >
+                                            {/* Cancel the chips' baked-in 16px inset to align with the title */}
+                                            <View style={{ marginLeft: -16 }}>
+                                                <TaggedUsersChips
+                                                    users={task?.taggedUsers ?? []}
+                                                    onRemove={() => setShowTagModal(true)}
+                                                />
+                                            </View>
+                                        </DataCard>
+                                    </TouchableOpacity>
+                                </ConditionalView>
                                 <ConditionalView condition={recurDetails != null} key="recurring">
                                     <RecurringInfoCard
                                         recurDetails={recurDetails!}
