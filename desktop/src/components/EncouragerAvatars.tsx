@@ -24,7 +24,13 @@ export function EncouragerAvatars({ encouragements }: { encouragements: TaskKudo
           <span className={base} />
         );
         return e.sender.id ? (
-          <Link key={e.encouragementId} to={`/account/${e.sender.id}`} className={wrap} style={z}>
+          <Link
+            key={e.encouragementId}
+            to={`/account/${e.sender.id}`}
+            onClick={(ev) => ev.stopPropagation()}
+            className={wrap}
+            style={z}
+          >
             {dot}
           </Link>
         ) : (

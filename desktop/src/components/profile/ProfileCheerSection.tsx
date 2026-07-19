@@ -57,7 +57,7 @@ export function ProfileCheerSection() {
             const kudos = kudosByTask.get(task.id) ?? [];
             return (
               <div key={task.id} className="flex flex-col gap-2">
-                <TaskItem task={task} />
+                <TaskItem task={task} linkToDetail />
                 {kudos.length > 0 && (
                   <div className="flex items-center gap-2 pl-1">
                     <div className="flex -space-x-2">

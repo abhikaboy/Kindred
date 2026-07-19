@@ -1,4 +1,5 @@
 import { CalendarBlank, Clock, Play, Repeat, Sparkle } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
@@ -54,11 +55,15 @@ export function TaskItem({
   task,
   completed,
   onEncourage,
+  linkToDetail,
 }: {
   task: TaskDocument;
   completed?: boolean;
   onEncourage?: () => void;
+  // Whole card navigates to the task detail page (active tasks only).
+  linkToDetail?: boolean;
 }) {
+  const navigate = useNavigate();
   // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
   const working = !completed && Boolean(task.workingOnSince);
   const deadline = completed ? null : formatDeadline(task.deadline);
@@ -71,13 +76,19 @@ export function TaskItem({
   const encouragements = task.encouragements ?? [];
   const encouraged = encouragements.length > 0;
   const encourageMode = Boolean(onEncourage);
+  const clickable = Boolean(linkToDetail) && !encourageMode;
+  const goToDetail = () => navigate(`/task/${task.id}`);
 
   const inner = (
     <div
+      onClick={clickable ? goToDetail : undefined}
+      onKeyDown={clickable ? (e) => e.key === "Enter" && goToDetail() : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
       className={cn(
         "rounded-2xl border px-4 py-3.5 transition-colors",
         encouraged ? "border-border/60 bg-primary/5" : "border-border/60 bg-card",
-        encourageMode ? "cursor-pointer hover:border-primary/60" : "hover:border-border"
+        (encourageMode || clickable) ? "cursor-pointer hover:border-primary/60" : "hover:border-border"
       )}
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
     >
