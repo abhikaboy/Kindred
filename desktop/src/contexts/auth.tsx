@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import client, { setUnauthorizedHandler } from "@/lib/api/client";
 import { tokens } from "@/lib/tokens";
 import { decodeIdToken, deriveHandle } from "@/lib/oauth";
@@ -42,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
       tokens.clear();
+      queryClient.clear();
       setUser(null);
     });
 
@@ -74,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryClient]);
 
   // Tokens are persisted automatically by the client middleware from response
   // headers, so successful login calls only need setUser(data).
@@ -239,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     tokens.clear();
+    queryClient.clear();
     setUser(null);
   }
 
