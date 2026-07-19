@@ -191,6 +191,7 @@ export default function AccountScreen() {
         scope="task"
         taskId={encourageTask?.id}
         taskName={encourageTask?.content}
+        categoryName="Encouragement"
         onSent={() => qc.invalidateQueries({ queryKey: ["get", "/v1/user/profiles/{id}"] })}
       />
     </div>

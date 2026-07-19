@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/auth";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BrandGlow } from "@/components/BrandGlow";
 import { FloatingRings } from "@/components/FloatingRings";
 import { CreateProvider } from "@/components/create/CreateContext";
 import {
@@ -58,6 +59,7 @@ function SidebarResizer({ onWidth }: { onWidth: (w: number) => void }) {
 
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
+  const insetRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(() => {
     const saved = Number(localStorage.getItem(WIDTH_KEY));
     return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
@@ -89,11 +91,15 @@ export default function AppLayout() {
       <CreateProvider>
         <AppSidebar />
         <SidebarResizer onWidth={handleWidth} />
-        <SidebarInset className="h-svh overflow-hidden">
-          <header className="flex h-12 items-center gap-2 pl-1 pr-4">
+        <SidebarInset ref={insetRef} className="h-svh overflow-hidden">
+          <BrandGlow />
+          <header className="relative z-10 flex h-12 items-center gap-2 pl-1 pr-4">
             <SidebarTrigger />
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-12">
+          <main
+            className="relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pb-12"
+            onScroll={(e) => insetRef.current?.style.setProperty("--brand-scroll", String(e.currentTarget.scrollTop))}
+          >
             <Outlet />
           </main>
           <FloatingRings />

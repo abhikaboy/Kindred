@@ -62,8 +62,12 @@ export function TaskItem({
   // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
   const working = !completed && Boolean(task.workingOnSince);
   const deadline = completed ? null : formatDeadline(task.deadline);
+  const scheduledTime =
+    completed || !task.startTime
+      ? null
+      : `${formatDeadline(task.startTime)}, ${new Date(task.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
   const dotColor = working ? "bg-primary" : PRIORITY_DOT[task.priority];
-  const showChips = !completed && (working || Boolean(deadline) || task.recurring);
+  const showChips = !completed && (working || Boolean(scheduledTime) || Boolean(deadline) || task.recurring);
   const encouragements = task.encouragements ?? [];
   const encouraged = encouragements.length > 0;
   const encourageMode = Boolean(onEncourage);
@@ -103,9 +107,8 @@ export function TaskItem({
 
           {showChips && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {deadline && (
-                <Chip icon={task.startTime ? Clock : CalendarBlank} label={`Due ${deadline}`} />
-              )}
+              {scheduledTime && <Chip icon={Clock} label={scheduledTime} />}
+              {deadline && <Chip icon={CalendarBlank} label={`Due ${deadline}`} />}
               {task.recurring && <Chip icon={Repeat} label="Recurring" />}
               {working && <Chip icon={Play} label="in progress" active />}
             </div>

@@ -182,3 +182,20 @@
     cursor: pointer;
     }
 }
+/* Ambient BrandGlow orbs — slow drift + breathe (transform only, GPU-composited). */
+@keyframes brand-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, -3%, 0) scale(1.09); }
+}
+@keyframes brand-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06); }
+  50% { transform: translate3d(-5%, 4%, 0) scale(0.94); }
+}
+@keyframes brand-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(3%, 5%, 0) scale(1.07); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-brand-orb] { animation: none !important; }
+  [data-brand-parallax] { transform: none !important; }
+}

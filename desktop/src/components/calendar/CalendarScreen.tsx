@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { addMonths, addWeeks, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 import { PlannerHeader, type ViewMode } from "@/components/calendar/PlannerHeader";
-import { WeekGrid } from "@/components/calendar/WeekGrid";
+import { WeekPager } from "@/components/calendar/WeekPager";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { AgendaPanel } from "@/components/calendar/AgendaPanel";
 import { DragProvider, useDragState } from "@/components/calendar/DragContext";
@@ -11,7 +11,6 @@ import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useTaskCountsByDay, dayKey, fromDayKey } from "@/hooks/useTaskCountsByDay";
 import { useAllTasks } from "@/hooks/useHomeTasks";
 import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTaskActions";
-import { tasksForWeek, spanningTasksForWeek, spanningEdgesForWeek } from "@/lib/weekTasks";
 import { yToMinutes, rescheduleToStart } from "@/lib/timeline";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
@@ -47,9 +46,6 @@ function CalendarBody({
   };
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
-  const week = useMemo(() => tasksForWeek(allTasks, weekStart), [allTasks, weekStart]);
-  const spanning = useMemo(() => spanningTasksForWeek(allTasks, weekStart), [allTasks, weekStart]);
-  const spanningEdges = useMemo(() => spanningEdgesForWeek(allTasks, weekStart), [allTasks, weekStart]);
 
   const range = useMemo(
     () =>
@@ -84,7 +80,7 @@ function CalendarBody({
       <div className="flex min-h-0 flex-1 gap-4">
         {mode === "week" ? (
           <>
-            <WeekGrid weekStart={weekStart} week={week} spanning={spanning} edges={spanningEdges} selectedDate={selectedDate} onSelectDate={setSelectedDate} onCreateRange={onCreateRange} onReschedule={onReschedule} />
+            <WeekPager allTasks={allTasks} weekStart={weekStart} selectedDate={selectedDate} onSelectDate={setSelectedDate} onStepWeek={onStep} onCreateRange={onCreateRange} onReschedule={onReschedule} />
             <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
           </>
         ) : (
