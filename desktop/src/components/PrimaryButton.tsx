@@ -16,10 +16,11 @@ type Props = {
   className?: string;
   colorOverride?: string;
   testID?: string;
+  ref?: React.Ref<HTMLButtonElement>;
 };
 
 const buttonVariants = cva(
-  "w-full rounded-xl py-4 text-[15px] font-medium font-sans text-center transition-opacity disabled:opacity-50 disabled:pointer-events-none hover:opacity-90 active:opacity-80 cursor-pointer inline-flex items-center justify-center gap-2",
+  "w-full rounded-xl py-4 text-[15px] font-medium font-sans text-center transition-opacity disabled:opacity-50 disabled:pointer-events-none hover:opacity-90 active:opacity-80 cursor-pointer inline-flex items-center justify-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
@@ -68,11 +69,13 @@ export default function PrimaryButton({
   className,
   colorOverride,
   testID,
+  ref,
 }: Props): React.JSX.Element {
   const variant = resolveVariant({ ghost, dottedOutline, secondary, lightened, outline });
 
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled}
       onClick={onClick}

@@ -30,6 +30,7 @@ export function CreateTaskDialog({
     const [form, setForm] = useState<TaskFormState>(emptyTaskForm);
     const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null);
     const titleRef = useRef<HTMLTextAreaElement>(null);
+    const submitRef = useRef<HTMLButtonElement>(null);
 
     const { data: workspaces } = useWorkspaces();
     const { data: friends } = useFriends();
@@ -70,10 +71,20 @@ export function CreateTaskDialog({
         onOpenChange(false);
     };
 
+    // Shift / Cmd / Ctrl + Enter creates the task from anywhere in the dialog.
     const onKeyDown = (e: KeyboardEvent) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        if ((e.metaKey || e.ctrlKey || e.shiftKey) && e.key === "Enter") {
             e.preventDefault();
             submit();
+        }
+    };
+
+    // Plain Enter in the (single-line) title moves focus to Create; a second
+    // Enter then fires it. Shift+Enter still creates immediately via onKeyDown.
+    const onTitleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            submitRef.current?.focus();
         }
     };
 
@@ -98,6 +109,7 @@ export function CreateTaskDialog({
                         rows={1}
                         value={form.content}
                         onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
+                        onKeyDown={onTitleKeyDown}
                         placeholder="Task title"
                         className="w-full resize-none bg-transparent text-2xl font-medium leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
                     />
@@ -133,6 +145,7 @@ export function CreateTaskDialog({
                         Cancel
                     </Button>
                     <PrimaryButton
+                        ref={submitRef}
                         title="Create task"
                         onClick={submit}
                         disabled={!canSubmit}
