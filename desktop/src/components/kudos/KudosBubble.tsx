@@ -1,4 +1,5 @@
 import { useState, type JSX } from "react";
+import { Link } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { isMediaUrl } from "@/lib/kudos";
 import { X } from "@phosphor-icons/react";
@@ -8,24 +9,42 @@ export function KudosBubble({
   name,
   icon,
   message,
+  senderId,
 }: {
   name: string;
   icon?: string;
   message: string;
+  senderId?: string;
 }): JSX.Element {
   const [showPreview, setShowPreview] = useState(false);
   const media = isMediaUrl(message);
 
+  const avatar = icon ? (
+    <img src={icon} alt="" className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-muted object-cover" />
+  ) : null;
+
   return (
     <>
       <div className="flex items-start gap-2.5 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => media && setShowPreview(true)}>
-        {icon ? (
-          <img src={icon} alt="" className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-muted object-cover" />
-        ) : null}
+        {senderId && avatar ? (
+          <Link to={`/account/${senderId}`} onClick={(e) => e.stopPropagation()} className="shrink-0">
+            {avatar}
+          </Link>
+        ) : (
+          avatar
+        )}
         <div className="min-w-0 flex-1">
-          <ThemedText type="defaultSemiBold" className="text-sm">
-            {name}
-          </ThemedText>
+          {senderId ? (
+            <Link to={`/account/${senderId}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+              <ThemedText type="defaultSemiBold" className="text-sm">
+                {name}
+              </ThemedText>
+            </Link>
+          ) : (
+            <ThemedText type="defaultSemiBold" className="text-sm">
+              {name}
+            </ThemedText>
+          )}
           {media ? (
             <img src={message} alt="" className="mt-1 max-h-56 rounded-xl object-cover" />
           ) : (

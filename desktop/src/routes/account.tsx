@@ -1,5 +1,6 @@
 import { useState, type JSX } from "react";
 import { useParams, Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Sparkle, Check, LockSimple } from "@phosphor-icons/react";
 import { $api } from "@/lib/api/query";
 import { ThemedText } from "@/components/ThemedText";
@@ -10,6 +11,7 @@ import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { TaskItem } from "@/components/TaskItem";
 import { SendKudosModal } from "@/components/notifications/SendKudosModal";
+import type { TaskDocument } from "@/hooks/useWorkspaces";
 import {
   useSendRequest,
   useAcceptRequest,
@@ -92,6 +94,8 @@ function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element 
 
 export default function AccountScreen() {
   const { id } = useParams();
+  const qc = useQueryClient();
+  const [encourageTask, setEncourageTask] = useState<TaskDocument | null>(null);
   const { data: profile, isLoading } = $api.useQuery(
     "get",
     "/v1/user/profiles/{id}",
@@ -154,7 +158,7 @@ export default function AccountScreen() {
             ) : (
               <div className="flex flex-col gap-3">
                 {activeTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
+                  <TaskItem key={task.id} task={task} onEncourage={() => setEncourageTask(task)} />
                 ))}
               </div>
             )}
@@ -177,6 +181,18 @@ export default function AccountScreen() {
           </ThemedText>
         </div>
       )}
+
+      <SendKudosModal
+        open={!!encourageTask}
+        onClose={() => setEncourageTask(null)}
+        recipientName={profile.display_name}
+        receiverId={profile.id}
+        kind="encouragement"
+        scope="task"
+        taskId={encourageTask?.id}
+        taskName={encourageTask?.content}
+        onSent={() => qc.invalidateQueries({ queryKey: ["get", "/v1/user/profiles/{id}"] })}
+      />
     </div>
   );
 }

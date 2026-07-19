@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type JSX } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ImageSquare, X } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
@@ -9,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { uploadImage } from "@/lib/upload";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useCreatePost } from "@/hooks/useCreatePost";
+import { useAuth } from "@/contexts/auth";
+import { showPostSharedToast } from "@/components/feed/PostSharedToast";
 import { formatNotificationTime } from "@/lib/notifications";
 
 const AUTH = { Authorization: "" };
@@ -34,6 +37,8 @@ export function CreatePostModal({
   onClose: () => void;
   prefill?: PostPrefill;
 }): JSX.Element | null {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const workspaces = useWorkspaces();
   const create = useCreatePost();
   const completed = $api.useQuery(
@@ -129,17 +134,27 @@ export function CreatePostModal({
         const url = await uploadImage(file, "post", `post-${Date.now()}-${Math.random().toString(36).slice(2)}`);
         images = [url];
       }
+      const categoryName = catName(task.categoryID);
       await create.mutateAsync({
         params: { header: AUTH },
         body: {
           caption: caption.trim(),
           isPublic,
           images,
-          task: { id: task.id, content: task.content, category: { id: task.categoryID ?? "", name: catName(task.categoryID) } },
+          task: { id: task.id, content: task.content, category: { id: task.categoryID ?? "", name: categoryName } },
         },
       });
-      toast.success("Shared to your feed");
       onClose();
+      showPostSharedToast({
+        preview: {
+          authorName: user?.display_name ?? "You",
+          authorAvatar: user?.profile_picture,
+          taskLabel: [categoryName, task.content].filter(Boolean).join(" · "),
+          caption: caption.trim(),
+          image: images[0],
+        },
+        onView: () => navigate("/feed"),
+      });
     } catch (err) {
       if (err instanceof Error) toast.error(err.message);
     } finally {

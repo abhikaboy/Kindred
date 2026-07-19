@@ -1,9 +1,13 @@
-import { CalendarBlank, Clock, Play, Repeat } from "@phosphor-icons/react";
+import { CalendarBlank, Clock, Play, Repeat, Sparkle } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 import { TaskContextMenu } from "@/components/TaskContextMenu";
 import { CompleteCheckbox } from "@/components/SwipeToComplete";
+import { EncouragerAvatars } from "@/components/EncouragerAvatars";
+
+// Primary (#854DFF) at 30% — mirrors mobile's encouraged-card glow (radius 12, offset y3, opacity 0.3).
+const ENCOURAGED_GLOW = "0 3px 12px rgba(133,77,255,0.3)";
 
 // Priority dot colors, mirroring the mobile card (none→transparent, 1→green, 2→amber, 3→red).
 const PRIORITY_DOT: Record<number, string> = {
@@ -43,48 +47,80 @@ function Chip({
   );
 }
 
-export function TaskItem({ task, completed }: { task: TaskDocument; completed?: boolean }) {
+// `onEncourage` puts the card in read-only "encourage" mode (another user's task):
+// the whole card becomes a button that opens the encourage flow, the complete
+// checkbox + own-task context menu are dropped, and a Sparkle affordance shows.
+export function TaskItem({
+  task,
+  completed,
+  onEncourage,
+}: {
+  task: TaskDocument;
+  completed?: boolean;
+  onEncourage?: () => void;
+}) {
   // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
   const working = !completed && Boolean(task.workingOnSince);
   const deadline = completed ? null : formatDeadline(task.deadline);
   const dotColor = working ? "bg-primary" : PRIORITY_DOT[task.priority];
   const showChips = !completed && (working || Boolean(deadline) || task.recurring);
+  const encouragements = task.encouragements ?? [];
+  const encouraged = encouragements.length > 0;
+  const encourageMode = Boolean(onEncourage);
 
-  return (
-    <TaskContextMenu task={task}>
-      <div className="rounded-2xl border border-border/60 bg-card px-4 py-3.5 transition-colors hover:border-border">
-
-        <div className="flex items-start gap-3">
-          {!completed && <CompleteCheckbox className="mt-0.5" />}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <ThemedText type="default" className="line-clamp-2 break-words leading-6">
-                  {task.content || "Untitled task"}
+  const inner = (
+    <div
+      className={cn(
+        "rounded-2xl border px-4 py-3.5 transition-colors",
+        encouraged ? "border-border/60 bg-primary/5" : "border-border/60 bg-card",
+        encourageMode ? "cursor-pointer hover:border-primary/60" : "hover:border-border"
+      )}
+      style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
+    >
+      <div className="flex items-start gap-3">
+        {!completed && !encourageMode && <CompleteCheckbox className="mt-0.5" />}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <ThemedText type="default" className="line-clamp-2 break-words leading-6">
+                {task.content || "Untitled task"}
+              </ThemedText>
+              {task.notes && (
+                <ThemedText type="caption" className="line-clamp-2 break-words">
+                  {task.notes}
                 </ThemedText>
-                {task.notes && (
-                  <ThemedText type="caption" className="line-clamp-2 break-words">
-                    {task.notes}
-                  </ThemedText>
-                )}
-              </div>
-              {dotColor && (
-                <span className={cn("mt-1.5 size-2.5 shrink-0 rounded-full", dotColor)} />
               )}
             </div>
-
-            {showChips && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {deadline && (
-                  <Chip icon={task.startTime ? Clock : CalendarBlank} label={`Due ${deadline}`} />
-                )}
-                {task.recurring && <Chip icon={Repeat} label="Recurring" />}
-                {working && <Chip icon={Play} label="in progress" active />}
-              </div>
-            )}
+            <div className="mt-1 flex shrink-0 items-center gap-1.5">
+              {encouraged && <EncouragerAvatars encouragements={encouragements} />}
+              {encourageMode || encouraged ? (
+                <Sparkle size={18} weight="fill" className="text-primary" />
+              ) : (
+                dotColor && <span className={cn("mt-0.5 size-2.5 rounded-full", dotColor)} />
+              )}
+            </div>
           </div>
+
+          {showChips && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {deadline && (
+                <Chip icon={task.startTime ? Clock : CalendarBlank} label={`Due ${deadline}`} />
+              )}
+              {task.recurring && <Chip icon={Repeat} label="Recurring" />}
+              {working && <Chip icon={Play} label="in progress" active />}
+            </div>
+          )}
         </div>
       </div>
-    </TaskContextMenu>
+    </div>
   );
+
+  if (encourageMode) {
+    return (
+      <button type="button" onClick={onEncourage} className="block w-full text-left">
+        {inner}
+      </button>
+    );
+  }
+  return <TaskContextMenu task={task}>{inner}</TaskContextMenu>;
 }

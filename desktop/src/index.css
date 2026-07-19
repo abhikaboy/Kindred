@@ -149,6 +149,16 @@
   animation: taskToastShrink 6s linear forwards;
 }
 
+/* Sonner custom toasts render unstyled and skip its built-in enter transition,
+   so give the card its own slide-in from the top-right corner. */
+@keyframes taskToastIn {
+  from { opacity: 0; transform: translateX(24px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.task-toast-in {
+  animation: taskToastIn 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

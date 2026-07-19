@@ -1,11 +1,22 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { hitTest, type DropRect } from "@/lib/dragHitTest";
+import { HOUR_HEIGHT } from "@/lib/timeline";
 
 type Point = { x: number; y: number };
-type DragState = { dragging: { taskId: string } | null; hoverKey: string | null; pointer: Point | null };
+type DragState = {
+  dragging: { taskId: string } | null;
+  hoverKey: string | null;
+  pointer: Point | null;
+  grabOffsetY: number;
+  previewHeightPx: number;
+};
 
 type DragCtx = DragState & {
-  startDrag: (taskId: string, e: React.PointerEvent, opts?: { grabOffsetY?: number; onClick?: () => void }) => void;
+  startDrag: (
+    taskId: string,
+    e: React.PointerEvent,
+    opts?: { grabOffsetY?: number; previewHeightPx?: number; onClick?: () => void }
+  ) => void;
   registerTarget: (key: string, el: HTMLElement | null) => void;
 };
 
@@ -18,8 +29,8 @@ export function useDrag(): DragCtx {
 }
 
 export function useDragState(): DragState {
-  const { dragging, hoverKey, pointer } = useDrag();
-  return { dragging, hoverKey, pointer };
+  const { dragging, hoverKey, pointer, grabOffsetY, previewHeightPx } = useDrag();
+  return { dragging, hoverKey, pointer, grabOffsetY, previewHeightPx };
 }
 
 // Ref-callback for a drop target; register on mount, unregister on unmount.
@@ -39,6 +50,8 @@ export function DragProvider({
   const [dragging, setDragging] = useState<{ taskId: string } | null>(null);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const [pointer, setPointer] = useState<Point | null>(null);
+  const [grabOffsetY, setGrabOffsetY] = useState(0);
+  const [previewHeightPx, setPreviewHeightPx] = useState(HOUR_HEIGHT);
 
   const registerTarget = useCallback((key: string, el: HTMLElement | null) => {
     if (el) targets.current.set(key, el);
@@ -52,7 +65,11 @@ export function DragProvider({
     });
 
   const startDrag = useCallback(
-    (taskId: string, e: React.PointerEvent, opts?: { grabOffsetY?: number; onClick?: () => void }) => {
+    (
+      taskId: string,
+      e: React.PointerEvent,
+      opts?: { grabOffsetY?: number; previewHeightPx?: number; onClick?: () => void }
+    ) => {
       e.preventDefault();
       const origin = { x: e.clientX, y: e.clientY };
       const offsetY = opts?.grabOffsetY ?? 0;
@@ -64,6 +81,8 @@ export function DragProvider({
           if (Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) < 4) return;
           started = true;
           setDragging({ taskId });
+          setGrabOffsetY(offsetY);
+          setPreviewHeightPx(opts?.previewHeightPx ?? HOUR_HEIGHT);
         }
         setPointer(point);
         setHoverKey(hitTest(point, liveRects()));
@@ -81,6 +100,8 @@ export function DragProvider({
         setDragging(null);
         setHoverKey(null);
         setPointer(null);
+        setGrabOffsetY(0);
+        setPreviewHeightPx(HOUR_HEIGHT);
       };
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);
@@ -89,6 +110,8 @@ export function DragProvider({
   );
 
   return (
-    <Ctx.Provider value={{ dragging, hoverKey, pointer, startDrag, registerTarget }}>{children}</Ctx.Provider>
+    <Ctx.Provider value={{ dragging, hoverKey, pointer, grabOffsetY, previewHeightPx, startDrag, registerTarget }}>
+      {children}
+    </Ctx.Provider>
   );
 }

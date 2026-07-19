@@ -20,7 +20,7 @@ export function showTaskCompleteToast({ streak, onShare }: { streak?: number; on
           onShare();
           toast.dismiss(id);
         }}
-        className="flex w-[360px] max-w-[90vw] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-lg transition-transform hover:scale-[1.01]"
+        className="task-toast-in flex w-[360px] max-w-[90vw] flex-col overflow-hidden rounded-xl border bg-card text-left shadow-lg transition-transform hover:scale-[1.01]"
       >
         <div className="flex items-center gap-3 p-4">
           <span className="text-2xl leading-none">🎉</span>

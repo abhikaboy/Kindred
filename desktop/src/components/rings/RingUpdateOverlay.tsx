@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { Check } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { fireConfetti } from "@/lib/confetti";
@@ -25,6 +25,7 @@ const clampFrac = (n: number, target: number) => Math.min(Math.max(n, 0) / (targ
 // Dark-gradient ring-fill celebration shown after a task completes / a ring closes.
 export function RingUpdateOverlay(): JSX.Element | null {
   const { currentDelta, onAnimationComplete } = useRingUpdate();
+  const ringRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [grad, setGrad] = useState(0);
   const [ringIn, setRingIn] = useState(false);
@@ -48,7 +49,7 @@ export function RingUpdateOverlay(): JSX.Element | null {
     if (currentDelta.just_closed) {
       at(() => {
         setClosed(true);
-        fireConfetti();
+        fireConfetti(ringRef.current);
       }, CLOSE_FX);
     }
     const hold = currentDelta.just_closed ? 1600 : 500;
@@ -78,20 +79,21 @@ export function RingUpdateOverlay(): JSX.Element | null {
   return (
     <div className="pointer-events-none fixed inset-0 z-[9999]">
       <div
-        className="absolute inset-x-0 top-0 h-[38vh]"
+        className="absolute inset-y-0 right-0 w-[45vw]"
         style={{
           opacity: grad,
           transition: "opacity 900ms ease",
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 38%, rgba(0,0,0,0.28) 72%, transparent 100%)",
+            "linear-gradient(to left, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.28) 42%, transparent 100%)",
         }}
       />
 
       <div
-        className="absolute left-1/2 top-16 flex -translate-x-1/2 flex-col items-center gap-3"
+        ref={ringRef}
+        className="absolute right-12 top-1/2 flex flex-col items-center gap-3"
         style={{
           opacity: ringIn ? 1 : 0,
-          transform: `translate(-50%, ${ringIn ? 0 : -56}px)`,
+          transform: `translate(${ringIn ? 0 : 56}px, -50%)`,
           transition: "opacity 500ms ease, transform 520ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >

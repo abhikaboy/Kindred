@@ -66,7 +66,6 @@ export function FriendActivityRow({ friend }: { friend: FriendReference }): JSX.
               scope: "task" as const,
               taskId: reco.task.id,
               taskName: reco.task.content,
-              categoryName: reco.task.categoryId,
             }
           : { scope: "profile" as const })}
       />

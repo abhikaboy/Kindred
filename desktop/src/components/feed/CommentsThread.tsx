@@ -1,4 +1,5 @@
 import { useState, type JSX, type KeyboardEvent } from "react";
+import { Link } from "react-router-dom";
 import { Trash } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { segmentCaption } from "@/lib/feed";
@@ -57,11 +58,13 @@ export function CommentsThread({
         const mine = !!currentUserId && comment.user._id === currentUserId;
         return (
           <div key={comment.id} className="group flex items-start gap-2">
-            <img
-              src={comment.user.profile_picture}
-              alt={comment.user.display_name}
-              className="h-7 w-7 rounded-full object-cover bg-muted"
-            />
+            <Link to={`/account/${comment.user._id}`} className="shrink-0">
+              <img
+                src={comment.user.profile_picture}
+                alt={comment.user.display_name}
+                className="h-7 w-7 rounded-full object-cover bg-muted"
+              />
+            </Link>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <ThemedText type="defaultSemiBold" as="span" className="text-sm">
@@ -97,7 +100,7 @@ export function CommentsThread({
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Add a comment..."
-        className="mt-2 h-12 w-full flex-1 rounded-full border bg-background px-5 text-sm text-foreground outline-none transition-colors focus:border-primary"
+        className="mt-2 w-full flex-1 rounded-full border bg-background px-5 py-3.5 text-sm text-foreground outline-none transition-colors focus:border-primary"
       />
     </div>
   );

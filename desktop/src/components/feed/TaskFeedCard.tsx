@@ -1,4 +1,5 @@
 import { useState, type JSX } from "react";
+import { Link } from "react-router-dom";
 import { Sparkle } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/ui/button";
@@ -29,11 +30,13 @@ export function TaskFeedCard({
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <img
-          src={task.user.profile_picture}
-          alt=""
-          className="h-10 w-10 rounded-full object-cover"
-        />
+        <Link to={`/account/${task.user._id}`} className="shrink-0">
+          <img
+            src={task.user.profile_picture}
+            alt=""
+            className="h-10 w-10 rounded-full object-cover"
+          />
+        </Link>
         <div className="flex flex-col">
           <ThemedText type="defaultSemiBold">{task.user.display_name}</ThemedText>
           <ThemedText type="caption">

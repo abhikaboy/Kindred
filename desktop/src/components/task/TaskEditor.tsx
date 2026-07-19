@@ -325,6 +325,7 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
             {task.encouragements!.map((k) => (
               <KudosBubble
                 key={k.encouragementId}
+                senderId={k.sender.id}
                 name={k.sender.name || k.sender.handle}
                 icon={k.sender.icon}
                 message={k.message}

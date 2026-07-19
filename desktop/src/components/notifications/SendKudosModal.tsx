@@ -142,7 +142,7 @@ export function SendKudosModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
+        className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-[0_1px_8px_rgba(0,0,0,0.12)] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}
         onPaste={onPaste}
         onDragOver={(e) => e.preventDefault()}

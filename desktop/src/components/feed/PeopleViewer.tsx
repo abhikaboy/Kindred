@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { Link } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 
 export type Person = { id?: string; name: string; handle?: string; icon?: string };
@@ -38,23 +39,40 @@ export function PeopleViewer({ open, onClose, title, groups }: PeopleViewerProps
                   No one yet
                 </ThemedText>
               ) : (
-                group.people.map((person, pi) => (
-                  <div key={person.id ?? `${person.handle ?? person.name}-${pi}`} className="flex items-center gap-3">
-                    <img
-                      src={person.icon}
-                      alt={person.name}
-                      className="h-8 w-8 rounded-full object-cover bg-muted"
-                    />
-                    <ThemedText type="defaultSemiBold" as="span">
-                      {person.name}
-                    </ThemedText>
-                    {person.handle ? (
-                      <ThemedText type="caption" as="span">
-                        {person.handle}
+                group.people.map((person, pi) => {
+                  const row = (
+                    <>
+                      <img
+                        src={person.icon}
+                        alt={person.name}
+                        className="h-8 w-8 rounded-full object-cover bg-muted"
+                      />
+                      <ThemedText type="defaultSemiBold" as="span">
+                        {person.name}
                       </ThemedText>
-                    ) : null}
-                  </div>
-                ))
+                      {person.handle ? (
+                        <ThemedText type="caption" as="span">
+                          {person.handle}
+                        </ThemedText>
+                      ) : null}
+                    </>
+                  );
+                  const key = person.id ?? `${person.handle ?? person.name}-${pi}`;
+                  return person.id ? (
+                    <Link
+                      key={key}
+                      to={`/account/${person.id}`}
+                      onClick={onClose}
+                      className="flex items-center gap-3 rounded-lg -mx-1 px-1 py-0.5 hover:bg-muted"
+                    >
+                      {row}
+                    </Link>
+                  ) : (
+                    <div key={key} className="flex items-center gap-3">
+                      {row}
+                    </div>
+                  );
+                })
               )}
             </div>
           ))}

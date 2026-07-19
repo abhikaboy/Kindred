@@ -38,6 +38,7 @@ export function KudosViewer({
             kudos.map((k) => (
               <KudosBubble
                 key={k.congratulationId}
+                senderId={k.sender.id}
                 name={k.sender.name}
                 icon={k.sender.icon}
                 message={k.message}
