@@ -1,0 +1,47 @@
+name: Deploy Web App
+
+# Builds the desktop/ Vite SPA and rsyncs it to the droplet's nginx root.
+# Runs on merge to main (when desktop/ changes) or manually via the Actions tab.
+on:
+    push:
+        branches: [main]
+        paths:
+            - 'desktop/**'
+            - '.github/workflows/deploy-web.yml'
+    workflow_dispatch:
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: desktop
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: oven-sh/setup-bun@v2
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Build
+              env:
+                  # Same-origin: browser calls app.kindredtodo.com/api → nginx strips /api → backend.
+                  VITE_API_URL: https://app.kindredtodo.com
+                  # Baked at build time. Google login only works if this client also has
+                  # app.kindredtodo.com as an authorized JS origin.
+                  VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+                  VITE_APPLE_SERVICE_ID: ${{ secrets.VITE_APPLE_SERVICE_ID }}
+                  VITE_TENOR_API_KEY: ${{ secrets.VITE_TENOR_API_KEY }}
+              run: bun run build
+
+            - name: Load SSH key
+              uses: webfactory/ssh-agent@v0.9.0
+              with:
+                  ssh-private-key: ${{ secrets.DO_SSH_KEY }}
+
+            - name: Deploy to droplet
+              run: |
+                  rsync -avz --delete \
+                    -e "ssh -o StrictHostKeyChecking=accept-new" \
+                    ./dist/ "${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }}:/var/www/kindred-app/"

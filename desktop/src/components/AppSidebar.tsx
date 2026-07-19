@@ -57,15 +57,19 @@ export function AppSidebar() {
       if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-      const to = SHORTCUTS[e.key.toUpperCase()];
+      const key = e.key.toUpperCase();
+      const to = SHORTCUTS[key];
       if (to) {
         e.preventDefault();
         navigate(to);
+      } else if (key === "T") {
+        e.preventDefault();
+        openCreateTask();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
+  }, [navigate, openCreateTask]);
 
   return (
     <Sidebar variant="floating" collapsible="offcanvas">
@@ -90,6 +94,7 @@ export function AppSidebar() {
                 >
                   <Plus weight="bold" />
                   <span>New task</span>
+                  <kbd className="ml-auto text-xs font-medium tracking-wide text-primary-foreground/50">⇧T</kbd>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {MAIN.map((item) => (
