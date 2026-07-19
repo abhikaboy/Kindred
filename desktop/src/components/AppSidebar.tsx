@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 // Named imports tree-shake; the full set is only pulled via WorkspaceIcon's lazy import.
 import {
   House,
@@ -32,19 +33,39 @@ import {
 } from "@/components/ui/sidebar";
 
 const MAIN = [
-  { title: "Home", url: "/", icon: House },
-  { title: "Calendar", url: "/calendar", icon: CalendarBlank },
+  { title: "Home", url: "/", icon: House, shortcut: "⇧H" },
+  { title: "Calendar", url: "/calendar", icon: CalendarBlank, shortcut: "⇧C" },
   { title: "Feed", url: "/feed", icon: Newspaper },
   // Search now covers both people and blueprints (see routes/search.tsx).
   { title: "Search", url: "/search", icon: MagnifyingGlass },
   { title: "Profile", url: "/profile", icon: User },
 ] as const;
 
+// Shift + <key> jumps to a page. Skipped while typing so a capital H/C in a
+// task title doesn't teleport you.
+const SHORTCUTS: Record<string, string> = { H: "/", C: "/calendar" };
+
 export function AppSidebar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { logout } = useAuth();
   const { openCreateTask, openCreateWorkspace } = useCreate();
   const workspaces = useWorkspaces();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      const to = SHORTCUTS[e.key.toUpperCase()];
+      if (to) {
+        e.preventDefault();
+        navigate(to);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate]);
 
   return (
     <Sidebar variant="floating" collapsible="offcanvas">
@@ -80,6 +101,11 @@ export function AppSidebar() {
                   >
                     <item.icon />
                     <span>{item.title}</span>
+                    {"shortcut" in item && item.shortcut ? (
+                      <kbd className="ml-auto text-xs font-medium tracking-wide text-muted-foreground/40">
+                        {item.shortcut}
+                      </kbd>
+                    ) : null}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
