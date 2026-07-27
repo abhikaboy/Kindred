@@ -5,6 +5,18 @@ import { RingUpdateOverlay } from "@/components/rings/RingUpdateOverlay";
 
 export type RingDelta = components["schemas"]["RingDelta"];
 
+// Coalesce two same-ring deltas from rapid completions: keep the earliest
+// starting point, take the latest end/target, and recompute the close flags
+// across the merged span so the celebration still fires if the batch closed it.
+function mergeDelta(a: RingDelta, b: RingDelta): RingDelta {
+  return {
+    ...b,
+    previous: a.previous,
+    just_closed: a.previous < b.target && b.current >= b.target,
+    just_closed_all: b.all_closed && !a.all_closed,
+  };
+}
+
 type RingUpdateContextValue = {
   currentDelta: RingDelta | null;
   showRingUpdate: (delta?: RingDelta | null) => void;
@@ -26,6 +38,8 @@ export function RingUpdateProvider({ children }: { children: ReactNode }) {
   const [currentDelta, setCurrentDelta] = useState<RingDelta | null>(null);
   const queue = useRef<RingDelta[]>([]);
   const animating = useRef(false);
+  const pending = useRef<Map<string, RingDelta>>(new Map());
+  const flushTimer = useRef<number | null>(null);
 
   const refreshRings = useCallback(
     () => qc.invalidateQueries({ queryKey: ["get", "/v1/user/rings/today"] }),
@@ -44,6 +58,14 @@ export function RingUpdateProvider({ children }: { children: ReactNode }) {
     setCurrentDelta(next);
   }, [refreshRings]);
 
+  // Drain the debounce buffer into the play queue as one delta per ring.
+  const flush = useCallback(() => {
+    flushTimer.current = null;
+    queue.current.push(...pending.current.values());
+    pending.current.clear();
+    if (!animating.current) startNext();
+  }, [startNext]);
+
   const showRingUpdate = useCallback(
     (delta?: RingDelta | null) => {
       if (!delta) return;
@@ -53,10 +75,14 @@ export function RingUpdateProvider({ children }: { children: ReactNode }) {
         refreshRings();
         return;
       }
-      queue.current.push(delta);
-      if (!animating.current) startNext();
+      // Coalesce completions that land within 800ms into a single animation
+      // that jumps by the total, rather than replaying the fill once each.
+      const existing = pending.current.get(delta.ring);
+      pending.current.set(delta.ring, existing ? mergeDelta(existing, delta) : delta);
+      if (flushTimer.current) window.clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(flush, 800);
     },
-    [refreshRings, startNext]
+    [refreshRings, flush]
   );
 
   const onAnimationComplete = useCallback(() => {

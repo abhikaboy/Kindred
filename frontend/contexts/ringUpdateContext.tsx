@@ -23,6 +23,18 @@ const RingUpdateContext = createContext<RingUpdateContextValue>({
 
 export const useRingUpdate = () => useContext(RingUpdateContext);
 
+// Coalesce two same-ring deltas from rapid completions: keep the earliest
+// starting point, take the latest end/target, and recompute the close flags
+// across the merged span so the celebration still fires if the batch closed it.
+function mergeDelta(a: RingDelta, b: RingDelta): RingDelta {
+    return {
+        ...b,
+        previous: a.previous,
+        just_closed: a.previous < b.target && b.current >= b.target,
+        just_closed_all: b.all_closed && !a.all_closed,
+    };
+}
+
 export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
@@ -31,11 +43,14 @@ export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
     const queueRef = useRef<RingDelta[]>([]);
     const isAnimatingRef = useRef(false);
     const mountedRef = useRef(true);
+    const pendingRef = useRef<Map<string, RingDelta>>(new Map());
+    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         mountedRef.current = true;
         return () => {
             mountedRef.current = false;
+            if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
         };
     }, []);
 
@@ -84,6 +99,15 @@ export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentDelta(next);
     }, [applyOptimisticUpdate]);
 
+    // Drain the debounce buffer into the play queue as one delta per ring.
+    const flush = useCallback(() => {
+        flushTimerRef.current = null;
+        if (!mountedRef.current) return;
+        pendingRef.current.forEach((d) => queueRef.current.push(d));
+        pendingRef.current.clear();
+        if (!isAnimatingRef.current) startNext();
+    }, [startNext]);
+
     const showRingUpdate = useCallback(
         (delta: RingDelta | undefined | null) => {
             if (!delta) return;
@@ -95,10 +119,18 @@ export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
                 applyOptimisticUpdate(delta);
                 return;
             }
-            queueRef.current.push(delta);
-            if (!isAnimatingRef.current) startNext();
+            // Coalesce completions that land within 800ms into a single
+            // animation that jumps by the total, rather than replaying the
+            // fill once each.
+            const existing = pendingRef.current.get(delta.ring);
+            pendingRef.current.set(
+                delta.ring,
+                existing ? mergeDelta(existing, delta) : delta
+            );
+            if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = setTimeout(flush, 800);
         },
-        [applyOptimisticUpdate, startNext]
+        [applyOptimisticUpdate, flush]
     );
 
     const onAnimationComplete = useCallback(() => {
