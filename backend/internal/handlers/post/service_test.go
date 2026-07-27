@@ -5,6 +5,7 @@ import (
 	"time"
 
 	Post "github.com/abhikaboy/Kindred/internal/handlers/post"
+	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
 	"go.mongodb.org/mongo-driver/bson"
@@ -1399,86 +1400,98 @@ func (s *PostServiceTestSuite) TestGetFriendsPublicTasks_DefaultLimit() {
 }
 
 // ========================================
-// NotifyRandomFriendsOfPost Tests
+// NotifyFriendsOfPost Tests
 // ========================================
 
-func (s *PostServiceTestSuite) TestNotifyRandomFriendsOfPost_NoFriends() {
+// countPostNotifs returns how many "friend posted" (POST) notifications a user has received.
+func (s *PostServiceTestSuite) countPostNotifs(receiverID primitive.ObjectID) int64 {
+	n, err := s.Collections["notifications"].CountDocuments(s.Ctx, bson.M{
+		"receiver":         receiverID,
+		"notificationType": notifications.NotificationTypePost,
+	})
+	s.NoError(err)
+	return n
+}
+
+func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_NoFriends() {
 	user := s.GetUser(0)
 	post := s.GetPost(0)
 
-	// User has no friends
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user.ID}, bson.M{
 		"$set": bson.M{"friends": []primitive.ObjectID{}},
 	})
 	s.NoError(err)
 
-	// Should not error even with no friends
-	err = s.service.NotifyRandomFriendsOfPost(post.ID, user.ID, user.DisplayName, "Test caption", 0.5)
+	// No friends → no-op, no error.
+	err = s.service.NotifyFriendsOfPost(post.ID, user.ID, user.DisplayName, "Test caption")
 	s.NoError(err)
 }
 
-func (s *PostServiceTestSuite) TestNotifyRandomFriendsOfPost_WithFriends() {
+func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_NotifiesFriends() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
 
-	// Make them friends
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user1.ID}, bson.M{
 		"$set": bson.M{"friends": []primitive.ObjectID{user2.ID}},
 	})
 	s.NoError(err)
 
-	// Create a post
-	newPost := testpkg.NewPostBuilder(*user1).
-		WithCaption("Test post for notification").
-		Build()
-
+	newPost := testpkg.NewPostBuilder(*user1).WithCaption("Test post").Build()
 	created, _, err := s.service.CreatePost(&newPost)
 	s.NoError(err)
 
-	// Notify friends (with 100% probability to ensure notification)
-	err = s.service.NotifyRandomFriendsOfPost(created.ID, user1.ID, user1.DisplayName, "Test caption", 1.0)
-
-	// Should not error
+	before := s.countPostNotifs(user2.ID)
+	err = s.service.NotifyFriendsOfPost(created.ID, user1.ID, user1.DisplayName, "Test caption")
 	s.NoError(err)
+
+	// Friend gets exactly one new POST notification.
+	s.Equal(before+1, s.countPostNotifs(user2.ID))
 }
 
-func (s *PostServiceTestSuite) TestNotifyRandomFriendsOfPost_InvalidProbability() {
-	user := s.GetUser(0)
-	post := s.GetPost(0)
-
-	// Test with invalid probability (should default to 0.3)
-	err := s.service.NotifyRandomFriendsOfPost(post.ID, user.ID, user.DisplayName, "Test", 0)
-	s.NoError(err)
-
-	// Test with probability > 1 (should default to 0.3)
-	err = s.service.NotifyRandomFriendsOfPost(post.ID, user.ID, user.DisplayName, "Test", 1.5)
-	s.NoError(err)
-}
-
-func (s *PostServiceTestSuite) TestNotifyRandomFriendsOfPost_LongCaption() {
+func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_CooldownSuppressesSecondWave() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
 
-	// Make them friends
 	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user1.ID}, bson.M{
 		"$set": bson.M{"friends": []primitive.ObjectID{user2.ID}},
 	})
 	s.NoError(err)
 
-	// Create a post with long caption
-	longCaption := "This is a very long caption that should be truncated in the notification message"
-	newPost := testpkg.NewPostBuilder(*user1).
-		WithCaption(longCaption).
-		Build()
-
+	newPost := testpkg.NewPostBuilder(*user1).WithCaption("Test post").Build()
 	created, _, err := s.service.CreatePost(&newPost)
 	s.NoError(err)
 
-	// Notify friends
-	err = s.service.NotifyRandomFriendsOfPost(created.ID, user1.ID, user1.DisplayName, longCaption, 1.0)
+	before := s.countPostNotifs(user2.ID)
 
-	// Should not error
+	// First wave fires; second within 48h is suppressed by the per-poster cooldown.
+	s.NoError(s.service.NotifyFriendsOfPost(created.ID, user1.ID, user1.DisplayName, "one"))
+	s.NoError(s.service.NotifyFriendsOfPost(created.ID, user1.ID, user1.DisplayName, "two"))
+
+	s.Equal(before+1, s.countPostNotifs(user2.ID))
+}
+
+func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_DailyCapPerRecipient() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user1.ID}, bson.M{
+		"$set": bson.M{"friends": []primitive.ObjectID{user2.ID}},
+	})
 	s.NoError(err)
+
+	// Recipient already at the daily cap (2 POST notifications today, from another poster).
+	s.NoError(s.service.NotificationService.CreateNotification(user1.ID, user2.ID, "a", notifications.NotificationTypePost, primitive.NewObjectID()))
+	s.NoError(s.service.NotificationService.CreateNotification(user1.ID, user2.ID, "b", notifications.NotificationTypePost, primitive.NewObjectID()))
+
+	newPost := testpkg.NewPostBuilder(*user1).WithCaption("Test post").Build()
+	created, _, err := s.service.CreatePost(&newPost)
+	s.NoError(err)
+
+	before := s.countPostNotifs(user2.ID)
+	s.NoError(s.service.NotifyFriendsOfPost(created.ID, user1.ID, user1.DisplayName, "capped"))
+
+	// At cap → no new notification.
+	s.Equal(before, s.countPostNotifs(user2.ID))
 }
 
 // ========================================

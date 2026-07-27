@@ -1168,71 +1168,105 @@ func (s *Service) GetBlockedUserIDs(ctx context.Context, userID primitive.Object
 	return blockedUserIDs, nil
 }
 
-// NotifyRandomFriendsOfPost notifies a random subset of friends about a new post
-// Each friend has a configurable probability (default 30%) of being notified
-func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID primitive.ObjectID, posterName string, postCaption string, notificationProbability float64) error {
-	ctx := context.Background()
+// postNotifyCooldown caps a user to one "friend posted" wave per 48h.
+const postNotifyCooldown = 48 * time.Hour
 
-	// Default to 30% probability if not specified or invalid
-	if notificationProbability <= 0 || notificationProbability > 1 {
-		notificationProbability = 0.30
+// postNotifyDailyCap is the max "friend posted" notifications one user receives per day.
+const postNotifyDailyCap = 2
+
+// NotifyFriendsOfPost pushes a "friend posted" nudge to the poster's friends to drive
+// retention, throttled two ways: at most one wave per poster per 48h, and at most
+// postNotifyDailyCap notifications per recipient per (UTC) day.
+func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primitive.ObjectID, posterName string, postCaption string) error {
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	// Sender throttle: atomically claim a wave slot (same pattern as ClaimReminder).
+	// Only proceed if we set lastPostNotifyAt; a no-op means we're still in cooldown.
+	claim, err := s.Users.UpdateOne(ctx,
+		bson.M{"_id": posterID, "$or": []bson.M{
+			{"lastPostNotifyAt": bson.M{"$exists": false}},
+			{"lastPostNotifyAt": bson.M{"$lte": now.Add(-postNotifyCooldown)}},
+		}},
+		bson.M{"$set": bson.M{"lastPostNotifyAt": now}},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to claim post-notify wave: %w", err)
+	}
+	if claim.ModifiedCount == 0 {
+		slog.Info("Post-notify wave suppressed (cooldown)", "poster_id", posterID)
+		return nil
 	}
 
-	// Get the poster's friends list
+	// Audience: the poster's friends.
 	var posterUser struct {
 		Friends []primitive.ObjectID `bson:"friends"`
 	}
-	err := s.Users.FindOne(ctx, bson.M{"_id": posterID}).Decode(&posterUser)
-	if err != nil {
+	if err := s.Users.FindOne(ctx, bson.M{"_id": posterID}).Decode(&posterUser); err != nil {
 		return fmt.Errorf("failed to get poster's friends: %w", err)
 	}
-
 	if len(posterUser.Friends) == 0 {
-		slog.Info("No friends to notify", "poster_id", posterID)
 		return nil
 	}
 
-	// Randomly select friends to notify based on probability
-	var selectedFriends []primitive.ObjectID
+	// Recipient throttle: drop friends already at the daily cap. One aggregation over
+	// the notifications collection (which doubles as the counter — no separate ledger).
+	// ponytail: mildly racy under simultaneous waves; a nudge, not billing — no lock.
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	cursor, err := s.NotificationService.Notifications.Aggregate(ctx, mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{
+			"receiver":         bson.M{"$in": posterUser.Friends},
+			"notificationType": notifications.NotificationTypePost,
+			"time":             bson.M{"$gte": startOfDay},
+		}}},
+		{{Key: "$group", Value: bson.M{"_id": "$receiver", "n": bson.M{"$sum": 1}}}},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to count today's post notifications: %w", err)
+	}
+	var rows []struct {
+		ID primitive.ObjectID `bson:"_id"`
+		N  int                `bson:"n"`
+	}
+	if err := cursor.All(ctx, &rows); err != nil {
+		return fmt.Errorf("failed to decode notification counts: %w", err)
+	}
+	todayCount := make(map[primitive.ObjectID]int, len(rows))
+	for _, r := range rows {
+		todayCount[r.ID] = r.N
+	}
+
+	var eligible []primitive.ObjectID
 	for _, friendID := range posterUser.Friends {
-		// Use crypto/rand for secure random number generation
-		randNum, err := rand.Int(rand.Reader, big.NewInt(1000))
-		if err != nil {
-			slog.Warn("Failed to generate random number for friend selection", "error", err)
-			continue
-		}
-		if float64(randNum.Int64())/1000.0 < notificationProbability {
-			selectedFriends = append(selectedFriends, friendID)
+		if todayCount[friendID] < postNotifyDailyCap {
+			eligible = append(eligible, friendID)
 		}
 	}
-
-	if len(selectedFriends) == 0 {
-		slog.Info("No friends randomly selected for notification", "poster_id", posterID, "total_friends", len(posterUser.Friends))
+	if len(eligible) == 0 {
+		slog.Info("Post-notify wave: all friends at daily cap", "poster_id", posterID)
 		return nil
 	}
 
-	// Get the post to extract thumbnail
+	// Thumbnail + caption for the notification body.
 	post, err := s.GetPostByID(postID)
 	if err != nil {
 		return fmt.Errorf("failed to get post for notification: %w", err)
 	}
-
 	var thumbnail string
 	if len(post.Images) > 0 {
 		thumbnail = post.Images[0]
 	}
-
-	// Truncate caption for notification if too long
-	notificationCaption := postCaption
-	if len(notificationCaption) > 40 {
-		notificationCaption = notificationCaption[:37] + "..."
+	caption := postCaption
+	if len(caption) > 40 {
+		caption = caption[:37] + "..."
+	}
+	title := fmt.Sprintf("%s just posted", posterName)
+	content := title
+	if caption != "" {
+		content = fmt.Sprintf("%s just posted: %s", posterName, caption)
 	}
 
-	// Send notifications to selected friends
-	successCount := 0
-	errorCount := 0
-
-	// Possible call-to-action phrases - supportive and encouraging
+	// Supportive call-to-action phrases for the push body.
 	callToActions := []string{
 		"Show them some love!",
 		"Cheer them on!",
@@ -1244,69 +1278,62 @@ func (s *Service) NotifyRandomFriendsOfPost(postID primitive.ObjectID, posterID 
 		"Bang!",
 	}
 
-	for _, friendID := range selectedFriends {
-		// Get friend's push token
-		var friend types.User
-		err := s.Users.FindOne(ctx, bson.M{"_id": friendID}).Decode(&friend)
-		if err != nil {
-			slog.Warn("Failed to get friend user for notification", "friend_id", friendID, "error", err)
-			errorCount++
+	// One query for eligible friends' push tokens (no N+1), then one batch push.
+	friendCursor, err := s.Users.Find(ctx, bson.M{"_id": bson.M{"$in": eligible}})
+	if err != nil {
+		return fmt.Errorf("failed to load friends for notification: %w", err)
+	}
+	var friends []types.User
+	if err := friendCursor.All(ctx, &friends); err != nil {
+		return fmt.Errorf("failed to decode friends: %w", err)
+	}
+
+	var pushes []xutils.Notification
+	for _, friend := range friends {
+		if friend.PushToken == "" {
 			continue
 		}
-
-		// Pick a random call to action using crypto/rand
-		randIdx, err := rand.Int(rand.Reader, big.NewInt(int64(len(callToActions))))
-		if err != nil {
-			slog.Warn("Failed to generate random index for call to action", "error", err)
-			continue
-		}
-		callToAction := callToActions[randIdx.Int64()]
-
-		// Send push notification if friend has a push token
-		if friend.PushToken != "" {
-			// Personalized notification: "John just completed 'Morning workout' - Check it out!"
-			notificationTitle := fmt.Sprintf("%s just completed \"%s\"", posterName, notificationCaption)
-			notification := xutils.Notification{
-				Token:   friend.PushToken,
-				Title:   notificationTitle,
-				Message: callToAction,
-				Data: map[string]string{
-					"type":        "new_post",
-					"post_id":     postID.Hex(),
-					"poster_name": posterName,
-					"poster_id":   posterID.Hex(),
-				},
-			}
-
-			err = xutils.SendNotification(notification)
-			if err != nil {
-				slog.Error("Failed to send push notification for new post", "error", err, "friend_id", friendID)
-				errorCount++
-			}
-		}
-
-		// Create notification in database with personalized message
-		notificationContent := fmt.Sprintf("%s just completed \"%s\"", posterName, notificationCaption)
-		err = s.NotificationService.CreateNotification(posterID, friendID, notificationContent, notifications.NotificationTypePost, postID, thumbnail)
-		if err != nil {
-			slog.Error("Failed to create database notification for new post", "error", err, "friend_id", friendID)
-			errorCount++
-		} else {
-			successCount++
+		cta := callToActions[randIndex(len(callToActions))]
+		pushes = append(pushes, xutils.Notification{
+			Token:    friend.PushToken,
+			Title:    title,
+			Message:  cta,
+			ImageURL: thumbnail,
+			Data: map[string]string{
+				"type":        "new_post",
+				"post_id":     postID.Hex(),
+				"poster_name": posterName,
+				"poster_id":   posterID.Hex(),
+			},
+		})
+	}
+	if len(pushes) > 0 {
+		if err := xutils.SendBatchNotification(pushes); err != nil {
+			slog.Error("Failed to send post-notify push batch", "error", err, "count", len(pushes))
 		}
 	}
 
-	slog.Info("Notified random subset of friends about new post",
-		"post_id", postID,
-		"poster_id", posterID,
-		"total_friends", len(posterUser.Friends),
-		"selected_friends", len(selectedFriends),
-		"success_count", successCount,
-		"error_count", errorCount,
-		"probability", notificationProbability,
-	)
+	// In-app notifications for every eligible friend (this is what the daily cap counts).
+	for _, friendID := range eligible {
+		if err := s.NotificationService.CreateNotification(posterID, friendID, content, notifications.NotificationTypePost, postID, thumbnail); err != nil {
+			slog.Error("Failed to create post notification", "friend_id", friendID, "error", err)
+		}
+	}
 
+	slog.Info("Post-notify wave sent", "poster_id", posterID, "eligible", len(eligible), "pushed", len(pushes))
 	return nil
+}
+
+// randIndex returns a crypto/rand index in [0, n).
+func randIndex(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	i, err := rand.Int(rand.Reader, big.NewInt(int64(n)))
+	if err != nil {
+		return 0
+	}
+	return int(i.Int64())
 }
 
 // GetFriendsRingClosures returns ring closure notifications from friends, sorted by time descending.

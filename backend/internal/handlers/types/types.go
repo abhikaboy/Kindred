@@ -305,6 +305,8 @@ type User struct {
 	TasksComplete  float64              `bson:"tasks_complete" json:"tasks_complete"`
 	RecentActivity []ActivityDocument   `bson:"recent_activity" json:"recent_activity"`
 	PushToken      string               `bson:"push_token" json:"push_token"`
+	// Last time a "friend posted" notification wave fired for this user (48h cooldown).
+	LastPostNotifyAt *time.Time `bson:"lastPostNotifyAt,omitempty" json:"lastPostNotifyAt,omitempty"`
 
 	DisplayName           string       `bson:"display_name" json:"display_name"`
 	Handle                string       `bson:"handle" json:"handle"`

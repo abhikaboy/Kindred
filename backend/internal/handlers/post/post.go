@@ -177,6 +177,19 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		}
 	}
 
+	// Notify friends of the new post — best-effort, async so it never adds request
+	// latency. Throttled inside: one wave per poster / 48h, 2 per recipient / day.
+	go func(postID, posterID primitive.ObjectID, name, caption string) {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("post-notify wave panicked", "recover", r)
+			}
+		}()
+		if err := h.service.NotifyFriendsOfPost(postID, posterID, name, caption); err != nil {
+			slog.Error("post-notify wave failed", "error", err)
+		}
+	}(createdPost.ID, userObjID, createdPost.User.DisplayName, createdPost.Caption)
+
 	// Prepare response with user stats
 	response := &CreatePostOutput{}
 	response.Body.PostDocumentAPI = *createdPost.ToAPI(userObjID)
