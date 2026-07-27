@@ -17,8 +17,9 @@ func ConvertEventToTaskParams(event ProviderEvent, userID, categoryID primitive.
 	// Set integration field for duplicate prevention
 	integration := fmt.Sprintf("gcal:%s:%s", event.CalendarID, event.ID)
 
-	// Default active to true
-	active := true
+	// Imported events start "not started", like normally-created tasks.
+	// active=true would render them as "in progress"/"working on it".
+	active := false
 
 	params := task.CreateTaskParams{
 		Priority:    2,                      // Default medium priority
@@ -26,7 +27,7 @@ func ConvertEventToTaskParams(event ProviderEvent, userID, categoryID primitive.
 		Value:       5.0,                    // Default medium value
 		Recurring:   false,                  // Calendar events are not recurring tasks
 		Public:      makePublic,             // Controlled by connection setting
-		Active:      &active,                // Task is active
+		Active:      &active,                // Not started until the user starts working
 		Notes:       notes,                  // Formatted event details
 		Integration: integration,            // Unique identifier for duplicate prevention
 		Checklist:   []task.ChecklistItem{}, // Empty checklist

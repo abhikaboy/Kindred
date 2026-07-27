@@ -240,8 +240,8 @@ func TestConvertEventToTaskParams(t *testing.T) {
 			}
 
 			// Common validations for all tests
-			if result.Active == nil || !*result.Active {
-				t.Error("Expected Active to be true")
+			if result.Active == nil || *result.Active {
+				t.Error("Expected Active to be false (imported tasks start not-started)")
 			}
 			if len(result.Checklist) != 0 {
 				t.Error("Expected empty Checklist")
