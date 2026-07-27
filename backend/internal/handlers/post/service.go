@@ -1260,10 +1260,18 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 	if len(caption) > 40 {
 		caption = caption[:37] + "..."
 	}
+	// If the post is tied to a task, lead with the task name; otherwise it's a plain post.
 	title := fmt.Sprintf("%s just posted", posterName)
+	if post.Task != nil && post.Task.Content != "" {
+		taskName := post.Task.Content
+		if len(taskName) > 40 {
+			taskName = taskName[:37] + "..."
+		}
+		title = fmt.Sprintf("%s completed \"%s\"", posterName, taskName)
+	}
 	content := title
 	if caption != "" {
-		content = fmt.Sprintf("%s just posted: %s", posterName, caption)
+		content = fmt.Sprintf("%s: %s", title, caption)
 	}
 
 	// Supportive call-to-action phrases for the push body.
@@ -1275,7 +1283,7 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 		"Let them know you're proud!",
 		"Support their progress!",
 		"LFG!",
-		"Bang!",
+		"BANNNNG",
 	}
 
 	// One query for eligible friends' push tokens (no N+1), then one batch push.

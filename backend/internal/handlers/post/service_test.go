@@ -1448,6 +1448,36 @@ func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_NotifiesFriends() {
 	s.Equal(before+1, s.countPostNotifs(user2.ID))
 }
 
+func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_IncludesTaskName() {
+	user1 := s.GetUser(0)
+	user2 := s.GetUser(1)
+
+	_, err := s.Collections["users"].UpdateOne(s.Ctx, bson.M{"_id": user1.ID}, bson.M{
+		"$set": bson.M{"friends": []primitive.ObjectID{user2.ID}},
+	})
+	s.NoError(err)
+
+	newPost := testpkg.NewPostBuilder(*user1).
+		WithCaption("").
+		WithTask(primitive.NewObjectID(), "Morning workout", types.CategoryExtendedReference{}).
+		Build()
+	created, _, err := s.service.CreatePost(&newPost)
+	s.NoError(err)
+
+	s.NoError(s.service.NotifyFriendsOfPost(created.ID, user1.ID, user1.DisplayName, ""))
+
+	// The notification content should name the completed task.
+	var notif struct {
+		Content string `bson:"content"`
+	}
+	err = s.Collections["notifications"].FindOne(s.Ctx, bson.M{
+		"receiver":         user2.ID,
+		"notificationType": notifications.NotificationTypePost,
+	}).Decode(&notif)
+	s.NoError(err)
+	s.Contains(notif.Content, "Morning workout")
+}
+
 func (s *PostServiceTestSuite) TestNotifyFriendsOfPost_CooldownSuppressesSecondWave() {
 	user1 := s.GetUser(0)
 	user2 := s.GetUser(1)
