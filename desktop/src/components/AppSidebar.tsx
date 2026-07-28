@@ -7,6 +7,7 @@ import {
   Newspaper,
   MagnifyingGlass,
   Plus,
+  Sparkle,
   User,
   GearSix,
   SignOut,
@@ -65,6 +66,9 @@ export function AppSidebar() {
       } else if (key === "T") {
         e.preventDefault();
         openCreateTask();
+      } else if (key === "A") {
+        e.preventDefault();
+        openCreateTask({ ai: true });
       }
     };
     window.addEventListener("keydown", onKey);
@@ -95,6 +99,13 @@ export function AppSidebar() {
                   <Plus weight="bold" />
                   <span>New task</span>
                   <kbd className="ml-auto text-xs font-medium tracking-wide text-primary-foreground/50">⇧T</kbd>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => openCreateTask({ ai: true })} tooltip="Create with AI">
+                  <Sparkle weight="fill" className="text-primary" />
+                  <span>Create with AI</span>
+                  <kbd className="ml-auto text-xs font-medium tracking-wide text-muted-foreground/40">⇧A</kbd>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {MAIN.map((item) => (

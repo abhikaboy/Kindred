@@ -99,6 +99,12 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         openCreateTask();
         return;
       }
+      // Shift+A -> new task in AI mode
+      if (e.code === "KeyA") {
+        e.preventDefault();
+        openCreateTask({ ai: true });
+        return;
+      }
       // Shift+W -> new workspace
       if (e.code === "KeyW") {
         e.preventDefault();
