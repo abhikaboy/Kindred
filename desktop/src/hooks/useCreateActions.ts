@@ -217,5 +217,32 @@ export function useCreateCategory() {
   });
 }
 
+export type AiPreviewPayload = {
+  categories: components["schemas"]["NewCategoryWithTasksLocal"][];
+  tasks: components["schemas"]["CategoryTaskPairLocal"][];
+};
+
+// Total proposed tasks across new-category buckets + existing-category pairs.
+export function countPreviewTasks(p: AiPreviewPayload): number {
+  return p.categories.reduce((n, c) => n + c.tasks.length, 0) + p.tasks.length;
+}
+
+// Confirm body = the payload with empty new-categories dropped (never create an
+// empty category). Existing-category pairs are already individually removable.
+export function buildConfirmBody(p: AiPreviewPayload): AiPreviewPayload {
+  return { categories: p.categories.filter((c) => c.tasks.length > 0), tasks: p.tasks };
+}
+
+export function usePreviewTasksAI() {
+  return $api.useMutation("post", "/v1/user/tasks/natural-language/preview");
+}
+
+export function useConfirmTasksAI() {
+  const qc = useQueryClient();
+  return $api.useMutation("post", "/v1/user/tasks/natural-language/confirm", {
+    onSettled: () => invalidateTasks(qc),
+  });
+}
+
 export { AUTH as CREATE_AUTH };
 export type { CreateTaskParams, CreateCategoryParams };
