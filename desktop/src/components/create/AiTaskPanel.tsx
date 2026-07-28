@@ -30,8 +30,13 @@ const TIMEZONE = (() => {
   }
 })();
 
-const PLACEHOLDER =
-  'Describe your tasks — e.g. “gym at 7am tomorrow, finish the report by Friday, call the dentist”';
+// Rotating example prompts shown in the empty prompt box (no em dashes in copy).
+const PLACEHOLDERS = [
+  "gym at 7am tomorrow, finish the quarterly report by friday, call the dentist",
+  "plan mom's birthday dinner, book flights for the trip, renew car insurance",
+  "email the client back, review the open PR, prep slides for monday standup",
+  "buy groceries, water the plants, schedule a haircut this weekend",
+];
 
 // Coordinates into the editable payload: a new-category task, or an existing-category pair.
 type Coord = { kind: "cat"; ci: number; ti: number } | { kind: "pair"; pi: number };
@@ -115,6 +120,14 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState("");
   const [payload, setPayload] = useState<AiPreviewPayload>({ categories: [], tasks: [] });
   const [error, setError] = useState<string | null>(null);
+  const [phIndex, setPhIndex] = useState(0);
+
+  // Cycle the example placeholder while on the prompt stage.
+  useEffect(() => {
+    if (stage !== "prompt") return;
+    const id = setInterval(() => setPhIndex((i) => (i + 1) % PLACEHOLDERS.length), 3500);
+    return () => clearInterval(id);
+  }, [stage]);
 
   const preview = usePreviewTasksAI();
   const confirm = useConfirmTasksAI();
@@ -214,7 +227,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
         )}
         {count === 0 && (
           <ThemedText type="caption" className="text-muted-foreground">
-            Nothing to create — go back and refine your prompt.
+            Nothing to create. Go back and refine your prompt.
           </ThemedText>
         )}
         {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
@@ -243,7 +256,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onPromptKey}
-        placeholder={PLACEHOLDER}
+        placeholder={PLACEHOLDERS[phIndex]}
         className="min-h-28 w-full resize-none rounded-2xl border border-border bg-transparent p-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/60"
       />
       {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
