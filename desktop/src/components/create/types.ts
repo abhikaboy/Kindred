@@ -11,6 +11,8 @@ export type TaskPrefill = {
   deadline?: string;
   startDate?: string;
   startTime?: string;
+  // Open the dialog directly in AI mode (sidebar "Create with AI" / ⇧A).
+  ai?: boolean;
 };
 
 export type CreateTaskDialogProps = {

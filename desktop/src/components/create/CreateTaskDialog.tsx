@@ -11,6 +11,8 @@ import { PriorityPopover } from "@/components/create/PriorityPopover";
 import { TaskTimeline } from "@/components/create/TaskTimeline";
 import { RepeatPopover } from "@/components/create/RepeatPopover";
 import { MorePopover } from "@/components/create/MorePopover";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { AiTaskPanel } from "@/components/create/AiTaskPanel";
 import type { CreateTaskDialogProps, SelectedCategory } from "@/components/create/types";
 import {
     useCreateTask,
@@ -30,6 +32,7 @@ export function CreateTaskDialog({
 }: CreateTaskDialogProps) {
     const [form, setForm] = useState<TaskFormState>(emptyTaskForm);
     const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null);
+    const [mode, setMode] = useState<"Manual" | "AI">("Manual");
     const titleRef = useRef<HTMLTextAreaElement>(null);
     const submitRef = useRef<HTMLButtonElement>(null);
 
@@ -49,6 +52,7 @@ export function CreateTaskDialog({
     // Reset form + seed category/date-time from prefill each time the dialog opens.
     useEffect(() => {
         if (!open) return;
+        setMode(prefill?.ai ? "AI" : "Manual");
         setForm({
             ...emptyTaskForm(),
             deadline: prefill?.deadline ?? null,
@@ -100,6 +104,18 @@ export function CreateTaskDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="gap-0" onKeyDown={onKeyDown}>
+                <div className="pb-4">
+                    <SegmentedControl
+                        options={["Manual", "AI"]}
+                        value={mode}
+                        onChange={(v) => setMode(v as "Manual" | "AI")}
+                        accent
+                    />
+                </div>
+                {mode === "AI" ? (
+                    <AiTaskPanel onClose={() => onOpenChange(false)} />
+                ) : (
+                    <>
                 <div className="-ml-2 pr-6">
                     <CategoryPopover
                         breadcrumb
@@ -163,6 +179,8 @@ export function CreateTaskDialog({
                         className="w-auto px-5 py-2"
                     />
                 </div>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     );
