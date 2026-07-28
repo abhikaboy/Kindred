@@ -56,12 +56,15 @@ export function TaskItem({
   completed,
   onEncourage,
   linkToDetail,
+  preview,
 }: {
   task: TaskDocument;
   completed?: boolean;
   onEncourage?: () => void;
   // Whole card navigates to the task detail page (active tasks only).
   linkToDetail?: boolean;
+  // Render an unsaved proposed task (AI preview): no complete-checkbox, no context menu.
+  preview?: boolean;
 }) {
   const navigate = useNavigate();
   // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
@@ -93,7 +96,7 @@ export function TaskItem({
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
     >
       <div className="flex items-start gap-3">
-        {!completed && !encourageMode && <CompleteCheckbox className="mt-0.5" />}
+        {!completed && !encourageMode && !preview && <CompleteCheckbox className="mt-0.5" />}
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -136,5 +139,6 @@ export function TaskItem({
       </button>
     );
   }
+  if (preview) return inner;
   return <TaskContextMenu task={task}>{inner}</TaskContextMenu>;
 }
