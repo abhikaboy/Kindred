@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import PrimaryButton from "@/components/PrimaryButton";
@@ -11,8 +11,9 @@ import { PriorityPopover } from "@/components/create/PriorityPopover";
 import { TaskTimeline } from "@/components/create/TaskTimeline";
 import { RepeatPopover } from "@/components/create/RepeatPopover";
 import { MorePopover } from "@/components/create/MorePopover";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { AiTaskPanel } from "@/components/create/AiTaskPanel";
+import { ThemedText } from "@/components/ThemedText";
+import { cn } from "@/lib/utils";
 import type { CreateTaskDialogProps, SelectedCategory } from "@/components/create/types";
 import {
     useCreateTask,
@@ -105,13 +106,24 @@ export function CreateTaskDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="gap-0" onKeyDown={onKeyDown}>
-                <div className="pb-4">
-                    <SegmentedControl
-                        options={["Manual", "AI"]}
-                        value={mode}
-                        onChange={(v) => setMode(v as "Manual" | "AI")}
-                        accent
-                    />
+                <div className="flex items-center gap-4 pb-3">
+                    <button type="button" onClick={() => setMode("Manual")} className="cursor-pointer">
+                        <ThemedText
+                            type={mode === "Manual" ? "defaultSemiBold" : "default"}
+                            className={cn("text-sm", mode === "Manual" ? "text-foreground" : "text-muted-foreground")}
+                        >
+                            Manual
+                        </ThemedText>
+                    </button>
+                    <button type="button" onClick={() => setMode("AI")} className="inline-flex cursor-pointer items-center gap-1">
+                        <Sparkle size={13} weight={mode === "AI" ? "fill" : "regular"} className={mode === "AI" ? "text-primary" : "text-muted-foreground"} />
+                        <ThemedText
+                            type={mode === "AI" ? "defaultSemiBold" : "default"}
+                            className={cn("text-sm", mode === "AI" ? "text-primary" : "text-muted-foreground")}
+                        >
+                            AI
+                        </ThemedText>
+                    </button>
                 </div>
                 {mode === "AI" ? (
                     <AiTaskPanel onClose={() => onOpenChange(false)} />
