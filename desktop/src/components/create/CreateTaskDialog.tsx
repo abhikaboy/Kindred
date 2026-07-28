@@ -86,6 +86,7 @@ export function CreateTaskDialog({
 
     // Shift / Cmd / Ctrl + Enter creates the task from anywhere in the dialog.
     const onKeyDown = (e: KeyboardEvent) => {
+        if (mode === "AI") return;
         if ((e.metaKey || e.ctrlKey || e.shiftKey) && e.key === "Enter") {
             e.preventDefault();
             submit();

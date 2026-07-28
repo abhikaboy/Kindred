@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { Sparkle, X, PencilSimple } from "@phosphor-icons/react";
+import { Sparkle, X, PencilSimple, ArrowLeft } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useCreateActions";
 import type { components } from "@/lib/api/types.gen";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
+import { getErrorMessage } from "@/lib/errors";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type Stage = "prompt" | "loading" | "preview";
@@ -62,6 +63,13 @@ function PreviewTaskRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.content);
+
+  // Rows are keyed by index; when a removal reuses this instance for a different
+  // task, resync so a stale draft can't be committed onto the wrong task.
+  useEffect(() => {
+    setDraft(task.content);
+    setEditing(false);
+  }, [task.content]);
 
   const commit = () => {
     const next = draft.trim();
@@ -126,7 +134,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           setStage("preview");
         },
         onError: (e: unknown) => {
-          setError(errMessage(e));
+          setError(getErrorMessage(e));
           setStage("prompt");
         },
       },
@@ -146,7 +154,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           toast.success(data.message || `Created ${data.tasksCreated} tasks`);
           onClose();
         },
-        onError: (e: unknown) => setError(errMessage(e)),
+        onError: (e: unknown) => setError(getErrorMessage(e)),
       },
     );
   };
@@ -204,10 +212,16 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         )}
+        {count === 0 && (
+          <ThemedText type="caption" className="text-muted-foreground">
+            Nothing to create — go back and refine your prompt.
+          </ThemedText>
+        )}
         {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
         <div className="mt-2 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => { setError(null); setStage("prompt"); }}>
-            ← Edit prompt
+          <Button variant="ghost" size="sm" onClick={() => { setError(null); setStage("prompt"); }} className="gap-1.5">
+            <ArrowLeft size={14} />
+            Edit prompt
           </Button>
           <PrimaryButton
             title={count > 0 ? `Create ${count} tasks` : "Nothing to create"}
@@ -243,11 +257,6 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
-}
-
-function errMessage(e: unknown): string {
-  const detail = (e as { detail?: string; message?: string })?.detail ?? (e as { message?: string })?.message;
-  return detail || "Something went wrong. Please try again.";
 }
 
 // ---- pure payload edits (coordinate-addressed) ----
