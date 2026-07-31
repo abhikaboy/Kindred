@@ -227,6 +227,7 @@ export function NotificationItem({ notification: n }: { notification: ProcessedN
               {body ? <SentenceFocus>{`"${body}"`}</SentenceFocus> : null}
             </SentenceText>
           }
+          onClick={n.referenceId ? () => navigate(`/post/${n.referenceId}`) : undefined}
         />
       );
     }
@@ -271,6 +272,7 @@ export function NotificationItem({ notification: n }: { notification: ProcessedN
               {" tagged you in a post"}
             </SentenceText>
           }
+          onClick={n.referenceId ? () => navigate(`/post/${n.referenceId}`) : undefined}
         />
       );
     case "task_tagged":

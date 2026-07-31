@@ -31,15 +31,13 @@ export default function Index() {
                 return;
             }
 
-            // First open ever: full-screen intro video, then login
-            const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
-            if (!hasSeenIntro) {
-                setNextRoute('/intro');
-                return;
-            }
-
-            // Intro already seen → login. (The old pre-login onboarding cluster
-            // was removed; the intro video is the sole pre-login step now.)
+            // ponytail: intro video temporarily disabled — new users go straight
+            // to login. Restore by un-commenting the block below.
+            // const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
+            // if (!hasSeenIntro) {
+            //     setNextRoute('/intro');
+            //     return;
+            // }
             setNextRoute('/login');
         } catch (error) {
             console.error('Error checking initial route:', error);
