@@ -47,12 +47,13 @@ function matchRecurrence(text: string, now: Date): { recurrence: ParsedRecurrenc
   if ((m = new RegExp(`\\bevery\\s+(${DAYS_ALT})s?\\b`, "i").exec(text)))
     return { recurrence: build("weekly", 1, mask(DAY_NAMES.indexOf(m[1].toLowerCase()))), match: m[0] };
 
-  if ((m = /\bevery\s+(\d+)\s+(day|week|month)s?\b/i.exec(text))) {
+  if ((m = /\bevery\s+(\d+)\s+(day|week|month|year)s?\b/i.exec(text))) {
     const every = Number(m[1]);
     if (every < 1) return null;
     const unit = m[2].toLowerCase();
     if (unit === "day") return { recurrence: build("daily", every, [...NO_DAYS]), match: m[0] };
     if (unit === "week") return { recurrence: build("weekly", every, mask(now.getDay())), match: m[0] };
+    if (unit === "year") return { recurrence: build("yearly", every, [...NO_DAYS]), match: m[0] };
     // Monthly needs daysOfMonth to pass backend validation; anchor on today, as mobile does.
     return { recurrence: build("monthly", every, [...NO_DAYS], [now.getDate()]), match: m[0] };
   }
@@ -60,6 +61,12 @@ function matchRecurrence(text: string, now: Date): { recurrence: ParsedRecurrenc
   // Weekly with no named day still needs one day set, so anchor on today.
   if ((m = /\b(?:every\s+week|weekly)\b/i.exec(text)))
     return { recurrence: build("weekly", 1, mask(now.getDay())), match: m[0] };
+
+  if ((m = /\b(?:every\s+month|monthly)\b/i.exec(text)))
+    return { recurrence: build("monthly", 1, [...NO_DAYS], [now.getDate()]), match: m[0] };
+
+  if ((m = /\b(?:every\s+year|yearly|annually)\b/i.exec(text)))
+    return { recurrence: build("yearly", 1, [...NO_DAYS]), match: m[0] };
 
   return null;
 }

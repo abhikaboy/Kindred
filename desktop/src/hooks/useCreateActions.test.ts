@@ -29,6 +29,24 @@ describe("buildCreateTaskParams", () => {
     expect(body.recurDetails).toMatchObject({ every: 2, daysOfWeek: [0, 1, 0, 1, 0, 0, 0], behavior: "ROLLING" });
   });
 
+  // ValidateRecurDetails rejects monthly with an empty daysOfMonth; no UI sets it,
+  // and both the Repeat popover and a typed "every 6 months" reach this path.
+  it("always sends daysOfMonth for monthly so the backend accepts it", () => {
+    const body = buildCreateTaskParams({
+      ...emptyTaskForm(),
+      content: "x",
+      recurring: true,
+      recurFrequency: "monthly",
+      every: 6,
+    });
+    expect(body.recurDetails?.daysOfMonth).toEqual([new Date().getDate()]);
+  });
+
+  it("omits daysOfMonth for non-monthly frequencies", () => {
+    const body = buildCreateTaskParams({ ...emptyTaskForm(), content: "x", recurring: true, recurFrequency: "weekly" });
+    expect(body.recurDetails?.daysOfMonth).toBeUndefined();
+  });
+
   it("flex mode implies recurring and sets flex + frequency from period", () => {
     const body = buildCreateTaskParams({
       ...emptyTaskForm(),

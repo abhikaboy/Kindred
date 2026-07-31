@@ -110,6 +110,8 @@ export function buildCreateTaskParams(form: TaskFormState): CreateTaskParams {
     } else {
       body.recurFrequency = form.recurFrequency;
     }
+    // Backend rejects monthly without daysOfMonth. No UI sets it, so anchor on today.
+    if (body.recurFrequency === "monthly") details.daysOfMonth = [new Date().getDate()];
     body.recurDetails = details;
   }
 
