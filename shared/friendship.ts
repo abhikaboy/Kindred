@@ -11,8 +11,10 @@ export type FriendshipLevel = {
     next: number | null;
 };
 
+// The level 2 floor is one kudos, so the first interaction always lands a level up.
 const LEVELS: { name: string; floor: number }[] = [
-    { name: "Acquainted", floor: 0 },
+    { name: "Just met", floor: 0 },
+    { name: "Acquainted", floor: 3 },
     { name: "Friends", floor: 25 },
     { name: "Good friends", floor: 75 },
     { name: "Close friends", floor: 150 },

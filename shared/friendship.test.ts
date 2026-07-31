@@ -4,13 +4,20 @@ import { friendshipLevel, friendshipProgress, MAX_FRIENDSHIP_LEVEL } from "./fri
 describe("friendshipLevel", () => {
     it("maps scores to levels at the boundaries", () => {
         expect(friendshipLevel(0).level).toBe(1);
-        expect(friendshipLevel(24).level).toBe(1);
-        expect(friendshipLevel(25).level).toBe(2);
-        expect(friendshipLevel(74).level).toBe(2);
-        expect(friendshipLevel(75).level).toBe(3);
-        expect(friendshipLevel(150).level).toBe(4);
+        expect(friendshipLevel(2).level).toBe(1);
+        expect(friendshipLevel(3).level).toBe(2);
+        expect(friendshipLevel(24).level).toBe(2);
+        expect(friendshipLevel(25).level).toBe(3);
+        expect(friendshipLevel(74).level).toBe(3);
+        expect(friendshipLevel(75).level).toBe(4);
+        expect(friendshipLevel(150).level).toBe(5);
         expect(friendshipLevel(300).level).toBe(MAX_FRIENDSHIP_LEVEL);
         expect(friendshipLevel(99999).level).toBe(MAX_FRIENDSHIP_LEVEL);
+    });
+
+    it("puts the second level one kudos away so the first one levels up", () => {
+        expect(friendshipLevel(0).next).toBe(3);
+        expect(friendshipLevel(3).level).toBeGreaterThan(friendshipLevel(0).level);
     });
 
     it("survives junk input", () => {
@@ -19,7 +26,7 @@ describe("friendshipLevel", () => {
     });
 
     it("reports next threshold, null at max", () => {
-        expect(friendshipLevel(0).next).toBe(25);
+        expect(friendshipLevel(3).next).toBe(25);
         expect(friendshipLevel(300).next).toBeNull();
     });
 });

@@ -23,7 +23,8 @@ const (
 )
 
 // levelFloors is the score at which each level starts. Keep in sync with shared/friendship.ts.
-var levelFloors = []int{0, 25, 75, 150, 300}
+// The level 2 floor is PointsKudos, so the first interaction always lands a level up.
+var levelFloors = []int{0, 3, 25, 75, 150, 300}
 
 // Delta is returned to clients so they can show brief confirmation feedback.
 type Delta struct {

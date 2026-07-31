@@ -10,14 +10,16 @@ func TestLevelFor(t *testing.T) {
 	}{
 		{"negative clamps to level 1", -5, 1},
 		{"zero", 0, 1},
-		{"below level 2", 24, 1},
-		{"level 2 floor", 25, 2},
-		{"below level 3", 74, 2},
-		{"level 3 floor", 75, 3},
-		{"level 4 floor", 150, 4},
-		{"below level 5", 299, 4},
-		{"level 5 floor", 300, 5},
-		{"level 5 is max", 100000, 5},
+		{"below level 2", 2, 1},
+		{"level 2 floor is one kudos", 3, 2},
+		{"below level 3", 24, 2},
+		{"level 3 floor", 25, 3},
+		{"below level 4", 74, 3},
+		{"level 4 floor", 75, 4},
+		{"level 5 floor", 150, 5},
+		{"below level 6", 299, 5},
+		{"level 6 floor", 300, 6},
+		{"level 6 is max", 100000, 6},
 	}
 	for _, tt := range tests {
 		if got := LevelFor(tt.score); got != tt.want {
@@ -34,13 +36,15 @@ func TestLeveledUpBoundary(t *testing.T) {
 		delta    int
 		want     bool
 	}{
-		{"kudos lands exactly on the level 2 floor", 25, PointsKudos, true},
-		{"kudos jumps past the level 2 floor", 26, PointsKudos, true},
-		{"comment stays inside level 1", 24, PointsComment, false},
-		{"reaction lands on the level 3 floor", 75, PointsReaction, true},
-		{"reaction one short of the level 3 floor", 74, PointsReaction, false},
+		{"the very first kudos levels up", PointsKudos, PointsKudos, true},
+		{"the very first comment does not", PointsComment, PointsComment, false},
+		{"first reaction alone does not", PointsReaction, PointsReaction, false},
+		{"kudos lands exactly on the level 3 floor", 25, PointsKudos, true},
+		{"kudos jumps past the level 3 floor", 26, PointsKudos, true},
+		{"comment stays inside level 2", 24, PointsComment, false},
+		{"reaction lands on the level 4 floor", 75, PointsReaction, true},
+		{"reaction one short of the level 4 floor", 74, PointsReaction, false},
 		{"already past the floor", 30, PointsKudos, false},
-		{"first point ever", 1, PointsReaction, false},
 	}
 	for _, tt := range tests {
 		got := LevelFor(tt.newScore) > LevelFor(tt.newScore-tt.delta)
