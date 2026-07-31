@@ -20,7 +20,7 @@ type CreateEncouragementParams = components["schemas"]["CreateEncouragementParam
  */
 export const createEncouragementAPI = async (
     encouragementData: CreateEncouragementParams
-): Promise<EncouragementDocument & { ringDelta?: RingDelta }> => {
+): Promise<EncouragementDocument & { ringDelta?: RingDelta; friendshipDelta?: components["schemas"]["Delta"] }> => {
     const { data, error } = await client.POST("/v1/user/encouragements", {
         params: withAuthHeaders(),
         body: encouragementData,
@@ -30,7 +30,10 @@ export const createEncouragementAPI = async (
         throw new Error(`Failed to create encouragement: ${JSON.stringify(error)}`);
     }
 
-    return data as unknown as EncouragementDocument & { ringDelta?: RingDelta };
+    return data as unknown as EncouragementDocument & {
+        ringDelta?: RingDelta;
+        friendshipDelta?: components["schemas"]["Delta"];
+    };
 };
 
 /**

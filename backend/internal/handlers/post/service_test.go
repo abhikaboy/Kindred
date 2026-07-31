@@ -157,7 +157,7 @@ func (s *PostServiceTestSuite) TestAddComment_Success() {
 		User:    userRef,
 	}
 
-	err := s.service.AddComment(post.ID, comment)
+	_, err := s.service.AddComment(post.ID, comment)
 
 	s.NoError(err)
 
@@ -681,7 +681,7 @@ func (s *PostServiceTestSuite) TestDeleteComment_Success() {
 		},
 	}
 
-	err := s.service.AddComment(post.ID, comment)
+	_, err := s.service.AddComment(post.ID, comment)
 	s.NoError(err)
 
 	// Delete the comment
@@ -713,7 +713,7 @@ func (s *PostServiceTestSuite) TestDeleteComment_WithReplies() {
 		},
 	}
 
-	err := s.service.AddComment(post.ID, parentComment)
+	_, err := s.service.AddComment(post.ID, parentComment)
 	s.NoError(err)
 
 	// Add a reply
@@ -729,7 +729,7 @@ func (s *PostServiceTestSuite) TestDeleteComment_WithReplies() {
 		},
 	}
 
-	err = s.service.AddComment(post.ID, replyComment)
+	_, err = s.service.AddComment(post.ID, replyComment)
 	s.NoError(err)
 
 	// Delete parent comment - should also delete reply
@@ -947,7 +947,7 @@ func (s *PostServiceTestSuite) TestAddComment_WithMentions() {
 		},
 	}
 
-	err := s.service.AddComment(post.ID, comment)
+	_, err := s.service.AddComment(post.ID, comment)
 
 	s.NoError(err)
 
@@ -986,7 +986,7 @@ func (s *PostServiceTestSuite) TestAddComment_ReplyToComment() {
 		User:    userRef,
 	}
 
-	err := s.service.AddComment(post.ID, parentComment)
+	_, err := s.service.AddComment(post.ID, parentComment)
 	s.NoError(err)
 
 	// Add reply
@@ -997,7 +997,7 @@ func (s *PostServiceTestSuite) TestAddComment_ReplyToComment() {
 		ParentID: &parentComment.ID,
 	}
 
-	err = s.service.AddComment(post.ID, replyComment)
+	_, err = s.service.AddComment(post.ID, replyComment)
 	s.NoError(err)
 
 	// Verify reply was added
@@ -1594,7 +1594,7 @@ func (s *PostServiceTestSuite) TestAddComment_PostNotFound() {
 		User:    userRef,
 	}
 
-	err := s.service.AddComment(fakePostID, comment)
+	_, err := s.service.AddComment(fakePostID, comment)
 
 	// Should return error
 	s.Error(err)

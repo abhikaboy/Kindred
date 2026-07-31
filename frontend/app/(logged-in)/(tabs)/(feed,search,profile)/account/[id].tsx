@@ -40,6 +40,7 @@ import { components } from "@/api/generated/types";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { getBlueprintById } from "@/api/blueprint";
 import ProfileEncouragementCard from "@/components/cards/ProfileEncouragementCard";
+import FriendshipLevel from "@/components/profile/FriendshipLevel";
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -222,6 +223,10 @@ export default function Profile() {
                             onRelationshipChange={handleRelationshipChange}
                         />
                     </View>
+
+                    {profile?.relationship?.status === "connected" && (
+                        <FriendshipLevel score={profile.relationship.score || 0} />
+                    )}
 
                     {profile?.song && (
                         <SongPreviewPill key={profile.song.id} song={profile.song} />

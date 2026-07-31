@@ -13,6 +13,7 @@ import {
   useDeleteComment,
   type CommentDocumentAPI,
 } from "@/hooks/usePostActions";
+import { useFriendshipBump } from "@/hooks/useFriendshipBump";
 import { buildReactionGroups, type ReactionGroup } from "@/lib/feed";
 import { formatNotificationTime } from "@/lib/notifications";
 import type { components } from "@/lib/api/types.gen";
@@ -44,6 +45,7 @@ export function PostCard({ post }: { post: PostDocumentAPI }): JSX.Element {
   const { react } = useReactToPost();
   const { addComment } = useAddComment();
   const { deleteComment } = useDeleteComment();
+  const bump = useFriendshipBump();
 
   const [groups, setGroups] = useState<ReactionGroup[]>(() =>
     buildReactionGroups(post.reactions, myId)
@@ -60,7 +62,10 @@ export function PostCard({ post }: { post: PostDocumentAPI }): JSX.Element {
   };
 
   const onAddComment = (content: string) => {
-    addComment(post._id, content).then((c) => setComments((prev) => [...prev, c]));
+    addComment(post._id, content).then(({ comment, friendshipDelta }) => {
+      setComments((prev) => [...prev, comment]);
+      bump(friendshipDelta, post.user.display_name);
+    });
   };
 
   const onDeleteComment = (commentId: string) => {

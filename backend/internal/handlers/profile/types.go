@@ -43,6 +43,7 @@ type ProfileDocument struct {
 type RelationshipInfo struct {
 	Status    RelationshipStatus `json:"status"`
 	RequestID *string            `json:"request_id,omitempty"` // ID of the connection request if applicable
+	Score     int                `json:"score" doc:"Friendship score for this pair (0 unless friends)"`
 }
 
 // sanitizeForResponse hides internal metrics from the API response.

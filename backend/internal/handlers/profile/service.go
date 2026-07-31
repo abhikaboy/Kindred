@@ -541,7 +541,7 @@ func (s *Service) CheckRelationship(userAID, userBID primitive.ObjectID) (*Relat
 func (s *Service) convertConnectionToRelationshipInfo(relationship Connection.ConnectionDocumentInternal, userAID primitive.ObjectID) *RelationshipInfo {
 	switch relationship.Status {
 	case Connection.StatusFriends:
-		return &RelationshipInfo{Status: RelationshipConnected}
+		return &RelationshipInfo{Status: RelationshipConnected, Score: relationship.Score}
 	case Connection.StatusBlocked:
 		return &RelationshipInfo{Status: RelationshipBlocked}
 	case Connection.StatusPending:

@@ -7,6 +7,7 @@ import { $api } from "@/lib/api/query";
 import { uploadImage } from "@/lib/upload";
 import { GifPicker } from "@/components/kudos/GifPicker";
 import { RingsCelebration } from "@/components/kudos/RingsCelebration";
+import { useFriendshipBump, type FriendshipDelta } from "@/hooks/useFriendshipBump";
 
 // Types require both auth headers; the client middleware fills the real tokens.
 const AUTH = { Authorization: "", refresh_token: "" };
@@ -56,6 +57,7 @@ export function SendKudosModal({
   const fileInput = useRef<HTMLInputElement>(null);
   const encouragement = $api.useMutation("post", "/v1/user/encouragements");
   const congratulation = $api.useMutation("post", "/v1/user/congratulations");
+  const bump = useFriendshipBump();
 
   useEffect(() => {
     if (!open) {
@@ -96,7 +98,8 @@ export function SendKudosModal({
     if (img) void handleFile(img);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = (data: { friendshipDelta?: FriendshipDelta }) => {
+    bump(data.friendshipDelta, recipientName);
     onSent?.();
     onClose();
   };

@@ -10,6 +10,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetView, BottomSheetModal, BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { addComment, deleteComment } from "@/api/post";
 import { showToast } from "@/utils/showToast";
+import { friendshipFeedback } from "@/utils/friendship";
+import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -61,6 +63,7 @@ const Comment = ({
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
 
     const [commentText, setCommentText] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -242,7 +245,12 @@ const Comment = ({
 
             const mentions = Array.from(mentionMap.values());
 
-            const newComment = await addComment(postId, finalCommentText, parentId, mentions);
+            const { comment: newComment, friendshipDelta } = await addComment(
+                postId,
+                finalCommentText,
+                parentId,
+                mentions
+            );
             setCommentText("");
             setReplyingTo(null);
             setPickerMentions([]);
@@ -255,6 +263,12 @@ const Comment = ({
 
             if (onCommentAdded) {
                 onCommentAdded(newComment);
+            }
+
+            // ponytail: invalidate rather than patch the cached score; the profile refetches on next view.
+            if (friendshipDelta) {
+                showToast(friendshipFeedback(friendshipDelta), "success");
+                if (postOwnerId) queryClient.invalidateQueries({ queryKey: ["profile", postOwnerId] });
             }
         } catch (error) {
             console.error("Failed to submit comment:", error);

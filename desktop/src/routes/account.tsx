@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { FriendshipMeter } from "@/components/profile/FriendshipMeter";
 import { TaskItem } from "@/components/TaskItem";
 import { SendKudosModal } from "@/components/notifications/SendKudosModal";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
@@ -146,6 +147,12 @@ export default function AccountScreen() {
         <Stat value={profile.posts_made} label="Posts" />
         <Stat value={profile.friends.length} label="Friends" />
       </div>
+
+      {canView ? (
+        <div className="mt-6 px-2">
+          <FriendshipMeter score={profile.relationship?.score ?? 0} name={profile.display_name} />
+        </div>
+      ) : null}
 
       {canView ? (
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">

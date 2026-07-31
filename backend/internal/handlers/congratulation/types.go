@@ -3,6 +3,7 @@ package congratulation
 import (
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/friendship"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +22,8 @@ type CreateCongratulationInput struct {
 type CreateCongratulationOutput struct {
 	Body struct {
 		CongratulationDocument
-		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Share ring increment triggered by this congratulation so the client can render feedback"`
+		RingDelta       *rings.RingDelta  `json:"ringDelta,omitempty" doc:"Describes the Share ring increment triggered by this congratulation so the client can render feedback"`
+		FriendshipDelta *friendship.Delta `json:"friendshipDelta,omitempty" doc:"Describes the friendship score bump with the receiver so the client can render feedback"`
 	} `json:"body"`
 }
 
@@ -253,4 +255,5 @@ type Service struct {
 	Posts               *mongo.Collection
 	NotificationService *notifications.Service
 	RingService         *rings.RingService
+	Friendship          *friendship.Service
 }

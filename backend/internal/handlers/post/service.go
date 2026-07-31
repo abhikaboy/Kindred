@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/friendship"
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
@@ -37,6 +38,7 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 		NotificationService:  notifications.NewNotificationService(collections),
 		RingService:          ringService,
 		EncouragementService: encouragement.NewEncouragementService(collections),
+		Friendship:           friendship.New(collections),
 	}
 }
 
@@ -832,7 +834,7 @@ func (s *Service) GetPostsByBlueprint(blueprintID primitive.ObjectID) ([]types.P
 	return results, nil
 }
 
-func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDocument) error {
+func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDocument) (*friendship.Delta, error) {
 	ctx := context.Background()
 
 	comment.Metadata = types.NewCommentMetadata()
@@ -853,13 +855,16 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 	err := s.Posts.FindOneAndUpdate(ctx, filter, update).Decode(&post)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return fmt.Errorf("post not found or has been deleted")
+			return nil, fmt.Errorf("post not found or has been deleted")
 		}
-		return fmt.Errorf("failed to add comment: %w", err)
+		return nil, fmt.Errorf("failed to add comment: %w", err)
 	}
 
 	// Send notification to post owner (only if commenter is not the post owner)
+	var fsDelta *friendship.Delta
 	if comment.User != nil && comment.User.ID != post.User.ID {
+		fsDelta = s.Friendship.Bump(ctx, comment.User.ID, post.User.ID, friendship.PointsComment)
+
 		// Send push notification
 		err = s.sendCommentNotification(post.User.ID, post.ID, comment.User.DisplayName, comment.Content)
 		if err != nil {
@@ -908,7 +913,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		}
 	}
 
-	return nil
+	return fsDelta, nil
 }
 
 func (s *Service) ToggleReaction(r *types.ReactDocument) (bool, error) {
@@ -966,6 +971,11 @@ func (s *Service) ToggleReaction(r *types.ReactDocument) (bool, error) {
 	_, err = s.Posts.UpdateOne(ctx, bson.M{"_id": r.PostID}, update)
 	if err != nil {
 		return false, err
+	}
+
+	if !userExists {
+		// ponytail: no delta in the response — a reaction tap gets no UI feedback.
+		s.Friendship.Bump(ctx, r.UserID, post.User.ID, friendship.PointsReaction)
 	}
 
 	return !userExists, err

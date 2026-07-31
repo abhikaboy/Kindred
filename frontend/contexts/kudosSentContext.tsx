@@ -6,6 +6,7 @@ import React, {
     useRef,
     useState,
 } from "react";
+import type { FriendshipDelta } from "@/utils/friendship";
 
 export type KudosKind = "encouragement" | "congratulation";
 
@@ -17,6 +18,8 @@ export interface KudosSent {
     taskName?: string;
     /** Preview of the sent image/GIF, or a video's thumbnail. */
     imageUri?: string;
+    /** Friendship score bump this kudos earned, when the backend reported one. */
+    friendship?: FriendshipDelta;
 }
 
 interface KudosSentContextValue {

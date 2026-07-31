@@ -3,6 +3,7 @@ package Post
 import (
 	"encoding/json"
 
+	"github.com/abhikaboy/Kindred/internal/friendship"
 	"github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
@@ -264,8 +265,9 @@ type MentionInput struct {
 
 type AddCommentOutput struct {
 	Body struct {
-		Message string                   `json:"message" example:"Comment added successfully"`
-		Comment types.CommentDocumentAPI `json:"comment"`
+		Message         string                   `json:"message" example:"Comment added successfully"`
+		Comment         types.CommentDocumentAPI `json:"comment"`
+		FriendshipDelta *friendship.Delta        `json:"friendshipDelta,omitempty" doc:"Describes the friendship score bump with the post owner so the client can render feedback"`
 	} `json:"body"`
 }
 
@@ -314,4 +316,5 @@ type Service struct {
 	NotificationService  *notifications.Service
 	RingService          *rings.RingService
 	EncouragementService *encouragement.Service
+	Friendship           *friendship.Service
 }

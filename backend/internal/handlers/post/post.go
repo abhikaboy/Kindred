@@ -674,7 +674,8 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 		doc.ParentID = &parentID
 	}
 
-	if err := h.service.AddComment(postID, doc); err != nil {
+	fsDelta, err := h.service.AddComment(postID, doc)
+	if err != nil {
 		slog.Error("failed to add comment", "userId", user_id, "postId", input.PostID, "error", err)
 		return nil, huma.Error500InternalServerError("Unable to add comment. Please try again.", err)
 	}
@@ -682,6 +683,7 @@ func (h *Handler) AddCommentHuma(ctx context.Context, input *AddCommentInput) (*
 	output := &AddCommentOutput{}
 	output.Body.Message = "Comment added successfully"
 	output.Body.Comment = *doc.ToAPI()
+	output.Body.FriendshipDelta = fsDelta
 	return output, nil
 }
 

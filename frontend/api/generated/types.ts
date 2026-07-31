@@ -3676,6 +3676,8 @@ export interface components {
              */
             readonly $schema?: string;
             comment: components["schemas"]["CommentDocumentAPI"];
+            /** @description Describes the friendship score bump with the post owner so the client can render feedback */
+            friendshipDelta?: components["schemas"]["Delta"];
             /** @example Comment added successfully */
             message: string;
         };
@@ -4691,6 +4693,8 @@ export interface components {
              * @example 15000
              */
             durationMs?: number;
+            /** @description Describes the friendship score bump with the receiver so the client can render feedback */
+            friendshipDelta?: components["schemas"]["Delta"];
             /**
              * @description Unique identifier for the congratulation
              * @example 507f1f77bcf86cd799439011
@@ -4831,6 +4835,8 @@ export interface components {
              * @example 15000
              */
             durationMs?: number;
+            /** @description Describes the friendship score bump with the receiver so the client can render feedback */
+            friendshipDelta?: components["schemas"]["Delta"];
             /**
              * @description Unique identifier for the encouragement
              * @example 507f1f77bcf86cd799439011
@@ -5330,6 +5336,25 @@ export interface components {
             readonly $schema?: string;
             /** @example Workspace deleted successfully */
             message: string;
+        };
+        Delta: {
+            /**
+             * Format: int64
+             * @description Points this action added
+             * @example 3
+             */
+            delta: number;
+            /**
+             * @description Whether this bump crossed into a new level
+             * @example false
+             */
+            leveledUp: boolean;
+            /**
+             * Format: int64
+             * @description Pair friendship score after the bump
+             * @example 28
+             */
+            score: number;
         };
         DisconnectOutputBody: {
             /**
@@ -6946,6 +6971,11 @@ export interface components {
         };
         RelationshipInfo: {
             request_id?: string;
+            /**
+             * Format: int64
+             * @description Friendship score for this pair (0 unless friends)
+             */
+            score: number;
             status: string;
         };
         Reminder: {

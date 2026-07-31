@@ -7,6 +7,7 @@ import * as Haptics from "expo-haptics";
 import { Check, PaperPlaneTilt } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useKudosSent } from "@/contexts/kudosSentContext";
+import { friendshipFeedback } from "@/utils/friendship";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("screen");
 const GRADIENT_HEIGHT = SCREEN_HEIGHT * 0.5;
@@ -178,6 +179,13 @@ export const KudosSentOverlay: React.FC = () => {
                         </View>
                     )
                 )}
+                {current.friendship ? (
+                    <View style={styles.friendshipPill}>
+                        <ThemedText type="caption" style={styles.friendshipText}>
+                            {friendshipFeedback(current.friendship)}
+                        </ThemedText>
+                    </View>
+                ) : null}
             </Animated.View>
         </View>
     );
@@ -247,6 +255,18 @@ const styles = StyleSheet.create({
         borderColor: "rgba(255,255,255,0.12)",
         paddingHorizontal: 16,
         paddingVertical: 12,
+    },
+    friendshipPill: {
+        marginTop: 2,
+        borderRadius: 999,
+        backgroundColor: "rgba(133,77,255,0.18)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+    },
+    friendshipText: {
+        color: "rgba(255,255,255,0.88)",
     },
     messageText: {
         color: "#ffffff",

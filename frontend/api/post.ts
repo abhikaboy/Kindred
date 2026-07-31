@@ -269,7 +269,7 @@ export const addComment = async (
     content: string,
     parentId?: string,
     mentions?: Array<{ id: string; handle: string }>
-): Promise<CommentDocumentAPI> => {
+): Promise<{ comment: CommentDocumentAPI; friendshipDelta?: components["schemas"]["Delta"] }> => {
     if (!postId) {
         throw new Error("PostId is required");
     }
@@ -298,7 +298,10 @@ export const addComment = async (
     }
 
     if (data && typeof data === 'object' && 'comment' in data) {
-        return (data as any).comment as CommentDocumentAPI;
+        return {
+            comment: (data as any).comment as CommentDocumentAPI,
+            friendshipDelta: (data as any).friendshipDelta,
+        };
     }
 
     throw new Error("Invalid API response structure");

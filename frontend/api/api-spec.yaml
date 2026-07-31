@@ -7462,6 +7462,9 @@ components:
                     readOnly: true
                 comment:
                     $ref: '#/components/schemas/CommentDocumentAPI'
+                friendshipDelta:
+                    description: Describes the friendship score bump with the post owner so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 message:
                     type: string
                     examples:
@@ -9280,6 +9283,9 @@ components:
                     format: int64
                     examples:
                         - 15000
+                friendshipDelta:
+                    description: Describes the friendship score bump with the receiver so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 id:
                     type: string
                     description: Unique identifier for the congratulation
@@ -9450,6 +9456,9 @@ components:
                     format: int64
                     examples:
                         - 15000
+                friendshipDelta:
+                    description: Describes the friendship score bump with the receiver so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 id:
                     type: string
                     description: Unique identifier for the encouragement
@@ -10296,6 +10305,31 @@ components:
                         - Workspace deleted successfully
             required:
                 - message
+        Delta:
+            type: object
+            additionalProperties: false
+            properties:
+                delta:
+                    type: integer
+                    description: Points this action added
+                    format: int64
+                    examples:
+                        - 3
+                leveledUp:
+                    type: boolean
+                    description: Whether this bump crossed into a new level
+                    examples:
+                        - false
+                score:
+                    type: integer
+                    description: Pair friendship score after the bump
+                    format: int64
+                    examples:
+                        - 28
+            required:
+                - score
+                - delta
+                - leveledUp
         DisconnectOutputBody:
             type: object
             additionalProperties: false
@@ -13187,10 +13221,15 @@ components:
             properties:
                 request_id:
                     type: string
+                score:
+                    type: integer
+                    description: Friendship score for this pair (0 unless friends)
+                    format: int64
                 status:
                     type: string
             required:
                 - status
+                - score
         Reminder:
             type: object
             additionalProperties: false

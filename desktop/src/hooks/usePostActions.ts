@@ -25,13 +25,18 @@ export function useReactToPost(): {
   };
 }
 
+export type AddCommentResult = {
+  comment: CommentDocumentAPI;
+  friendshipDelta?: components["schemas"]["Delta"];
+};
+
 export function useAddComment(): {
   addComment: (
     postId: string,
     content: string,
     mentions?: MentionInput[],
     parentId?: string
-  ) => Promise<CommentDocumentAPI>;
+  ) => Promise<AddCommentResult>;
 } {
   const mutation = $api.useMutation("post", "/v1/user/posts/{postId}/comment");
   return {
@@ -44,7 +49,7 @@ export function useAddComment(): {
           ...(parentId !== undefined ? { parentId } : {}),
         },
       });
-      return data.comment;
+      return data;
     },
   };
 }

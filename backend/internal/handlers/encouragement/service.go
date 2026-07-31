@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/friendship"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -39,6 +40,7 @@ func newService(collections map[string]*mongo.Collection, ringService *rings.Rin
 		Categories:          categories,
 		NotificationService: notifications.NewNotificationService(collections),
 		RingService:         ringService,
+		Friendship:          friendship.New(collections),
 	}
 }
 
@@ -301,6 +303,9 @@ func (s *Service) ToggleReaction(id, receiverID primitive.ObjectID, emoji string
 	if err := s.sendReactionNotification(&current, emoji); err != nil {
 		slog.Error("Failed to send encouragement reaction notification", "error", err, "encouragement_id", id.Hex())
 	}
+
+	// ponytail: swapping emoji re-bumps; not worth tracking prior reaction state.
+	s.Friendship.Bump(ctx, receiverID, current.Sender.ID, friendship.PointsReaction)
 
 	return &emoji, nil
 }

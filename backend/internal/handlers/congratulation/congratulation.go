@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/abhikaboy/Kindred/internal/friendship"
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -110,9 +111,13 @@ func (h *Handler) CreateCongratulationHuma(ctx context.Context, input *CreateCon
 		}
 	}
 
+	// Best-effort like the ring block above: nil when they aren't friends.
+	friendshipDelta := h.service.Friendship.Bump(ctx, senderID, receiverID, friendship.PointsKudos)
+
 	out := &CreateCongratulationOutput{}
 	out.Body.CongratulationDocument = *congratulation
 	out.Body.RingDelta = ringDelta
+	out.Body.FriendshipDelta = friendshipDelta
 	return out, nil
 }
 

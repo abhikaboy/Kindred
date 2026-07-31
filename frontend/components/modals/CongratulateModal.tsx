@@ -318,6 +318,9 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             setIsUploading(false);
             showRingUpdate(congratulationResult?.ringDelta);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
+            if (congratulationResult?.friendshipDelta) {
+                queryClient.invalidateQueries({ queryKey: ["profile", congratulationConfig.receiverId] });
+            }
 
             // Update user's congratulation count locally
             const newCount = Math.max(0, congratulationsLeft - 1);
@@ -344,6 +347,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
                 kind: "congratulation",
                 taskName: task?.content,
                 imageUri: selectedMedia?.type === "image" ? selectedMedia.uri : thumbnailUrl,
+                friendship: congratulationResult?.friendshipDelta,
             });
 
             onSent?.();

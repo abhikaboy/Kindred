@@ -320,6 +320,9 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             setIsUploading(false);
             showRingUpdate(encouragementResult?.ringDelta);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
+            if (encouragementResult?.friendshipDelta) {
+                queryClient.invalidateQueries({ queryKey: ["profile", encouragementConfig.receiverId] });
+            }
 
             capture(AnalyticsEvents.ENCOURAGEMENT_SENT, {
                 has_message: !!encouragementMessage?.trim(),
@@ -352,6 +355,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
                 kind: "encouragement",
                 taskName: task?.content,
                 imageUri: selectedMedia?.type === "image" ? selectedMedia.uri : thumbnailUrl,
+                friendship: encouragementResult?.friendshipDelta,
             });
 
             // Close modal first, enable confetti, then trigger it

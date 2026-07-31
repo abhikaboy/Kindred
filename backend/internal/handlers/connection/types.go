@@ -75,6 +75,7 @@ type ConnectionDocumentInternal struct {
 	ReceiverID primitive.ObjectID     `bson:"receiver_id"`
 	CreatedAt  time.Time              `bson:"created_at"`
 	AcceptedAt *time.Time             `bson:"accepted_at,omitempty"`
+	Score      int                    `bson:"score"`                // Friendship score, absent on legacy docs (decodes to 0)
 	BlockerID  *primitive.ObjectID    `bson:"blocker_id,omitempty"` // For blocked relationships
 	UpdatedAt  *time.Time             `bson:"updated_at,omitempty"`
 }

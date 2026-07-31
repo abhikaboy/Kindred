@@ -15,7 +15,7 @@ type CreateCongratulationParams = components["schemas"]["CreateCongratulationPar
  */
 export const createCongratulationAPI = async (
     congratulationData: CreateCongratulationParams
-): Promise<CongratulationDocument & { ringDelta?: RingDelta }> => {
+): Promise<CongratulationDocument & { ringDelta?: RingDelta; friendshipDelta?: components["schemas"]["Delta"] }> => {
     const { data, error } = await client.POST("/v1/user/congratulations", {
         params: withAuthHeaders(),
         body: congratulationData,
@@ -25,7 +25,10 @@ export const createCongratulationAPI = async (
         throw new Error(`Failed to create congratulation: ${JSON.stringify(error)}`);
     }
 
-    return data as unknown as CongratulationDocument & { ringDelta?: RingDelta };
+    return data as unknown as CongratulationDocument & {
+        ringDelta?: RingDelta;
+        friendshipDelta?: components["schemas"]["Delta"];
+    };
 };
 
 /**
