@@ -1,10 +1,8 @@
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Haptics from "expo-haptics";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import ModalHead from "./ModalHead";
 import Standard from "./create/Standard";
-import ConditionalView from "../ui/ConditionalView";
 import NewCategory from "./create/NewCategory";
 import SelectWorkspace from "./create/SelectWorkspace";
 import Deadline from "./create/Deadline";
@@ -50,11 +48,12 @@ export enum Screen {
 }
 
 const CreateModal = (props: Props) => {
-    const [screen, setScreen] = useState(props.screen || Screen.STANDARD);
+    const [screen, setScreen] = useState(props.screen ?? Screen.STANDARD);
     const ThemedColor = useThemeColor();
 
-    // Get task creation context values to include in memoization dependencies
-    const { taskName, startDate, startTime, deadline, reminders, recurring, setCopySourceTaskId } = useTaskCreation();
+    // Only the setter: subscribing to taskName here re-rendered the whole sheet on
+    // every keystroke. Each screen reads what it needs from the context directly.
+    const { setCopySourceTaskId } = useTaskCreation();
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -87,33 +86,31 @@ const CreateModal = (props: Props) => {
         bottomSheetModalRef.current?.present();
     }, [props.visible]);
 
+    // The single "sheet is fully closed" hook, for every close path: swipe down,
+    // backdrop, or the Create button. Runs after the animation, never during it.
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1) props.setVisible(false);
+            if (index !== -1) return;
+            // A cancelled copy must not mark the tag "copied" on a later create
+            setCopySourceTaskId(null);
+            setScreen(props.screen ?? Screen.STANDARD);
+            props.setVisible(false);
         },
-        [props.setVisible]
+        [props.setVisible, props.screen, setCopySourceTaskId]
     );
 
-    // Dismiss and reset screen when visible goes false
+    // Controlled use (onboarding tutorial) drives closing through `visible`
     useEffect(() => {
-        if (!props.visible) {
-            bottomSheetModalRef.current?.dismiss();
-            // Cancelled copy must not mark the tag "copied" on a later create
-            setCopySourceTaskId(null);
-            const timer = setTimeout(() => {
-                setScreen(Screen.STANDARD);
-            }, 300);
-            return () => clearTimeout(timer);
-        }
+        if (!props.visible) bottomSheetModalRef.current?.dismiss();
     }, [props.visible]);
 
-
-
-    // Re-snap when screen changes (snap points differ between NEW_CATEGORY and others)
+    // Re-snap only on a real screen change: NEW_CATEGORY is a shorter sheet. Firing
+    // this on mount raced the present() animation to the same index.
+    const snappedForScreen = useRef(screen);
     useEffect(() => {
-        if (props.visible && bottomSheetModalRef.current) {
-            bottomSheetModalRef.current.snapToIndex(0);
-        }
+        if (snappedForScreen.current === screen) return;
+        snappedForScreen.current = screen;
+        if (props.visible) bottomSheetModalRef.current?.snapToIndex(0);
     }, [screen, props.visible]);
 
     // Custom backdrop component
@@ -126,13 +123,13 @@ const CreateModal = (props: Props) => {
 
     const goToStandard = useCallback(() => setScreen(Screen.STANDARD), []);
 
-    const hideModal = useCallback(() => props.setVisible(false), [props.setVisible]);
+    // Dismiss rather than unmount, so tapping Create animates out like a swipe down
+    // does. handleSheetChanges then clears state once the animation lands.
+    const hideModal = useCallback(() => bottomSheetModalRef.current?.dismiss(), []);
 
     // Memoize screen props to prevent unnecessary re-renders
     const screenProps = useMemo(() => ({ goToStandard }), [goToStandard]);
 
-    // Memoize the screen component to prevent recreation on every render
-    // Include task creation context values in dependencies to ensure updates are reflected
     const currentScreenComponent = useMemo(() => {
         switch (screen) {
             case Screen.STANDARD:
@@ -177,13 +174,6 @@ const CreateModal = (props: Props) => {
         props.tutorial,
         hideModal,
         goToStandard,
-        // Include task creation context values to ensure Standard component updates when these change
-        taskName,
-        startDate,
-        startTime,
-        deadline,
-        reminders,
-        recurring,
     ]);
 
     return (

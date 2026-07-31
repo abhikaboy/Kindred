@@ -4,13 +4,22 @@ import { act, render } from "@testing-library/react-native";
 
 const mockPresent = jest.fn();
 const mockDismiss = jest.fn();
+const mockSnapToIndex = jest.fn();
+const mockSetCopySource = jest.fn();
+// Last props the sheet was rendered with, so tests can fire its onChange
+const mockSheetProps: { current: any } = { current: null };
 
 jest.mock("@gorhom/bottom-sheet", () => {
     const RN = require("react-native");
     const React = require("react");
     return {
         BottomSheetModal: React.forwardRef((props: any, ref: any) => {
-            React.useImperativeHandle(ref, () => ({ present: mockPresent, dismiss: mockDismiss, snapToIndex: jest.fn() }));
+            mockSheetProps.current = props;
+            React.useImperativeHandle(ref, () => ({
+                present: mockPresent,
+                dismiss: mockDismiss,
+                snapToIndex: mockSnapToIndex,
+            }));
             return React.createElement(RN.View, null, props.children);
         }),
         BottomSheetBackdrop: () => null,
@@ -24,15 +33,7 @@ jest.mock("@/hooks/useThemeColor", () => ({
 }));
 
 jest.mock("@/contexts/taskCreationContext", () => ({
-    useTaskCreation: () => ({
-        taskName: "",
-        startDate: null,
-        startTime: null,
-        deadline: null,
-        reminders: [],
-        recurring: false,
-        setCopySourceTaskId: jest.fn(),
-    }),
+    useTaskCreation: () => ({ setCopySourceTaskId: mockSetCopySource }),
 }));
 
 jest.mock("@/hooks/useAnalytics", () => ({ useAnalytics: () => ({ capture: jest.fn() }) }));
@@ -46,7 +47,6 @@ jest.mock("@/components/modals/create/StartDate", () => () => null);
 jest.mock("@/components/modals/create/Reminder", () => () => null);
 jest.mock("@/components/modals/create/Collaborators", () => () => null);
 jest.mock("@/components/modals/create/Integration", () => () => null);
-jest.mock("@/components/modals/ModalHead", () => () => null);
 
 import CreateModal from "@/components/modals/CreateModal";
 import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
@@ -54,6 +54,9 @@ import { CreateModalProvider, useCreateModal } from "@/contexts/createModalConte
 beforeEach(() => {
     mockPresent.mockClear();
     mockDismiss.mockClear();
+    mockSnapToIndex.mockClear();
+    mockSetCopySource.mockClear();
+    mockSheetProps.current = null;
 });
 
 describe("create modal open latency", () => {
@@ -61,6 +64,11 @@ describe("create modal open latency", () => {
         render(<CreateModal visible={true} setVisible={jest.fn()} />);
         expect(mockPresent).toHaveBeenCalledTimes(1);
         expect(mockDismiss).not.toHaveBeenCalled();
+    });
+
+    test("does not re-snap on mount, which would race the present animation", () => {
+        render(<CreateModal visible={true} setVisible={jest.fn()} />);
+        expect(mockSnapToIndex).not.toHaveBeenCalled();
     });
 
     test("openModal flips visible synchronously", () => {
@@ -78,5 +86,37 @@ describe("create modal open latency", () => {
         getByText("closed");
         act(() => open());
         getByText("open");
+    });
+});
+
+describe("create modal close", () => {
+    test("stays mounted until the close animation lands", () => {
+        const setVisible = jest.fn();
+        render(<CreateModal visible={true} setVisible={setVisible} />);
+        // Nothing reports closed just because the sheet was asked to dismiss
+        expect(setVisible).not.toHaveBeenCalled();
+    });
+
+    test("settling at index -1 reports closed and clears the copy source", () => {
+        const setVisible = jest.fn();
+        render(<CreateModal visible={true} setVisible={setVisible} />);
+        act(() => mockSheetProps.current.onChange(-1));
+        expect(setVisible).toHaveBeenCalledWith(false);
+        expect(mockSetCopySource).toHaveBeenCalledWith(null);
+    });
+
+    test("settling at a real index does not report closed", () => {
+        const setVisible = jest.fn();
+        render(<CreateModal visible={true} setVisible={setVisible} />);
+        act(() => mockSheetProps.current.onChange(0));
+        expect(setVisible).not.toHaveBeenCalled();
+        expect(mockSetCopySource).not.toHaveBeenCalled();
+    });
+
+    test("controlled use dismisses when visible goes false", () => {
+        const { rerender } = render(<CreateModal visible={true} setVisible={jest.fn()} />);
+        expect(mockDismiss).not.toHaveBeenCalled();
+        rerender(<CreateModal visible={false} setVisible={jest.fn()} />);
+        expect(mockDismiss).toHaveBeenCalledTimes(1);
     });
 });
