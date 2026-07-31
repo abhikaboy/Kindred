@@ -1,0 +1,16 @@
+{
+    // Self-contained on purpose. Without a tsconfig here, esbuild walks up to the
+    // repo-root one, which extends "expo/tsconfig.base" -- unresolvable in the web
+    // deploy, which only installs desktop/. Never add "extends" to this file.
+    "compilerOptions": {
+        "target": "ES2020",
+        "lib": ["ES2020"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "verbatimModuleSyntax": true
+    },
+    "include": ["*.ts"]
+}
