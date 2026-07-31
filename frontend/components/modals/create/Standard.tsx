@@ -32,7 +32,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
-import { scheduleUpdates } from "@/hooks/scheduleUpdates";
+import { noAppliedSchedule, scheduleUpdates, type AppliedSchedule } from "@/hooks/scheduleUpdates";
 import SuggestionRow from "@/components/modals/create/SuggestionRow";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
@@ -124,8 +124,18 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     // once typing settles. Suggestions never overwrite a field the user set.
     const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(edit || tutorial ? "" : taskName);
 
+    // The ref records what the parser wrote so a later, better parse can correct an
+    // earlier partial one without touching a value the user set.
+    const appliedRef = useRef<AppliedSchedule>(noAppliedSchedule());
     useEffect(() => {
-        const update = scheduleUpdates({ startDate, startTime, deadline, recurring, flexDetails }, schedule, recurrence);
+        const result = scheduleUpdates(
+            { startDate, startTime, deadline, recurring, flexDetails },
+            schedule,
+            recurrence,
+            appliedRef.current
+        );
+        appliedRef.current = result.applied;
+        const { update } = result;
         if (update.startDate) setStartDate(update.startDate);
         if (update.startTime) setStartTime(update.startTime);
         if (update.deadline) setDeadline(update.deadline);
@@ -139,6 +149,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
 
     const dismissSchedule = () => {
         dismiss();
+        appliedRef.current = noAppliedSchedule();
         setStartDate(null);
         setStartTime(null);
         setDeadline(null);

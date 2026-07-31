@@ -53,12 +53,12 @@ const SuggestionRow = ({
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <CalendarBlank size={14} color={ThemedColor.caption} />
                     <ThemedText type="caption" style={{ flexShrink: 1 }}>
-                        {label}
+                        Filled in below: {label}
                     </ThemedText>
                     <TouchableOpacity
                         onPress={onDismiss}
                         accessibilityRole="button"
-                        accessibilityLabel="Dismiss detected schedule"
+                        accessibilityLabel="Undo detected schedule"
                         hitSlop={10}>
                         <X size={12} color={ThemedColor.caption} />
                     </TouchableOpacity>
@@ -66,17 +66,20 @@ const SuggestionRow = ({
             )}
 
             {hasChips && (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {showCategory && !!categoryName && <SuggestedTag tag={categoryName} onPress={onApplyCategory} />}
-                    {priority !== undefined && (
-                        <SuggestedTag
-                            tag={PRIORITY_LABELS[priority] ?? `Priority ${priority}`}
-                            onPress={() => onApplyPriority(priority)}
-                        />
-                    )}
-                    {value !== undefined && (
-                        <SuggestedTag tag={`Difficulty ${value}`} onPress={() => onApplyValue(value)} />
-                    )}
+                <View style={{ gap: 6 }}>
+                    <ThemedText type="caption">Tap to add</ThemedText>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                        {showCategory && !!categoryName && <SuggestedTag tag={categoryName} onPress={onApplyCategory} />}
+                        {priority !== undefined && (
+                            <SuggestedTag
+                                tag={`${PRIORITY_LABELS[priority] ?? priority} priority`}
+                                onPress={() => onApplyPriority(priority)}
+                            />
+                        )}
+                        {value !== undefined && (
+                            <SuggestedTag tag={`Difficulty ${value}`} onPress={() => onApplyValue(value)} />
+                        )}
+                    </View>
                 </View>
             )}
         </View>

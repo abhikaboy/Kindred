@@ -1,4 +1,4 @@
-import { CalendarBlank, Flag, Sparkle, Stack, X } from "@phosphor-icons/react";
+import { CalendarBlank, Plus, Sparkle, X } from "@phosphor-icons/react";
 import { describeSchedule, type ParsedRecurrence, type ParsedSchedule } from "@shared/taskSuggest";
 import { PropertyPill } from "@/components/create/PropertyPill";
 import { PRIORITIES } from "@/components/create/PriorityPopover";
@@ -48,13 +48,14 @@ export function SuggestionRow({
             {label && (
                 <div className="flex items-center gap-1.5">
                     <CalendarBlank size={13} className="shrink-0 text-muted-foreground" />
-                    <ThemedText type="caption" className="text-muted-foreground">
-                        {label}
+                    <ThemedText type="caption">
+                        Filled in below: <span className="text-foreground">{label}</span>
                     </ThemedText>
                     <button
                         type="button"
                         onClick={onDismiss}
-                        aria-label="Dismiss detected schedule"
+                        title="Undo"
+                        aria-label="Undo detected schedule"
                         className="cursor-pointer rounded p-0.5 text-muted-foreground hover:text-foreground"
                     >
                         <X size={11} />
@@ -64,19 +65,24 @@ export function SuggestionRow({
 
             {hasChips && (
                 <div className="flex flex-wrap items-center gap-2">
-                    <Sparkle size={13} className="shrink-0 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                        <Sparkle size={13} className="shrink-0 text-muted-foreground" />
+                        <ThemedText type="caption">Tap to add</ThemedText>
+                    </div>
                     {showCategory && (
-                        <PropertyPill icon={<Stack size={14} />} onClick={() => onSelectCategory(category)}>
+                        <PropertyPill icon={<Plus size={12} />} onClick={() => onSelectCategory(category)}>
                             {category.name}
                         </PropertyPill>
                     )}
                     {priority !== undefined && (
-                        <PropertyPill icon={<Flag size={14} />} onClick={() => onApply({ priority })}>
-                            {PRIORITIES.find((p) => p.value === priority)?.label ?? `Priority ${priority}`}
+                        <PropertyPill icon={<Plus size={12} />} onClick={() => onApply({ priority })}>
+                            {PRIORITIES.find((p) => p.value === priority)?.label ?? `Priority ${priority}`} priority
                         </PropertyPill>
                     )}
                     {value !== undefined && (
-                        <PropertyPill onClick={() => onApply({ value })}>Difficulty {value}</PropertyPill>
+                        <PropertyPill icon={<Plus size={12} />} onClick={() => onApply({ value })}>
+                            Difficulty {value}
+                        </PropertyPill>
                     )}
                 </div>
             )}

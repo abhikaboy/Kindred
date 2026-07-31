@@ -22,7 +22,9 @@ import {
     buildCreateTaskParams,
     clearSchedule,
     emptyTaskForm,
+    noAppliedSuggestion,
     CREATE_AUTH,
+    type AppliedSuggestion,
     type TaskFormState,
 } from "@/hooks/useCreateActions";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
@@ -72,14 +74,22 @@ export function CreateTaskDialog({
 
     const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(mode === "Manual" ? form.content : "");
 
-    // Auto-apply the parsed schedule. applySchedule returns the same object when
-    // nothing is at its default, so this settles instead of looping.
+    // Auto-apply the parsed schedule. The ref records what the parser wrote so a
+    // later, better parse can correct an earlier partial one without touching a
+    // value the user set. applySchedule returns the same form object when nothing
+    // changes, so this settles instead of looping.
+    const appliedRef = useRef<AppliedSuggestion>(noAppliedSuggestion());
     useEffect(() => {
-        setForm((prev) => applySchedule(prev, schedule, recurrence));
+        setForm((prev) => {
+            const result = applySchedule(prev, schedule, recurrence, appliedRef.current);
+            appliedRef.current = result.applied;
+            return result.form;
+        });
     }, [schedule, recurrence]);
 
     const dismissSchedule = () => {
         dismiss();
+        appliedRef.current = noAppliedSuggestion();
         setForm(clearSchedule);
     };
 

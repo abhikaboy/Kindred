@@ -118,38 +118,77 @@ export function buildCreateTaskParams(form: TaskFormState): CreateTaskParams {
   return body;
 }
 
-// Pure: fold parsed schedule/recurrence into the form, touching ONLY fields still
-// at their default. That is what makes a hand-set date impossible to clobber.
-// Returns the same object when nothing applies, so callers can apply in an effect.
+// What the parser last wrote, so it can correct itself without ever overwriting
+// a value the user chose.
+export type AppliedSuggestion = {
+  startDate: string | null;
+  deadline: string | null;
+  recurring: boolean;
+};
+
+export const noAppliedSuggestion = (): AppliedSuggestion => ({
+  startDate: null,
+  deadline: null,
+  recurring: false,
+});
+
+/**
+ * Pure: fold parsed schedule/recurrence into the form.
+ *
+ * A field is the parser's to rewrite when it is still at its default OR still
+ * holds exactly what the parser last wrote. Typing streams partial parses
+ * ("gym tomorrow" before "gym tomorrow 7-8am"), so without the second clause the
+ * first partial would stick and the form would disagree with the summary line.
+ * Anything the user set themselves fails both clauses and is left alone.
+ *
+ * Returns the same form object when nothing changes, so callers may apply in an effect.
+ */
 export function applySchedule(
   form: TaskFormState,
   schedule: ParsedSchedule | null,
   recurrence: ParsedRecurrence | null,
-): TaskFormState {
+  applied: AppliedSuggestion,
+): { form: TaskFormState; applied: AppliedSuggestion } {
   const next = { ...form };
+  const nextApplied = { ...applied };
   let changed = false;
 
-  if (schedule) {
-    if (form.startDate === null && form.startTime === null && schedule.startDate) {
-      next.startDate = schedule.startDate;
-      next.startTime = schedule.startTime;
-      changed = true;
-    }
-    if (form.deadline === null && schedule.deadline) {
-      next.deadline = schedule.deadline;
-      changed = true;
-    }
+  const ownsStart = form.startDate === null || form.startDate === applied.startDate;
+  if (schedule?.startDate && ownsStart && form.startDate !== schedule.startDate) {
+    next.startDate = schedule.startDate;
+    next.startTime = schedule.startTime;
+    nextApplied.startDate = schedule.startDate;
+    changed = true;
+  } else if (!ownsStart) {
+    nextApplied.startDate = null;
   }
 
-  if (recurrence && !form.recurring && !form.flex) {
+  const ownsEnd = form.deadline === null || form.deadline === applied.deadline;
+  if (schedule?.deadline && ownsEnd && form.deadline !== schedule.deadline) {
+    next.deadline = schedule.deadline;
+    nextApplied.deadline = schedule.deadline;
+    changed = true;
+  } else if (!ownsEnd) {
+    nextApplied.deadline = null;
+  }
+
+  const ownsRecurrence = !form.recurring || applied.recurring;
+  if (recurrence && ownsRecurrence && !form.flex) {
     next.recurring = true;
     next.recurFrequency = recurrence.recurFrequency;
     next.every = recurrence.recurDetails.every;
     next.daysOfWeek = recurrence.recurDetails.daysOfWeek;
-    changed = true;
+    nextApplied.recurring = true;
+    changed =
+      changed ||
+      form.recurFrequency !== next.recurFrequency ||
+      form.every !== next.every ||
+      !form.recurring;
+  } else if (form.recurring && !applied.recurring) {
+    nextApplied.recurring = false;
   }
 
-  return changed ? next : form;
+  return { form: changed ? next : form, applied: nextApplied };
 }
 
 // The schedule fields applySchedule owns, back to their defaults.
