@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/gemini"
@@ -220,6 +221,25 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 		pushWorker.StartCron(cronScheduler)
 	} else {
 		slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
+	}
+
+	// Kudos suggester (every 15m) — joins the moments Kindred can see to the
+	// `user_memory` policy the productivity-agent worker writes.
+	//
+	// OFF BY DEFAULT. This job dispatches real push notifications, and a push
+	// cannot be unsent. Deploying the code and enabling the job are therefore
+	// two separate decisions: set KUDOS_SUGGESTER_ENABLED=true on the host once
+	// you are ready to watch it. Turning it back off is a restart, not a revert.
+	if os.Getenv("KUDOS_SUGGESTER_ENABLED") == "true" {
+		kudosJob := jobs.NewKudosSuggesterJob(collections, jobs.DefaultKudosPolicy())
+		if kudosJob.Ready() {
+			kudosJob.StartCron(cronScheduler)
+			slog.Info("Kudos suggester enabled")
+		} else {
+			slog.Warn("Kudos suggester disabled: required collections not available")
+		}
+	} else {
+		slog.Info("Kudos suggester dormant (set KUDOS_SUGGESTER_ENABLED=true to enable)")
 	}
 
 	xlog.ServerLog("All routes registered, Fiber app ready")

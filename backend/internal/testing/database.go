@@ -142,6 +142,7 @@ func (td *TestDatabase) GetCollections() map[string]*mongo.Collection {
 		"referrals":       td.DB.Collection("referrals"),
 		"reports":         td.DB.Collection("reports"),
 		"template-tasks":  td.DB.Collection("template-tasks"),
+		"user_memory":     td.DB.Collection("user_memory"),
 		"waitlist":        td.DB.Collection("waitlist"),
 	}
 }

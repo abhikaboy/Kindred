@@ -12,8 +12,20 @@ import (
 )
 
 func newService(collections map[string]*mongo.Collection) *Service {
+	users := collections["users"]
+
+	// The collections map only contains what already exists in Atlas, and
+	// `user_memory` is created by the productivity-agent worker on its first
+	// write. Derive the handle from the database so the personalization
+	// endpoints work before that has happened.
+	userMemory := collections[UserMemoryCollection]
+	if userMemory == nil && users != nil {
+		userMemory = users.Database().Collection(UserMemoryCollection)
+	}
+
 	return &Service{
-		Users: collections["users"],
+		Users:      users,
+		UserMemory: userMemory,
 	}
 }
 
@@ -32,8 +44,18 @@ func (s *Service) GetUserSettings(userID primitive.ObjectID) (*types.UserSetting
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
+	// Fill in the personalization default for accounts predating the field, so
+	// the client always sees a definite answer. This is a read-time default
+	// only — nothing is written back, because writing it would be a migration
+	// and the whole point is that absent already means enabled.
+	settings := user.Settings
+	if settings.Personalization == nil {
+		defaults := settings.PersonalizationOrDefault()
+		settings.Personalization = &defaults
+	}
+
 	// Return user's settings (migration ensures all users have settings)
-	return &user.Settings, nil
+	return &settings, nil
 }
 
 // UpdateUserSettings updates user settings (partial update supported)
@@ -49,7 +71,18 @@ func (s *Service) UpdateUserSettings(userID primitive.ObjectID, settings types.U
 	// Prefix all fields with "settings." for nested update
 	prefixedFields := bson.M{}
 	for _, elem := range *updateFields {
+		// Consent is not editable through the catch-all settings PATCH. It only
+		// moves through UpdatePersonalization, so a client that echoes a stale
+		// settings blob back at us can never turn personalization off — or back
+		// on — by accident.
+		if elem.Key == personalizationField {
+			continue
+		}
 		prefixedFields["settings."+elem.Key] = elem.Value
+	}
+
+	if len(prefixedFields) == 0 {
+		return nil
 	}
 
 	update := bson.M{"$set": prefixedFields}

@@ -33,6 +33,10 @@ const (
 	NotificationTypeTaskTagged            NotificationType = "TASK_TAGGED"
 	NotificationTypeTaskCopied            NotificationType = "TASK_COPIED"
 	NotificationTypeKudosReaction         NotificationType = "KUDOS_REACTION"
+	// NotificationTypeKudosSuggestion is a prompt TO someone, suggesting they
+	// send kudos to a friend. The `user` on the document is the friend the kudos
+	// would be for, not the person who did anything to the receiver.
+	NotificationTypeKudosSuggestion NotificationType = "KUDOS_SUGGESTION"
 )
 
 // NotificationDocument represents a notification stored in the database

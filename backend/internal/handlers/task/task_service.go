@@ -82,6 +82,78 @@ func getTaskArrayFilterOptions(taskId primitive.ObjectID) *options.UpdateOptions
 	}
 }
 
+// dateMoved reports whether an incoming date actually moves the stored one.
+//
+// A nil incoming value means the field is not part of this update, so it never
+// counts. The comparison is at millisecond precision because that is all BSON
+// stores: comparing time.Time directly would flag every round-trip of an
+// unchanged date as a move, which is exactly the noise the reschedule counter
+// has to stay clear of.
+func dateMoved(current, incoming *time.Time) bool {
+	if incoming == nil {
+		return false
+	}
+	if current == nil {
+		return true
+	}
+	return current.UnixMilli() != incoming.UnixMilli()
+}
+
+// currentTaskDates reads a task's stored startDate and deadline so an update
+// can tell a real date change from an edit that happened to resend them.
+func (s *Service) currentTaskDates(ctx context.Context, taskId, categoryId primitive.ObjectID) (startDate, deadline *time.Time, found bool) {
+	var cat struct {
+		Tasks []struct {
+			ID        primitive.ObjectID `bson:"_id"`
+			StartDate *time.Time         `bson:"startDate,omitempty"`
+			Deadline  *time.Time         `bson:"deadline,omitempty"`
+		} `bson:"tasks"`
+	}
+
+	err := s.Tasks.FindOne(ctx,
+		bson.M{"_id": categoryId, "tasks._id": taskId},
+		options.FindOne().SetProjection(bson.M{
+			"tasks._id":       1,
+			"tasks.startDate": 1,
+			"tasks.deadline":  1,
+		}),
+	).Decode(&cat)
+	if err != nil {
+		return nil, nil, false
+	}
+
+	for _, t := range cat.Tasks {
+		if t.ID == taskId {
+			return t.StartDate, t.Deadline, true
+		}
+	}
+	return nil, nil, false
+}
+
+// rescheduleInc returns the `$inc` to merge into a task update when that update
+// moves startDate or deadline, and nil when it does not.
+//
+// One bump per update rather than one per field: moving both dates in a single
+// edit is one reschedule. Nothing reads this counter yet — it exists so the
+// question "is rescheduling actually a common operation?" can be settled later
+// with real numbers.
+func (s *Service) rescheduleInc(ctx context.Context, taskId, categoryId primitive.ObjectID, startDate, deadline *time.Time) bson.M {
+	if startDate == nil && deadline == nil {
+		return nil
+	}
+
+	currentStart, currentDeadline, found := s.currentTaskDates(ctx, taskId, categoryId)
+	if !found {
+		return nil
+	}
+
+	if !dateMoved(currentStart, startDate) && !dateMoved(currentDeadline, deadline) {
+		return nil
+	}
+
+	return bson.M{"tasks.$[t].rescheduleCount": 1}
+}
+
 // newService receives the map of collections and picks out Jobs
 func newService(collections map[string]*mongo.Collection, ringService *rings.RingService) *Service {
 	users := mongorepo.NewUserRepository(collections["users"])
@@ -326,6 +398,9 @@ func (s *Service) UpdatePartialTask(
 	_ = s.Tasks.FindOne(ctx, bson.M{"_id": categoryId}, options.FindOne().SetProjection(bson.M{"user": 1})).Decode(&ownerDoc)
 	ownerUserID := ownerDoc.User
 
+	// Read the stored dates before the write, while they are still the old ones.
+	rescheduleInc := s.rescheduleInc(ctx, id, categoryId, updated.StartDate, updated.Deadline)
+
 	options := options.UpdateOptions{
 		ArrayFilters: &options.ArrayFilters{
 			Filters: bson.A{
@@ -384,13 +459,16 @@ func (s *Service) UpdatePartialTask(
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].integration", Value: updated.Integration})
 	}
 
+	update := bson.D{{Key: "$set", Value: updateFields}}
+	if rescheduleInc != nil {
+		update = append(update, bson.E{Key: "$inc", Value: rescheduleInc})
+	}
+
 	_, err := s.Tasks.UpdateOne(ctx,
 		bson.M{
 			"_id": categoryId,
 		},
-		bson.D{{
-			Key: "$set", Value: updateFields,
-		}},
+		update,
 		&options,
 	)
 
@@ -1408,15 +1486,22 @@ func (s *Service) UpdateTaskDeadline(id primitive.ObjectID, categoryID primitive
 		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
 	}
 
+	rescheduleInc := s.rescheduleInc(ctx, id, categoryID, nil, update.Deadline)
+
 	updateFields := bson.M{
 		"tasks.$[t].deadline":   update.Deadline,
 		"tasks.$[t].lastEdited": xutils.NowUTC(),
 	}
 
+	mongoUpdate := bson.M{"$set": updateFields}
+	if rescheduleInc != nil {
+		mongoUpdate["$inc"] = rescheduleInc
+	}
+
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{"_id": categoryID},
-		bson.M{"$set": updateFields},
+		mongoUpdate,
 		getTaskArrayFilterOptions(id),
 	)
 	if err != nil {
@@ -1437,6 +1522,8 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
 	}
 
+	rescheduleInc := s.rescheduleInc(ctx, id, categoryID, update.StartDate, nil)
+
 	updateFields := bson.M{
 		"tasks.$[t].lastEdited": xutils.NowUTC(),
 	}
@@ -1450,10 +1537,15 @@ func (s *Service) UpdateTaskStart(id primitive.ObjectID, categoryID primitive.Ob
 		updateFields["tasks.$[t].startTime"] = update.StartTime
 	}
 
+	mongoUpdate := bson.M{"$set": updateFields}
+	if rescheduleInc != nil {
+		mongoUpdate["$inc"] = rescheduleInc
+	}
+
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{"_id": categoryID},
-		bson.M{"$set": updateFields},
+		mongoUpdate,
 		getTaskArrayFilterOptions(id),
 	)
 	if err != nil {

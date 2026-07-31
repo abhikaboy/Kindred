@@ -67,6 +67,13 @@ type TaskDocument struct {
 	StartTime *time.Time `bson:"startTime,omitempty" json:"startTime,omitempty"`
 	StartDate *time.Time `bson:"startDate" json:"startDate"` // Defaults to today
 
+	// RescheduleCount counts the times startDate or deadline was moved to a
+	// different value — not edits in general. Nothing reads it yet; it exists so
+	// that "is rescheduling actually common?" can be answered later with real
+	// numbers instead of a guess. omitempty, so tasks that never move stay
+	// unchanged on disk and no backfill is needed.
+	RescheduleCount int `bson:"rescheduleCount,omitempty" json:"rescheduleCount,omitempty"`
+
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
@@ -361,6 +368,78 @@ type UserSettings struct {
 	Notifications          NotificationSettings   `bson:"notifications" json:"notifications"`
 	Display                DisplaySettings        `bson:"display" json:"display"`
 	DashboardConfiguration DashboardConfiguration `bson:"dashboard_configuration" json:"dashboard_configuration"`
+	// Personalization is a pointer on purpose. UpdateUserSettings marshals this
+	// whole struct into a `$set`, so a value type would write
+	// `personalization.enabled: false` on every unrelated settings PATCH sent by
+	// a client that predates the field — silently opting everyone out. Nil means
+	// "never answered", which reads as enabled.
+	Personalization *PersonalizationSettings `bson:"personalization,omitempty" json:"personalization,omitempty"`
+}
+
+// PersonalizationSettings is the consent state the productivity-agent worker
+// reads before distilling anything into `user_memory`. Its query is
+// `settings.personalization.enabled: {$ne: false}`, so both a missing
+// sub-document and a missing field mean enabled — opting out has to write
+// `enabled: false` explicitly. See docs/user-memory-contract.md.
+type PersonalizationSettings struct {
+	Enabled     bool       `bson:"enabled" json:"enabled"`
+	PausedUntil *time.Time `bson:"pausedUntil,omitempty" json:"pausedUntil,omitempty"`
+	// ShareStruggles is opt-in and defaults to FALSE — the opposite of Enabled,
+	// deliberately. Enabled governs what Kindred learns about you and defaults
+	// on because shipping it off would silently disable every existing account.
+	// ShareStruggles governs disclosing something about you to *someone else*:
+	// a stalled task, a streak about to break — things you never chose to make
+	// visible. Absent consent has to mean no, so the zero value is the safe
+	// value and no migration is needed to make it so.
+	//
+	// Achievement-based kudos prompts ("Jordan closed every ring") are
+	// unaffected; they surface what the user already published.
+	ShareStruggles bool `bson:"shareStruggles" json:"shareStruggles"`
+}
+
+// PersonalizationOrDefault fills in the "absent means enabled" default for
+// accounts created before the field existed. Read-only: it never writes the
+// default back, because persisting it would be a migration and this must stay
+// a pure read.
+//
+// Note that only Enabled gets a non-zero default. ShareStruggles stays false
+// here for the same reason it is false everywhere else — see the field comment.
+func (s UserSettings) PersonalizationOrDefault() PersonalizationSettings {
+	if s.Personalization == nil {
+		return PersonalizationSettings{Enabled: true}
+	}
+	return *s.Personalization
+}
+
+// MayShareStruggles is the single authority on whether this user's struggles
+// may be disclosed to a friend. Everything that could surface a stalled task or
+// a breaking streak to a third party must route through it.
+//
+// It deliberately does NOT go through PersonalizationOrDefault. That helper
+// exists to make an absent document read as consent, which is right for Enabled
+// and catastrophic here: a nil Personalization means the user was never asked,
+// and never-asked must never mean yes. Every branch that is not an explicit
+// `shareStruggles: true` returns false.
+//
+// Consent to disclosure also presupposes consent to personalization at all, so
+// a user who turned personalization off — or paused it — is not disclosed
+// either. Pausing means "stop using my behaviour for a while", and telling a
+// friend that this person is stuck is exactly that.
+func (s UserSettings) MayShareStruggles(now time.Time) bool {
+	p := s.Personalization
+	if p == nil {
+		return false
+	}
+	if !p.ShareStruggles {
+		return false
+	}
+	if !p.Enabled {
+		return false
+	}
+	if p.PausedUntil != nil && p.PausedUntil.After(now) {
+		return false
+	}
+	return true
 }
 
 // NotificationSettings controls notification preferences
@@ -425,6 +504,13 @@ func DefaultUserSettings() UserSettings {
 			GoogleCalendar:    true,
 			RecentWorkspaces:  true,
 			RecentlyCompleted: true,
+		},
+		Personalization: &PersonalizationSettings{
+			Enabled: true,
+			// Spelled out rather than left to the zero value: this is the one
+			// consent flag in Kindred that defaults to off, and a reader of this
+			// literal should not have to know that to be sure of it.
+			ShareStruggles: false,
 		},
 	}
 }
