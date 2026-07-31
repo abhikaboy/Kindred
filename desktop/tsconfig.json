@@ -6,7 +6,13 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    // ../shared is outside this root, so its bare imports need pointing back here.
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/*"],
+      "chrono-node": ["./node_modules/chrono-node"],
+      "vitest": ["./node_modules/vitest"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -22,6 +28,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "../shared"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

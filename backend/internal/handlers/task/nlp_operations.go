@@ -126,6 +126,23 @@ type IntentTaskNaturalLanguageOutput struct {
 	} `json:"body"`
 }
 
+// Suggest fields for a task the user is typing (no credit gate — suggestions are additive)
+type SuggestTaskFieldsInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Text     string `json:"text" minLength:"1" maxLength:"1000" doc:"The task text the user is typing" example:"gym tomorrow 7-8am every weekday"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type SuggestTaskFieldsOutput struct {
+	Body struct {
+		CategoryID *string  `json:"categoryId,omitempty" doc:"Suggested existing category id; absent when there is no confident suggestion"`
+		Priority   *int     `json:"priority,omitempty" doc:"Suggested priority (1-3); absent when there is no confident suggestion"`
+		Value      *float64 `json:"value,omitempty" doc:"Suggested difficulty (1-5); absent when there is no confident suggestion"`
+	}
+}
+
 // Operation registrations
 
 func RegisterCreateTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
@@ -159,6 +176,17 @@ func RegisterConfirmTaskNaturalLanguageOperation(api huma.API, handler *Handler)
 		Description: "Create tasks and categories using a previously generated preview payload",
 		Tags:        []string{"tasks", "ai"},
 	}, handler.ConfirmTaskNaturalLanguage)
+}
+
+func RegisterSuggestTaskFieldsOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "suggest-task-fields",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/suggest",
+		Summary:     "Suggest fields for a task being typed",
+		Description: "Infer category, priority and difficulty from partial task text. Additive: returns an empty suggestion instead of an error when AI is unavailable, and consumes no credits.",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.SuggestTaskFields)
 }
 
 func RegisterQueryTasksNaturalLanguageOperation(api huma.API, handler *Handler) {

@@ -3,8 +3,11 @@
     "compilerOptions": {
         "jsx": "react",
         "strict": false,
+        // ../shared is outside this root, so its bare imports need pointing back here.
         "paths": {
-            "@/*": ["./*"]
+            "@/*": ["./*"],
+            "@shared/*": ["../shared/*"],
+            "chrono-node": ["./node_modules/chrono-node"]
         },
         "baseUrl": "."
     },

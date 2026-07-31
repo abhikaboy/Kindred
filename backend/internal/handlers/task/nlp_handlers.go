@@ -840,6 +840,57 @@ func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *Preview
 	return output, nil
 }
 
+// SuggestTaskFields handles POST /v1/user/tasks/suggest. Suggestions are additive, so there is
+// no credit gate and every AI failure path returns an empty suggestion rather than an error.
+func (h *Handler) SuggestTaskFields(ctx context.Context, input *SuggestTaskFieldsInput) (*SuggestTaskFieldsOutput, error) {
+	if input.Body.Text == "" {
+		return nil, huma.Error400BadRequest("Text field is required", nil)
+	}
+
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	timezone := input.Body.Timezone
+	if timezone == "" {
+		timezone = "America/New_York"
+	}
+
+	output := &SuggestTaskFieldsOutput{}
+
+	suggestion, err := h.callGeminiSuggestFlow(ctx, userID, input.Body.Text, timezone)
+	if err != nil {
+		// Retry once, then give up quietly
+		suggestion, err = h.callGeminiSuggestFlow(ctx, userID, input.Body.Text, timezone)
+		if err != nil {
+			slog.LogAttrs(ctx, slog.LevelWarn, "Task field suggestion failed after retry",
+				slog.String("userID", userID),
+				slog.String("error", err.Error()))
+			return output, nil
+		}
+	}
+
+	ownedCategoryIDs, err := h.userCategoryIDs(ctx, userObjID)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Failed to load category ids for suggestion guard",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+		ownedCategoryIDs = nil
+	}
+
+	clean := sanitizeTaskSuggestion(*suggestion, ownedCategoryIDs)
+	output.Body.CategoryID = clean.CategoryID
+	output.Body.Priority = clean.Priority
+	output.Body.Value = clean.Value
+	return output, nil
+}
+
 // ConfirmTaskNaturalLanguage creates tasks from a preview payload, consuming credits.
 func (h *Handler) ConfirmTaskNaturalLanguage(ctx context.Context, input *ConfirmTaskNaturalLanguageInput) (*CreateTaskNaturalLanguageOutput, error) {
 	// Validate input

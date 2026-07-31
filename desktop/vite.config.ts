@@ -10,7 +10,12 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+      // ../shared sits outside this root, so its bare imports must be pointed here.
+      "chrono-node": path.resolve(__dirname, "node_modules/chrono-node"),
+    },
   },
   build: {
     rollupOptions: {
@@ -43,6 +48,8 @@ export default defineConfig(async () => ({
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
+    // Dev server must be allowed to serve ../shared, which sits outside the root.
+    fs: { allow: [path.resolve(__dirname, "..")] },
     // Dev-only proxy so web (localhost:1420) can hit the API without CORS.
     // Tauri desktop has no CORS restriction; prod web sets VITE_API_URL instead.
     proxy: {

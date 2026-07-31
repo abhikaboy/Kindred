@@ -26,6 +26,7 @@ type FlowSet struct {
 	QueryTasksFlow                   *core.Flow[QueryTasksFlowInput, TaskQueryFiltersOutput, struct{}]
 	EditTasksFlow                    *core.Flow[EditTasksFlowInput, EditTasksFlowOutput, struct{}]
 	IntentRouterFlow                 *core.Flow[IntentRouterInput, IntentRouterOutput, struct{}]
+	SuggestTaskFieldsFlow            *core.Flow[SuggestTaskFieldsFlowInput, SuggestTaskFieldsFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -488,6 +489,53 @@ Only include operations that are clearly implied by the user's instruction.`,
 			return *resp, nil
 		})
 
+	// Inline field suggestions for a single task being typed. Dates, times and recurrence
+	// are deliberately excluded — the clients parse those locally.
+	suggestTaskFieldsFlow := genkit.DefineFlow(g, "suggestTaskFieldsFlow",
+		func(ctx context.Context, input SuggestTaskFieldsFlowInput) (SuggestTaskFieldsFlowOutput, error) {
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return SuggestTaskFieldsFlowOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return SuggestTaskFieldsFlowOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are helping a user fill in a single task they are typing. Suggest only the fields you are confident about.
+
+The user's existing workspaces and categories:
+%s
+
+Current time: %s
+User's timezone: %s
+Task text: "%s"
+
+Rules:
+- categoryId: the hex id of exactly ONE existing category from the list above that clearly fits this task. NEVER invent a new category and NEVER return an id that is not in the list above. Omit when no listed category clearly fits.
+- priority: 1=low, 2=medium, 3=high, inferred from urgency cues ("urgently" -> 3, "maybe" -> 1). Omit when there is no cue.
+- value: difficulty from 1 (trivial) to 5 (very hard). Omit when the text gives no sense of effort.
+- Do NOT return dates, times, deadlines or recurrence. Those are handled elsewhere.
+- Omit every field you are not reasonably confident about. Omitting is always better than guessing.`,
+				categorySummary, time.Now().UTC().Format(time.RFC3339), input.Timezone, input.Text)
+
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.SuggestTaskFields")
+			defer span.End()
+			resp, _, err := genkit.GenerateData[SuggestTaskFieldsFlowOutput](ctx, g,
+				ai.WithPrompt(prompt),
+			)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return SuggestTaskFieldsFlowOutput{}, err
+			}
+			if resp == nil {
+				return SuggestTaskFieldsFlowOutput{}, nil
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -498,5 +546,6 @@ Only include operations that are clearly implied by the user's instruction.`,
 		QueryTasksFlow:                   queryTasksFlow,
 		EditTasksFlow:                    editTasksFlow,
 		IntentRouterFlow:                 intentRouterFlow,
+		SuggestTaskFieldsFlow:            suggestTaskFieldsFlow,
 	}
 }

@@ -33,6 +33,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	// Static single-segment POSTs must be registered before /{category}: Fiber
 	// matches in registration order, so /{category} would otherwise shadow /log.
 	RegisterLogTasksOperation(api, handler)
+	RegisterSuggestTaskFieldsOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)
 	RegisterGetTasksOperation(api, handler)
 	RegisterGetTaskOperation(api, handler)

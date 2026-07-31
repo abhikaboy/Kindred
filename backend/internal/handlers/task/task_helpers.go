@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"reflect"
 	"strings"
 	"sync"
@@ -12,7 +13,9 @@ import (
 	"unicode"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // callGeminiFlow uses reflection to call the Genkit flow without circular import
@@ -327,6 +330,116 @@ func (h *Handler) callGeminiIntentFlow(ctx context.Context, userID, text, timezo
 	}
 
 	return &result, nil
+}
+
+// --- Suggest task fields flow local mirror types (avoid circular import with gemini package) ---
+
+// TaskFieldSuggestionLocal mirrors gemini.SuggestTaskFieldsFlowOutput.
+type TaskFieldSuggestionLocal struct {
+	CategoryID *string  `json:"categoryId,omitempty"`
+	Priority   *int     `json:"priority,omitempty"`
+	Value      *float64 `json:"value,omitempty"`
+}
+
+// callGeminiSuggestFlow calls the Gemini SuggestTaskFieldsFlow using reflection to avoid circular imports.
+func (h *Handler) callGeminiSuggestFlow(ctx context.Context, userID, text, timezone string) (*TaskFieldSuggestionLocal, error) {
+	if h.geminiService == nil {
+		return nil, fmt.Errorf("gemini service not available")
+	}
+
+	svcValue := reflect.ValueOf(h.geminiService)
+	flowField := svcValue.Elem().FieldByName("SuggestTaskFieldsFlow")
+	if !flowField.IsValid() {
+		return nil, fmt.Errorf("gemini suggest task fields flow not configured")
+	}
+
+	runMethod := flowField.MethodByName("Run")
+	if !runMethod.IsValid() {
+		return nil, fmt.Errorf("gemini suggest task fields flow Run method not available")
+	}
+
+	inputType := runMethod.Type().In(1)
+	inputValue := reflect.New(inputType).Elem()
+	inputValue.FieldByName("UserID").SetString(userID)
+	inputValue.FieldByName("Text").SetString(text)
+	inputValue.FieldByName("Timezone").SetString(timezone)
+
+	callResults := runMethod.Call([]reflect.Value{
+		reflect.ValueOf(ctx),
+		inputValue,
+	})
+
+	if len(callResults) != 2 {
+		return nil, fmt.Errorf("unexpected gemini flow response structure")
+	}
+
+	if !callResults[1].IsNil() {
+		if err, ok := callResults[1].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unexpected error type from gemini flow")
+	}
+
+	var result TaskFieldSuggestionLocal
+	resultBytes, err := json.Marshal(callResults[0].Interface())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse AI response: %w", err)
+	}
+	if err := json.Unmarshal(resultBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse AI response structure: %w", err)
+	}
+
+	return &result, nil
+}
+
+// userCategoryIDs returns the hex ids of every category the user owns.
+func (h *Handler) userCategoryIDs(ctx context.Context, userID primitive.ObjectID) ([]string, error) {
+	cursor, err := h.service.Tasks.Find(ctx, bson.M{"user": userID}, options.Find().SetProjection(bson.M{"_id": 1}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var docs []struct {
+		ID primitive.ObjectID `bson:"_id"`
+	}
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, err
+	}
+
+	ids := make([]string, 0, len(docs))
+	for _, doc := range docs {
+		ids = append(ids, doc.ID.Hex())
+	}
+	return ids, nil
+}
+
+// sanitizeTaskSuggestion drops a categoryId the user doesn't own, clamps priority into 1-3
+// and value into 1-5. Non-positive numbers are the JSON zero value, so they're omitted, not clamped up.
+func sanitizeTaskSuggestion(raw TaskFieldSuggestionLocal, ownedCategoryIDs []string) TaskFieldSuggestionLocal {
+	var clean TaskFieldSuggestionLocal
+
+	if raw.CategoryID != nil {
+		for _, id := range ownedCategoryIDs {
+			if id == *raw.CategoryID {
+				owned := *raw.CategoryID
+				clean.CategoryID = &owned
+				break
+			}
+		}
+	}
+
+	if raw.Priority != nil && *raw.Priority > 0 {
+		priority := min(*raw.Priority, 3)
+		clean.Priority = &priority
+	}
+
+	if raw.Value != nil && *raw.Value > 0 {
+		value := math.Min(*raw.Value, 5)
+		clean.Value = &value
+	}
+
+	return clean
 }
 
 // mergeTaskWithEdits builds an UpdateTaskDocument by copying the current task's core fields

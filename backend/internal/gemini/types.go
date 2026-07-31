@@ -337,6 +337,22 @@ type IntentRouterOutput struct {
 	Ops []IntentOp `json:"ops" jsonschema_description:"Ordered list of operations decomposed from the user's utterance. Edits come first, then deletes, then creates."`
 }
 
+// --- Suggest task fields flow types ---
+
+type SuggestTaskFieldsFlowInput struct {
+	UserID   string `json:"userId"`
+	Text     string `json:"text"`
+	Timezone string `json:"timezone" jsonschema_description:"User's timezone in IANA format (e.g., 'America/New_York')."`
+}
+
+// SuggestTaskFieldsFlowOutput holds suggestions for one task the user is typing.
+// A nil field means "no confident suggestion"; time fields are absent by design (parsed client-side).
+type SuggestTaskFieldsFlowOutput struct {
+	CategoryID *string  `json:"categoryId,omitempty" jsonschema_description:"Hex ObjectID of ONE of the user's existing categories. Omit unless a listed category clearly fits."`
+	Priority   *int     `json:"priority,omitempty"   jsonschema_description:"Priority: 1=low, 2=medium, 3=high. Omit when the text gives no urgency cue."`
+	Value      *float64 `json:"value,omitempty"      jsonschema_description:"Difficulty from 1 (trivial) to 5 (very hard). Omit when the text gives no sense of effort."`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`
