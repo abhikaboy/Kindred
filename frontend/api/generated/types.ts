@@ -2651,7 +2651,7 @@ export interface paths {
         head?: never;
         /**
          * Update personalization settings
-         * @description Turn personalization on or off, or pause it until a given time. An omitted field is left unchanged; enabling also clears any active pause.
+         * @description Turn personalization on or off, pause it until a given time, or opt in to letting friends be prompted when you are stuck. An omitted field is left unchanged; enabling also clears any active pause, but never turns struggle sharing on.
          */
         patch: operations["update-personalization-settings"];
         trace?: never;
@@ -6563,6 +6563,7 @@ export interface components {
             enabled: boolean;
             /** Format: date-time */
             pausedUntil?: string;
+            shareStruggles: boolean;
         };
         PostDocumentAPI: {
             /**
@@ -8006,6 +8007,8 @@ export interface components {
              * @description Pause personalization until this instant. The worker skips the user while it is in the future.
              */
             pausedUntil?: string;
+            /** @description Opt in to letting close friends be prompted when you are stuck — a stalled task, a streak about to break. Defaults to false and stays false unless this is sent as true. Achievement-based kudos prompts do not depend on it. */
+            shareStruggles?: boolean;
         };
         UpdatePostOutputBody: {
             /**
