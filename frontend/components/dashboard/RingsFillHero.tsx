@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated as RNAnimated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { RING_COLORS } from '@shared/rings';
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 
@@ -11,11 +12,11 @@ const CENTER = SIZE / 2;
 const DURATION = 900;
 const STAGGER = 220;
 
-// Three concentric rings, brand purple → pink, drawn outer to inner.
+// Three concentric rings in the plan/do/share colors, drawn outer to inner.
 const RINGS = [
-    { color: '#854DFF', radius: (SIZE - STROKE) / 2 },
-    { color: '#A87BFF', radius: (SIZE - STROKE) / 2 - (STROKE + GAP) },
-    { color: '#FF6EC7', radius: (SIZE - STROKE) / 2 - 2 * (STROKE + GAP) },
+    { color: RING_COLORS.plan, radius: (SIZE - STROKE) / 2 },
+    { color: RING_COLORS.do, radius: (SIZE - STROKE) / 2 - (STROKE + GAP) },
+    { color: RING_COLORS.share, radius: (SIZE - STROKE) / 2 - 2 * (STROKE + GAP) },
 ];
 
 interface RingsFillHeroProps {

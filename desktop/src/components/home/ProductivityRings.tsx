@@ -3,8 +3,9 @@ import { Check } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday, type RingProgress } from "@/hooks/useRings";
+import { RING_COLORS } from "@shared/rings";
 
-// Matches mobile: three separate rings, primary-purple fill on a neutral track.
+// Matches mobile: three separate rings, one color each, on a neutral track.
 const SIZE = 80;
 const STROKE = 6;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -21,7 +22,7 @@ function fraction(p: RingProgress): number {
   return Math.min(Math.max(p.current / p.target, 0), 1);
 }
 
-function Ring({ label, progress }: { label: string; progress: RingProgress }) {
+function Ring({ label, progress, color }: { label: string; progress: RingProgress; color: string }) {
   const target = fraction(progress);
   const [fill, setFill] = useState(0);
   useEffect(() => {
@@ -50,12 +51,12 @@ function Ring({ label, progress }: { label: string; progress: RingProgress }) {
             strokeLinecap="round"
             strokeDasharray={CIRC}
             strokeDashoffset={CIRC * (1 - fill)}
-            style={{ stroke: "var(--primary)", transition: "stroke-dashoffset 800ms ease-out" }}
+            style={{ stroke: color, transition: "stroke-dashoffset 800ms ease-out" }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           {progress.closed ? (
-            <Check size={24} weight="bold" className="text-primary" />
+            <Check size={24} weight="bold" style={{ color }} />
           ) : (
             <ThemedText type="defaultSemiBold" className="text-sm">
               {progress.current}/{progress.target}
@@ -89,7 +90,7 @@ export function ProductivityRings(): React.JSX.Element {
   return (
     <div className="flex items-start gap-8">
       {RINGS.map((r) => (
-        <Ring key={r.key} label={r.label} progress={data.ring_state[r.key]} />
+        <Ring key={r.key} label={r.label} progress={data.ring_state[r.key]} color={RING_COLORS[r.key]} />
       ))}
     </div>
   );

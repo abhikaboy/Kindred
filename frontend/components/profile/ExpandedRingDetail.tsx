@@ -5,10 +5,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter, type Href } from "expo-router";
 import { RingState } from "@/api/types";
+import { RING_COLORS } from "@shared/rings";
 
 type RingKey = "plan" | "do" | "share";
-
-const PRIMARY_COLOR = "#854DFF";
 
 const RING_LABELS: Record<RingKey, string> = {
     plan: "Plan",
@@ -139,7 +138,7 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
                                         cx={MINI_RING_SIZE / 2}
                                         cy={MINI_RING_SIZE / 2}
                                         r={MINI_RADIUS}
-                                        stroke={PRIMARY_COLOR}
+                                        stroke={RING_COLORS[ringKey]}
                                         strokeWidth={MINI_STROKE}
                                         fill="none"
                                         strokeDasharray={`${MINI_CIRCUMFERENCE}`}
@@ -164,7 +163,7 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
                 {ctas.map((cta) => (
                     <TouchableOpacity
                         key={cta.label}
-                        style={styles.ctaButton}
+                        style={[styles.ctaButton, { backgroundColor: RING_COLORS[ringKey] }]}
                         onPress={() => router.push(cta.route)}
                         activeOpacity={0.7}
                     >
@@ -207,7 +206,6 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     ctaButton: {
-        backgroundColor: PRIMARY_COLOR,
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 20,

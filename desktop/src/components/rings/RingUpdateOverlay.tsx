@@ -3,12 +3,12 @@ import { Check } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { fireConfetti } from "@/lib/confetti";
 import { useRingUpdate } from "@/components/rings/RingUpdateContext";
+import { ringColor } from "@shared/rings";
 
 const SIZE = 88;
 const STROKE = 7;
 const R = (SIZE - STROKE) / 2;
 const CIRC = 2 * Math.PI * R;
-const PRIMARY = "#854DFF";
 const TRACK = "rgba(255,255,255,0.18)";
 
 const LABELS: Record<string, string> = { plan: "Plan", do: "Do", share: "Share" };
@@ -74,6 +74,7 @@ export function RingUpdateOverlay(): JSX.Element | null {
   const cur = clampFrac(currentDelta.current, currentDelta.target);
   const offset = CIRC * (1 - (arc ? cur : prev));
   const label = LABELS[currentDelta.ring] ?? currentDelta.ring;
+  const color = ringColor(currentDelta.ring);
   const celebration = currentDelta.just_closed_all ? "All rings closed!" : `${label} ring closed!`;
 
   return (
@@ -106,7 +107,7 @@ export function RingUpdateOverlay(): JSX.Element | null {
               cy={SIZE / 2}
               r={R}
               fill="none"
-              stroke={PRIMARY}
+              stroke={color}
               strokeWidth={STROKE}
               strokeLinecap="round"
               strokeDasharray={CIRC}
@@ -116,7 +117,7 @@ export function RingUpdateOverlay(): JSX.Element | null {
           </svg>
           <div className="absolute grid place-items-center">
             {closed ? (
-              <Check size={30} weight="bold" style={{ color: PRIMARY }} />
+              <Check size={30} weight="bold" style={{ color }} />
             ) : (
               <span className="text-[15px] font-semibold text-white">
                 {currentDelta.current}/{currentDelta.target}

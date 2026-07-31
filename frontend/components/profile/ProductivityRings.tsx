@@ -17,6 +17,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
 import { useAuth } from "@/hooks/useAuth";
 import { RingProgress, RingState, RingRewardResponse } from "@/api/types";
+import { RING_COLORS } from "@shared/rings";
 import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
@@ -35,17 +36,18 @@ const RING_SIZE = 80;
 const STROKE_WIDTH = 6;
 const RADIUS = (RING_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const PRIMARY_COLOR = "#854DFF";
 
 type RingKey = "plan" | "do" | "share";
 
 function RingCircle({
     progress,
     trackColor,
+    color,
     delay = 0,
 }: {
     progress: RingProgress;
     trackColor: string;
+    color: string;
     delay?: number; // one-time entrance delay (staggered tutorial reveal)
 }) {
     const fraction =
@@ -88,7 +90,7 @@ function RingCircle({
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RADIUS}
-                stroke={PRIMARY_COLOR}
+                stroke={color}
                 strokeWidth={STROKE_WIDTH}
                 fill="none"
                 strokeDasharray={`${CIRCUMFERENCE}`}
@@ -247,13 +249,14 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                             <RingCircle
                                 progress={progress}
                                 trackColor={trackColor}
+                                color={RING_COLORS[key]}
                                 delay={staggerMs ? index * staggerMs : 0}
                             />
                             <View style={styles.ringCenter}>
                                 {progress.closed ? (
                                     <Check
                                         size={24}
-                                        color={PRIMARY_COLOR}
+                                        color={RING_COLORS[key]}
                                         weight="bold"
                                     />
                                 ) : (
@@ -430,10 +433,10 @@ const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle
                         activeOpacity={progress.closed ? 1 : 0.7}
                     >
                         <View style={styles.ringWrapper}>
-                            <RingCircle progress={progress} trackColor={trackColor} />
+                            <RingCircle progress={progress} trackColor={trackColor} color={RING_COLORS[key]} />
                             <View style={styles.ringCenter}>
                                 {progress.closed ? (
-                                    <Check size={24} color={PRIMARY_COLOR} weight="bold" />
+                                    <Check size={24} color={RING_COLORS[key]} weight="bold" />
                                 ) : (
                                     <ThemedText
                                         style={[styles.ringText, { color: ThemedColor.text }]}

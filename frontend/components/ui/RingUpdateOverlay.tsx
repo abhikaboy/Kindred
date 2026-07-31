@@ -15,6 +15,7 @@ import { Check } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useTimeouts } from "@/hooks/useTimeouts";
+import { ringColor } from "@shared/rings";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
     Dimensions.get("screen");
@@ -23,7 +24,6 @@ const RING_SIZE = 88;
 const STROKE_WIDTH = 7;
 const RADIUS = (RING_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const PRIMARY_COLOR = "#854DFF";
 const TRACK_COLOR = "rgba(255,255,255,0.18)";
 
 const RING_LABELS: Record<"plan" | "do" | "share", string> = {
@@ -236,6 +236,7 @@ export const RingUpdateOverlay: React.FC = () => {
     });
 
     const label = RING_LABELS[currentDelta.ring] ?? currentDelta.ring;
+    const color = ringColor(currentDelta.ring);
     const celebrationText = currentDelta.just_closed_all
         ? "All rings closed!"
         : `${label} ring closed!`;
@@ -284,7 +285,7 @@ export const RingUpdateOverlay: React.FC = () => {
                             cx={RING_SIZE / 2}
                             cy={RING_SIZE / 2}
                             r={RADIUS}
-                            stroke={PRIMARY_COLOR}
+                            stroke={color}
                             strokeWidth={STROKE_WIDTH}
                             fill="none"
                             strokeDasharray={`${CIRCUMFERENCE}`}
@@ -304,7 +305,7 @@ export const RingUpdateOverlay: React.FC = () => {
                     <Animated.View
                         style={[styles.ringCenter, { opacity: checkOpacity }]}
                     >
-                        <Check size={30} color={PRIMARY_COLOR} weight="bold" />
+                        <Check size={30} color={color} weight="bold" />
                     </Animated.View>
                 </View>
                 {currentDelta.just_closed && (

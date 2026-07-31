@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Check } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday, type RingProgress } from "@/hooks/useRings";
+import { RING_COLORS } from "@shared/rings";
 
-// Compact echo of home's ProductivityRings: primary-purple fill on a neutral track.
+// Compact echo of home's ProductivityRings: one color per ring on a neutral track.
 const SIZE = 60;
 const STROKE = 6;
 const R = (SIZE - STROKE) / 2;
@@ -18,7 +19,7 @@ const RINGS = [
 
 const frac = (p: RingProgress) => (p.target > 0 ? Math.min(Math.max(p.current / p.target, 0), 1) : 0);
 
-function MiniRing({ label, progress, reveal }: { label: string; progress: RingProgress; reveal: boolean }): JSX.Element {
+function MiniRing({ label, progress, reveal, color }: { label: string; progress: RingProgress; reveal: boolean; color: string }): JSX.Element {
   const f = reveal ? frac(progress) : 0;
   return (
     <div className="flex flex-col items-center gap-1.5">
@@ -34,12 +35,12 @@ function MiniRing({ label, progress, reveal }: { label: string; progress: RingPr
             strokeLinecap="round"
             strokeDasharray={CIRC}
             strokeDashoffset={CIRC * (1 - f)}
-            style={{ stroke: "var(--primary)", transition: "stroke-dashoffset 800ms ease-out" }}
+            style={{ stroke: color, transition: "stroke-dashoffset 800ms ease-out" }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           {progress.closed ? (
-            <Check size={20} weight="bold" className="text-primary" />
+            <Check size={20} weight="bold" style={{ color }} />
           ) : (
             <ThemedText type="defaultSemiBold" className="text-xs tabular-nums">
               {progress.current}/{progress.target}
@@ -85,7 +86,7 @@ export function FloatingRings(): JSX.Element | null {
       </ThemedText>
       <div className="flex items-start gap-5">
         {RINGS.map((r) => (
-          <MiniRing key={r.key} label={r.label} progress={data.ring_state[r.key]} reveal={reveal} />
+          <MiniRing key={r.key} label={r.label} progress={data.ring_state[r.key]} reveal={reveal} color={RING_COLORS[r.key]} />
         ))}
       </div>
     </button>
