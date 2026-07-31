@@ -1,4 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+    useState,
+    useRef,
+    useEffect,
+    useCallback,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
 import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -31,6 +38,7 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
+import { formatMinutesToTime } from "@/utils/timeUtils";
 import { logger } from "@/utils/logger";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -42,29 +50,25 @@ export interface ScheduleTimeRange {
     endMinutes: number;
 }
 
+export interface CalendarViewHandle {
+    clearGhost: () => void;
+}
+
 interface CalendarViewProps {
     selectedDate: Date;
     animatedScrollY: SharedValue<number>;
     scrollViewRef: AnimatedRef<Animated.ScrollView>;
     headerContent?: React.ReactNode;
-    onDragCreateComplete?: (range: ScheduleTimeRange) => void;
+    onGhostRangeChange?: (range: ScheduleTimeRange | null) => void;
 }
 
-const formatMinutesToTime = (totalMinutes: number): string => {
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const dh = h % 12 || 12;
-    return `${dh}:${m.toString().padStart(2, "0")} ${ampm}`;
-};
-
-const CalendarViewComponent: React.FC<CalendarViewProps> = ({
+const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(({
     selectedDate,
     animatedScrollY,
     scrollViewRef,
     headerContent,
-    onDragCreateComplete,
-}) => {
+    onGhostRangeChange,
+}, ref) => {
     const ThemedColor = useThemeColor();
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
     const { openModal } = useCreateModal();
@@ -91,6 +95,12 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
     useEffect(() => {
         ghostBlockVisibleRef.current = ghostBlockVisible;
     }, [ghostBlockVisible]);
+
+    // Held in a ref so the dismiss/label callbacks stay stable across renders
+    const onGhostRangeChangeRef = useRef(onGhostRangeChange);
+    useEffect(() => {
+        onGhostRangeChangeRef.current = onGhostRangeChange;
+    }, [onGhostRangeChange]);
 
     // Shared values for pinch gesture
     const hourHeightShared = useSharedValue(60);
@@ -155,6 +165,10 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
             setGhostTimeLabel(
                 `${formatMinutesToTime(startMins)} - ${formatMinutesToTime(endMins)}`
             );
+            onGhostRangeChangeRef.current?.({
+                startMinutes: startMins,
+                endMinutes: endMins,
+            });
         },
         []
     );
@@ -177,40 +191,43 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                 `${formatMinutesToTime(snapped)} - ${formatMinutesToTime(endMins)}`
             );
             setGhostBlockVisible(true);
+            ghostBlockVisibleRef.current = true;
+            onGhostRangeChangeRef.current?.({
+                startMinutes: snapped,
+                endMinutes: endMins,
+            });
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         },
         [hourHeightShared]
     );
 
-    const handleGhostConfirm = useCallback(() => {
-        const s = ghostStartMinutes.value;
-        const e = ghostEndMinutes.value;
-        setGhostBlockVisible(false);
-        onDragCreateComplete?.({ startMinutes: s, endMinutes: e });
-    }, [onDragCreateComplete]);
-
     const handleGhostDismiss = useCallback(() => {
+        if (!ghostBlockVisibleRef.current) return;
+        ghostBlockVisibleRef.current = false;
         setGhostBlockVisible(false);
+        onGhostRangeChangeRef.current?.(null);
     }, []);
+
+    useImperativeHandle(ref, () => ({ clearGhost: handleGhostDismiss }), [
+        handleGhostDismiss,
+    ]);
 
     const handleGridTapJS = useCallback(
         (y: number) => {
             if (ghostBlockVisibleRef.current) {
-                // Check if tap is inside the ghost block range → confirm, else dismiss
+                // A tap inside the ghost is a no-op; outside dismisses it
                 const topPx =
                     (ghostStartMinutes.value / 60) * hourHeightShared.value;
                 const bottomPx =
                     (ghostEndMinutes.value / 60) * hourHeightShared.value;
-                if (y >= topPx - 12 && y <= bottomPx + 12) {
-                    handleGhostConfirm();
-                } else {
+                if (y < topPx - 12 || y > bottomPx + 12) {
                     handleGhostDismiss();
                 }
             } else {
                 showGhostBlock(y);
             }
         },
-        [showGhostBlock, handleGhostConfirm, handleGhostDismiss, hourHeightShared]
+        [showGhostBlock, handleGhostDismiss, hourHeightShared]
     );
 
     // --- Tap Gesture (RNGH — works inside GestureDetector) ---
@@ -372,12 +389,12 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
 
     // Dismiss ghost on date change
     useEffect(() => {
-        setGhostBlockVisible(false);
-    }, [selectedDate]);
+        handleGhostDismiss();
+    }, [selectedDate, handleGhostDismiss]);
 
     // Context menu handlers — dismiss ghost block when opening context menu
     const handleLongPress = (task: any) => {
-        setGhostBlockVisible(false);
+        handleGhostDismiss();
         setSelectedTask(task);
         setContextMenuVisible(true);
     };
@@ -741,7 +758,6 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
                                         endMinutes={ghostEndMinutes}
                                         hourHeightShared={hourHeightShared}
                                         timeLabel={ghostTimeLabel}
-                                        onConfirm={handleGhostConfirm}
                                         onTimeLabelUpdate={updateGhostLabel}
                                     />
                                 )}
@@ -916,7 +932,9 @@ const CalendarViewComponent: React.FC<CalendarViewProps> = ({
             {alertElement}
         </View>
     );
-};
+});
+
+CalendarViewComponent.displayName = "CalendarView";
 
 const styles = StyleSheet.create({
     scheduleSection: {

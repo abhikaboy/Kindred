@@ -8,7 +8,6 @@ import Animated, {
     runOnJS,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 const HANDLE_SIZE = 22;
@@ -18,7 +17,6 @@ interface TimeRangeGhostBlockProps {
     endMinutes: SharedValue<number>;
     hourHeightShared: SharedValue<number>;
     timeLabel: string;
-    onConfirm: () => void;
     onTimeLabelUpdate: (startMins: number, endMins: number) => void;
 }
 
@@ -27,7 +25,6 @@ export const TimeRangeGhostBlock: React.FC<TimeRangeGhostBlockProps> = ({
     endMinutes,
     hourHeightShared,
     timeLabel,
-    onConfirm,
     onTimeLabelUpdate,
 }) => {
     const ThemedColor = useThemeColor();
@@ -121,14 +118,6 @@ export const TimeRangeGhostBlock: React.FC<TimeRangeGhostBlockProps> = ({
                         {timeLabel}
                     </Animated.Text>
                 </Animated.View>
-                <View
-                    style={[
-                        styles.confirmBadge,
-                        { backgroundColor: ThemedColor.primary },
-                    ]}
-                >
-                    <Ionicons name="checkmark" size={14} color="#fff" />
-                </View>
             </View>
 
             {/* Bottom handle */}
@@ -196,12 +185,5 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: "Outfit",
         fontWeight: "600",
-    },
-    confirmBadge: {
-        width: 26,
-        height: 26,
-        borderRadius: 13,
-        alignItems: "center",
-        justifyContent: "center",
     },
 });

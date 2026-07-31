@@ -24,7 +24,7 @@ import Animated, {
 import { ThemedText } from "@/components/ThemedText";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
-import { ScheduleTaskSheet } from "@/components/daily/ScheduleTaskSheet";
+import { TimeSelectionPeek } from "@/components/daily/TimeSelectionPeek";
 import PlannerHeader from "@/components/daily/PlannerHeader";
 import WeekStrip, { mondayOf, DropRectValue } from "@/components/daily/WeekStrip";
 import MonthGrid from "@/components/daily/MonthGrid";
@@ -37,8 +37,9 @@ import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { useTaskCountsByDay } from "@/hooks/useTaskCountsByDay";
 import { fromDayKey } from "@/utils/taskCountsByDay";
 import { rectAtPoint } from "@/utils/dragHitTest";
-import { updateTaskDeadlineAPI } from "@/api/task";
+import { updateTaskDeadlineAPI, updateTaskStartAPI } from "@/api/task";
 import { showToast } from "@/utils/showToast";
+import { minutesToDate } from "@/utils/timeUtils";
 
 const dayLabel = (date: Date): string => {
     const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -65,7 +66,7 @@ const Daily = ({ embedded }: Props) => {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const { loadTaskData, resetTaskCreation, setStartDate, setStartTime, setDeadline } = useTaskCreation();
-    const { setSelected, fetchWorkspaces } = useTasks();
+    const { fetchWorkspaces, updateTask } = useTasks();
     const { openModal } = useCreateModal();
     const { setIsDrawerOpen } = useDrawer();
     const params = useLocalSearchParams();
@@ -87,8 +88,10 @@ const Daily = ({ embedded }: Props) => {
     // Scheduling state (kept from previous version)
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
     const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
-    const [showScheduleSheet, setShowScheduleSheet] = useState(false);
-    const [scheduleTimeRange, setScheduleTimeRange] = useState<ScheduleTimeRange | null>(null);
+    // Live time selection on the timeline. CalendarView owns the ghost block; this mirrors it.
+    const [ghostRange, setGhostRange] = useState<ScheduleTimeRange | null>(null);
+    const [assigningTaskId, setAssigningTaskId] = useState<string | null>(null);
+    const calendarViewRef = useRef<{ clearGhost: () => void }>(null);
 
     // Defer heavy CalendarView rendering until after interactions complete
     useEffect(() => {
@@ -198,20 +201,54 @@ const Daily = ({ embedded }: Props) => {
         });
     };
 
-    const handleDragCreateComplete = useCallback((range: ScheduleTimeRange) => {
-        timelineHintDone();
-        setScheduleTimeRange(range);
-        setShowScheduleSheet(true);
+    const handleGhostRangeChange = useCallback((range: ScheduleTimeRange | null) => {
+        if (range) timelineHintDone();
+        setGhostRange(range);
     }, [timelineHintDone]);
 
-    const handleCreateNewFromRange = useCallback((startTime: Date, endTime: Date, workspaceName: string) => {
+    const handleAssignToRange = useCallback(async (task: any) => {
+        if (!ghostRange || !task.id || !task.categoryID) return;
+        const startTime = minutesToDate(selectedDate, ghostRange.startMinutes);
+        const endTime = minutesToDate(selectedDate, ghostRange.endMinutes);
+
+        setAssigningTaskId(task.id);
+        updateTask(task.categoryID, task.id, {
+            startDate: startTime.toISOString(),
+            startTime: startTime.toISOString(),
+            deadline: endTime.toISOString(),
+        });
+        try {
+            await Promise.all([
+                updateTaskStartAPI(task.categoryID, task.id, startTime, startTime),
+                updateTaskDeadlineAPI(task.categoryID, task.id, endTime),
+            ]);
+            calendarViewRef.current?.clearGhost();
+        } catch (e) {
+            // Leave the selection up so the user can retry
+            updateTask(task.categoryID, task.id, {
+                startDate: task.startDate || null,
+                startTime: task.startTime || null,
+                deadline: task.deadline || null,
+            });
+            showToast("Couldn't schedule task", "danger");
+        } finally {
+            setAssigningTaskId(null);
+        }
+    }, [ghostRange, selectedDate, updateTask]);
+
+    const handleCreateNewFromRange = useCallback(() => {
+        if (!ghostRange) return;
         resetTaskCreation();
-        setSelected(workspaceName);
         setStartDate(selectedDate);
-        setStartTime(startTime);
-        setDeadline(endTime);
-        setTimeout(() => openModal({ screen: Screen.STANDARD }), 300);
-    }, [selectedDate, resetTaskCreation, setSelected, setStartDate, setStartTime, setDeadline, openModal]);
+        setStartTime(minutesToDate(selectedDate, ghostRange.startMinutes));
+        setDeadline(minutesToDate(selectedDate, ghostRange.endMinutes));
+        openModal({ screen: Screen.STANDARD });
+        calendarViewRef.current?.clearGhost();
+    }, [ghostRange, selectedDate, resetTaskCreation, setStartDate, setStartTime, setDeadline, openModal]);
+
+    const handleCancelSelection = useCallback(() => {
+        calendarViewRef.current?.clearGhost();
+    }, []);
 
     const listScrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -302,10 +339,11 @@ const Daily = ({ embedded }: Props) => {
                                 )}
                                 {shouldRenderCalendar && (
                                     <CalendarView
+                                        ref={calendarViewRef}
                                         selectedDate={selectedDate}
                                         animatedScrollY={calendarAnimatedScrollY}
                                         scrollViewRef={calendarScrollViewRef}
-                                        onDragCreateComplete={handleDragCreateComplete}
+                                        onGhostRangeChange={handleGhostRangeChange}
                                     />
                                 )}
                             </View>
@@ -326,24 +364,27 @@ const Daily = ({ embedded }: Props) => {
                     </View>
                 )}
 
-                <UnscheduledTray
-                    tasks={tasksUnscheduled}
-                    hiddenIds={hiddenIds}
-                    onDragStart={() => {}}
-                    onDragMove={handleDragMove}
-                    onDragEnd={handleDragEnd}
-                    onPressChip={(t) => handleQuickSchedule(t, "deadline")}
-                    hintVisible={dragHintReady}
-                />
-
-                <ScheduleTaskSheet
-                    visible={showScheduleSheet}
-                    setVisible={setShowScheduleSheet}
-                    timeRange={scheduleTimeRange}
-                    selectedDate={selectedDate}
-                    tasksUnscheduled={tasksUnscheduled}
-                    onCreateNew={handleCreateNewFromRange}
-                />
+                {ghostRange ? (
+                    <TimeSelectionPeek
+                        range={ghostRange}
+                        selectedDate={selectedDate}
+                        tasks={tasksUnscheduled}
+                        assigningTaskId={assigningTaskId}
+                        onAssign={handleAssignToRange}
+                        onCreateNew={handleCreateNewFromRange}
+                        onCancel={handleCancelSelection}
+                    />
+                ) : (
+                    <UnscheduledTray
+                        tasks={tasksUnscheduled}
+                        hiddenIds={hiddenIds}
+                        onDragStart={() => {}}
+                        onDragMove={handleDragMove}
+                        onDragEnd={handleDragEnd}
+                        onPressChip={(t) => handleQuickSchedule(t, "deadline")}
+                        hintVisible={dragHintReady}
+                    />
+                )}
             </View>
     );
 

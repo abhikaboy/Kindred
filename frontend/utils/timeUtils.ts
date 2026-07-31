@@ -102,3 +102,19 @@ export const reminderRelativeLabel = (
 export const combineDateAndTime = (date: Date, time: Date): Date => {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.getHours(), time.getMinutes(), 0, 0);
 };
+
+/** Minutes since midnight to a 12-hour clock label, e.g. 570 -> "9:30 AM" */
+export const formatMinutesToTime = (totalMinutes: number): string => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const dh = h % 12 || 12;
+    return `${dh}:${m.toString().padStart(2, "0")} ${ampm}`;
+};
+
+/** A copy of baseDate at minutes-since-midnight, seconds/ms zeroed. */
+export const minutesToDate = (baseDate: Date, totalMinutes: number): Date => {
+    const d = new Date(baseDate);
+    d.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
+    return d;
+};
