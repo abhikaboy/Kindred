@@ -5,7 +5,7 @@ import { PropertyPill } from "@/components/create/PropertyPill";
 import { cn } from "@/lib/utils";
 
 // 0 none, 1 low, 2 med, 3 high — 1/2/3 colored green/amber/red (mirrors TaskItem).
-const PRIORITIES = [
+export const PRIORITIES = [
   { value: 0, label: "No priority", dot: "" },
   { value: 1, label: "Low", dot: "bg-emerald-500" },
   { value: 2, label: "Medium", dot: "bg-amber-500" },

@@ -10,7 +10,6 @@ type TaskCreationContextType = {
     loadTaskData: (taskData: any) => void; // Function to load task data for editing
     showAdvanced: boolean;
     setShowAdvanced: (show: boolean) => void;
-    suggestion: string;
     priority: number;
     value: number;
     recurring: boolean;
@@ -66,9 +65,8 @@ type TaskCreationContextType = {
 const TaskCreationContext = createContext<TaskCreationContextType | undefined>(undefined);
 
 export const TaskCreationProvider = ({ children }: { children: React.ReactNode }) => {
-    const [taskName, setTaskNameState] = useState("");
+    const [taskName, setTaskName] = useState("");
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [suggestion, setSuggestion] = useState("");
     const [priority, setPriority] = useState(1);
     const [value, setValue] = useState(1);
     const [recurring, setRecurring] = useState(false);
@@ -175,24 +173,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         });
     };
 
-    const setTaskName = (name: string) => {
-        setTaskNameState(name);
-        // check if the name has the word "at {number}" or "by {number}" or a date
-        if (name.includes("at") || name.includes("by") || name.includes("on")) {
-            setShowAdvanced(true);
-            // get the number or date from the name
-            const number = name.match(/\d+/);
-            if (number) {
-                setSuggestion(number[0]);
-            }
-        } else {
-            setSuggestion("");
-        }
-    };
-
     const resetTaskCreation = () => {
         setTaskName("");
-        setSuggestion("");
         setPriority(1);
         setValue(1);
         setRecurring(false);
@@ -273,7 +255,6 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         loadTaskData,
         showAdvanced,
         setShowAdvanced,
-        suggestion,
         priority,
         value,
         recurring,
@@ -311,7 +292,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         copySourceTaskId,
         setCopySourceTaskId,
     }), [
-        taskName, showAdvanced, suggestion, priority, value,
+        taskName, showAdvanced, priority, value,
         recurring, recurFrequency, recurDetails, deadline,
         startTime, startDate, reminders, isPublic, isBlueprint,
         integration, flexDetails, loadTaskData,

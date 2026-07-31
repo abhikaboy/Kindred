@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildCreateTaskParams, emptyTaskForm } from "./useCreateActions";
+import type { ParsedRecurrence } from "@shared/taskSuggest";
+import { applySchedule, buildCreateTaskParams, clearSchedule, emptyTaskForm } from "./useCreateActions";
 import { countPreviewTasks, buildConfirmBody, type AiPreviewPayload } from "./useCreateActions";
 
 describe("buildCreateTaskParams", () => {
@@ -60,6 +61,73 @@ describe("buildCreateTaskParams", () => {
     expect(full.deadline).toBe("2026-07-20T10:00:00.000Z");
     expect(full.taggedUserIds).toEqual(["a", "b"]);
     expect(full.reminders?.[0]).toMatchObject({ triggerTime: "2026-07-19T09:00:00.000Z", type: "absolute", sent: false });
+  });
+});
+
+const SCHEDULE = {
+  startDate: "2026-07-31T07:00:00.000Z",
+  startTime: "2026-07-31T07:00:00.000Z",
+  deadline: "2026-07-31T08:00:00.000Z",
+};
+const WEEKDAYS: ParsedRecurrence = {
+  recurring: true,
+  recurFrequency: "weekly",
+  recurDetails: { every: 1, daysOfWeek: [0, 1, 1, 1, 1, 1, 0], behavior: "ROLLING" },
+};
+
+describe("applySchedule", () => {
+  it("fills start, deadline and recurrence when all are at their defaults", () => {
+    const next = applySchedule(emptyTaskForm(), SCHEDULE, WEEKDAYS);
+    expect(next).toMatchObject({
+      startDate: SCHEDULE.startDate,
+      startTime: SCHEDULE.startTime,
+      deadline: SCHEDULE.deadline,
+      recurring: true,
+      recurFrequency: "weekly",
+      every: 1,
+      daysOfWeek: [0, 1, 1, 1, 1, 1, 0],
+    });
+  });
+
+  it("leaves a hand-set start untouched but still fills the empty deadline", () => {
+    const mine = { ...emptyTaskForm(), startDate: "2026-01-01T00:00:00.000Z", startTime: "2026-01-01T00:00:00.000Z" };
+    const next = applySchedule(mine, SCHEDULE, null);
+    expect(next.startDate).toBe("2026-01-01T00:00:00.000Z");
+    expect(next.startTime).toBe("2026-01-01T00:00:00.000Z");
+    expect(next.deadline).toBe(SCHEDULE.deadline);
+  });
+
+  it("leaves a hand-set deadline untouched", () => {
+    const mine = { ...emptyTaskForm(), deadline: "2026-01-01T00:00:00.000Z" };
+    expect(applySchedule(mine, SCHEDULE, null).deadline).toBe("2026-01-01T00:00:00.000Z");
+  });
+
+  it("does not touch recurrence the user already configured", () => {
+    const mine = { ...emptyTaskForm(), recurring: true, recurFrequency: "daily", every: 3 };
+    const next = applySchedule(mine, null, WEEKDAYS);
+    expect(next.recurFrequency).toBe("daily");
+    expect(next.every).toBe(3);
+  });
+
+  it("treats flex as configured recurrence and leaves it alone", () => {
+    const mine = { ...emptyTaskForm(), flex: { target: 3, period: "weekly" } };
+    expect(applySchedule(mine, null, WEEKDAYS).recurring).toBe(false);
+  });
+
+  it("returns the same object when nothing applies, so effects do not loop", () => {
+    const form = emptyTaskForm();
+    expect(applySchedule(form, null, null)).toBe(form);
+    const set = { ...form, startDate: "x", startTime: "x", deadline: "y" };
+    expect(applySchedule(set, SCHEDULE, null)).toBe(set);
+  });
+});
+
+describe("clearSchedule", () => {
+  it("resets the schedule fields but keeps everything else", () => {
+    const filled = { ...applySchedule(emptyTaskForm(), SCHEDULE, WEEKDAYS), content: "gym", priority: 3, value: 4 };
+    const next = clearSchedule(filled);
+    expect(next).toMatchObject({ startDate: null, startTime: null, deadline: null, recurring: false, every: 1 });
+    expect(next).toMatchObject({ content: "gym", priority: 3, value: 4 });
   });
 });
 

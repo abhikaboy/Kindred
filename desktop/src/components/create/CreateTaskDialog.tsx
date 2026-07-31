@@ -12,16 +12,20 @@ import { TaskTimeline } from "@/components/create/TaskTimeline";
 import { RepeatPopover } from "@/components/create/RepeatPopover";
 import { MorePopover } from "@/components/create/MorePopover";
 import { AiTaskPanel } from "@/components/create/AiTaskPanel";
+import { SuggestionRow } from "@/components/create/SuggestionRow";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { CreateTaskDialogProps, SelectedCategory } from "@/components/create/types";
 import {
     useCreateTask,
+    applySchedule,
     buildCreateTaskParams,
+    clearSchedule,
     emptyTaskForm,
     CREATE_AUTH,
     type TaskFormState,
 } from "@/hooks/useCreateActions";
+import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useFriends, type FriendReference } from "@/hooks/useConnections";
 
@@ -65,6 +69,19 @@ export function CreateTaskDialog({
         return () => cancelAnimationFrame(raf);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(mode === "Manual" ? form.content : "");
+
+    // Auto-apply the parsed schedule. applySchedule returns the same object when
+    // nothing is at its default, so this settles instead of looping.
+    useEffect(() => {
+        setForm((prev) => applySchedule(prev, schedule, recurrence));
+    }, [schedule, recurrence]);
+
+    const dismissSchedule = () => {
+        dismiss();
+        setForm(clearSchedule);
+    };
 
     const canSubmit = form.content.trim().length > 0 && !!selectedCategory;
 
@@ -151,6 +168,17 @@ export function CreateTaskDialog({
                         onKeyDown={onTitleKeyDown}
                         placeholder="Task title"
                         className="w-full resize-none bg-transparent text-2xl font-medium leading-snug text-foreground outline-none placeholder:text-muted-foreground/50"
+                    />
+                    <SuggestionRow
+                        form={form}
+                        schedule={schedule}
+                        recurrence={recurrence}
+                        fuzzy={fuzzy}
+                        categories={allCategories}
+                        selectedCategoryId={selectedCategory?.id}
+                        onApply={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                        onSelectCategory={setSelectedCategory}
+                        onDismiss={dismissSchedule}
                     />
                     <MentionTextarea
                         rows={4}

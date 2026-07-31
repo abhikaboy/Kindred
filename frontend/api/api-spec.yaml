@@ -5421,6 +5421,186 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization:
+        patch:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Update personalization settings
+            description: Turn personalization on or off, or pause it until a given time. An omitted field is left unchanged; enabling also clears any active pause.
+            operationId: update-personalization-settings
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePersonalizationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PersonalizationSettings'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/data:
+        delete:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Delete personalization data
+            description: Erase everything Kindred has learned about the authenticated user and turn personalization off, so it is not rebuilt overnight.
+            operationId: delete-personalization-data
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeletePersonalizationOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/export:
+        get:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Export personalization data
+            description: Download everything Kindred has learned about the authenticated user. Prompt text is excluded; the structured evidence behind every fact is not.
+            operationId: export-personalization-data
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportPersonalizationResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/stated:
+        put:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Save stated preferences
+            description: Persist the answers collected during onboarding. These always win over what the nightly worker observes.
+            operationId: save-stated-preferences
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StatedPreferencesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SaveStatedPreferencesOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/stated/{key}:
+        patch:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Correct one stated preference
+            description: Change a single onboarding answer from the settings screen.
+            operationId: update-stated-preference
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: key
+                  in: path
+                  description: Which stated answer to correct
+                  required: true
+                  schema:
+                    type: string
+                    description: Which stated answer to correct
+                    enum:
+                        - planning-style
+                        - tone
+                        - nudge-frequency
+                        - peak-hours
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateStatedFactInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateStatedFactOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tagged-tasks:
         get:
             tags:
@@ -6414,6 +6594,39 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/suggest:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Suggest fields for a task being typed
+            description: 'Infer category, priority and difficulty from partial task text. Additive: returns an empty suggestion instead of an error when AI is unavailable, and consumes no credits.'
+            operationId: suggest-task-fields
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SuggestTaskFieldsInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SuggestTaskFieldsOutputBody'
                 default:
                     description: Error
                     content:
@@ -9657,6 +9870,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                rescheduleCount:
+                    type: integer
+                    format: int64
                 ringDelta:
                     description: Describes the Plan ring increment triggered by this creation so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
@@ -9964,6 +10180,32 @@ components:
                         - Notification deleted successfully
             required:
                 - message
+        DeletePersonalizationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeletePersonalizationOutputBody.json
+                    readOnly: true
+                deletedCount:
+                    type: integer
+                    description: Number of facts removed
+                    format: int64
+                enabled:
+                    type: boolean
+                    description: Always false — deleting turns personalization off so the next nightly run does not rebuild what was erased
+                message:
+                    type: string
+                    examples:
+                        - Personalization data deleted
+            required:
+                - message
+                - deletedCount
+                - enabled
         DeletePostOutputBody:
             type: object
             additionalProperties: false
@@ -10414,6 +10656,37 @@ components:
                     default: about:blank
                     examples:
                         - https://example.com/errors/example
+        ExportPersonalizationResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ExportPersonalizationResponse.json
+                    readOnly: true
+                count:
+                    type: integer
+                    description: Number of facts in the export
+                    format: int64
+                facts:
+                    type: array
+                    description: Everything currently held about this user
+                    items:
+                        $ref: '#/components/schemas/PersonalizationFact'
+                settings:
+                    description: Consent state at export time
+                    $ref: '#/components/schemas/PersonalizationSettings'
+                userId:
+                    type: string
+                    description: The account this export belongs to
+            required:
+                - userId
+                - count
+                - settings
+                - facts
         FeatureDefinition:
             type: object
             additionalProperties: false
@@ -12112,6 +12385,63 @@ components:
                 - recurring
                 - timestamp
                 - tagger
+        PersonalizationFact:
+            type: object
+            additionalProperties: false
+            properties:
+                confidence:
+                    type: number
+                    description: 0..1; stated answers are always 1
+                    format: double
+                createdAt:
+                    type: string
+                    format: date-time
+                evidence:
+                    type: object
+                    description: The numbers the fact was computed from
+                    additionalProperties: {}
+                expiresAt:
+                    type: string
+                    description: When this expires on its own. Absent for stated answers, which never expire.
+                    format: date-time
+                key:
+                    type: string
+                    description: Stable slug, e.g. peak-hours
+                kind:
+                    type: string
+                    description: rhythm|reliability|pacing|focus|style|theme|social
+                source:
+                    type: string
+                    description: derived (observed by the worker) or stated (the user told us)
+                updatedAt:
+                    type: string
+                    format: date-time
+            required:
+                - key
+                - kind
+                - confidence
+                - evidence
+                - source
+                - createdAt
+                - updatedAt
+        PersonalizationSettings:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PersonalizationSettings.json
+                    readOnly: true
+                enabled:
+                    type: boolean
+                pausedUntil:
+                    type: string
+                    format: date-time
+            required:
+                - enabled
         PostDocumentAPI:
             type: object
             additionalProperties: false
@@ -13365,6 +13695,29 @@ components:
                 - kudosRewards
                 - subscription
                 - settings
+        SaveStatedPreferencesOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SaveStatedPreferencesOutputBody.json
+                    readOnly: true
+                keys:
+                    type: array
+                    description: The user_memory keys written
+                    items:
+                        type: string
+                message:
+                    type: string
+                    examples:
+                        - Preferences saved
+            required:
+                - message
+                - keys
         SendBeakCongratulationParams:
             type: object
             additionalProperties: false
@@ -13578,6 +13931,47 @@ components:
                         - Started working on task
             required:
                 - message
+        StatedPreferencesRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/StatedPreferencesRequest.json
+                    readOnly: true
+                nudgeFrequency:
+                    type: string
+                    description: How often they want to be nudged; matches the check-in frequency vocabulary
+                    enum:
+                        - none
+                        - occasionally
+                        - regularly
+                        - frequently
+                peakHours:
+                    type: string
+                    description: When they say they focus best
+                    enum:
+                        - morning
+                        - afternoon
+                        - evening
+                        - night
+                planningStyle:
+                    type: string
+                    description: How much structure they want up front
+                    enum:
+                        - detailed
+                        - flexible
+                        - spontaneous
+                tone:
+                    type: string
+                    description: How the assistant should talk to them
+                    enum:
+                        - encouraging
+                        - direct
+                        - playful
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -13638,6 +14032,53 @@ components:
                     type: string
             required:
                 - status
+        SuggestTaskFieldsInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SuggestTaskFieldsInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: The task text the user is typing
+                    examples:
+                        - gym tomorrow 7-8am every weekday
+                    minLength: 1
+                    maxLength: 1000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        SuggestTaskFieldsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SuggestTaskFieldsOutputBody.json
+                    readOnly: true
+                categoryId:
+                    type: string
+                    description: Suggested existing category id; absent when there is no confident suggestion
+                priority:
+                    type: integer
+                    description: Suggested priority (1-3); absent when there is no confident suggestion
+                    format: int64
+                value:
+                    type: number
+                    description: Suggested difficulty (1-5); absent when there is no confident suggestion
+                    format: double
         SyncEventsOutputBody:
             type: object
             additionalProperties: false
@@ -13778,6 +14219,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                rescheduleCount:
+                    type: integer
+                    format: int64
                 startDate:
                     type: string
                     format: date-time
@@ -14565,6 +15009,24 @@ components:
                     readOnly: true
                 name:
                     type: string
+        UpdatePersonalizationRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdatePersonalizationRequest.json
+                    readOnly: true
+                enabled:
+                    type: boolean
+                    description: False turns personalization off; the worker stops deriving anything for this user. Setting it true also clears any pause.
+                pausedUntil:
+                    type: string
+                    description: Pause personalization until this instant. The worker skips the user while it is in the future.
+                    format: date-time
         UpdatePostOutputBody:
             type: object
             additionalProperties: false
@@ -14671,6 +15133,45 @@ components:
                     type: string
             required:
                 - push_token
+        UpdateStatedFactInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateStatedFactInputBody.json
+                    readOnly: true
+                value:
+                    type: string
+                    description: The new answer; valid values depend on the key
+            required:
+                - value
+        UpdateStatedFactOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateStatedFactOutputBody.json
+                    readOnly: true
+                key:
+                    type: string
+                message:
+                    type: string
+                    examples:
+                        - Preference updated
+                value:
+                    type: string
+            required:
+                - message
+                - key
+                - value
         UpdateTaskChecklistDocument:
             type: object
             additionalProperties: false
@@ -15232,6 +15733,8 @@ components:
                     $ref: '#/components/schemas/DisplaySettings'
                 notifications:
                     $ref: '#/components/schemas/NotificationSettings'
+                personalization:
+                    $ref: '#/components/schemas/PersonalizationSettings'
             required:
                 - notifications
                 - display

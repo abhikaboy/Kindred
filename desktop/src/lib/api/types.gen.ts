@@ -2636,6 +2636,106 @@ export interface paths {
         patch: operations["update-user-settings"];
         trace?: never;
     };
+    "/v1/user/settings/personalization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update personalization settings
+         * @description Turn personalization on or off, or pause it until a given time. An omitted field is left unchanged; enabling also clears any active pause.
+         */
+        patch: operations["update-personalization-settings"];
+        trace?: never;
+    };
+    "/v1/user/settings/personalization/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete personalization data
+         * @description Erase everything Kindred has learned about the authenticated user and turn personalization off, so it is not rebuilt overnight.
+         */
+        delete: operations["delete-personalization-data"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/settings/personalization/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export personalization data
+         * @description Download everything Kindred has learned about the authenticated user. Prompt text is excluded; the structured evidence behind every fact is not.
+         */
+        get: operations["export-personalization-data"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/settings/personalization/stated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save stated preferences
+         * @description Persist the answers collected during onboarding. These always win over what the nightly worker observes.
+         */
+        put: operations["save-stated-preferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/settings/personalization/stated/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct one stated preference
+         * @description Change a single onboarding answer from the settings screen.
+         */
+        patch: operations["update-stated-preference"];
+        trace?: never;
+    };
     "/v1/user/tagged-tasks": {
         parameters: {
             query?: never;
@@ -3114,6 +3214,26 @@ export interface paths {
          * @description Query tasks for the authenticated user with advanced filtering options
          */
         post: operations["query-tasks-by-user"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest fields for a task being typed
+         * @description Infer category, priority and difficulty from partial task text. Additive: returns an empty suggestion instead of an error when AI is unavailable, and consumes no credits.
+         */
+        post: operations["suggest-task-fields"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4974,6 +5094,8 @@ export interface components {
             recurType?: string;
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
+            /** Format: int64 */
+            rescheduleCount?: number;
             /** @description Describes the Plan ring increment triggered by this creation so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
             /** Format: date-time */
@@ -5138,6 +5260,23 @@ export interface components {
              */
             readonly $schema?: string;
             /** @example Notification deleted successfully */
+            message: string;
+        };
+        DeletePersonalizationOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/DeletePersonalizationOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of facts removed
+             */
+            deletedCount: number;
+            /** @description Always false — deleting turns personalization off so the next nightly run does not rebuild what was erased */
+            enabled: boolean;
+            /** @example Personalization data deleted */
             message: string;
         };
         DeletePostOutputBody: {
@@ -5444,6 +5583,25 @@ export interface components {
              * @example https://example.com/errors/example
              */
             type: string;
+        };
+        ExportPersonalizationResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ExportPersonalizationResponse.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Number of facts in the export
+             */
+            count: number;
+            /** @description Everything currently held about this user */
+            facts: components["schemas"]["PersonalizationFact"][];
+            /** @description Consent state at export time */
+            settings: components["schemas"]["PersonalizationSettings"];
+            /** @description The account this export belongs to */
+            userId: string;
         };
         FeatureDefinition: {
             description: string;
@@ -6369,6 +6527,43 @@ export interface components {
             /** Format: double */
             value: number;
         };
+        PersonalizationFact: {
+            /**
+             * Format: double
+             * @description 0..1; stated answers are always 1
+             */
+            confidence: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description The numbers the fact was computed from */
+            evidence: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description When this expires on its own. Absent for stated answers, which never expire.
+             */
+            expiresAt?: string;
+            /** @description Stable slug, e.g. peak-hours */
+            key: string;
+            /** @description rhythm|reliability|pacing|focus|style|theme|social */
+            kind: string;
+            /** @description derived (observed by the worker) or stated (the user told us) */
+            source: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PersonalizationSettings: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PersonalizationSettings.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: date-time */
+            pausedUntil?: string;
+        };
         PostDocumentAPI: {
             /**
              * Format: uri
@@ -7002,6 +7197,18 @@ export interface components {
             terms_version?: string;
             timezone?: string;
         };
+        SaveStatedPreferencesOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SaveStatedPreferencesOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The user_memory keys written */
+            keys: string[];
+            /** @example Preferences saved */
+            message: string;
+        };
         SendBeakCongratulationParams: {
             /**
              * Format: uri
@@ -7127,6 +7334,34 @@ export interface components {
             /** @example Started working on task */
             message: string;
         };
+        StatedPreferencesRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StatedPreferencesRequest.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description How often they want to be nudged; matches the check-in frequency vocabulary
+             * @enum {string}
+             */
+            nudgeFrequency?: "none" | "occasionally" | "regularly" | "frequently";
+            /**
+             * @description When they say they focus best
+             * @enum {string}
+             */
+            peakHours?: "morning" | "afternoon" | "evening" | "night";
+            /**
+             * @description How much structure they want up front
+             * @enum {string}
+             */
+            planningStyle?: "detailed" | "flexible" | "spontaneous";
+            /**
+             * @description How the assistant should talk to them
+             * @enum {string}
+             */
+            tone?: "encouraging" | "direct" | "playful";
+        };
         SubscribeToBlueprintOutputBody: {
             /**
              * Format: uri
@@ -7159,6 +7394,44 @@ export interface components {
              */
             readonly $schema?: string;
             status: string;
+        };
+        SuggestTaskFieldsInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SuggestTaskFieldsInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description The task text the user is typing
+             * @example gym tomorrow 7-8am every weekday
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        SuggestTaskFieldsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SuggestTaskFieldsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Suggested existing category id; absent when there is no confident suggestion */
+            categoryId?: string;
+            /**
+             * Format: int64
+             * @description Suggested priority (1-3); absent when there is no confident suggestion
+             */
+            priority?: number;
+            /**
+             * Format: double
+             * @description Suggested difficulty (1-5); absent when there is no confident suggestion
+             */
+            value?: number;
         };
         SyncEventsOutputBody: {
             /**
@@ -7226,6 +7499,8 @@ export interface components {
             recurType?: string;
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
+            /** Format: int64 */
+            rescheduleCount?: number;
             /** Format: date-time */
             startDate: string;
             /** Format: date-time */
@@ -7717,6 +7992,21 @@ export interface components {
             readonly $schema?: string;
             name?: string;
         };
+        UpdatePersonalizationRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdatePersonalizationRequest.json
+             */
+            readonly $schema?: string;
+            /** @description False turns personalization off; the worker stops deriving anything for this user. Setting it true also clears any pause. */
+            enabled?: boolean;
+            /**
+             * Format: date-time
+             * @description Pause personalization until this instant. The worker skips the user while it is in the future.
+             */
+            pausedUntil?: string;
+        };
         UpdatePostOutputBody: {
             /**
              * Format: uri
@@ -7780,6 +8070,28 @@ export interface components {
              */
             readonly $schema?: string;
             push_token: string;
+        };
+        UpdateStatedFactInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateStatedFactInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The new answer; valid values depend on the key */
+            value: string;
+        };
+        UpdateStatedFactOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateStatedFactOutputBody.json
+             */
+            readonly $schema?: string;
+            key: string;
+            /** @example Preference updated */
+            message: string;
+            value: string;
         };
         UpdateTaskChecklistDocument: {
             /**
@@ -8127,6 +8439,7 @@ export interface components {
             dashboard_configuration: components["schemas"]["DashboardConfiguration"];
             display: components["schemas"]["DisplaySettings"];
             notifications: components["schemas"]["NotificationSettings"];
+            personalization?: components["schemas"]["PersonalizationSettings"];
         };
         VerifyOTPOutputBody: {
             /**
@@ -13500,6 +13813,181 @@ export interface operations {
             };
         };
     };
+    "update-personalization-settings": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonalizationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonalizationSettings"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "delete-personalization-data": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletePersonalizationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "export-personalization-data": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportPersonalizationResponse"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "save-stated-preferences": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatedPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveStatedPreferencesOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-stated-preference": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path: {
+                /** @description Which stated answer to correct */
+                key: "planning-style" | "tone" | "nudge-frequency" | "peak-hours";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStatedFactInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatedFactOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-pending-tagged-tasks": {
         parameters: {
             query?: never;
@@ -14417,6 +14905,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "suggest-task-fields": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestTaskFieldsInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestTaskFieldsOutputBody"];
                 };
             };
             /** @description Error */

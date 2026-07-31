@@ -14,6 +14,7 @@ type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type CompleteTaskDocument = components["schemas"]["CompleteTaskDocument"];
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
 type UpdateTemplateDocument = components["schemas"]["UpdateTemplateDocument"];
+export type TaskFieldSuggestion = Omit<components["schemas"]["SuggestTaskFieldsOutputBody"], "$schema">;
 
 /**
  * Create a new task in a specific category
@@ -648,6 +649,23 @@ export const createTasksFromNaturalLanguageAPI = async (
 /**
  * Preview tasks from natural language description using AI (no creation).
  */
+/**
+ * Suggest category, priority and difficulty for a task being typed.
+ * Additive by contract: returns an empty suggestion rather than erroring when
+ * AI is unavailable, and consumes no credits.
+ */
+export const suggestTaskFieldsAPI = async (text: string): Promise<TaskFieldSuggestion> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const { data, error } = await (client.POST as any)("/v1/user/tasks/suggest", {
+        params: withAuthHeaders({}),
+        body: { text, timezone },
+    });
+
+    if (error || !data) return {};
+    return ((data as any)?.body ?? data) as TaskFieldSuggestion;
+};
+
 export const previewTasksFromNaturalLanguageAPI = async (
     text: string
 ): Promise<PreviewTaskNaturalLanguageOutputBody> => {

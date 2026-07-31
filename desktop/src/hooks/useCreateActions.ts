@@ -1,6 +1,7 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { $api } from "@/lib/api/query";
 import type { components } from "@/lib/api/types.gen";
+import type { ParsedRecurrence, ParsedSchedule } from "@shared/taskSuggest";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type CreateCategoryParams = components["schemas"]["CreateCategoryParams"];
@@ -113,6 +114,46 @@ export function buildCreateTaskParams(form: TaskFormState): CreateTaskParams {
   }
 
   return body;
+}
+
+// Pure: fold parsed schedule/recurrence into the form, touching ONLY fields still
+// at their default. That is what makes a hand-set date impossible to clobber.
+// Returns the same object when nothing applies, so callers can apply in an effect.
+export function applySchedule(
+  form: TaskFormState,
+  schedule: ParsedSchedule | null,
+  recurrence: ParsedRecurrence | null,
+): TaskFormState {
+  const next = { ...form };
+  let changed = false;
+
+  if (schedule) {
+    if (form.startDate === null && form.startTime === null && schedule.startDate) {
+      next.startDate = schedule.startDate;
+      next.startTime = schedule.startTime;
+      changed = true;
+    }
+    if (form.deadline === null && schedule.deadline) {
+      next.deadline = schedule.deadline;
+      changed = true;
+    }
+  }
+
+  if (recurrence && !form.recurring && !form.flex) {
+    next.recurring = true;
+    next.recurFrequency = recurrence.recurFrequency;
+    next.every = recurrence.recurDetails.every;
+    next.daysOfWeek = recurrence.recurDetails.daysOfWeek;
+    changed = true;
+  }
+
+  return changed ? next : form;
+}
+
+// The schedule fields applySchedule owns, back to their defaults.
+export function clearSchedule(form: TaskFormState): TaskFormState {
+  const { startDate, startTime, deadline, recurring, recurFrequency, every, daysOfWeek } = emptyTaskForm();
+  return { ...form, startDate, startTime, deadline, recurring, recurFrequency, every, daysOfWeek };
 }
 
 // Optimistic TaskDocument for the workspaces cache (real row replaces it on refetch).

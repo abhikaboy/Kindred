@@ -77,3 +77,38 @@ export function parseSchedule(text: string, now: Date): ParsedSchedule | null {
 export function parseRecurrence(text: string, now: Date): ParsedRecurrence | null {
   return matchRecurrence(text, now)?.recurrence ?? null;
 }
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_MASK = "0111110";
+
+const fmtDay = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+function repeatLabel({ recurFrequency, recurDetails }: ParsedRecurrence): string {
+  const { every, daysOfWeek } = recurDetails;
+  if (recurFrequency === "weekly") {
+    if (daysOfWeek.join("") === WEEKDAY_MASK) return "Weekdays";
+    const named = daysOfWeek.map((v, i) => (v ? DAY_LABELS[i] : null)).filter(Boolean);
+    if (named.length > 0) return every > 1 ? `Every ${every} weeks on ${named.join(", ")}` : `Every ${named.join(", ")}`;
+  }
+  const unit = recurFrequency === "daily" ? "day" : recurFrequency === "monthly" ? "month" : "year";
+  return every > 1 ? `Every ${every} ${unit}s` : `Every ${unit}`;
+}
+
+// One human line for what was detected, shared so both apps read identically.
+export function describeSchedule(schedule: ParsedSchedule | null, recurrence: ParsedRecurrence | null): string {
+  const parts: string[] = [];
+  if (schedule?.startDate) {
+    parts.push(fmtDay(schedule.startDate));
+    parts.push(
+      schedule.deadline
+        ? `${fmtTime(schedule.startDate)} to ${fmtTime(schedule.deadline)}`
+        : fmtTime(schedule.startDate),
+    );
+  } else if (schedule?.deadline) {
+    parts.push(`Due ${fmtDay(schedule.deadline)}`, fmtTime(schedule.deadline));
+  }
+  if (recurrence) parts.push(repeatLabel(recurrence));
+  return parts.join(" · ");
+}

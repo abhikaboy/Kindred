@@ -31,6 +31,9 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
+import { scheduleUpdates } from "@/hooks/scheduleUpdates";
+import SuggestionRow from "@/components/modals/create/SuggestionRow";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -55,7 +58,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         setTaskName,
         showAdvanced,
         setShowAdvanced,
-        suggestion,
         priority,
         value,
         recurring,
@@ -117,6 +119,36 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     const availableCategories = useMemo(() => {
         return isBlueprintState ? blueprintCategories : categories;
     }, [isBlueprintState, blueprintCategories, categories]);
+
+    // Inline suggestions: schedule parses locally as you type, the rest arrives
+    // once typing settles. Suggestions never overwrite a field the user set.
+    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(edit || tutorial ? "" : taskName);
+
+    useEffect(() => {
+        const update = scheduleUpdates({ startDate, startTime, deadline, recurring, flexDetails }, schedule, recurrence);
+        if (update.startDate) setStartDate(update.startDate);
+        if (update.startTime) setStartTime(update.startTime);
+        if (update.deadline) setDeadline(update.deadline);
+        if (update.recurrence) {
+            setRecurring(true);
+            setRecurFrequency(update.recurrence.recurFrequency);
+            setRecurDetails({ ...recurDetails, ...update.recurrence.recurDetails });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [schedule, recurrence]);
+
+    const dismissSchedule = () => {
+        dismiss();
+        setStartDate(null);
+        setStartTime(null);
+        setDeadline(null);
+        setRecurring(false);
+    };
+
+    const suggestedCategory = useMemo(
+        () => (fuzzy?.categoryId ? (availableCategories ?? []).find((c) => c.id === fuzzy.categoryId) : undefined),
+        [fuzzy?.categoryId, availableCategories]
+    );
 
     // Alert state
     const [alertVisible, setAlertVisible] = React.useState(false);
@@ -461,13 +493,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     return (
         <View style={{ gap: 8, flexDirection: "column", display: "flex" }}>
 
-            {suggestion && (
-                <View style={{ flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between" }}>
-                    <ThemedText type="default" style={{ fontSize: 16 }}>
-                        Suggested: {suggestion}
-                    </ThemedText>
-                </View>
-            )}
             <View
                 style={{
                     flexDirection: "row",
@@ -555,6 +580,22 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                     }}
                 />
             </View>
+            <SuggestionRow
+                schedule={schedule}
+                recurrence={recurrence}
+                fuzzy={fuzzy}
+                categoryName={suggestedCategory?.name}
+                showCategory={!!suggestedCategory && suggestedCategory.id !== selectedCategory?.id}
+                priority={fuzzy?.priority !== undefined && fuzzy.priority !== priority ? fuzzy.priority : undefined}
+                value={fuzzy?.value !== undefined && fuzzy.value !== value ? fuzzy.value : undefined}
+                onApplyCategory={() =>
+                    suggestedCategory &&
+                    setCreateCategory({ label: suggestedCategory.name, id: suggestedCategory.id, special: false })
+                }
+                onApplyPriority={setPriority}
+                onApplyValue={setValue}
+                onDismiss={dismissSchedule}
+            />
             <PrimaryOptionRow goTo={goTo} />
             <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} tutorial={tutorial} />
             {createHintReady && !edit && !tutorial && !showAdvanced && (
