@@ -124,17 +124,18 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     // once typing settles. Suggestions never overwrite a field the user set.
     const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(edit || tutorial ? "" : taskName);
 
-    // The ref records what the parser wrote so a later, better parse can correct an
-    // earlier partial one without touching a value the user set.
-    const appliedRef = useRef<AppliedSchedule>(noAppliedSchedule());
+    // `applied` records what the parser wrote so a later, better parse can correct an
+    // earlier partial one without touching a value the user set, and so the Advanced
+    // rows can mark which values came from typing.
+    const [applied, setApplied] = useState<AppliedSchedule>(noAppliedSchedule);
     useEffect(() => {
         const result = scheduleUpdates(
             { startDate, startTime, deadline, recurring, flexDetails },
             schedule,
             recurrence,
-            appliedRef.current
+            applied
         );
-        appliedRef.current = result.applied;
+        if (result.applied !== applied) setApplied(result.applied);
         const { update } = result;
         if (update.startDate) setStartDate(update.startDate);
         if (update.startTime) setStartTime(update.startTime);
@@ -147,9 +148,12 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule, recurrence]);
 
+    const autoStart = applied.startDate !== null && startDate?.toISOString() === applied.startDate;
+    const autoDeadline = applied.deadline !== null && deadline?.toISOString() === applied.deadline;
+
     const dismissSchedule = () => {
         dismiss();
-        appliedRef.current = noAppliedSchedule();
+        setApplied(noAppliedSchedule());
         setStartDate(null);
         setStartTime(null);
         setDeadline(null);
@@ -608,7 +612,14 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 onDismiss={dismissSchedule}
             />
             <PrimaryOptionRow goTo={goTo} />
-            <AdvancedOptionList goTo={goTo} showUnconfigured={false} edit={edit} tutorial={tutorial} />
+            <AdvancedOptionList
+                goTo={goTo}
+                showUnconfigured={false}
+                edit={edit}
+                tutorial={tutorial}
+                autoStart={autoStart}
+                autoDeadline={autoDeadline}
+            />
             {createHintReady && !edit && !tutorial && !showAdvanced && (
                 <HintBubble
                     text="Deadlines, reminders & repeats live in Advanced Options"
@@ -866,16 +877,24 @@ const DeadlineQuickAccess = ({ goTo }: { goTo: (screen: Screen) => void }) => {
     );
 };
 
+// Appended to a row whose value the parser filled in. Drops off the moment the
+// value stops matching what was parsed, so editing the row clears it.
+const FROM_TEXT = " · from your text";
+
 const AdvancedOptionList = ({
     goTo,
     showUnconfigured,
     edit,
     tutorial,
+    autoStart,
+    autoDeadline,
 }: {
     goTo: (screen: Screen) => void;
     showUnconfigured: boolean;
     edit?: boolean;
     tutorial?: boolean;
+    autoStart?: boolean;
+    autoDeadline?: boolean;
 }) => {
     const {
         startDate,
@@ -912,9 +931,9 @@ const AdvancedOptionList = ({
                 icon="calendar"
                 label={
                     startDate && startTime
-                        ? `Start: ${startDate.toLocaleDateString()} ${startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                        ? `Start: ${startDate.toLocaleDateString()} ${startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${autoStart ? FROM_TEXT : ""}`
                         : startDate
-                          ? `Start Date: ${startDate.toLocaleDateString()}`
+                          ? `Start Date: ${startDate.toLocaleDateString()}${autoStart ? FROM_TEXT : ""}`
                           : "Set Start Date & Time"
                 }
                 screen={Screen.STARTDATE}
@@ -924,7 +943,7 @@ const AdvancedOptionList = ({
             />
             <AdvancedOption
                 icon="flag"
-                label={deadline ? "Deadline: " + deadline.toLocaleString() : "Set Deadline"}
+                label={deadline ? `Deadline: ${deadline.toLocaleString()}${autoDeadline ? FROM_TEXT : ""}` : "Set Deadline"}
                 screen={Screen.DEADLINE}
                 goTo={goTo}
                 showUnconfigured={showUnconfigured}

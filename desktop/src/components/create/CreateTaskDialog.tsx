@@ -74,22 +74,21 @@ export function CreateTaskDialog({
 
     const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(mode === "Manual" ? form.content : "");
 
-    // Auto-apply the parsed schedule. The ref records what the parser wrote so a
+    // Auto-apply the parsed schedule. `applied` records what the parser wrote, so a
     // later, better parse can correct an earlier partial one without touching a
-    // value the user set. applySchedule returns the same form object when nothing
-    // changes, so this settles instead of looping.
-    const appliedRef = useRef<AppliedSuggestion>(noAppliedSuggestion());
+    // value the user set, and the Timeline can mark which values came from typing.
+    // Both returns keep their identity when nothing moved, so this settles.
+    const [applied, setApplied] = useState<AppliedSuggestion>(noAppliedSuggestion);
     useEffect(() => {
-        setForm((prev) => {
-            const result = applySchedule(prev, schedule, recurrence, appliedRef.current);
-            appliedRef.current = result.applied;
-            return result.form;
-        });
+        const result = applySchedule(form, schedule, recurrence, applied);
+        if (result.form !== form) setForm(result.form);
+        if (result.applied !== applied) setApplied(result.applied);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule, recurrence]);
 
     const dismissSchedule = () => {
         dismiss();
-        appliedRef.current = noAppliedSuggestion();
+        setApplied(noAppliedSuggestion());
         setForm(clearSchedule);
     };
 
@@ -200,7 +199,12 @@ export function CreateTaskDialog({
                     />
                 </div>
 
-                <TaskTimeline form={form} setForm={setForm} />
+                <TaskTimeline
+                    form={form}
+                    setForm={setForm}
+                    autoStart={applied.startDate !== null && form.startDate === applied.startDate}
+                    autoDeadline={applied.deadline !== null && form.deadline === applied.deadline}
+                />
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                     <PriorityPopover

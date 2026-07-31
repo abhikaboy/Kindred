@@ -85,6 +85,26 @@ describe("scheduleUpdates over a stream of keystrokes", () => {
         expect(state.deadline?.getMinutes()).toBe(30);
     });
 
+    // Standard.tsx holds `applied` in state and marks Advanced rows from it, so a
+    // fresh object every run would re-render on every keystroke.
+    it("keeps the applied record's identity when nothing moved", () => {
+        const applied = noAppliedSchedule();
+        expect(scheduleUpdates(EMPTY, null, null, applied).applied).toBe(applied);
+
+        const once = scheduleUpdates(EMPTY, SCHEDULE, null, applied);
+        expect(once.applied).not.toBe(applied);
+
+        const settled = {
+            ...EMPTY,
+            startDate: once.update.startDate!,
+            startTime: once.update.startTime!,
+            deadline: once.update.deadline!,
+        };
+        const twice = scheduleUpdates(settled, SCHEDULE, null, once.applied);
+        expect(twice.applied).toBe(once.applied);
+        expect(twice.update).toEqual({});
+    });
+
     it("still refuses to overwrite a date the user set by hand", () => {
         const now = new Date(2026, 6, 31, 9, 0, 0);
         const mine = new Date(2026, 0, 1);

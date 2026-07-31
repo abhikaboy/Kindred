@@ -180,6 +180,21 @@ describe("applySchedule over a stream of keystrokes", () => {
     expect(new Date(form.deadline!).getMinutes()).toBe(30);
   });
 
+  // The dialog holds `applied` in state and marks Timeline fields from it, so a
+  // fresh object every run would re-render on every keystroke.
+  it("keeps the applied record's identity when nothing moved", () => {
+    const applied = noAppliedSuggestion();
+    const form = emptyTaskForm();
+    expect(applySchedule(form, null, null, applied).applied).toBe(applied);
+
+    const once = applySchedule(form, SCHEDULE, null, applied);
+    expect(once.applied).not.toBe(applied);
+    // Re-running the same parse against the result is a no-op on both.
+    const twice = applySchedule(once.form, SCHEDULE, null, once.applied);
+    expect(twice.applied).toBe(once.applied);
+    expect(twice.form).toBe(once.form);
+  });
+
   it("still refuses to overwrite a date the user set by hand", () => {
     const now = new Date(2026, 6, 31, 9, 0, 0);
     const mine = "2026-01-01T00:00:00.000Z";

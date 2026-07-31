@@ -68,5 +68,12 @@ export function scheduleUpdates(
         nextApplied.recurring = false;
     }
 
-    return { update, applied: nextApplied };
+    // Keep the record's identity when nothing moved: the caller holds it in state
+    // and marks fields from it, so a fresh object would re-render every keystroke.
+    const appliedChanged =
+        nextApplied.startDate !== applied.startDate ||
+        nextApplied.deadline !== applied.deadline ||
+        nextApplied.recurring !== applied.recurring;
+
+    return { update, applied: appliedChanged ? nextApplied : applied };
 }

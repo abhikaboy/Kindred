@@ -67,6 +67,7 @@ function Endpoint({
   label,
   date,
   isTarget,
+  auto,
   onActivate,
   onClear,
   onTime,
@@ -75,6 +76,7 @@ function Endpoint({
   label: string;
   date: Date | null;
   isTarget: boolean;
+  auto?: boolean;
   onActivate: () => void;
   onClear: () => void;
   onTime: (hhmm: string) => void;
@@ -92,12 +94,20 @@ function Endpoint({
         )}
       </div>
       {date ? (
-        <div className="mt-1 flex items-center gap-2">
-          <button type="button" onClick={onActivate}>
-            <ThemedText type="defaultSemiBold" className="text-sm">{fmt(date)}</ThemedText>
-          </button>
-          <input type="time" value={timeOf(date)} onChange={(e) => onTime(e.target.value)} className={timeInput} />
-        </div>
+        <>
+          <div className="mt-1 flex items-center gap-2">
+            <button type="button" onClick={onActivate}>
+              <ThemedText type="defaultSemiBold" className="text-sm">{fmt(date)}</ThemedText>
+            </button>
+            <input type="time" value={timeOf(date)} onChange={(e) => onTime(e.target.value)} className={timeInput} />
+          </div>
+          {/* Clears itself: `auto` is false as soon as the value stops matching what was parsed. */}
+          {auto && (
+            <ThemedText type="caption" className="mt-0.5 text-xs">
+              from your text
+            </ThemedText>
+          )}
+        </>
       ) : (
         <button type="button" onClick={onActivate} className="mt-0.5 text-left">
           <ThemedText type="caption" className={isTarget ? "text-primary" : "text-muted-foreground/70"}>
@@ -112,7 +122,17 @@ function Endpoint({
 // Expanded timeline planner: block dates on the calendar (left); a vertical
 // timeline (right) grounds start → reminders → deadline, handling start-only,
 // deadline-only, and same-day. Nudges recurring once a date is picked.
-export function TaskTimeline({ form, setForm }: { form: TaskFormState; setForm: Setter }) {
+export function TaskTimeline({
+  form,
+  setForm,
+  autoStart,
+  autoDeadline,
+}: {
+  form: TaskFormState;
+  setForm: Setter;
+  autoStart?: boolean;
+  autoDeadline?: boolean;
+}) {
   const start = form.startDate ? new Date(form.startDate) : null;
   const end = form.deadline ? new Date(form.deadline) : null;
   const [target, setTarget] = useState<Target>(() => (start && !end ? "deadline" : "start"));
@@ -198,6 +218,7 @@ export function TaskTimeline({ form, setForm }: { form: TaskFormState; setForm: 
               label="Start"
               date={start}
               isTarget={target === "start"}
+              auto={autoStart}
               onActivate={() => setTarget("start")}
               onClear={() => { setStart(null); setTarget("start"); }}
               onTime={(t) => start && setStart(withTime(start, t))}
@@ -243,6 +264,7 @@ export function TaskTimeline({ form, setForm }: { form: TaskFormState; setForm: 
               label="Deadline"
               date={end}
               isTarget={target === "deadline"}
+              auto={autoDeadline}
               onActivate={() => setTarget("deadline")}
               onClear={() => { setEnd(null); setTarget("deadline"); }}
               onTime={(t) => end && setEnd(withTime(end, t))}

@@ -188,7 +188,14 @@ export function applySchedule(
     nextApplied.recurring = false;
   }
 
-  return { form: changed ? next : form, applied: nextApplied };
+  // Same object identity on both when nothing moved, so callers may hold either
+  // in state and apply from an effect without churning renders.
+  const appliedChanged =
+    nextApplied.startDate !== applied.startDate ||
+    nextApplied.deadline !== applied.deadline ||
+    nextApplied.recurring !== applied.recurring;
+
+  return { form: changed ? next : form, applied: appliedChanged ? nextApplied : applied };
 }
 
 // The schedule fields applySchedule owns, back to their defaults.
