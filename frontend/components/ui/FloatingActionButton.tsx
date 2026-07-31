@@ -236,7 +236,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setSelected(workspaceName);
         handleClose();
-        setTimeout(() => openModal(), 300);
+        // Open immediately — the sheet slides up over the closing FAB menu
+        openModal();
     };
 
     const handlePostPress = async () => {

@@ -24,29 +24,21 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
     const [visible, setVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState<CreateModalConfig>({});
     const { capture } = useAnalytics();
-    const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Ref tracks latest visible to avoid stale closures in openModal
-    const visibleRef = useRef(visible);
-    visibleRef.current = visible;
 
     useEffect(() => {
         return () => {
-            if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
             if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
         };
     }, []);
 
     const openModal = useCallback((config: CreateModalConfig = {}) => {
         capture(AnalyticsEvents.CREATE_MODAL_OPENED, {});
-        // Always force a close-then-open cycle so the modal presents reliably,
-        // regardless of whether visible is currently true or false
-        setVisible(false);
-        if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
-        openTimeoutRef.current = setTimeout(() => {
-            setModalConfig(config);
-            setVisible(true);
-        }, 50);
+        // ponytail: no close-then-open cycle — the layout only mounts CreateModal
+        // while visible, so every open is already a fresh mount. Assumes nothing
+        // calls openModal while the sheet is up (nothing does today).
+        setModalConfig(config);
+        setVisible(true);
     }, []);
 
     const closeModal = useCallback(() => {

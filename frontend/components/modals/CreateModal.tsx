@@ -13,7 +13,12 @@ import StartDate from "./create/StartDate";
 import Reminder from "./create/Reminder";
 import Collaborators from "./create/Collaborators";
 import Integration from "./create/Integration";
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import {
+    BottomSheetModal,
+    BottomSheetBackdrop,
+    BottomSheetScrollView,
+    useBottomSheetSpringConfigs,
+} from "@gorhom/bottom-sheet";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 
 type Props = {
@@ -54,9 +59,6 @@ const CreateModal = (props: Props) => {
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
-    // Guard to prevent handleSheetChanges from interfering during presentation
-    const isPresentingRef = useRef(false);
-
     // NEW_CATEGORY needs enough height to clear the software keyboard for its
     // autofocused input; the rest of the screens use the tall sheet.
     const snapPoints = useMemo(
@@ -68,46 +70,26 @@ const CreateModal = (props: Props) => {
         setScreen(newScreen);
     }, []);
 
-    // Auto-present on mount and when visible changes
+    // gorhom's default spring is heavily overdamped (damping 500 / stiffness 1000 / mass 3)
+    // and leans on restDisplacementThreshold to cut the tail — a key Reanimated 4 dropped,
+    // so the sheet now crawls its full settle in both directions. Critically damped instead.
+    const animationConfigs = useBottomSheetSpringConfigs({
+        duration: 250,
+        dampingRatio: 1,
+        overshootClamping: true,
+    });
+
+    // Present as soon as we're visible. The ref is set before effects run and a
+    // freshly mounted sheet is never presented, so no delay or pre-dismiss is needed.
     useEffect(() => {
-        if (props.visible) {
-            isPresentingRef.current = true;
-            // Light haptic feedback when modal becomes visible
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (!props.visible) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        bottomSheetModalRef.current?.present();
+    }, [props.visible]);
 
-            // Small delay to ensure ref is set and no other modals are presenting
-            const timer = setTimeout(() => {
-                try {
-                    if (!bottomSheetModalRef.current) return;
-
-                    // Force dismiss first to reset state, then present
-                    bottomSheetModalRef.current.dismiss();
-                    setTimeout(() => {
-                        bottomSheetModalRef.current?.present();
-                        // Clear the guard after the present animation settles
-                        setTimeout(() => {
-                            isPresentingRef.current = false;
-                        }, 500);
-                    }, 50);
-                } catch (error) {
-                    console.error("Error presenting modal:", error);
-                    isPresentingRef.current = false;
-                }
-            }, 100);
-
-            return () => {
-                clearTimeout(timer);
-                isPresentingRef.current = false;
-            };
-        }
-    }, [props.visible, props.categoryId, props.edit]);
-
-    // Handle sheet changes — guarded so dismiss events during presentation are ignored
     const handleSheetChanges = useCallback(
         (index: number) => {
-            if (index === -1 && !isPresentingRef.current) {
-                props.setVisible(false);
-            }
+            if (index === -1) props.setVisible(false);
         },
         [props.setVisible]
     );
@@ -209,6 +191,7 @@ const CreateModal = (props: Props) => {
             ref={bottomSheetModalRef}
             index={0}
             snapPoints={snapPoints}
+            animationConfigs={animationConfigs}
             onChange={handleSheetChanges}
             backdropComponent={renderBackdrop}
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
