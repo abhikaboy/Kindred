@@ -445,6 +445,7 @@ export default function Posting() {
                                                 <PostCardFooter
                                                     category={taskInfo?.categoryName}
                                                     taskName={taskInfo?.name}
+                                                    taskStatus={taskInfo?.status}
                                                 />
                                             </View>
                                         </View>

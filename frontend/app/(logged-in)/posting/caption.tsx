@@ -173,6 +173,7 @@ export default function Caption() {
                           id: taskInfo.category,
                           name: taskInfo.categoryName || "Unknown Category",
                       },
+                      status: (taskInfo.status as "completed" | "in_progress") || "completed",
                   }
                 : undefined;
 
@@ -302,6 +303,7 @@ export default function Caption() {
                             <PostCardFooter
                                 category={taskInfo?.categoryName}
                                 taskName={taskInfo?.name}
+                                taskStatus={taskInfo?.status}
                                 readOnly
                             />
                         </View>

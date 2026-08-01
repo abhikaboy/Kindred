@@ -40,6 +40,14 @@ export function deriveHandle(email?: string): string {
 const APPLE_SERVICE_ID = import.meta.env.VITE_APPLE_SERVICE_ID as string | undefined;
 export const appleConfigured = Boolean(APPLE_SERVICE_ID);
 
+// Apple requires an exact, pre-registered https Return URL — it does not accept
+// window.location.origin, which is http://localhost in dev and a tauri://
+// origin in the packaged desktop app. Must match a Return URL configured on
+// the Services ID in the Apple Developer portal exactly (scheme + path).
+const APPLE_REDIRECT_URI =
+  (import.meta.env.VITE_APPLE_REDIRECT_URI as string | undefined) ||
+  "https://app.kindredtodo.com/login";
+
 interface AppleAuthResponse {
   authorization?: { id_token?: string };
 }
@@ -76,7 +84,7 @@ export async function signInWithApple(): Promise<string> {
   window.AppleID.auth.init({
     clientId: APPLE_SERVICE_ID,
     scope: "name email",
-    redirectURI: window.location.origin, // must be a registered Return URL in Apple Developer
+    redirectURI: APPLE_REDIRECT_URI,
     usePopup: true,
   });
   const res = await window.AppleID.auth.signIn();

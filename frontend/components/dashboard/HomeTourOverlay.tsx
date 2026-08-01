@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import { Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { ThemedText } from "@/components/ThemedText";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {
@@ -11,10 +10,8 @@ type Props = {
     copy: string;
     stepIndex: number;
     totalSteps: number;
-    isCreateStep: boolean;
     onNext: () => void;
     onSkip: () => void;
-    onCreate: () => void;
 };
 
 // The blur band + explainer card that ride over HomeScrollContent during the
@@ -26,10 +23,8 @@ export const HomeTourOverlay: React.FC<Props> = ({
     copy,
     stepIndex,
     totalSteps,
-    isCreateStep,
     onNext,
     onSkip,
-    onCreate,
 }) => {
     const ThemedColor = useThemeColor();
     // "light"/"dark" reads as a clean frost; "default" casts muddy gray on light UIs.
@@ -46,13 +41,11 @@ export const HomeTourOverlay: React.FC<Props> = ({
         <Pressable
             ref={rootRef}
             onLayout={() => rootRef.current?.measureInWindow((_x, y) => setOriginY(y))}
-            onPress={isCreateStep ? undefined : onNext}
+            onPress={onNext}
             // Above AnimatedView's visible zIndex (1) so taps reach the overlay.
             style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}>
 
-            {isCreateStep ? (
-                <BlurView intensity={18} tint={tint} pointerEvents="none" style={StyleSheet.absoluteFill} />
-            ) : bandHeight > 0 ? (
+            {bandHeight > 0 ? (
                 <BlurView
                     intensity={12}
                     tint={tint}
@@ -75,27 +68,16 @@ export const HomeTourOverlay: React.FC<Props> = ({
                     ))}
                 </View>
 
-                {isCreateStep ? (
-                    <View style={{ marginTop: 14, gap: 12 }}>
-                        <PrimaryButton title="Create workspace" onPress={onCreate} />
-                        <Pressable onPress={onSkip} hitSlop={10} style={{ alignItems: "center" }}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Maybe later
-                            </ThemedText>
-                        </Pressable>
-                    </View>
-                ) : (
-                    <View style={styles.footerRow}>
-                        <Pressable onPress={onSkip} hitSlop={10}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                Skip
-                            </ThemedText>
-                        </Pressable>
-                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                            Tap to continue →
+                <View style={styles.footerRow}>
+                    <Pressable onPress={onSkip} hitSlop={10}>
+                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                            Skip
                         </ThemedText>
-                    </View>
-                )}
+                    </Pressable>
+                    <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                        Tap to continue →
+                    </ThemedText>
+                </View>
             </View>
         </Pressable>
     );

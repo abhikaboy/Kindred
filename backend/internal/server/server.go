@@ -151,10 +151,10 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// SSE streaming routes for NLP flows (raw Fiber, bypass Huma)
 	taskStreamHandler := task.NewStreamHandler(collections, geminiService, ringService)
-	app.Post("/api/v1/user/tasks/natural-language/intent/stream", taskStreamHandler.StreamIntentNaturalLanguage)
-	app.Post("/api/v1/user/tasks/natural-language/stream", taskStreamHandler.StreamCreateNaturalLanguage)
-	app.Post("/api/v1/user/tasks/natural-language/query/stream", taskStreamHandler.StreamQueryNaturalLanguage)
-	app.Post("/api/v1/user/tasks/natural-language/edit/stream", taskStreamHandler.StreamEditNaturalLanguage)
+	app.Post("/v1/user/tasks/natural-language/intent/stream", taskStreamHandler.StreamIntentNaturalLanguage)
+	app.Post("/v1/user/tasks/natural-language/stream", taskStreamHandler.StreamCreateNaturalLanguage)
+	app.Post("/v1/user/tasks/natural-language/query/stream", taskStreamHandler.StreamQueryNaturalLanguage)
+	app.Post("/v1/user/tasks/natural-language/edit/stream", taskStreamHandler.StreamEditNaturalLanguage)
 
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)

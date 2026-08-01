@@ -22,6 +22,7 @@ import { tagPayload, pendingIds } from "@/lib/tags";
 import type { FriendReference } from "@/hooks/useConnections";
 import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
+import { DeleteTaskDialog } from "@/components/task/DeleteTaskDialog";
 import { cn } from "@/lib/utils";
 import { fireConfetti } from "@/lib/confetti";
 import { useCreate } from "@/components/create/CreateContext";
@@ -33,7 +34,6 @@ import {
   taskToUpdateDocument,
   useActivateTask,
   useCompleteTask,
-  useDeleteTask,
   useUpdateTask,
   useUpdateTaskTags,
 } from "@/hooks/useTaskActions";
@@ -122,11 +122,11 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
   const [startDate, setStartDate] = useState<string | undefined>(task.startDate);
   const [startTime, setStartTime] = useState<string | undefined>(task.startTime);
   const [deadline, setDeadline] = useState<string | undefined>(task.deadline);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const updateTask = useUpdateTask();
   const updateTags = useUpdateTaskTags();
   const completeTask = useCompleteTask();
-  const deleteTask = useDeleteTask();
   const activateTask = useActivateTask();
   const { openCreatePost } = useCreate();
   const { showRingUpdate } = useRingUpdate();
@@ -207,14 +207,6 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           done();
         },
       }
-    );
-  };
-
-  const handleDelete = () => {
-    if (!window.confirm("Delete this task? This cannot be undone.")) return;
-    deleteTask.mutate(
-      { params: { header: AUTH_HEADER, path } },
-      { onSuccess: () => done() }
     );
   };
 

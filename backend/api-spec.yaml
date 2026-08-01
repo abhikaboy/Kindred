@@ -10996,6 +10996,11 @@ components:
                     type: string
                 id:
                     type: string
+                status:
+                    type: string
+                    enum:
+                        - completed
+                        - in_progress
             required:
                 - id
                 - content

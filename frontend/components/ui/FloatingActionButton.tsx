@@ -500,7 +500,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                                 styles.homeButton,
                                 { bottom: bottomOffset + 68, borderColor: ThemedColor.tertiary, backgroundColor: ThemedColor.background },
                             ]}>
-                            <House size={20} color={ThemedColor.text} weight="regular" />
+                            <House size={24} color={ThemedColor.text} weight="bold" />
                         </TouchableOpacity>
                     )}
                 <FABButton
@@ -521,10 +521,10 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 const styles = StyleSheet.create({
     homeButton: {
         position: "absolute",
-        right: 22,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        right: 16,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         borderWidth: 1,
         alignItems: "center",
         justifyContent: "center",

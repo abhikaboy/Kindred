@@ -11,7 +11,7 @@ import {
 import Svg, { Circle } from "react-native-svg";
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
-import { Check, LockSimple, Gift } from "phosphor-react-native";
+import { Check, LockSimple, Gift, Target, Fire, CalendarCheck } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
@@ -23,7 +23,117 @@ import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import RewardUnboxingModal from "@/components/modals/RewardUnboxingModal";
+import DefaultModal from "@/components/modals/DefaultModal";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { showToast } from "@/utils/showToast";
+
+// Mirrors the scoring weights in backend/internal/handlers/rings/service.go.
+// Each is a ceiling, not a guaranteed add: they only max out if you fully
+// earn that category, which is why they won't sum to your current score.
+const SCORE_BREAKDOWN = [
+    { Icon: Target, label: "Close your rings", detail: "counted over the last 7 days", points: "up to 55" },
+    { Icon: Fire, label: "Keep your streak alive", detail: "+1 per streak day", points: "up to 7" },
+    { Icon: CalendarCheck, label: "Show up daily", detail: "close at least one ring", points: "up to 8" },
+];
+
+/** Score arc, tappable to (re-)explain how the productivity score works. */
+function ScoreWithInfo({ score }: { score: number }) {
+    const [showInfo, setShowInfo] = useState(false);
+    const { ready, done } = useFirstTouchHint("productivity_score");
+    const ThemedColor = useThemeColor();
+
+    useEffect(() => {
+        if (ready) setShowInfo(true);
+    }, [ready]);
+
+    const closeInfo = useCallback(
+        (visible: boolean) => {
+            setShowInfo(visible);
+            if (!visible) done();
+        },
+        [done]
+    );
+
+    return (
+        <>
+            <TouchableOpacity onPress={() => setShowInfo(true)} activeOpacity={0.8}>
+                <ScoreArc score={score} />
+            </TouchableOpacity>
+            <DefaultModal visible={showInfo} setVisible={closeInfo} enableDynamicSizing>
+                <View style={infoStyles.header}>
+                    <ScoreArc score={score} />
+                    <ThemedText type="title" style={infoStyles.title}>
+                        Introducing your Productivity Score
+                    </ThemedText>
+                </View>
+
+                <View style={infoStyles.rows}>
+                    {SCORE_BREAKDOWN.map(({ Icon, label, detail, points }) => (
+                        <View key={label} style={infoStyles.row}>
+                            <View style={[infoStyles.iconBadge, { backgroundColor: ThemedColor.primary + "20" }]}>
+                                <Icon size={18} color={ThemedColor.primary} weight="fill" />
+                            </View>
+                            <View style={infoStyles.rowText}>
+                                <ThemedText type="defaultSemiBold">{label}</ThemedText>
+                                <ThemedText type="caption" style={{ opacity: 0.6 }}>{detail}</ThemedText>
+                            </View>
+                            <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
+                                {points}
+                            </ThemedText>
+                        </View>
+                    ))}
+                </View>
+
+                <ThemedText type="caption" style={infoStyles.footnote}>
+                    Everyone starts at 30. These are ceilings, not guaranteed points: earn a share of each to climb toward 100.
+                </ThemedText>
+
+                <PrimaryButton title="Got it" onPress={() => closeInfo(false)} style={infoStyles.button} />
+            </DefaultModal>
+        </>
+    );
+}
+
+const infoStyles = StyleSheet.create({
+    header: {
+        alignItems: "center",
+        marginBottom: 16,
+    },
+    title: {
+        fontSize: 22,
+        letterSpacing: -1,
+        textAlign: "center",
+        marginTop: 4,
+    },
+    rows: {
+        gap: 14,
+        marginBottom: 16,
+    },
+    footnote: {
+        opacity: 0.6,
+        lineHeight: 18,
+        marginBottom: 20,
+    },
+    row: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    iconBadge: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    rowText: {
+        flex: 1,
+        gap: 1,
+    },
+    button: {
+        marginBottom: 32,
+    },
+});
 
 if (
     Platform.OS === "android" &&
@@ -217,7 +327,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             {/* Score Arc */}
             {showScore && (
                 <View style={[styles.arcSection, { marginBottom: 8 }]}>
-                    <ScoreArc score={score} />
+                    <ScoreWithInfo score={score} />
                 </View>
             )}
 

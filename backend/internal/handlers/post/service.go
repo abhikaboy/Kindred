@@ -1311,11 +1311,14 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 		if friend.PushToken == "" {
 			continue
 		}
-		cta := callToActions[randIndex(len(callToActions))]
+		body := caption
+		if body == "" {
+			body = callToActions[randIndex(len(callToActions))]
+		}
 		pushes = append(pushes, xutils.Notification{
 			Token:    friend.PushToken,
 			Title:    title,
-			Message:  cta,
+			Message:  body,
 			ImageURL: thumbnail,
 			Data: map[string]string{
 				"type":        "new_post",

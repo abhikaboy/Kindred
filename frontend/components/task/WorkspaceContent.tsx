@@ -163,9 +163,13 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     }, [selected]);
 
     const upcomingCategory = categories.find((c) => c.id.startsWith("upcoming-"));
-    const visibleCategories = categories
-        .filter((category) => category.name !== "!-proxy-!" && !category.id.startsWith("upcoming-"))
-        .sort((a, b) => b.tasks.length - a.tasks.length);
+    const visibleCategories = useMemo(
+        () =>
+            categories
+                .filter((category) => category.name !== "!-proxy-!" && !category.id.startsWith("upcoming-"))
+                .sort((a, b) => b.tasks.length - a.tasks.length),
+        [categories]
+    );
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
     const groupByDay = state.groupByDay;

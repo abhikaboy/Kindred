@@ -7,8 +7,10 @@ import { TaskContextMenu } from "@/components/TaskContextMenu";
 import { CompleteCheckbox } from "@/components/SwipeToComplete";
 import { EncouragerAvatars } from "@/components/EncouragerAvatars";
 
-// Primary (#854DFF) at 30% — mirrors mobile's encouraged-card glow (radius 12, offset y3, opacity 0.3).
-const ENCOURAGED_GLOW = "0 3px 12px rgba(133,77,255,0.3)";
+// Primary (#854DFF) glow, softened for desktop — mobile's original (opacity 0.3) read too harsh here.
+// Blur kept under the list gap (gap-3 = 12px) so adjacent encouraged cards
+// (e.g. profile's accomplished-tasks list) don't bleed into one glowing blob.
+const ENCOURAGED_GLOW = "0 0 10px rgba(133,77,255,0.22), 0 1px 4px rgba(133,77,255,0.12)";
 
 // Priority dot colors, mirroring the mobile card (none→transparent, 1→green, 2→amber, 3→red).
 const PRIORITY_DOT: Record<number, string> = {

@@ -373,7 +373,7 @@ func constructTaskFromTemplate(templateDoc *TemplateTaskDocument) TaskDocument {
 		StartDate:      templateDoc.StartDate,
 		Priority:       templateDoc.Priority,
 		Public:         templateDoc.Public,
-		Active:         true,
+		Active:         false,
 		Timestamp:      xutils.NowUTC(),
 		LastEdited:     xutils.NowUTC(),
 		TemplateID:     &templateDoc.ID,

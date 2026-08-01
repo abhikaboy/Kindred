@@ -38,10 +38,11 @@ export default function TabLayout() {
     const segments = useSegments();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
-    const { startTodayTasks, dueTodayTasks, windowTasks, setSelected } = useTasks();
+    const { startTodayTasks, dueTodayTasks, windowTasks, setSelected, selected } = useTasks();
     const currentIndex = useTabIndex();
     const { capture } = useAnalytics();
     const isOnFeedTab = segments?.some((segment) => segment === "(feed)");
+    const isOnTaskTab = segments?.some((segment) => segment === "(task)");
     const [scrollVisible, setScrollVisible] = useState(true);
     const [homeTourActive, setHomeTourActive] = useState(false);
 
@@ -77,16 +78,22 @@ export default function TabLayout() {
     const hideTabBarScreens = ["/blueprint/create", "/voice", "/review"];
     // Screens where only the FAB hides (tab bar stays visible)
     const hideFABScreens = ["/daily", "/review", "/settings"];
+    // Reached the calendar/list page by swiping the home pager (not a route change,
+    // so pathname stays put) — hide the tab bar but keep the FAB + home button up.
+    const isSwipedToToday = isOnTaskTab && selected === "Today";
 
-    const shouldHideTabBar =
+    const baseHideTabBar =
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
         isDrawerOpen ||
-        focusMode ||
         homeTourActive ||
         (isOnFeedTab && !scrollVisible);
 
+    // Focus mode only hides the tab bar — the FAB and home button stay put,
+    // same as isSwipedToToday.
+    const shouldHideTabBar = baseHideTabBar || isSwipedToToday || focusMode;
+
     const shouldHideFAB =
-        shouldHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
+        baseHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
 
     return (
         <>

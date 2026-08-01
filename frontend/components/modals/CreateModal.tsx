@@ -51,6 +51,22 @@ const CreateModal = (props: Props) => {
     const [screen, setScreen] = useState(props.screen ?? Screen.STANDARD);
     const ThemedColor = useThemeColor();
 
+    // The sheet now stays mounted permanently (see _layout.tsx) instead of remounting
+    // per open, so `screen`'s initial useState value only ever applies once. Re-derive
+    // it here, during render, on every closed->open transition — matches what a fresh
+    // mount used to give for free, and (unlike doing this in an effect) lands before the
+    // first paint so a NEW_CATEGORY/SELECT_WORKSPACE open never flashes the wrong snap size.
+    // State (not a ref) tracks "visible last render": refs aren't safe to mutate during
+    // render since an in-progress render can be discarded without committing.
+    const [wasVisible, setWasVisible] = useState(props.visible);
+    if (props.visible !== wasVisible) {
+        setWasVisible(props.visible);
+        if (props.visible) {
+            const targetScreen = props.screen ?? Screen.STANDARD;
+            if (targetScreen !== screen) setScreen(targetScreen);
+        }
+    }
+
     // Only the setter: subscribing to taskName here re-rendered the whole sheet on
     // every keystroke. Each screen reads what it needs from the context directly.
     const { setCopySourceTaskId } = useTaskCreation();

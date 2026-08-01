@@ -17,6 +17,7 @@ export type PostCardFooterProps = {
     taggedUsers?: TaggedUser[];
     category?: string;
     taskName?: string;
+    taskStatus?: string;
     reactions?: SlackReaction[];
     kudos?: PostKudos[];
     /** Read-only mode: disables all interactions (used in preview) */
@@ -40,6 +41,7 @@ const PostCardFooter = ({
     taggedUsers = [],
     category,
     taskName,
+    taskStatus,
     reactions = [],
     kudos = [],
     readOnly = false,
@@ -64,6 +66,11 @@ const PostCardFooter = ({
             {(category || taskName) && (
                 <View style={styles.categorySection}>
                     <View style={styles.categoryRow}>
+                        {taskStatus === "in_progress" && (
+                            <ThemedText style={[styles.categoryText, { color: ThemedColor.caption }]}>
+                                Working on
+                            </ThemedText>
+                        )}
                         {category && (
                             <>
                                 <ThemedText style={[styles.categoryText, { color: ThemedColor.primary }]}>

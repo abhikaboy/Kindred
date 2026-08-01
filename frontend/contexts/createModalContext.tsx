@@ -34,9 +34,8 @@ export const CreateModalProvider = ({ children }: { children: React.ReactNode })
 
     const openModal = useCallback((config: CreateModalConfig = {}) => {
         capture(AnalyticsEvents.CREATE_MODAL_OPENED, {});
-        // ponytail: no close-then-open cycle — the layout only mounts CreateModal
-        // while visible, so every open is already a fresh mount. Assumes nothing
-        // calls openModal while the sheet is up (nothing does today).
+        // CreateModal stays permanently mounted (see _layout.tsx) and reacts to prop
+        // changes rather than remounting, so replacing the whole config here is enough.
         setModalConfig(config);
         setVisible(true);
     }, []);

@@ -30,6 +30,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useTasks } from "@/contexts/tasksContext";
+import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
@@ -134,6 +135,13 @@ const STEP_RINGS = 3;
 const STEP_SHARE = 4;
 const STEP_CONGRATS = 5;
 
+// Rings explainer copy, revealed one at a time (tap to advance).
+const RING_INFO = [
+    { label: "Plan", desc: "Add tasks to your day" },
+    { label: "Do", desc: "Complete them" },
+    { label: "Share", desc: "Post a win or send kudos" },
+];
+
 // Demo ring state for the explainer: plan + do closed (they just planned + did a
 // task), share still open — the user closes the share ring in the next sequence.
 const DEMO_RINGS: RingState = {
@@ -156,7 +164,8 @@ export default function TutorialOnboarding() {
     const router = useRouter();
     const { capture } = useAnalytics();
     const { user } = useAuth();
-    const { workspaces, fetchWorkspaces, setCreateCategory, categories, setSelected } = useTasks();
+    const { workspaces, fetchWorkspaces, categories, setSelected } = useTasks();
+    const { setCreateCategory } = useSelectedCategory();
     const { setTaskName, resetTaskCreation } = useTaskCreation();
     const { request } = useRequest();
 
@@ -171,6 +180,7 @@ export default function TutorialOnboarding() {
     const friendCursorX = useRef(new Animated.Value(0)).current; // beak's red cursor fly-in
     const friendCursorY = useRef(new Animated.Value(0)).current;
     const [isCreatingCategory, setIsCreatingCategory] = useState(true); // start with creator open
+    const [demoIntroSeen, setDemoIntroSeen] = useState(false); // blocks the auto-play until the demo notice is dismissed
 
     // Data from tutorial actions
     const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -193,6 +203,7 @@ export default function TutorialOnboarding() {
     const tapCursorY = useRef(new Animated.Value(0)).current;
     const swipeCursorX = useRef(new Animated.Value(0)).current;
     const ringsStepAnim = useRef(new Animated.Value(0)).current; // rings page enter transition
+    const [ringIndex, setRingIndex] = useState(0); // which ring is currently shown in the explainer
 
     const captionAnim = useRef(new Animated.Value(0)).current; // caption screen fade-in
     // Feed / congrats beats: beak's cursor clicks your post, kudos take over a
@@ -233,6 +244,7 @@ export default function TutorialOnboarding() {
     const introCreatorAnim = useRef(new Animated.Value(0)).current;
     const [introCreatorReady, setIntroCreatorReady] = useState(false);
     useEffect(() => {
+        if (!demoIntroSeen) return;
         Animated.timing(introHeaderAnim, { toValue: 1, duration: 500, easing: CURSOR_EASE, useNativeDriver: true }).start();
         // Mount the creator late so its name-typewriter starts after the stagger
         const t = setTimeout(() => {
@@ -240,7 +252,7 @@ export default function TutorialOnboarding() {
             Animated.timing(introCreatorAnim, { toValue: 1, duration: 400, easing: CURSOR_EASE, useNativeDriver: true }).start();
         }, 1300);
         return () => clearTimeout(t);
-    }, []);
+    }, [demoIntroSeen]);
 
     // ─── Prompt card animation on step change ───────────────────────
     useEffect(() => {
@@ -434,6 +446,7 @@ export default function TutorialOnboarding() {
         if (step !== STEP_RINGS) {
             setShowRingCursor(false);
             setShowShareToast(false);
+            setRingIndex(0);
             ringsStepAnim.setValue(0);
             return;
         }
@@ -601,6 +614,27 @@ export default function TutorialOnboarding() {
                 }}
             />
 
+            {/* Demo notice — blocks the auto-play walkthrough until dismissed, so
+                nobody mistakes the example task for their real workspace */}
+            {!demoIntroSeen && (
+                <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
+                    <BlurView intensity={40} tint="default" style={StyleSheet.absoluteFill} />
+                    <View style={styles.kudosOverlay}>
+                        <View style={[styles.spotlightCard, { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
+                            <ThemedText type="title" style={{ fontWeight: "600" }}>
+                                This is a demo
+                            </ThemedText>
+                            <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                                Not your real workspace — we'll add an example task for you. Nothing to type yet.
+                            </ThemedText>
+                        </View>
+                        <View style={{ marginTop: 24 }}>
+                            <PrimaryButton title="Got it" onPress={() => setDemoIntroSeen(true)} />
+                        </View>
+                    </View>
+                </View>
+            )}
+
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -718,6 +752,10 @@ export default function TutorialOnboarding() {
                             },
                         ]}
                         onTouchEnd={() => {
+                            if (ringIndex < RING_INFO.length - 1) {
+                                setRingIndex((i) => i + 1);
+                                return;
+                            }
                             setShowRingCursor(true);
                             setShowShareToast(true);
                         }}>
@@ -726,9 +764,6 @@ export default function TutorialOnboarding() {
                         </View>
                         <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Your daily rings
-                        </ThemedText>
-                        <ThemedText type="default" style={{ color: ThemedColor.caption, marginBottom: 4 }}>
-                            Close all three every day.
                         </ThemedText>
 
                         <ProductivityRingsCard
@@ -742,19 +777,18 @@ export default function TutorialOnboarding() {
                         />
 
                         <View style={styles.ringCards}>
-                            {[
-                                { label: "Plan", desc: "Add tasks to your day" },
-                                { label: "Do", desc: "Complete them" },
-                                { label: "Share", desc: "Post a win or send kudos" },
-                            ].map((r) => (
-                                <View key={r.label} style={[styles.ringCard, { backgroundColor: ThemedColor.lightened }]}>
-                                    <View style={[styles.ringDot, { backgroundColor: ThemedColor.primary }]} />
-                                    <ThemedText type="defaultSemiBold">{r.label}</ThemedText>
-                                    <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
-                                        {r.desc}
-                                    </ThemedText>
-                                </View>
-                            ))}
+                            <View style={[styles.ringCard, { backgroundColor: ThemedColor.lightened }]}>
+                                <View style={[styles.ringDot, { backgroundColor: ThemedColor.primary }]} />
+                                <ThemedText type="defaultSemiBold">{RING_INFO[ringIndex].label}</ThemedText>
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
+                                    {RING_INFO[ringIndex].desc}
+                                </ThemedText>
+                            </View>
+                            {ringIndex < RING_INFO.length - 1 && (
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption, textAlign: "center" }}>
+                                    Tap to see the next ring
+                                </ThemedText>
+                            )}
                         </View>
 
                         {showRingCursor && (

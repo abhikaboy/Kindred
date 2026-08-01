@@ -6,6 +6,7 @@ import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
+import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { Screen } from "../CreateModal";
@@ -51,7 +52,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
     const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
     const { request } = useRequest();
-    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, selectedCategory, setCreateCategory, task } = useTasks();
+    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task } = useTasks();
+    const { selectedCategory, setCreateCategory } = useSelectedCategory();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
         taskName,

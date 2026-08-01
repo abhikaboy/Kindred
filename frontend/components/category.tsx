@@ -6,7 +6,7 @@ import { ThemedText } from "./ThemedText";
 import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
 import SwipableTaskCard from "./cards/SwipableTaskCard";
-import { useTasks } from "@/contexts/tasksContext";
+import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
@@ -35,7 +35,7 @@ export const Category: React.FC<CategoryProps> = ({
     highlightFirstTask = false,
     highlightCategoryHeader = false
 }) => {
-    const { setCreateCategory } = useTasks();
+    const { setCreateCategory } = useSelectedCategory();
     const ThemedColor = useThemeColor();
     const router = useRouter();
 

@@ -13,6 +13,7 @@ import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
 import EndOfDayCard from "@/components/cards/EndOfDayCard";
+import ComposePostCard from "@/components/cards/ComposePostCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
@@ -44,6 +45,7 @@ import { Handshake } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
+import { useEndOfDayCard } from "@/hooks/useEndOfDayCard";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -70,6 +72,7 @@ type PostData = {
             id: string;
             name: string;
         };
+        status?: string;
     };
     reactions: { [emoji: string]: string[] } | {};
     comments: any[] | null;
@@ -109,6 +112,7 @@ export default function Feed() {
     const styles = useMemo(() => stylesheet(ThemedColor, insets), [ThemedColor, insets]);
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
+    const { visible: endOfDayVisible } = useEndOfDayCard();
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     // First-touch: the notifications pager page is invisible until swiped; visiting it dismisses
     const { ready: notifHintReady, done: notifHintDone } = useFirstTouchHint("feed_notifications");
@@ -550,6 +554,7 @@ export default function Feed() {
                         kudos={post.kudos}
                         category={post.task?.category?.name}
                         taskName={post.task?.content}
+                        taskStatus={post.task?.status}
                         onHide={handleHidePost}
                         onBlockUser={handleBlockUser}
                     />
@@ -585,6 +590,7 @@ export default function Feed() {
                     timeTaken={0}
                     category={post.task?.category?.name}
                     taskName={post.task?.content}
+                    taskStatus={post.task?.status}
                     reactions={postReactions}
                     comments={post.comments || []}
                     kudos={post.kudos}
@@ -635,10 +641,10 @@ export default function Feed() {
                     </TouchableOpacity>
                 </View>
 
-                <EndOfDayCard />
+                {endOfDayVisible ? <EndOfDayCard /> : <ComposePostCard />}
             </View>
         );
-    }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
+    }, [ThemedColor.text, router, availableFeeds, renderFeedTab, endOfDayVisible]);
 
     const renderEmptyComponent = useCallback(() => {
         if (posts.length === 0 && !loading) {

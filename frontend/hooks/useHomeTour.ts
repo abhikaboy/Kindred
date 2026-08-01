@@ -6,18 +6,16 @@ import { useAuth } from "@/hooks/useAuth";
 // First-touch guided reveal of the home dashboard. Sections mount one at a time
 // (see HomeScrollContent gating); this hook owns step state + auto-scroll.
 
-export type TourKey = "rings" | "jumpBackIn" | "upcoming" | "workspaces" | "create";
+export type TourKey = "rings" | "jumpBackIn" | "workspaces";
 
 export const HOME_TOUR_STEPS: { key: TourKey; copy: string }[] = [
     { key: "rings", copy: "Close all three rings every day to keep your momentum going." },
     { key: "jumpBackIn", copy: "Your recent tasks live here — tap one to pick up where you left off." },
-    { key: "upcoming", copy: "Everything due soon, at a glance." },
     { key: "workspaces", copy: "Workspaces keep the parts of your life separate." },
-    { key: "create", copy: "Let's set up your Kindred." },
 ];
 
-// Section keys that map to a real on-screen section (the create step is card-only).
-const SECTION_ORDER: TourKey[] = ["rings", "jumpBackIn", "upcoming", "workspaces"];
+// Section keys that map to a real on-screen section (create + swipe are card-only).
+const SECTION_ORDER: TourKey[] = ["rings", "jumpBackIn", "workspaces"];
 
 // Where the active section's top should land on screen after auto-scroll.
 const TARGET_TOP = Dimensions.get("window").height * 0.34;
@@ -61,7 +59,9 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
         setStepIndex((i) => i + 1);
     }, []);
 
-    const skip = useCallback(() => finish(), [finish]);
+    const skip = useCallback(() => {
+        finish();
+    }, [finish]);
 
     // Advancing past the last step ends the tour.
     useEffect(() => {
@@ -86,10 +86,6 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
         if (!active) return;
         const step = HOME_TOUR_STEPS[stepIndex];
         if (!step) return;
-        if (step.key === "create") {
-            setActiveSectionTop(null);
-            return;
-        }
         let cancelled = false;
         // Retry a few times before giving up — a freshly-revealed section may not
         // be laid out yet, and skipping too eagerly cascades to the create step.
@@ -139,7 +135,6 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
         active,
         stepIndex,
         step,
-        isCreateStep: step?.key === "create",
         totalSteps: HOME_TOUR_STEPS.length,
         start,
         next,

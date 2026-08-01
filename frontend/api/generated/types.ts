@@ -6643,6 +6643,8 @@ export interface components {
             category: components["schemas"]["CategoryExtendedReference"];
             content: string;
             id: string;
+            /** @enum {string} */
+            status?: "completed" | "in_progress";
         };
         PreviewTaskNaturalLanguageInputBody: {
             /**

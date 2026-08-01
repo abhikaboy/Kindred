@@ -151,10 +151,18 @@ export function SwipeToComplete({
     setDx(0);
   }
 
+  // Only clip while there's actually something to clip (the reveal strip
+  // sliding in, or the row collapsing on complete) — clipping at rest would
+  // cut off TaskItem's encouraged-task glow, which needs to bleed past the border.
+  const clipping = dx !== 0 || done;
+
   return (
     <div
       ref={rowRef}
-      className="relative cursor-pointer select-none overflow-hidden rounded-2xl transition-[height,opacity,margin] duration-300"
+      className={cn(
+        "relative cursor-pointer select-none rounded-2xl transition-[height,opacity,margin] duration-300",
+        clipping ? "overflow-hidden" : "overflow-visible",
+      )}
       style={done ? { height: 0, opacity: 0, marginTop: -8 } : undefined}
     >
       {/* Reveal only fills the strip the card has vacated, so it never sits over the card. */}

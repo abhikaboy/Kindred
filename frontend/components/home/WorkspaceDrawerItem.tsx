@@ -15,6 +15,10 @@ type Props = {
     workspaceIcon?: string;
     workspaceColor?: string;
     style?: StyleProp<ViewStyle>;
+    /** When provided, the trailing caret becomes a tap target that toggles the
+     * task preview below this row instead of just hinting at navigation. */
+    previewExpanded?: boolean;
+    onTogglePreview?: () => void;
 };
 
 export const WorkspaceDrawerItem = (props: Props) => {
@@ -62,7 +66,17 @@ export const WorkspaceDrawerItem = (props: Props) => {
                         style={{ color: props.taskCount > 0 ? ThemedColor.primary : ThemedColor.caption }}>
                         {props.taskCount}
                     </ThemedText>
-                    <PhosphorIcons.CaretRight size={16} color={ThemedColor.caption} />
+                    {props.onTogglePreview ? (
+                        <TouchableOpacity onPress={props.onTogglePreview} hitSlop={8}>
+                            {props.previewExpanded ? (
+                                <PhosphorIcons.CaretDown size={16} color={ThemedColor.caption} />
+                            ) : (
+                                <PhosphorIcons.CaretRight size={16} color={ThemedColor.caption} />
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <PhosphorIcons.CaretRight size={16} color={ThemedColor.caption} />
+                    )}
                 </View>
             )}
         </TouchableOpacity>

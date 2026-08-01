@@ -500,14 +500,7 @@ const LayoutContent = () => {
                         }}
                     /> */}
                 </Stack>
-                {visible && (
-                    <CreateModal
-                        key={`modal-${visible}-${modalConfig.categoryId || 'default'}`}
-                        visible={true}
-                        setVisible={setVisible}
-                        {...modalConfig}
-                    />
-                )}
+                <CreateModal visible={visible} setVisible={setVisible} {...modalConfig} />
         </Animated.View>
     );
 };

@@ -15,6 +15,7 @@ import { Accelerometer } from "expo-sensors";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OnboardingProvider } from "@/hooks/useOnboarding";
 import { TasksProvider } from "@/contexts/tasksContext";
+import { SelectedCategoryProvider } from "@/contexts/selectedCategoryContext";
 import { TaskCreationProvider } from "@/contexts/taskCreationContext";
 import BackButton from "@/components/BackButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -182,6 +183,7 @@ export default Sentry.wrap(function RootLayout() {
                         <FocusModeProvider>
                             <KudosProvider>
                                 <TasksProvider>
+                                  <SelectedCategoryProvider>
                                     <TaskCreationProvider>
                                             <SelectedGroupProvider>
                                                 <DrawerProvider>
@@ -214,6 +216,7 @@ export default Sentry.wrap(function RootLayout() {
                                                 </DrawerProvider>
                                             </SelectedGroupProvider>
                                     </TaskCreationProvider>
+                                  </SelectedCategoryProvider>
                                 </TasksProvider>
                             </KudosProvider>
                         </FocusModeProvider>

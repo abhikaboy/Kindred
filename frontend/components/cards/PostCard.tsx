@@ -68,6 +68,7 @@ type Props = {
     kudos?: PostKudos[];
     category?: string;
     taskName?: string;
+    taskStatus?: string;
     size?: ImageSize;
     song?: components["schemas"]["Song"];
     onReactionUpdate?: () => void;
@@ -95,6 +96,7 @@ const PostCard = React.memo(({
     kudos = [],
     category,
     taskName,
+    taskStatus,
     id,
     size,
     song,
@@ -641,6 +643,7 @@ const PostCard = React.memo(({
                         taggedUsers={taggedUsers}
                         category={category}
                         taskName={taskName}
+                        taskStatus={taskStatus}
                         reactions={localReactions}
                         kudos={kudos}
                         userId={userId}

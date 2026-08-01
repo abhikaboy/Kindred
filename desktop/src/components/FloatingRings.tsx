@@ -69,7 +69,10 @@ export function FloatingRings(): JSX.Element | null {
 
   const alwaysShow = import.meta.env.DEV;
   if (!data) return null;
-  if (!alwaysShow && (pathname === "/" || data.ring_state.all_closed)) return null;
+  // Closed always hides, even in dev — the dev bypass is only meant to preview
+  // the widget on the home page, not to force it to show once rings are done.
+  if (data.ring_state.all_closed) return null;
+  if (!alwaysShow && pathname === "/") return null;
 
   const open = RINGS.filter((r) => !data.ring_state[r.key].closed).length;
 

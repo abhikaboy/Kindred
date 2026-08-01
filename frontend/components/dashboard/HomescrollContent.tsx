@@ -11,16 +11,13 @@ import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
 import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
 import BasicCard from "@/components/cards/BasicCard";
-import { useRouter } from "expo-router";
 import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import SectionHeader from "./SectionHeader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import TodaySection from "./TodaySection";
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import WorkingOnRow from "./WorkingOnRow";
 import { OnboardingChecklist } from "./OnboardingChecklist";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
@@ -46,8 +43,6 @@ interface HomeScrollContentProps {
     onCreateWorkspace: () => void;
     drawerRef: any;
     ThemedColor: any;
-    focusMode: boolean;
-    toggleFocusMode: () => void;
     refreshing?: boolean;
     onRefresh?: () => void;
     scrollRef?: React.RefObject<ScrollView>;
@@ -72,8 +67,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     onCreateWorkspace,
     drawerRef,
     ThemedColor,
-    focusMode,
-    toggleFocusMode,
     refreshing = false,
     onRefresh,
     scrollRef,
@@ -83,11 +76,37 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     kudosOffsetRef,
     tour,
 }) => {
-    const router = useRouter();
     const { showAlert } = useAlert();
     const [statsExpanded, setStatsExpanded] = useState(false);
     const [ringsExpanded, setRingsExpanded] = useState(false);
     const dimAnim = useRef(new Animated.Value(1)).current;
+
+    // Per-workspace task-preview collapse — collapsed by default, persisted locally
+    const [expandedPreviews, setExpandedPreviews] = useState<Record<string, boolean>>({});
+    const loadedPreviewNamesRef = useRef<Set<string>>(new Set());
+    useEffect(() => {
+        const namesToLoad = workspaces
+            .map((w: any) => w.name)
+            .filter((name: string) => !loadedPreviewNamesRef.current.has(name));
+        if (namesToLoad.length === 0) return;
+        namesToLoad.forEach((name: string) => loadedPreviewNamesRef.current.add(name));
+
+        Promise.all(
+            namesToLoad.map((name: string) =>
+                AsyncStorage.getItem(`workspace-preview-expanded-${name}`).then((v) => [name, v === "true"] as const)
+            )
+        ).then((entries) => {
+            setExpandedPreviews((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+        });
+    }, [workspaces]);
+
+    const toggleWorkspacePreview = useCallback((name: string) => {
+        setExpandedPreviews((prev) => {
+            const next = !prev[name];
+            AsyncStorage.setItem(`workspace-preview-expanded-${name}`, next ? "true" : "false");
+            return { ...prev, [name]: next };
+        });
+    }, []);
 
     // Dashboard section visibility
     const queryClient = useQueryClient();
@@ -413,20 +432,6 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     </View>
                 )}
 
-                {tour.visibleUpTo("upcoming") && (
-                <View ref={(node) => tour.registerSection("upcoming", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 8, marginBottom: 12, }}>
-                    <TouchableOpacity onPress={() => router.push("/(logged-in)/(tabs)/(task)/today")}>
-                        <SectionHeader
-                            title="UPCOMING"
-                            visible={dashboardConfig.upcoming}
-                            onToggleVisibility={() => toggleSection("upcoming")}
-                            right={<Ionicons name="chevron-forward" size={16} color={ThemedColor.caption} />}
-                        />
-                    </TouchableOpacity>
-                    {dashboardConfig.upcoming && <TodaySection />}
-                </View>
-                )}
-
                 {/* Google Calendar Connection Card */}
                 {/* Once Google Calendar is linked, the whole section is hidden from the
                     home page — there's nothing left to prompt. (Sync still lives elsewhere.) */}
@@ -507,12 +512,16 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                                             workspaceIcon={workspace.icon ?? undefined}
                                             workspaceColor={workspace.color ?? undefined}
                                             onPress={() => onWorkspaceSelect(workspace.name)}
+                                            previewExpanded={!!expandedPreviews[workspace.name]}
+                                            onTogglePreview={() => toggleWorkspacePreview(workspace.name)}
                                         />
-                                        <WorkspaceTaskPreview
-                                            categories={workspace.categories}
-                                            onShowAll={() => onWorkspaceSelect(workspace.name)}
-                                            ThemedColor={ThemedColor}
-                                        />
+                                        {expandedPreviews[workspace.name] && (
+                                            <WorkspaceTaskPreview
+                                                categories={workspace.categories}
+                                                onShowAll={() => onWorkspaceSelect(workspace.name)}
+                                                ThemedColor={ThemedColor}
+                                            />
+                                        )}
                                     </View>
                                 ))}
                         </View>

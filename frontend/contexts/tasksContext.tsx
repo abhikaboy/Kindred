@@ -49,8 +49,6 @@ type TaskContextType = {
     updateWorkspaceIconColor: (name: string, icon?: string | null, color?: string | null) => Promise<void>;
     fetchingWorkspaces: boolean;
 
-    setCreateCategory: (Option: Option) => void;
-    selectedCategory: Option;
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
 
@@ -76,7 +74,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [rawWorkspaces, setRawWorkspaces] = useState<Workspace[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [selected, setSelected] = useState<string>("");
-    const [selectedCategory, setSelectedCategory] = useState<Option>({ label: "", id: "", special: false });
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
     const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([]);
@@ -167,11 +164,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             logger.error("Error invalidating workspaces cache", error);
         }
     }, [WORKSPACES_CACHE_KEY]);
-
-    const setCreateCategory = useCallback((option: Option) => {
-        if (option.id === "" || option.label === "") return;
-        setSelectedCategory(option);
-    }, []);
 
     const getWorkspace = useCallback((name: string): Workspace | undefined => {
         return workspaces.find((workspace) => workspace.name === name);
@@ -532,10 +524,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [workspaces]);
 
     useEffect(() => {
-        setSelectedCategory({ label: "", id: "", special: false });
-    }, [selected]);
-
-    useEffect(() => {
         let cancelled = false;
         if (user?._id) {
             AsyncStorage.getItem(RECENT_WORKSPACES_KEY).then(stored => {
@@ -630,8 +618,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         getCategoriesByTag,
         updateCategoryTags,
         updateWorkspaceIconColor,
-        setCreateCategory,
-        selectedCategory,
         showConfetti,
         setShowConfetti,
         task,
@@ -654,8 +640,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         workspaces, getWorkspace, fetchWorkspaces, selected, handleSetSelected,
         categories, addToCategory, updateTask, moveTask, addToWorkspace, addWorkspace,
         removeFromCategory, removeFromWorkspace, removeWorkspace, restoreWorkspace,
-        renameWorkspace, renameCategory, getCategoriesByTag, updateCategoryTags, updateWorkspaceIconColor, setCreateCategory,
-        selectedCategory, showConfetti, task, getTaskById, doesWorkspaceExist,
+        renameWorkspace, renameCategory, getCategoriesByTag, updateCategoryTags, updateWorkspaceIconColor,
+        showConfetti, task, getTaskById, doesWorkspaceExist,
         unnestedTasks, startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks,
         futureTasks, fetchingWorkspaces, windowTasks, recentWorkspaces,
         getRecentWorkspaces, clearRecentWorkspaces,

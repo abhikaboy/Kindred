@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { ArrowSquareOut, Check, Play, Stop, Trash } from "@phosphor-icons/react"
 import { useNavigate } from "react-router-dom"
 import {
@@ -7,12 +8,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import {
-  AUTH_HEADER,
-  useActivateTask,
-  useCompleteTask,
-  useDeleteTask,
-} from "@/hooks/useTaskActions"
+import { AUTH_HEADER, useActivateTask, useCompleteTask } from "@/hooks/useTaskActions"
+import { DeleteTaskDialog } from "@/components/task/DeleteTaskDialog"
 import { useCreate } from "@/components/create/CreateContext"
 import { useRingUpdate } from "@/components/rings/RingUpdateContext"
 import { showTaskCompleteToast } from "@/components/TaskCompleteToast"
@@ -28,19 +25,12 @@ export function TaskContextMenu({
   const navigate = useNavigate()
   const activateTask = useActivateTask()
   const completeTask = useCompleteTask()
-  const deleteTask = useDeleteTask()
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const { openCreatePost } = useCreate()
   const { showRingUpdate } = useRingUpdate()
 
   const isActive = Boolean(task.active || task.workingOnSince)
   const hasCategoryID = Boolean(task.categoryID)
-
-  function handleDelete() {
-    if (!window.confirm("Delete this task? This cannot be undone.")) return
-    deleteTask.mutate({
-      params: { header: AUTH_HEADER, path: { category: task.categoryID!, id: task.id } },
-    })
-  }
 
   return (
     <ContextMenu>
@@ -101,12 +91,14 @@ export function TaskContextMenu({
         <ContextMenuItem
           variant="destructive"
           disabled={!hasCategoryID}
-          onClick={handleDelete}
+          onClick={() => setDeleteOpen(true)}
         >
           <Trash size={14} />
           Delete
         </ContextMenuItem>
       </ContextMenuContent>
+
+      <DeleteTaskDialog task={task} open={deleteOpen} onOpenChange={setDeleteOpen} />
     </ContextMenu>
   )
 }

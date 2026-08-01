@@ -82,8 +82,9 @@ export const PostTaskSelectionView: React.FC<PostTaskSelectionViewProps> = ({
                                     <ThemedText type="defaultSemiBold" numberOfLines={2}>
                                         {task.content}
                                     </ThemedText>
-                                    {task.categoryName && (
+                                    {(task.categoryName || (task as any).status === "in_progress") && (
                                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                            {(task as any).status === "in_progress" ? "Working on · " : ""}
                                             {task.categoryName}
                                         </ThemedText>
                                     )}

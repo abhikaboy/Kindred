@@ -4,6 +4,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useTasks } from "@/contexts/tasksContext";
+import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useRequest } from "@/hooks/useRequest";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
@@ -17,7 +18,8 @@ type Props = {
 
 const NewCategory = ({ goToStandard, isBlueprint = false }: Props) => {
     const [name, setName] = useState("");
-    const { selected, addToWorkspace, setCreateCategory } = useTasks();
+    const { selected, addToWorkspace } = useTasks();
+    const { setCreateCategory } = useSelectedCategory();
     const { request } = useRequest();
     const { addBlueprintCategory } = useBlueprints();
     const { isBlueprint: isBlueprintMode } = useTaskCreation();

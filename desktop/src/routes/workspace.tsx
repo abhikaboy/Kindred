@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Stack } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarBlank, Plus, Stack } from "@phosphor-icons/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CategoryCard } from "@/components/CategoryCard";
 import { useCreate } from "@/components/create/CreateContext";
@@ -7,7 +7,17 @@ import { EmptyState } from "@/components/EmptyState";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useWorkspace, useWorkspaces } from "@/hooks/useWorkspaces";
+import { SwipeToComplete } from "@/components/SwipeToComplete";
+import { TaskItem } from "@/components/TaskItem";
+import { SortMenu } from "@/components/workspace/SortMenu";
+import { FilterMenu } from "@/components/workspace/FilterMenu";
+import { WorkspaceSettingsMenu } from "@/components/workspace/WorkspaceSettingsMenu";
+import { useWorkspace, useWorkspaces, type CategoryDocument } from "@/hooks/useWorkspaces";
+import { useWorkspaceState } from "@/hooks/useWorkspaceState";
+import { sortCategories } from "@/lib/categorySort";
+import { applyTaskFilters } from "@/lib/taskFilters";
+import { groupTasksByDay } from "@/lib/groupByDay";
+import { cn } from "@/lib/utils";
 
 // Arrow-key nav shouldn't fire while typing or with a dialog/menu open.
 function navBlocked(target: EventTarget | null): boolean {
@@ -23,6 +33,8 @@ export default function WorkspaceScreen() {
   const { workspace, isLoading } = useWorkspace(name);
   const { data: allWorkspaces } = useWorkspaces();
   const { openCreateCategory, openCreateTask, setCategoryShortcuts } = useCreate();
+  const { sort, selectSort, filters, toggleFilter, clearFilters, groupByDay, toggleGroupByDay } =
+    useWorkspaceState(name);
 
   const categories = workspace?.categories ?? [];
   const [selected, setSelected] = useState(0);
@@ -35,6 +47,19 @@ export default function WorkspaceScreen() {
   useEffect(() => {
     selectedRef.current?.scrollIntoView({ block: "nearest" });
   }, [selected]);
+
+  // Tasks filtered per category, then categories reordered per the sort pref.
+  // Filtering never hides a category outright (it just empties its task list),
+  // so "this workspace is empty" still reflects real content, not the filter.
+  const visibleCategories = useMemo<CategoryDocument[]>(() => {
+    const filtered = categories.map((c) => ({ ...c, tasks: applyTaskFilters(c.tasks, filters) }));
+    return sort ? sortCategories(filtered, sort.option, sort.direction) : filtered;
+  }, [categories, filters, sort]);
+
+  const dayGroups = useMemo(
+    () => (groupByDay ? groupTasksByDay(visibleCategories) : []),
+    [groupByDay, visibleCategories],
+  );
 
   // ←/→ switch workspace (sidebar order, wrapping); ↑/↓ move the highlighted
   // category; Enter starts a task in it.
@@ -103,15 +128,37 @@ export default function WorkspaceScreen() {
         <ThemedText type="titleFraunces" as="h1">
           {workspace.name}
         </ThemedText>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => openCreateCategory(workspace.name)}
-        >
+        <Button variant="outline" size="sm" onClick={() => openCreateCategory(workspace.name)}>
           <Plus />
           New category
         </Button>
       </div>
+
+      {categories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <SortMenu sort={sort} onSelect={selectSort} />
+          <FilterMenu filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
+          <button
+            type="button"
+            onClick={toggleGroupByDay}
+            title="Group by day"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
+              groupByDay ? "border-primary text-primary" : "text-muted-foreground",
+            )}
+          >
+            <CalendarBlank size={14} />
+            Group by Day
+          </button>
+          <div className="ml-auto">
+            <WorkspaceSettingsMenu
+              workspace={workspace}
+              onRenamed={(newName) => navigate(`/workspace/${encodeURIComponent(newName)}`, { replace: true })}
+              onDeleted={() => navigate("/", { replace: true })}
+            />
+          </div>
+        </div>
+      )}
 
       {categories.length === 0 ? (
         <EmptyState
@@ -125,9 +172,29 @@ export default function WorkspaceScreen() {
             </Button>
           }
         />
+      ) : groupByDay ? (
+        <div className="flex flex-col gap-6">
+          {dayGroups.length === 0 && (
+            <ThemedText type="caption" className="text-muted-foreground">
+              No tasks to show.
+            </ThemedText>
+          )}
+          {dayGroups.map((group) => (
+            <div key={group.key} className="flex flex-col gap-3">
+              <ThemedText type="subtitle">{group.label}</ThemedText>
+              <div className="flex flex-col gap-3">
+                {group.tasks.map(({ task, categoryId }) => (
+                  <SwipeToComplete key={task.id} task={task} categoryId={categoryId}>
+                    <TaskItem task={task} />
+                  </SwipeToComplete>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col gap-8">
-          {categories.map((category, i) => (
+          {visibleCategories.map((category, i) => (
             <div key={category.id} ref={i === selected ? selectedRef : undefined}>
               <CategoryCard
                 category={category}

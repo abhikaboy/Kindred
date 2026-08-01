@@ -84,7 +84,7 @@ func setSSEHeaders(c *fiber.Ctx) {
 	c.Set("X-Accel-Buffering", "no")
 }
 
-// StreamIntentNaturalLanguage handles POST /api/v1/user/tasks/natural-language/intent/stream
+// StreamIntentNaturalLanguage handles POST /v1/user/tasks/natural-language/intent/stream
 func (h *Handler) StreamIntentNaturalLanguage(c *fiber.Ctx) error {
 	body, err := parseNLPBody(c)
 	if err != nil {
@@ -200,7 +200,7 @@ func (h *Handler) StreamIntentNaturalLanguage(c *fiber.Ctx) error {
 	return nil
 }
 
-// StreamCreateNaturalLanguage handles POST /api/v1/user/tasks/natural-language/stream
+// StreamCreateNaturalLanguage handles POST /v1/user/tasks/natural-language/stream
 func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 	body, err := parseNLPBody(c)
 	if err != nil {
@@ -299,7 +299,7 @@ func (h *Handler) StreamCreateNaturalLanguage(c *fiber.Ctx) error {
 	return nil
 }
 
-// StreamQueryNaturalLanguage handles POST /api/v1/user/tasks/natural-language/query/stream
+// StreamQueryNaturalLanguage handles POST /v1/user/tasks/natural-language/query/stream
 func (h *Handler) StreamQueryNaturalLanguage(c *fiber.Ctx) error {
 	body, err := parseNLPBody(c)
 	if err != nil {
@@ -378,7 +378,7 @@ func (h *Handler) StreamQueryNaturalLanguage(c *fiber.Ctx) error {
 	return nil
 }
 
-// StreamEditNaturalLanguage handles POST /api/v1/user/tasks/natural-language/edit/stream
+// StreamEditNaturalLanguage handles POST /v1/user/tasks/natural-language/edit/stream
 func (h *Handler) StreamEditNaturalLanguage(c *fiber.Ctx) error {
 	body, err := parseNLPBody(c)
 	if err != nil {

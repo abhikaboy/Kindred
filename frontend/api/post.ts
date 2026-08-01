@@ -30,7 +30,7 @@ export type Post = PostDocumentAPI;
 export const createPost = async (
     images: string[],
     caption: string,
-    taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
+    taskReference?: { id: any; content: any; category: { id: any; name: any; }; status?: "completed" | "in_progress"; },
     blueprintId?: string,
     isPublic: boolean = true,
     size?: { width: number; height: number; bytes: number },
@@ -457,7 +457,7 @@ export const updatePost = async (
 export const createPostToBackend = async (
     images: string[],
     caption: string,
-    taskReference?: { id: any; content: any; category: { id: any; name: any; }; },
+    taskReference?: { id: any; content: any; category: { id: any; name: any; }; status?: "completed" | "in_progress"; },
     blueprintId?: string,
     isPublic: boolean = false,
     size?: { width: number; height: number; bytes: number },

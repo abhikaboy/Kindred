@@ -1,15 +1,23 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { GearSix } from "phosphor-react-native";
+import { GearSix, Moon } from "phosphor-react-native";
 
 interface WelcomeHeaderProps {
     userName?: string;
     ThemedColor: any;
     onSettingsPress: () => void;
+    focusMode: boolean;
+    onToggleFocusMode: () => void;
 }
 
-export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, ThemedColor, onSettingsPress }) => {
+export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
+    userName,
+    ThemedColor,
+    onSettingsPress,
+    focusMode,
+    onToggleFocusMode,
+}) => {
     const currentHour = new Date().getHours();
 
     let greeting;
@@ -35,6 +43,13 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ userName, ThemedCo
                 </View>
 
                 <View style={styles.actions}>
+                    <TouchableOpacity onPress={onToggleFocusMode} hitSlop={8} activeOpacity={0.7} style={styles.gearBtn}>
+                        <Moon
+                            size={22}
+                            color={focusMode ? ThemedColor.primary : ThemedColor.caption}
+                            weight={focusMode ? "fill" : "regular"}
+                        />
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={onSettingsPress} hitSlop={8} activeOpacity={0.7} style={styles.gearBtn}>
                         <GearSix size={22} color={ThemedColor.caption} />
                     </TouchableOpacity>

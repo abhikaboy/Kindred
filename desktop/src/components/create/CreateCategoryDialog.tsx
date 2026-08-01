@@ -17,17 +17,7 @@ import { useCreateCategory, CREATE_AUTH } from "@/hooks/useCreateActions";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import type { CreateCategoryDialogProps } from "@/components/create/types";
 import { cn } from "@/lib/utils";
-
-const SWATCHES = [
-  "#7C5CFC",
-  "#3B82F6",
-  "#22C55E",
-  "#F59E0B",
-  "#EF4444",
-  "#14B8A6",
-  "#EC4899",
-  "#64748B",
-];
+import { SWATCHES } from "@/lib/swatches";
 
 export function CreateCategoryDialog(props: CreateCategoryDialogProps) {
   const { open, onOpenChange, initialWorkspaceName, onCreated } = props;

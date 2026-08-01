@@ -722,6 +722,10 @@ type PostTaskExtendedReference struct {
 	Content     string                    `bson:"content" json:"content"`
 	Category    CategoryExtendedReference `bson:"category" json:"category"`
 	BlueprintID *primitive.ObjectID       `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
+	// Status is the task's lifecycle state at the moment the post was made:
+	// "completed" or "in_progress". Empty/omitted is treated as "completed"
+	// (posts made before this field existed were always about finished tasks).
+	Status string `bson:"status,omitempty" json:"status,omitempty" validate:"omitempty,oneof=completed in_progress"`
 }
 
 func (c *CategoryDocument) ToReference() *CategoryExtendedReference {

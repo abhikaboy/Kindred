@@ -27,6 +27,8 @@ import HintBubble from "@/components/ui/HintBubble";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
+import { IntroTourOverlay } from "@/components/dashboard/IntroTourOverlay";
+import { useIntroTour } from "@/hooks/useIntroTour";
 import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
 import { ThemedText } from "@/components/ThemedText";
 import { AnimatedView } from "@/components/ui/AnimatedView";
@@ -306,10 +308,6 @@ const HomeContent = ({
     // overlay can cover the whole home view — header included — and so the tabs
     // layout can hide the tab bar + FAB while it runs.
     const tour = useHomeTour(homeScrollRef);
-    useEffect(() => {
-        homeTourVisibilityEvents.emit(tour.active);
-    }, [tour.active]);
-    useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
 
     // ── Unified pager: [Today, Home, Friends, ...workspaces] ──────────────
     // Page index is the source of truth; `selected` is kept in sync as the
@@ -378,6 +376,20 @@ const HomeContent = ({
         [indexToSelected, selected, setSelected]
     );
 
+    // Full-screen swipe + focus-mode intro tour. Waits out both the scroll
+    // tour and the quick-setup sheet before it ever starts.
+    const introTour = useIntroTour({
+        activeIndex,
+        homeIndex: HOME_INDEX,
+        todayIndex: 0,
+        setSelected,
+        blocked: tour.active || showWorkspaceSelection,
+    });
+    useEffect(() => {
+        homeTourVisibilityEvents.emit(tour.active || introTour.active);
+    }, [tour.active, introTour.active]);
+    useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
+
     const isHome = activeIndex === HOME_INDEX;
     const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === 2;
 
@@ -434,6 +446,8 @@ const HomeContent = ({
                                                     userName={user?.display_name}
                                                     ThemedColor={ThemedColor}
                                                     onSettingsPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
+                                                    focusMode={focusMode}
+                                                    onToggleFocusMode={toggleFocusMode}
                                                 />
                                             </Animated.View>
                                             <View style={{ height: 8 }} />
@@ -447,8 +461,6 @@ const HomeContent = ({
                                                 onCreateWorkspace={() => setCreatingWorkspace(true)}
                                                 drawerRef={drawerRef}
                                                 ThemedColor={ThemedColor}
-                                                focusMode={focusMode}
-                                                toggleFocusMode={toggleFocusMode}
                                                 refreshing={refreshing}
                                                 onRefresh={onRefresh}
                                                 scrollRef={homeScrollRef}
@@ -483,15 +495,21 @@ const HomeContent = ({
                             copy={tour.step?.copy ?? ""}
                             stepIndex={tour.stepIndex}
                             totalSteps={tour.totalSteps}
-                            isCreateStep={tour.isCreateStep}
                             onNext={tour.next}
                             onSkip={tour.skip}
-                            onCreate={() => {
-                                tour.skip();
-                                setCreatingWorkspace(true);
-                            }}
                         />
                     )}
+
+                    {/* Full-screen swipe/focus-mode intro — spans pages, not gated on isHome */}
+                    <IntroTourOverlay
+                        active={introTour.active}
+                        step={introTour.step}
+                        stepIndex={introTour.stepIndex}
+                        totalSteps={introTour.totalSteps}
+                        onHomeButtonPress={introTour.onHomeButtonPress}
+                        onFocusModePress={introTour.onFocusModePress}
+                        onSkip={introTour.skip}
+                    />
                 </View>
             </ThemedView>
         </DrawerLayout>
