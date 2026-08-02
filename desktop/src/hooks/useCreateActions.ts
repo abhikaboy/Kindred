@@ -326,6 +326,10 @@ export function usePreviewTasksAI() {
   return $api.useMutation("post", "/v1/user/tasks/natural-language/preview");
 }
 
+export function useImagePreviewTasksAI() {
+  return $api.useMutation("post", "/v1/user/tasks/natural-language/image-preview");
+}
+
 export function useConfirmTasksAI() {
   const qc = useQueryClient();
   return $api.useMutation("post", "/v1/user/tasks/natural-language/confirm", {

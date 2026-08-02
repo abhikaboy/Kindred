@@ -3140,6 +3140,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/natural-language/image-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview tasks extracted from an image
+         * @description Process an image (e.g. a photo of a whiteboard or to-do list) and return a preview without creating tasks. Use /confirm with the returned payload to create them.
+         */
+        post: operations["preview-task-from-image"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/natural-language/intent": {
         parameters: {
             query?: never;
@@ -6643,6 +6663,39 @@ export interface components {
             category: components["schemas"]["CategoryExtendedReference"];
             content: string;
             id: string;
+            status?: string;
+        };
+        PreviewTaskFromImageInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewTaskFromImageInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Base64-encoded image (no data URL prefix) to extract tasks from */
+            image: string;
+            /**
+             * @description MIME type of the image (e.g. image/png, image/jpeg). Defaults to image/jpeg if not provided
+             * @example image/png
+             */
+            mimeType?: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        PreviewTaskFromImageOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewTaskFromImageOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description New categories and their tasks proposed by AI */
+            categories: components["schemas"]["NewCategoryWithTasksLocal"][];
+            /** @description Tasks proposed for existing categories */
+            tasks: components["schemas"]["CategoryTaskPairLocal"][];
         };
         PreviewTaskNaturalLanguageInputBody: {
             /**
@@ -14798,6 +14851,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EditTasksNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-task-from-image": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewTaskFromImageInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewTaskFromImageOutputBody"];
                 };
             };
             /** @description Error */

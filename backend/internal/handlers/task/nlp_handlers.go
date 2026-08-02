@@ -840,6 +840,60 @@ func (h *Handler) PreviewTaskNaturalLanguage(ctx context.Context, input *Preview
 	return output, nil
 }
 
+// PreviewTaskFromImage processes an image with AI and returns a preview payload
+// without creating any tasks or consuming credits. The returned payload can be
+// passed straight to ConfirmTaskNaturalLanguage.
+func (h *Handler) PreviewTaskFromImage(ctx context.Context, input *PreviewTaskFromImageInput) (*PreviewTaskFromImageOutput, error) {
+	if input.Body.Image == "" {
+		return nil, huma.Error400BadRequest("Image field is required", nil)
+	}
+
+	userID, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	hasCredit, err := h.service.Users.CheckCredits(ctx, userObjID, types.CreditTypeNaturalLanguage)
+	if err != nil {
+		slog.Error("Failed to check user credits", "userId", userID, "error", err)
+		return nil, huma.Error500InternalServerError("Unable to verify your credit balance. Please try again later.", err)
+	}
+	if !hasCredit {
+		return nil, huma.Error403Forbidden("Insufficient credits. You need at least 1 natural language credit to use this feature.", types.ErrInsufficientCredits)
+	}
+
+	timezone := input.Body.Timezone
+	if timezone == "" {
+		timezone = "America/New_York"
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Starting image task preview",
+		slog.String("userID", userID),
+		slog.String("timezone", timezone))
+
+	result, err := h.callGeminiImageFlow(ctx, userID, input.Body.Image, input.Body.MimeType, timezone)
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "First attempt to call Gemini image flow failed, retrying once",
+			slog.String("userID", userID),
+			slog.String("error", err.Error()))
+
+		result, err = h.callGeminiImageFlow(ctx, userID, input.Body.Image, input.Body.MimeType, timezone)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("Failed to process image with AI after retry.", err)
+		}
+	}
+
+	output := &PreviewTaskFromImageOutput{}
+	output.Body.Categories = result.Categories
+	output.Body.Tasks = result.Tasks
+	return output, nil
+}
+
 // SuggestTaskFields handles POST /v1/user/tasks/suggest. Suggestions are additive, so there is
 // no credit gate and every AI failure path returns an empty suggestion rather than an error.
 func (h *Handler) SuggestTaskFields(ctx context.Context, input *SuggestTaskFieldsInput) (*SuggestTaskFieldsOutput, error) {

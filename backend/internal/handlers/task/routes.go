@@ -24,6 +24,7 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, geminiServic
 func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterCreateTaskNaturalLanguageOperation(api, handler)
 	RegisterPreviewTaskNaturalLanguageOperation(api, handler)
+	RegisterPreviewTaskFromImageOperation(api, handler)
 	RegisterConfirmTaskNaturalLanguageOperation(api, handler)
 	RegisterQueryTasksNaturalLanguageOperation(api, handler)
 	RegisterEditTasksNaturalLanguageOperation(api, handler)

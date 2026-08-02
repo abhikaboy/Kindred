@@ -76,6 +76,59 @@ func (h *Handler) callGeminiFlow(ctx context.Context, userID, text, timezone str
 	return &result, nil
 }
 
+// callGeminiImageFlow uses reflection to call the Genkit image flow without circular import
+func (h *Handler) callGeminiImageFlow(ctx context.Context, userID, image, mimeType, timezone string) (*MultiTaskOutputLocal, error) {
+	if h.geminiService == nil {
+		return nil, fmt.Errorf("gemini service not available")
+	}
+
+	svcValue := reflect.ValueOf(h.geminiService)
+	flowField := svcValue.Elem().FieldByName("TaskFromImageFlow")
+	if !flowField.IsValid() {
+		return nil, fmt.Errorf("gemini flow not configured")
+	}
+
+	runMethod := flowField.MethodByName("Run")
+	if !runMethod.IsValid() {
+		return nil, fmt.Errorf("gemini flow Run method not available")
+	}
+
+	inputType := runMethod.Type().In(1)
+	inputValue := reflect.New(inputType).Elem()
+	inputValue.FieldByName("UserID").SetString(userID)
+	inputValue.FieldByName("Image").SetString(image)
+	inputValue.FieldByName("MimeType").SetString(mimeType)
+	inputValue.FieldByName("Timezone").SetString(timezone)
+
+	callResults := runMethod.Call([]reflect.Value{
+		reflect.ValueOf(ctx),
+		inputValue,
+	})
+
+	if len(callResults) != 2 {
+		return nil, fmt.Errorf("unexpected gemini flow response structure")
+	}
+
+	if !callResults[1].IsNil() {
+		if err, ok := callResults[1].Interface().(error); ok {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unexpected error type from gemini flow")
+	}
+
+	var result MultiTaskOutputLocal
+	resultBytes, err := json.Marshal(callResults[0].Interface())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse AI response: %w", err)
+	}
+
+	if err := json.Unmarshal(resultBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse AI response structure: %w", err)
+	}
+
+	return &result, nil
+}
+
 // TaskQueryFiltersOutputLocal is the local version of the Gemini TaskQueryFiltersOutput.
 // Used to avoid circular imports with the gemini package.
 type TaskQueryFiltersOutputLocal struct {
@@ -526,17 +579,17 @@ func buildTaskDocument(taskParams CreateTaskParams, userID, categoryID primitive
 		RecurDetails:   taskParams.RecurDetails,
 		Public:         taskParams.Public,
 		// Not "in progress" by default; only if the client explicitly set it.
-		Active:         taskParams.Active != nil && *taskParams.Active,
-		UserID:         userID,
-		CategoryID:     categoryID,
-		Deadline:       taskParams.Deadline,
-		StartTime:      taskParams.StartTime,
-		StartDate:      taskParams.StartDate,
-		Notes:          taskParams.Notes,
-		Checklist:      taskParams.Checklist,
-		Reminders:      taskParams.Reminders,
-		Timestamp:      now,
-		LastEdited:     now,
+		Active:     taskParams.Active != nil && *taskParams.Active,
+		UserID:     userID,
+		CategoryID: categoryID,
+		Deadline:   taskParams.Deadline,
+		StartTime:  taskParams.StartTime,
+		StartDate:  taskParams.StartDate,
+		Notes:      taskParams.Notes,
+		Checklist:  taskParams.Checklist,
+		Reminders:  taskParams.Reminders,
+		Timestamp:  now,
+		LastEdited: now,
 	}
 }
 

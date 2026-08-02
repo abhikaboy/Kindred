@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import type { KeyboardEvent } from "react";
-import { Sparkle, X, PencilSimple, ArrowLeft } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, ClipboardEvent, KeyboardEvent } from "react";
+import { Sparkle, X, PencilSimple, ArrowLeft, Image as ImageIcon, Clipboard } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { TaskItem } from "@/components/TaskItem";
 import {
   usePreviewTasksAI,
+  useImagePreviewTasksAI,
   useConfirmTasksAI,
   buildConfirmBody,
   countPreviewTasks,
@@ -37,6 +38,15 @@ const PLACEHOLDERS = [
   "email the client back, review the open PR, prep slides for monday standup",
   "buy groceries, water the plants, schedule a haircut this weekend",
 ];
+
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
 
 // Coordinates into the editable payload: a new-category task, or an existing-category pair.
 type Coord = { kind: "cat"; ci: number; ti: number } | { kind: "pair"; pi: number };
@@ -118,9 +128,11 @@ function PreviewTaskRow({
 export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   const [stage, setStage] = useState<Stage>("prompt");
   const [text, setText] = useState("");
+  const [image, setImage] = useState<string | null>(null); // data URL, for preview + upload
   const [payload, setPayload] = useState<AiPreviewPayload>({ categories: [], tasks: [] });
   const [error, setError] = useState<string | null>(null);
   const [phIndex, setPhIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cycle the example placeholder while on the prompt stage.
   useEffect(() => {
@@ -130,28 +142,78 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   }, [stage]);
 
   const preview = usePreviewTasksAI();
+  const imagePreview = useImagePreviewTasksAI();
   const confirm = useConfirmTasksAI();
 
-  const canGenerate = text.trim().length >= 4;
+  const canGenerate = image !== null || text.trim().length >= 4;
   const count = countPreviewTasks(payload);
+
+  const handleImageBlob = async (blob: Blob) => {
+    try {
+      setImage(await readBlobAsDataUrl(blob));
+      setError(null);
+    } catch {
+      setError("Couldn't read that image.");
+    }
+  };
+
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (file) handleImageBlob(file);
+  };
+
+  const onPromptPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+    const file = item?.getAsFile();
+    if (file) {
+      e.preventDefault();
+      handleImageBlob(file);
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) {
+          await handleImageBlob(await item.getType(type));
+          return;
+        }
+      }
+      setError("No image found on the clipboard.");
+    } catch {
+      setError("Couldn't read the clipboard. Try pasting into the box instead (Cmd+V).");
+    }
+  };
 
   const generate = () => {
     if (!canGenerate) return;
     setError(null);
     setStage("loading");
-    preview.mutate(
-      { params: { header: CREATE_AUTH }, body: { text: text.trim(), timezone: TIMEZONE } },
-      {
-        onSuccess: (data) => {
-          setPayload({ categories: data.categories ?? [], tasks: data.tasks ?? [] });
-          setStage("preview");
-        },
-        onError: (e: unknown) => {
-          setError(getErrorMessage(e));
-          setStage("prompt");
-        },
+    const onSettledCommon = {
+      onSuccess: (data: { categories?: AiPreviewPayload["categories"]; tasks?: AiPreviewPayload["tasks"] }) => {
+        setPayload({ categories: data.categories ?? [], tasks: data.tasks ?? [] });
+        setStage("preview");
       },
-    );
+      onError: (e: unknown) => {
+        setError(getErrorMessage(e));
+        setStage("prompt");
+      },
+    };
+    if (image) {
+      const [, mimeType, base64] = image.match(/^data:(.*?);base64,(.*)$/) ?? [, "image/jpeg", image];
+      imagePreview.mutate(
+        { params: { header: CREATE_AUTH }, body: { image: base64, mimeType, timezone: TIMEZONE } },
+        onSettledCommon,
+      );
+    } else {
+      preview.mutate(
+        { params: { header: CREATE_AUTH }, body: { text: text.trim(), timezone: TIMEZONE } },
+        onSettledCommon,
+      );
+    }
   };
 
   const editTitle = (c: Coord, content: string) =>
@@ -250,17 +312,58 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   // stage === "prompt"
   return (
     <div className="flex flex-col gap-3 py-2">
-      <textarea
-        autoFocus
-        rows={4}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={onPromptKey}
-        placeholder={PLACEHOLDERS[phIndex]}
-        className="min-h-28 w-full resize-none rounded-2xl border border-border bg-transparent p-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/60"
-      />
+      {image ? (
+        <div className="relative w-fit">
+          <img src={image} alt="Attached" className="max-h-48 rounded-2xl border border-border object-contain" />
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label="Remove image"
+            onClick={() => setImage(null)}
+            className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      ) : (
+        <textarea
+          autoFocus
+          rows={4}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onPromptKey}
+          onPaste={onPromptPaste}
+          placeholder={PLACEHOLDERS[phIndex]}
+          className="min-h-28 w-full resize-none rounded-2xl border border-border bg-transparent p-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/60"
+        />
+      )}
       {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onFileChange}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Attach image from files"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImageIcon size={18} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Paste image from clipboard"
+            onClick={pasteFromClipboard}
+          >
+            <Clipboard size={18} />
+          </Button>
+        </div>
         <PrimaryButton
           title="Generate"
           onClick={generate}

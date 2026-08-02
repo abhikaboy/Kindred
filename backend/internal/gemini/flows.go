@@ -18,7 +18,7 @@ import (
 // FlowSet contains all the Genkit flows
 type FlowSet struct {
 	TaskFlow                         *core.Flow[GenerateTaskParams, *task.CreateTaskParams, struct{}]
-	TaskFromImageFlow                *core.Flow[GenerateTaskFromImageParams, GenerateTaskFromImageOutput, struct{}]
+	TaskFromImageFlow                *core.Flow[GenerateTaskFromImageParams, MultiTaskFromTextOutput, struct{}]
 	MultiTaskFromTextFlow            *core.Flow[MultiTaskFromTextInput, MultiTaskFromTextOutput, struct{}]
 	MultiTaskFromTextFlowWithContext *core.Flow[MultiTaskFromTextInputWithUser, MultiTaskFromTextOutput, struct{}]
 	AnalyticsReportFlow              *core.Flow[AnalyticsReportInput, AnalyticsReportOutput, struct{}]
@@ -50,15 +50,44 @@ func InitFlows(g *genkit.Genkit, tools *ToolSet, categoryService *Category.Servi
 
 	// Generate tasks from image
 	generateTaskFromImageFlow := genkit.DefineFlow(g, "generateTaskFromImageFlow",
-		func(ctx context.Context, input GenerateTaskFromImageParams) (GenerateTaskFromImageOutput, error) {
-			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following image- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
+		func(ctx context.Context, input GenerateTaskFromImageParams) (MultiTaskFromTextOutput, error) {
+			currentTime := time.Now().UTC().Format(time.RFC3339)
+
+			userID, err := primitive.ObjectIDFromHex(input.UserID)
+			if err != nil {
+				return MultiTaskFromTextOutput{}, fmt.Errorf("invalid user ID: %w", err)
+			}
+
+			categorySummary, err := categoryService.GetCategoryNamesSummary(userID)
+			if err != nil {
+				return MultiTaskFromTextOutput{}, fmt.Errorf("failed to get category summary: %w", err)
+			}
+
+			prompt := fmt.Sprintf(`You are a task organization assistant. Generate a set of categories and tasks based on the attached image (e.g. a photo of a whiteboard, sticky notes, a to-do list, a screenshot, a syllabus, etc). Extract every actionable item you can find.
+
+The user's existing workspaces and categories:
+%s
+
+Current time: %s
+
+Your response should include:
+1. categories: An array of category objects with "name" and "workspaceName" fields. New categories should include tasks in the tasks array.
+2. tasks: An array of categoryTaskPair objects, each with appropriate fields. The categoryId should be the ID of the existing category from the list above. These are exclusively for tasks that belong to existing categories.
+
+When choosing category names, prefer existing categories from the list above when the task fits. Only create new categories when the task doesn't match any existing category.`, categorySummary, currentTime)
+
+			mimeType := input.MimeType
+			if mimeType == "" {
+				mimeType = "image/jpeg"
+			}
+
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateTaskFromImage")
 			defer span.End()
-			resp, _, err := genkit.GenerateData[GenerateTaskFromImageOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart("image/jpeg", input.Image), ai.NewTextPart(prompt))))
+			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart(mimeType, input.Image), ai.NewTextPart(prompt))))
 			if err != nil {
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
-				return GenerateTaskFromImageOutput{}, err
+				return MultiTaskFromTextOutput{}, err
 			}
 			return *resp, nil
 		})

@@ -6467,6 +6467,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/image-preview:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Preview tasks extracted from an image
+            description: Process an image (e.g. a photo of a whiteboard or to-do list) and return a preview without creating tasks. Use /confirm with the returned payload to create them.
+            operationId: preview-task-from-image
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewTaskFromImageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewTaskFromImageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language/intent:
         post:
             tags:
@@ -12613,13 +12646,61 @@ components:
                     type: string
                 status:
                     type: string
-                    enum:
-                        - completed
-                        - in_progress
             required:
                 - id
                 - content
                 - category
+        PreviewTaskFromImageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskFromImageInputBody.json
+                    readOnly: true
+                image:
+                    type: string
+                    description: Base64-encoded image (no data URL prefix) to extract tasks from
+                    minLength: 1
+                mimeType:
+                    type: string
+                    description: MIME type of the image (e.g. image/png, image/jpeg). Defaults to image/jpeg if not provided
+                    examples:
+                        - image/png
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - image
+        PreviewTaskFromImageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskFromImageOutputBody.json
+                    readOnly: true
+                categories:
+                    type: array
+                    description: New categories and their tasks proposed by AI
+                    items:
+                        $ref: '#/components/schemas/NewCategoryWithTasksLocal'
+                tasks:
+                    type: array
+                    description: Tasks proposed for existing categories
+                    items:
+                        $ref: '#/components/schemas/CategoryTaskPairLocal'
+            required:
+                - categories
+                - tasks
         PreviewTaskNaturalLanguageInputBody:
             type: object
             additionalProperties: false

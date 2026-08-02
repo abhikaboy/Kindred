@@ -1,7 +1,6 @@
 package gemini
 
 import (
-	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
 )
 
@@ -10,12 +9,10 @@ type GenerateTaskParams struct {
 }
 
 type GenerateTaskFromImageParams struct {
-	Image string `json:"image"`
-}
-
-type GenerateTaskFromImageOutput struct {
-	Categories []Category.CreateCategoryParams `json:"categories"`
-	Tasks      []task.CreateTaskParams         `json:"tasks"`
+	UserID   string `json:"userId"`
+	Image    string `json:"image"`
+	MimeType string `json:"mimeType"`
+	Timezone string `json:"timezone" jsonschema_description:"User's timezone in IANA format (e.g., 'America/New_York'). Use this to interpret relative time references correctly."`
 }
 
 type MultiTaskFromTextInput struct {

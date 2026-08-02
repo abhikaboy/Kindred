@@ -50,6 +50,23 @@ type PreviewTaskNaturalLanguageOutput struct {
 	}
 }
 
+// Preview Tasks from an Image (no creation)
+type PreviewTaskFromImageInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	Body          struct {
+		Image    string `json:"image" minLength:"1" doc:"Base64-encoded image (no data URL prefix) to extract tasks from"`
+		MimeType string `json:"mimeType,omitempty" doc:"MIME type of the image (e.g. image/png, image/jpeg). Defaults to image/jpeg if not provided" example:"image/png"`
+		Timezone string `json:"timezone,omitempty" doc:"User's timezone (IANA format). Defaults to America/New_York if not provided" example:"America/New_York"`
+	} `json:"body"`
+}
+
+type PreviewTaskFromImageOutput struct {
+	Body struct {
+		Categories []NewCategoryWithTasksLocal `json:"categories" doc:"New categories and their tasks proposed by AI"`
+		Tasks      []CategoryTaskPairLocal     `json:"tasks" doc:"Tasks proposed for existing categories"`
+	}
+}
+
 // Confirm Task from Natural Language (create using preview payload)
 type ConfirmTaskNaturalLanguageInput struct {
 	Authorization string `header:"Authorization" required:"true"`
@@ -165,6 +182,17 @@ func RegisterPreviewTaskNaturalLanguageOperation(api huma.API, handler *Handler)
 		Description: "Process natural language text and return a preview without creating tasks",
 		Tags:        []string{"tasks", "ai"},
 	}, handler.PreviewTaskNaturalLanguage)
+}
+
+func RegisterPreviewTaskFromImageOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "preview-task-from-image",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/natural-language/image-preview",
+		Summary:     "Preview tasks extracted from an image",
+		Description: "Process an image (e.g. a photo of a whiteboard or to-do list) and return a preview without creating tasks. Use /confirm with the returned payload to create them.",
+		Tags:        []string{"tasks", "ai"},
+	}, handler.PreviewTaskFromImage)
 }
 
 func RegisterConfirmTaskNaturalLanguageOperation(api huma.API, handler *Handler) {
