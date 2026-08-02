@@ -80,10 +80,11 @@ When choosing category names, prefer existing categories from the list above whe
 			if mimeType == "" {
 				mimeType = "image/jpeg"
 			}
+			dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, input.Image)
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.GenerateTaskFromImage")
 			defer span.End()
-			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart(mimeType, input.Image), ai.NewTextPart(prompt))))
+			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithMessages(ai.NewUserMessage(ai.NewMediaPart(mimeType, dataURL), ai.NewTextPart(prompt))))
 			if err != nil {
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
