@@ -35,6 +35,18 @@ var (
 	ErrInvalidCreditType   = errors.New("invalid credit type")
 )
 
+// aiCreditTypesBypassed lists credit types whose gating is temporarily disabled below.
+// ponytail: temporary bypass for all Gemini-backed AI endpoints (voice, blueprint,
+// analytics, natural language) so they don't 403 on insufficient credits. Group credits
+// are untouched since that gate isn't AI-related. Revert by deleting this map and the
+// two bypass checks in ConsumeCredit/CheckCredits below.
+var aiCreditTypesBypassed = map[CreditType]bool{
+	CreditTypeVoice:           true,
+	CreditTypeBlueprint:       true,
+	CreditTypeAnalytics:       true,
+	CreditTypeNaturalLanguage: true,
+}
+
 // GetDefaultCredits returns the default credits for a new user
 func GetDefaultCredits() UserCredits {
 	return UserCredits{
@@ -49,6 +61,10 @@ func GetDefaultCredits() UserCredits {
 // ConsumeCredit atomically decrements a credit and returns error if insufficient
 // This ensures thread-safe credit consumption
 func ConsumeCredit(ctx context.Context, collection *mongo.Collection, userID primitive.ObjectID, creditType CreditType) error {
+	if aiCreditTypesBypassed[creditType] {
+		return nil
+	}
+
 	// Map credit type to field name
 	fieldName, err := GetCreditFieldName(creditType)
 	if err != nil {
@@ -119,6 +135,10 @@ func GetCredits(ctx context.Context, collection *mongo.Collection, userID primit
 
 // CheckCredits checks if user has at least 1 credit of the specified type
 func CheckCredits(ctx context.Context, collection *mongo.Collection, userID primitive.ObjectID, creditType CreditType) (bool, error) {
+	if aiCreditTypesBypassed[creditType] {
+		return true, nil
+	}
+
 	fieldName, err := GetCreditFieldName(creditType)
 	if err != nil {
 		return false, err
