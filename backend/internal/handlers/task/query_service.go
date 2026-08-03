@@ -125,8 +125,13 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 	// Calculate skip value for pagination
 	skip := (page - 1) * limit
 
+	// Excludes Sessions progress logs (completionType: "progress") — this feeds
+	// the Completed Tasks history screen, which should only show real
+	// completions. Progress history lives on GetTaskProgress instead.
+	filter := bson.M{"user": userId, "completionType": bson.M{"$ne": string(CompletionProgress)}}
+
 	// Get total count of completed tasks for this user
-	totalCount, err := s.CompletedTasks.CountDocuments(ctx, bson.M{"user": userId})
+	totalCount, err := s.CompletedTasks.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -138,7 +143,7 @@ func (s *Service) GetCompletedTasks(userId primitive.ObjectID, page int, limit i
 		SetLimit(int64(limit)).
 		SetSkip(int64(skip))
 
-	cursor, err := s.CompletedTasks.Find(ctx, bson.M{"user": userId}, findOptions)
+	cursor, err := s.CompletedTasks.Find(ctx, filter, findOptions)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -324,8 +329,10 @@ func (s *Service) GetCompletedTasksByDate(userId primitive.ObjectID, date time.T
 		slog.Time("startUTC", startOfDay.UTC()),
 		slog.Time("endUTC", endOfDay.UTC()))
 
+	// Excludes Sessions progress logs — see GetCompletedTasks for why.
 	filter := bson.M{
-		"user": userId,
+		"user":           userId,
+		"completionType": bson.M{"$ne": string(CompletionProgress)},
 		"timeCompleted": bson.M{
 			"$gte": startOfDay.UTC(),
 			"$lte": endOfDay.UTC(),

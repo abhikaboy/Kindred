@@ -39,6 +39,10 @@ type CreateTaskParams struct {
 	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
 
+	// SessionTrackable overrides the auto-derived default (checklist present,
+	// deadline >7 days out, or high value) when the caller sets it explicitly.
+	SessionTrackable *bool `bson:"sessionTrackable,omitempty" json:"sessionTrackable,omitempty"`
+
 	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
 
@@ -80,6 +84,10 @@ type UpdateTaskDocument struct {
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 
+	// SessionTrackable is a manual override for whether "Log Progress" shows
+	// on this task; nil leaves the auto-derived value untouched.
+	SessionTrackable *bool `bson:"sessionTrackable,omitempty" json:"sessionTrackable,omitempty"`
+
 	// Internal flag to indicate if a template should be generated (not stored in DB)
 	GenerateTemplate bool `bson:"-" json:"generateTemplate,omitempty"`
 }
@@ -99,6 +107,22 @@ const (
 type CompleteTaskDocument struct {
 	TimeCompleted string `bson:"timeCompleted" json:"timeCompleted"`
 	TimeTaken     string `bson:"timeTaken" json:"timeTaken"`
+}
+
+// CompletionType distinguishes a real completion from a Sessions progress log
+// on the shared completed-tasks collection.
+type CompletionType string
+
+const (
+	CompletionFull     CompletionType = "full"
+	CompletionProgress CompletionType = "progress"
+)
+
+// LogProgressDocument is the body of a "Log Progress" (Sessions) request.
+type LogProgressDocument struct {
+	DurationSeconds int    `bson:"durationSeconds" json:"durationSeconds" validate:"required,min=1" example:"1800" doc:"Duration of this work session, in seconds"`
+	Note            string `bson:"note,omitempty" json:"note,omitempty" doc:"Optional note about this session"`
+	Photo           string `bson:"photo,omitempty" json:"photo,omitempty" doc:"Optional photo URL for this session"`
 }
 
 type UpdateTaskNotesDocument struct {

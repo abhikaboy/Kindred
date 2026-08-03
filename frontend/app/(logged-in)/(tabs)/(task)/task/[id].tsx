@@ -26,12 +26,14 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
-import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI } from "@/api/task";
+import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI, getTaskProgressAPI, type RingDelta } from "@/api/task";
 import { TaskScheduleRoute } from "@/components/task/TaskScheduleRoute";
 import Checklist from "@/components/task/Checklist";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users } from "phosphor-react-native";
+import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp } from "phosphor-react-native";
+import LogProgressBottomSheetModal from "@/components/modals/LogProgressBottomSheetModal";
+import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
 import TaggedUsersChips from "@/components/inputs/TaggedUsersChips";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
@@ -59,6 +61,7 @@ import type { ActiveTaskActivityProps } from "@/widgets/ActiveTaskActivity";
 import type { LiveActivity } from "expo-widgets";
 
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
+type ProgressEntry = components["schemas"]["TaskDocument"];
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -86,6 +89,10 @@ export default function Task() {
     const [hasTemplate, setHasTemplate] = useState(false);
     const [template, setTemplate] = useState<TemplateTaskDocument | null>(null);
     const [recurDetails, setRecurDetails] = useState<RecurDetails | null>(null);
+    const [showLogProgressModal, setShowLogProgressModal] = useState(false);
+    const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
+    const [progressTotalSeconds, setProgressTotalSeconds] = useState(0);
+    const { showRingUpdate } = useRingUpdate();
 
     // Query task from local context instead of relying on passed state
     const task = getTaskById(categoryId as string, id as string);
@@ -282,6 +289,35 @@ export default function Task() {
     // useSafeAsync(async () => {
     //     await loadBaseTime(id as string);
     // }, [id]);
+
+    useEffect(() => {
+        if (!id || typeof id !== "string") return;
+        getTaskProgressAPI(id)
+            .then(({ entries, totalSeconds }) => {
+                if (!isMounted.current) return;
+                setProgressEntries(entries);
+                setProgressTotalSeconds(totalSeconds);
+            })
+            .catch((error) => logger.error("Error loading task progress", error));
+    }, [id]);
+
+    const formatSessionDuration = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.round((seconds % 3600) / 60);
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        return `${minutes}m`;
+    };
+
+    const handleLogProgress = () => {
+        capture(AnalyticsEvents.TASK_UPDATED, { source: "detail_log_progress_button" });
+        setShowLogProgressModal(true);
+    };
+
+    const handleProgressLogged = (entry: ProgressEntry, ringDelta?: RingDelta) => {
+        setProgressEntries((prev) => [entry, ...prev]);
+        setProgressTotalSeconds((prev) => prev + (entry.durationSeconds ?? 0));
+        showRingUpdate(ringDelta);
+    };
 
     const getTemplate = async (id: string) => {
         const template = await getTemplateByIDAPI(id);
@@ -789,6 +825,32 @@ export default function Task() {
                                         </DataCard>
                                     </TouchableOpacity>
                                 </ConditionalView>
+                                <ConditionalView condition={progressEntries.length > 0} key="progress">
+                                    <DataCard
+                                        title={`Progress · ${progressEntries.length} session${progressEntries.length === 1 ? "" : "s"} · ${formatSessionDuration(progressTotalSeconds)}`}
+                                        icon={<ChartLineUp size={20} color={ThemedColor.text} weight="regular" />}
+                                    >
+                                        <View style={{ gap: 12 }}>
+                                            {progressEntries.map((entry) => (
+                                                <View key={entry.id} style={{ gap: 2 }}>
+                                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                                        <ThemedText type="defaultSemiBold">
+                                                            {entry.durationSeconds != null ? formatSessionDuration(entry.durationSeconds) : ""}
+                                                        </ThemedText>
+                                                        <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                                            {entry.timeCompleted ? formatLocalDate(entry.timeCompleted) : ""}
+                                                        </ThemedText>
+                                                    </View>
+                                                    {!!entry.sessionNote && (
+                                                        <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
+                                                            {entry.sessionNote}
+                                                        </ThemedText>
+                                                    )}
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </DataCard>
+                                </ConditionalView>
                                 <View style={{ gap: 8 }}>
                                     <View key="start-working" style={{ marginTop: 0 }}>
                                         <PrimaryButton
@@ -800,6 +862,19 @@ export default function Task() {
                                             onPress={handleStartWorking}
                                             />
                                     </View>
+                                    {/* Log Progress and Mark as Completed are peers (same secondary weight) —
+                                        logging progress never auto-completes the task. Shown unless the task
+                                        was explicitly opted out via sessionTrackable === false. */}
+                                    <ConditionalView condition={task?.sessionTrackable !== false} key="log-progress">
+                                        <PrimaryButton
+                                            title="Log Progress"
+                                            secondary
+                                            style={{
+                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
+                                            }}
+                                            onPress={handleLogProgress}
+                                            />
+                                    </ConditionalView>
                                     <View key="mark-complete" style={{ marginTop: 0 }}>
                                         <PrimaryButton
                                             title={isCompleting ? "Completing..." : "Mark as Completed"}
@@ -843,6 +918,16 @@ export default function Task() {
                     onTagsUpdated={(taggedUsers) =>
                         updateTask(categoryId as string, id as string, { taggedUsers })
                     }
+                />
+            )}
+
+            {showLogProgressModal && task && (
+                <LogProgressBottomSheetModal
+                    visible={showLogProgressModal}
+                    setVisible={setShowLogProgressModal}
+                    taskId={id as string}
+                    categoryId={categoryId as string}
+                    onLogged={handleProgressLogged}
                 />
             )}
 

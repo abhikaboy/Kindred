@@ -132,6 +132,12 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		LastEdited:     time.Now(),
 	}
 
+	if taskParams.SessionTrackable != nil {
+		task.SessionTrackable = *taskParams.SessionTrackable
+	} else {
+		task.SessionTrackable = deriveSessionTrackable(task.Checklist, task.Deadline, task.Value)
+	}
+
 	// Resolve tagged friends to denormalized pending entries
 	if len(taskParams.TaggedUserIDs) > 0 {
 		tagged, err := h.service.BuildTaggedUsers(taskParams.TaggedUserIDs)
@@ -488,6 +494,93 @@ func (h *Handler) CompleteTask(ctx context.Context, input *CompleteTaskInput) (*
 			CategoryID: result.NextFlexTask.CategoryID,
 		}
 	}
+	return resp, nil
+}
+
+// LogProgress records a Sessions progress log for a task (Log Progress
+// button). Unlike CompleteTask, the source task is left active and untouched.
+func (h *Handler) LogProgress(ctx context.Context, input *LogProgressInput) (*LogProgressOutput, error) {
+	errs := validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Please check your session details", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	tz := auth.GetTimezoneOrDefault(ctx)
+	result, err := h.service.LogProgress(userObjID, categoryID, id, tz, input.Body)
+	if err != nil {
+		slog.Error("Failed to log progress", "taskId", id.Hex(), "categoryId", categoryID.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to log progress due to a server error. Please try again.", err)
+	}
+
+	// Cap Do-ring credit at once per task per day so repeated short logs can't
+	// farm ring progress.
+	var ringDelta *rings.RingDelta
+	if result.RingEligible && h.service.RingService != nil {
+		_, delta, err := h.service.RingService.IncrementRing(ctx, userObjID, tz, rings.RingDo)
+		if err != nil {
+			slog.Error("Failed to increment Do ring on progress log", "user_id", userObjID.Hex(), "error", err)
+		} else {
+			ringDelta = delta
+			if delta.JustClosedAll {
+				h.service.RingService.NotifyAllRingsClosed(userObjID)
+			}
+		}
+	}
+
+	resp := &LogProgressOutput{}
+	resp.Body.Message = "Progress logged successfully"
+	resp.Body.Entry = result.Entry
+	resp.Body.RingDelta = ringDelta
+	return resp, nil
+}
+
+// GetTaskProgress returns the Sessions progress-log history for a task.
+func (h *Handler) GetTaskProgress(ctx context.Context, input *GetTaskProgressInput) (*GetTaskProgressOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	summary, err := h.service.GetTaskProgress(userObjID, id)
+	if err != nil {
+		slog.Error("Failed to fetch task progress", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to load progress history. Please try again.", err)
+	}
+
+	resp := &GetTaskProgressOutput{}
+	resp.Body.Entries = summary.Entries
+	resp.Body.TotalCount = summary.TotalCount
+	resp.Body.TotalSeconds = summary.TotalSeconds
 	return resp, nil
 }
 

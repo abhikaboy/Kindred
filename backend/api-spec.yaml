@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
     title: Kindred API
     description: Kindred API built with Huma v2 and Fiber
-    version: 1.0.0
+    version: 1.0.8
 paths:
     /v1/activity:
         get:
@@ -1571,6 +1571,98 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/analytics:
+        get:
+            tags:
+                - Analytics
+            summary: Get analytics dashboard
+            description: Returns the widget-ready analytics payload for the authenticated user, filtered by range, workspace, and category.
+            operationId: get-analytics
+            parameters:
+                - name: range
+                  in: query
+                  description: 'Time range: week, month, or sixmonth'
+                  explode: false
+                  schema:
+                    type: string
+                    description: 'Time range: week, month, or sixmonth'
+                    default: week
+                    enum:
+                        - week
+                        - month
+                        - sixmonth
+                - name: workspace
+                  in: query
+                  description: Workspace name filter (optional; empty = all workspaces)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Workspace name filter (optional; empty = all workspaces)
+                - name: category
+                  in: query
+                  description: Category ID filter (optional; empty = all categories)
+                  explode: false
+                  schema:
+                    type: string
+                    description: Category ID filter (optional; empty = all categories)
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/analytics/layout:
+        get:
+            tags:
+                - Analytics
+            summary: Get analytics dashboard layout
+            description: Returns the authenticated user's saved widget order and hidden widgets.
+            operationId: get-analytics-layout
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsLayout'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        put:
+            tags:
+                - Analytics
+            summary: Update analytics dashboard layout
+            description: Persists the user's widget order and hidden widgets.
+            operationId: update-analytics-layout
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AnalyticsLayout'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AnalyticsLayout'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/blueprints:
         post:
             tags:
@@ -2673,6 +2765,55 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/congratulations/{id}/reaction:
+        post:
+            tags:
+                - congratulations
+            summary: React to a congratulation
+            description: Toggle the receiver's emoji reaction on a congratulation
+            operationId: react-to-congratulation
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CongratulationReactionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReactToCongratulationOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/congratulations/beak:
         post:
             tags:
@@ -2749,6 +2890,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MarkCongratulationsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/congratulations/sent:
+        get:
+            tags:
+                - congratulations
+            summary: Get sent congratulations
+            description: Retrieve all congratulations sent by the authenticated user, with reaction state
+            operationId: get-sent-congratulations
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/CongratulationDocument'
                 default:
                     description: Error
                     content:
@@ -3539,6 +3717,55 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/encouragements/{id}/reaction:
+        post:
+            tags:
+                - encouragements
+            summary: React to an encouragement
+            description: Toggle the receiver's emoji reaction on an encouragement
+            operationId: react-to-encouragement
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/EncouragementReactionParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReactToEncouragementOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/encouragements/mark-read:
         patch:
             tags:
@@ -3574,6 +3801,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MarkEncouragementsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/encouragements/sent:
+        get:
+            tags:
+                - encouragements
+            summary: Get sent encouragements
+            description: Retrieve all encouragements sent by the authenticated user, with reaction state
+            operationId: get-sent-encouragements
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: refresh_token
+                  in: header
+                  description: Refresh token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Refresh token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/EncouragementDocument'
                 default:
                     description: Error
                     content:
@@ -5157,15 +5421,193 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
-    /v1/user/setup-default-workspace:
-        post:
+    /v1/user/settings/personalization:
+        patch:
             tags:
-                - categories
-                - workspaces
-                - onboarding
-            summary: Setup default workspace
-            description: Create the Kindred Guide workspace with starter tasks for new users
-            operationId: setup-default-workspace
+                - settings
+                - user
+                - personalization
+            summary: Update personalization settings
+            description: Turn personalization on or off, pause it until a given time, or opt in to letting friends be prompted when you are stuck. An omitted field is left unchanged; enabling also clears any active pause, but never turns struggle sharing on.
+            operationId: update-personalization-settings
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePersonalizationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PersonalizationSettings'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/data:
+        delete:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Delete personalization data
+            description: Erase everything Kindred has learned about the authenticated user and turn personalization off, so it is not rebuilt overnight.
+            operationId: delete-personalization-data
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/DeletePersonalizationOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/export:
+        get:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Export personalization data
+            description: Download everything Kindred has learned about the authenticated user. Prompt text is excluded; the structured evidence behind every fact is not.
+            operationId: export-personalization-data
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportPersonalizationResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/stated:
+        put:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Save stated preferences
+            description: Persist the answers collected during onboarding. These always win over what the nightly worker observes.
+            operationId: save-stated-preferences
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StatedPreferencesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SaveStatedPreferencesOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/settings/personalization/stated/{key}:
+        patch:
+            tags:
+                - settings
+                - user
+                - personalization
+            summary: Correct one stated preference
+            description: Change a single onboarding answer from the settings screen.
+            operationId: update-stated-preference
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+                - name: key
+                  in: path
+                  description: Which stated answer to correct
+                  required: true
+                  schema:
+                    type: string
+                    description: Which stated answer to correct
+                    enum:
+                        - planning-style
+                        - tone
+                        - nudge-frequency
+                        - peak-hours
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateStatedFactInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateStatedFactOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tagged-tasks:
+        get:
+            tags:
+                - tasks
+            summary: Get pending tagged tasks
+            description: Tasks the signed-in user has been tagged in and not yet responded to
+            operationId: get-pending-tagged-tasks
             parameters:
                 - name: Authorization
                   in: header
@@ -5178,7 +5620,49 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/CategoryDocument'
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/PendingTaggedTask'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tagged-tasks/{id}/respond:
+        post:
+            tags:
+                - tasks
+            summary: Respond to a task tag
+            description: Watch, copy, or untag yourself from a task you were tagged in
+            operationId: respond-to-task-tag
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RespondToTaskTagInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RespondToTaskTagOutputBody'
                 default:
                     description: Error
                     content:
@@ -5549,6 +6033,136 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/progress:
+        post:
+            tags:
+                - tasks
+            summary: Log progress on a task
+            description: Records a Sessions progress entry (Log Progress) for a task without completing or archiving it
+            operationId: log-progress
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogProgressDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogProgressOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/tags:
+        patch:
+            tags:
+                - tasks
+            summary: Update task tags
+            description: Replace the set of friends tagged on a task
+            operationId: update-task-tags
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskTagsInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskTagsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{id}/progress:
+        get:
+            tags:
+                - tasks
+            summary: Get task progress history
+            description: Retrieve the Sessions progress-log history for a task
+            operationId: get-task-progress
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTaskProgressOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/active/{category}/{id}:
         post:
             tags:
@@ -5804,6 +6418,38 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/log:
+        post:
+            tags:
+                - tasks
+            summary: Log completed tasks
+            description: Create and immediately complete tasks in the workspace's Logged category. Used by the end-of-day review card for work that was done but never tracked.
+            operationId: log-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogTasksInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/natural-language:
         post:
             tags:
@@ -5897,6 +6543,39 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/EditTasksNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/natural-language/image-preview:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Preview tasks extracted from an image
+            description: Process an image (e.g. a photo of a whiteboard or to-do list) and return a preview without creating tasks. Use /confirm with the returned payload to create them.
+            operationId: preview-task-from-image
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewTaskFromImageInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewTaskFromImageOutputBody'
                 default:
                     description: Error
                     content:
@@ -6030,6 +6709,39 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/suggest:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Suggest fields for a task being typed
+            description: 'Infer category, priority and difficulty from partial task text. Additive: returns an empty suggestion instead of an error when AI is unavailable, and consumes no credits.'
+            operationId: suggest-task-fields
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SuggestTaskFieldsInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SuggestTaskFieldsOutputBody'
                 default:
                     description: Error
                     content:
@@ -6865,6 +7577,9 @@ components:
                     readOnly: true
                 comment:
                     $ref: '#/components/schemas/CommentDocumentAPI'
+                friendshipDelta:
+                    description: Describes the friendship score bump with the post owner so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 message:
                     type: string
                     examples:
@@ -6962,6 +7677,576 @@ components:
                     type: string
             required:
                 - emoji
+        AnalyticsAttention:
+            type: object
+            additionalProperties: false
+            properties:
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsAttentionTask'
+            required:
+                - tasks
+        AnalyticsAttentionTask:
+            type: object
+            additionalProperties: false
+            properties:
+                category:
+                    type: string
+                categoryId:
+                    type: string
+                daysOpen:
+                    type: integer
+                    format: int64
+                deadline:
+                    type: string
+                id:
+                    type: string
+                reasons:
+                    type: array
+                    items:
+                        type: string
+                title:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - id
+                - title
+                - workspace
+                - category
+                - categoryId
+                - daysOpen
+                - reasons
+        AnalyticsBestTime:
+            type: object
+            additionalProperties: false
+            properties:
+                cells:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsBestTimeCell'
+                maxCount:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+            required:
+                - cells
+                - maxCount
+                - takeaway
+        AnalyticsBestTimeCell:
+            type: object
+            additionalProperties: false
+            properties:
+                count:
+                    type: integer
+                    format: int64
+                hour:
+                    type: integer
+                    format: int64
+                level:
+                    type: integer
+                    format: int64
+                weekday:
+                    type: integer
+                    format: int64
+            required:
+                - weekday
+                - hour
+                - count
+                - level
+        AnalyticsCategoryHealth:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsCategoryHealthRow'
+            required:
+                - rows
+        AnalyticsCategoryHealthRow:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                done:
+                    type: integer
+                    format: int64
+                kudos:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+                onTimePct:
+                    type: integer
+                    format: int64
+                sparkline:
+                    type: array
+                    items:
+                        type: integer
+                        format: int64
+                status:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - workspace
+                - color
+                - done
+                - onTimePct
+                - kudos
+                - status
+                - sparkline
+        AnalyticsCategoryShare:
+            type: object
+            additionalProperties: false
+            properties:
+                overTime:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareBand'
+                slices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareSlice'
+                takeaway:
+                    type: string
+            required:
+                - slices
+                - overTime
+                - takeaway
+        AnalyticsHabitRow:
+            type: object
+            additionalProperties: false
+            properties:
+                completed:
+                    type: integer
+                    format: int64
+                dots:
+                    type: array
+                    items:
+                        type: boolean
+                frequency:
+                    type: string
+                nextDueAt:
+                    type: string
+                rhythmLabel:
+                    type: string
+                status:
+                    type: string
+                templateId:
+                    type: string
+                title:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - templateId
+                - title
+                - frequency
+                - completed
+                - total
+                - dots
+                - rhythmLabel
+                - status
+        AnalyticsHabits:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsHabitRow'
+                takeaway:
+                    type: string
+            required:
+                - rows
+                - takeaway
+        AnalyticsHeatmap:
+            type: object
+            additionalProperties: false
+            properties:
+                days:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsHeatmapDay'
+                maxCount:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - days
+                - maxCount
+                - total
+                - takeaway
+        AnalyticsHeatmapDay:
+            type: object
+            additionalProperties: false
+            properties:
+                count:
+                    type: integer
+                    format: int64
+                date:
+                    type: string
+                level:
+                    type: integer
+                    format: int64
+            required:
+                - date
+                - count
+                - level
+        AnalyticsKudosEffect:
+            type: object
+            additionalProperties: false
+            properties:
+                hasComparison:
+                    type: boolean
+                takeaway:
+                    type: string
+                withCount:
+                    type: integer
+                    format: int64
+                withKudosMedianHours:
+                    type: number
+                    format: double
+                withoutCount:
+                    type: integer
+                    format: int64
+                withoutKudosMedianHours:
+                    type: number
+                    format: double
+            required:
+                - withKudosMedianHours
+                - withoutKudosMedianHours
+                - withCount
+                - withoutCount
+                - hasComparison
+                - takeaway
+        AnalyticsLayout:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AnalyticsLayout.json
+                    readOnly: true
+                hidden:
+                    type: array
+                    items:
+                        type: string
+                order:
+                    type: array
+                    items:
+                        type: string
+            required:
+                - order
+                - hidden
+        AnalyticsLegendItem:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                name:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - color
+        AnalyticsProgress:
+            type: object
+            additionalProperties: false
+            properties:
+                bucketUnit:
+                    type: string
+                buckets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsProgressBucket'
+                delta:
+                    type: number
+                    format: double
+                legend:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsLegendItem'
+                prevTotal:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - total
+                - prevTotal
+                - delta
+                - bucketUnit
+                - buckets
+                - legend
+                - takeaway
+        AnalyticsProgressBucket:
+            type: object
+            additionalProperties: false
+            properties:
+                date:
+                    type: string
+                label:
+                    type: string
+                segments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsProgressSegment'
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - label
+                - date
+                - total
+                - segments
+        AnalyticsProgressSegment:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                count:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+            required:
+                - categoryId
+                - name
+                - color
+                - count
+        AnalyticsResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/AnalyticsResponse.json
+                    readOnly: true
+                attention:
+                    $ref: '#/components/schemas/AnalyticsAttention'
+                bestTime:
+                    $ref: '#/components/schemas/AnalyticsBestTime'
+                categoryFilter:
+                    type: string
+                categoryHealth:
+                    $ref: '#/components/schemas/AnalyticsCategoryHealth'
+                categoryShare:
+                    $ref: '#/components/schemas/AnalyticsCategoryShare'
+                generatedAt:
+                    type: string
+                    format: date-time
+                habits:
+                    $ref: '#/components/schemas/AnalyticsHabits'
+                heatmap:
+                    $ref: '#/components/schemas/AnalyticsHeatmap'
+                kudosEffect:
+                    $ref: '#/components/schemas/AnalyticsKudosEffect'
+                progress:
+                    $ref: '#/components/schemas/AnalyticsProgress'
+                range:
+                    type: string
+                signals:
+                    $ref: '#/components/schemas/AnalyticsSignals'
+                supportCoverage:
+                    $ref: '#/components/schemas/AnalyticsSupportCoverage'
+                topSupporters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsSupporter'
+                workspaceFilter:
+                    type: string
+                workspaceHealth:
+                    $ref: '#/components/schemas/AnalyticsWorkspaceHealth'
+            required:
+                - range
+                - generatedAt
+                - signals
+                - progress
+                - categoryShare
+                - heatmap
+                - habits
+                - categoryHealth
+                - workspaceHealth
+                - bestTime
+                - attention
+                - kudosEffect
+                - supportCoverage
+                - topSupporters
+        AnalyticsShareBand:
+            type: object
+            additionalProperties: false
+            properties:
+                label:
+                    type: string
+                slices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsShareSlice'
+            required:
+                - label
+                - slices
+        AnalyticsShareSlice:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                color:
+                    type: string
+                count:
+                    type: integer
+                    format: int64
+                name:
+                    type: string
+                pct:
+                    type: number
+                    format: double
+            required:
+                - categoryId
+                - name
+                - color
+                - count
+                - pct
+        AnalyticsSignal:
+            type: object
+            additionalProperties: false
+            properties:
+                delta:
+                    type: number
+                    format: double
+                deltaLabel:
+                    type: string
+                direction:
+                    type: string
+                label:
+                    type: string
+                rawValue:
+                    type: number
+                    format: double
+                value:
+                    type: string
+            required:
+                - label
+                - value
+                - rawValue
+                - delta
+                - deltaLabel
+                - direction
+        AnalyticsSignals:
+            type: object
+            additionalProperties: false
+            properties:
+                momentum:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+                support:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+                timing:
+                    $ref: '#/components/schemas/AnalyticsSignal'
+            required:
+                - momentum
+                - timing
+                - support
+        AnalyticsSupportCoverage:
+            type: object
+            additionalProperties: false
+            properties:
+                pct:
+                    type: integer
+                    format: int64
+                supported:
+                    type: integer
+                    format: int64
+                takeaway:
+                    type: string
+                total:
+                    type: integer
+                    format: int64
+            required:
+                - pct
+                - supported
+                - total
+                - takeaway
+        AnalyticsSupporter:
+            type: object
+            additionalProperties: false
+            properties:
+                count:
+                    type: integer
+                    format: int64
+                icon:
+                    type: string
+                id:
+                    type: string
+                name:
+                    type: string
+            required:
+                - id
+                - name
+                - icon
+                - count
+        AnalyticsWorkspaceHealth:
+            type: object
+            additionalProperties: false
+            properties:
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AnalyticsWorkspaceHealthRow'
+            required:
+                - rows
+        AnalyticsWorkspaceHealthRow:
+            type: object
+            additionalProperties: false
+            properties:
+                done:
+                    type: integer
+                    format: int64
+                kudos:
+                    type: integer
+                    format: int64
+                onTimePct:
+                    type: integer
+                    format: int64
+                status:
+                    type: string
+                workspace:
+                    type: string
+            required:
+                - workspace
+                - done
+                - onTimePct
+                - kudos
+                - status
         ApplyReferralCodeInputBody:
             type: object
             additionalProperties: false
@@ -7799,6 +9084,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the congratulation
@@ -7809,6 +9100,15 @@ components:
                     description: Congratulation message
                     examples:
                         - Congratulations on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - "\U0001F64C"
                 read:
                     type: boolean
                     description: Whether the congratulation has been read
@@ -7819,6 +9119,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/CongratulationSender'
                 sender:
                     description: Sender information
                     $ref: '#/components/schemas/CongratulationSender'
@@ -7827,6 +9130,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -7835,7 +9143,7 @@ components:
                         - "2023-01-01T00:00:00Z"
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -7848,6 +9156,24 @@ components:
                 - taskName
                 - read
                 - type
+        CongratulationReactionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CongratulationReactionParams.json
+                    readOnly: true
+                emoji:
+                    type: string
+                    description: Reaction emoji (one of the curated kudos reactions)
+                    examples:
+                        - "\U0001F64C"
+            required:
+                - emoji
         CongratulationSender:
             type: object
             additionalProperties: false
@@ -8066,6 +9392,15 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
+                friendshipDelta:
+                    description: Describes the friendship score bump with the receiver so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 id:
                     type: string
                     description: Unique identifier for the congratulation
@@ -8076,6 +9411,15 @@ components:
                     description: Congratulation message
                     examples:
                         - Congratulations on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - "\U0001F64C"
                 read:
                     type: boolean
                     description: Whether the congratulation has been read
@@ -8086,6 +9430,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/CongratulationSender'
                 ringDelta:
                     description: Describes the Share ring increment triggered by this congratulation so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
@@ -8097,6 +9444,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -8105,7 +9457,7 @@ components:
                         - "2023-01-01T00:00:00Z"
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -8134,6 +9486,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds, max 30000 (required for video type)
+                    format: int64
+                    examples:
+                        - 15000
                 message:
                     type: string
                     description: Congratulation message
@@ -8144,6 +9502,9 @@ components:
                     description: Optional post ID associated with the congratulation
                     examples:
                         - 507f1f77bcf86cd799439013
+                private:
+                    type: boolean
+                    description: If true, the sender is anonymized to everyone except the receiver
                 receiver:
                     type: string
                     description: Receiver user ID
@@ -8154,9 +9515,14 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (required for video type)
+                    examples:
+                        - https://example.com/thumb.jpg
                 type:
                     type: string
-                    description: Type of congratulation (message or image)
+                    description: Type of congratulation (message, image, or video)
                     examples:
                         - message
             required:
@@ -8199,6 +9565,15 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
+                friendshipDelta:
+                    description: Describes the friendship score bump with the receiver so the client can render feedback
+                    $ref: '#/components/schemas/Delta'
                 id:
                     type: string
                     description: Unique identifier for the encouragement
@@ -8209,6 +9584,15 @@ components:
                     description: Encouragement message
                     examples:
                         - Great job on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - ❤️
                 read:
                     type: boolean
                     description: Whether the encouragement has been read
@@ -8219,6 +9603,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/EncouragementSender'
                 ringDelta:
                     description: Describes the Share ring increment triggered by this encouragement so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
@@ -8240,6 +9627,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -8276,6 +9668,12 @@ components:
                     description: Category name (required for task scope)
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds, max 30000 (required for video type)
+                    format: int64
+                    examples:
+                        - 15000
                 message:
                     type: string
                     description: Encouragement message
@@ -8301,9 +9699,14 @@ components:
                     description: Task name (required for task scope)
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (required for video type)
+                    examples:
+                        - https://example.com/thumb.jpg
                 type:
                     type: string
-                    description: Type of encouragement (message or image)
+                    description: Type of encouragement (message, image, or video)
                     examples:
                         - message
             required:
@@ -8384,6 +9787,8 @@ components:
                     $ref: '#/components/schemas/RingDelta'
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
                     type: array
                     items:
@@ -8449,10 +9854,10 @@ components:
                         $ref: '#/components/schemas/MediaItemInput'
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/MentionInput'
+                    description: Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected
                 task:
                     $ref: '#/components/schemas/PostTaskExtendedReference'
             required:
@@ -8544,11 +9949,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChecklistItem'
+                completionType:
+                    type: string
                 content:
                     type: string
                 deadline:
                     type: string
                     format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int64
                 encouragements:
                     type: array
                     items:
@@ -8589,15 +9999,35 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                rescheduleCount:
+                    type: integer
+                    format: int64
                 ringDelta:
                     description: Describes the Plan ring increment triggered by this creation so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
+                sessionNote:
+                    type: string
+                sessionPhoto:
+                    type: string
+                sessionTrackable:
+                    type: boolean
+                source:
+                    type: string
                 startDate:
                     type: string
                     format: date-time
                 startTime:
                     type: string
                     format: date-time
+                startedAt:
+                    type: string
+                    format: date-time
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
+                taskId:
+                    type: string
                 templateID:
                     type: string
                 timeCompleted:
@@ -8669,12 +10099,18 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                sessionTrackable:
+                    type: boolean
                 startDate:
                     type: string
                     format: date-time
                 startTime:
                     type: string
                     format: date-time
+                taggedUserIds:
+                    type: array
+                    items:
+                        type: string
                 value:
                     type: number
                     format: double
@@ -8885,6 +10321,32 @@ components:
                         - Notification deleted successfully
             required:
                 - message
+        DeletePersonalizationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/DeletePersonalizationOutputBody.json
+                    readOnly: true
+                deletedCount:
+                    type: integer
+                    description: Number of facts removed
+                    format: int64
+                enabled:
+                    type: boolean
+                    description: Always false — deleting turns personalization off so the next nightly run does not rebuild what was erased
+                message:
+                    type: string
+                    examples:
+                        - Personalization data deleted
+            required:
+                - message
+                - deletedCount
+                - enabled
         DeletePostOutputBody:
             type: object
             additionalProperties: false
@@ -8975,6 +10437,31 @@ components:
                         - Workspace deleted successfully
             required:
                 - message
+        Delta:
+            type: object
+            additionalProperties: false
+            properties:
+                delta:
+                    type: integer
+                    description: Points this action added
+                    format: int64
+                    examples:
+                        - 3
+                leveledUp:
+                    type: boolean
+                    description: Whether this bump crossed into a new level
+                    examples:
+                        - false
+                score:
+                    type: integer
+                    description: Pair friendship score after the bump
+                    format: int64
+                    examples:
+                        - 28
+            required:
+                - score
+                - delta
+                - leveledUp
         DisconnectOutputBody:
             type: object
             additionalProperties: false
@@ -9145,6 +10632,12 @@ components:
                     description: Category name
                     examples:
                         - Work
+                durationMs:
+                    type: integer
+                    description: Video duration in milliseconds (video type only)
+                    format: int64
+                    examples:
+                        - 15000
                 id:
                     type: string
                     description: Unique identifier for the encouragement
@@ -9155,6 +10648,15 @@ components:
                     description: Encouragement message
                     examples:
                         - Great job on completing your task!
+                reactedAt:
+                    type: string
+                    description: When the receiver reacted
+                    format: date-time
+                reaction:
+                    type: string
+                    description: Receiver's emoji reaction
+                    examples:
+                        - ❤️
                 read:
                     type: boolean
                     description: Whether the encouragement has been read
@@ -9165,6 +10667,9 @@ components:
                     description: Receiver user ID
                     examples:
                         - 507f1f77bcf86cd799439012
+                receiverInfo:
+                    description: Receiver's profile info (sent queries only)
+                    $ref: '#/components/schemas/EncouragementSender'
                 scope:
                     type: string
                     description: Scope of encouragement (task or profile)
@@ -9183,6 +10688,11 @@ components:
                     description: Task name
                     examples:
                         - Complete project proposal
+                thumbnailUrl:
+                    type: string
+                    description: Video thumbnail URL (video type only)
+                    examples:
+                        - https://example.com/thumb.jpg
                 timestamp:
                     type: string
                     description: Creation timestamp
@@ -9203,6 +10713,24 @@ components:
                 - scope
                 - read
                 - type
+        EncouragementReactionParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/EncouragementReactionParams.json
+                    readOnly: true
+                emoji:
+                    type: string
+                    description: Reaction emoji (one of the curated kudos reactions)
+                    examples:
+                        - ❤️
+            required:
+                - emoji
         EncouragementSender:
             type: object
             additionalProperties: false
@@ -9294,6 +10822,37 @@ components:
                     default: about:blank
                     examples:
                         - https://example.com/errors/example
+        ExportPersonalizationResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ExportPersonalizationResponse.json
+                    readOnly: true
+                count:
+                    type: integer
+                    description: Number of facts in the export
+                    format: int64
+                facts:
+                    type: array
+                    description: Everything currently held about this user
+                    items:
+                        $ref: '#/components/schemas/PersonalizationFact'
+                settings:
+                    description: Consent state at export time
+                    $ref: '#/components/schemas/PersonalizationSettings'
+                userId:
+                    type: string
+                    description: The account this export belongs to
+            required:
+                - userId
+                - count
+                - settings
+                - facts
         FeatureDefinition:
             type: object
             additionalProperties: false
@@ -10069,6 +11628,38 @@ components:
             required:
                 - reports
                 - total
+        GetTaskProgressOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetTaskProgressOutputBody.json
+                    readOnly: true
+                entries:
+                    type: array
+                    description: Progress-log entries for this task, most recent first
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                totalCount:
+                    type: integer
+                    description: Number of sessions logged
+                    format: int64
+                    examples:
+                        - 3
+                totalSeconds:
+                    type: integer
+                    description: Total duration logged across all sessions, in seconds
+                    format: int64
+                    examples:
+                        - 4320
+            required:
+                - entries
+                - totalCount
+                - totalSeconds
         GetTodayResponseBody:
             type: object
             additionalProperties: false
@@ -10404,6 +11995,129 @@ components:
                         $ref: '#/components/schemas/CalendarInfo'
             required:
                 - calendars
+        LogProgressDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogProgressDocument.json
+                    readOnly: true
+                durationSeconds:
+                    type: integer
+                    description: Duration of this work session, in seconds
+                    format: int64
+                    examples:
+                        - 1800
+                note:
+                    type: string
+                    description: Optional note about this session
+                photo:
+                    type: string
+                    description: Optional photo URL for this session
+            required:
+                - durationSeconds
+        LogProgressOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogProgressOutputBody.json
+                    readOnly: true
+                entry:
+                    description: The created progress-log record
+                    $ref: '#/components/schemas/TaskDocument'
+                message:
+                    type: string
+                    examples:
+                        - Progress logged successfully
+                ringDelta:
+                    description: Describes the Do ring increment triggered by this log, if any (capped at one per task per day)
+                    $ref: '#/components/schemas/RingDelta'
+            required:
+                - message
+                - entry
+        LogTaskEntry:
+            type: object
+            additionalProperties: false
+            properties:
+                content:
+                    type: string
+                    description: What the user got done
+                    examples:
+                        - Went to the gym
+            required:
+                - content
+        LogTasksInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Things the user did today
+                    items:
+                        $ref: '#/components/schemas/LogTaskEntry'
+                    minItems: 1
+                    maxItems: 50
+                workspaceName:
+                    type: string
+                    description: Workspace whose Logged category receives the tasks
+                    examples:
+                        - Personal
+            required:
+                - workspaceName
+                - tasks
+        LogTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogTasksOutputBody.json
+                    readOnly: true
+                currentStreak:
+                    type: integer
+                    description: The user's current streak count
+                    format: int64
+                    examples:
+                        - 5
+                failedIndices:
+                    type: array
+                    description: Indices of entries that failed
+                    items:
+                        type: integer
+                        format: int64
+                message:
+                    type: string
+                    examples:
+                        - Tasks logged
+                tasksLogged:
+                    type: integer
+                    description: Number of entries created and completed
+                    format: int64
+                    examples:
+                        - 3
+            required:
+                - message
+                - tasksLogged
+                - currentStreak
         LoginRequest:
             type: object
             additionalProperties: false
@@ -10876,6 +12590,108 @@ components:
                 - encouragements
                 - congratulations
                 - friend_requests
+        PendingTaggedTask:
+            type: object
+            additionalProperties: false
+            properties:
+                checklist:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChecklistItem'
+                content:
+                    type: string
+                deadline:
+                    type: string
+                    format: date-time
+                notes:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                recurDetails:
+                    $ref: '#/components/schemas/RecurDetails'
+                recurFrequency:
+                    type: string
+                recurring:
+                    type: boolean
+                tagger:
+                    $ref: '#/components/schemas/TaggerInfo'
+                taskId:
+                    type: string
+                timestamp:
+                    type: string
+                    format: date-time
+                value:
+                    type: number
+                    format: double
+            required:
+                - taskId
+                - content
+                - value
+                - priority
+                - recurring
+                - timestamp
+                - tagger
+        PersonalizationFact:
+            type: object
+            additionalProperties: false
+            properties:
+                confidence:
+                    type: number
+                    description: 0..1; stated answers are always 1
+                    format: double
+                createdAt:
+                    type: string
+                    format: date-time
+                evidence:
+                    type: object
+                    description: The numbers the fact was computed from
+                    additionalProperties: {}
+                expiresAt:
+                    type: string
+                    description: When this expires on its own. Absent for stated answers, which never expire.
+                    format: date-time
+                key:
+                    type: string
+                    description: Stable slug, e.g. peak-hours
+                kind:
+                    type: string
+                    description: rhythm|reliability|pacing|focus|style|theme|social
+                source:
+                    type: string
+                    description: derived (observed by the worker) or stated (the user told us)
+                updatedAt:
+                    type: string
+                    format: date-time
+            required:
+                - key
+                - kind
+                - confidence
+                - evidence
+                - source
+                - createdAt
+                - updatedAt
+        PersonalizationSettings:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PersonalizationSettings.json
+                    readOnly: true
+                enabled:
+                    type: boolean
+                pausedUntil:
+                    type: string
+                    format: date-time
+                shareStruggles:
+                    type: boolean
+            required:
+                - enabled
+                - shareStruggles
         PostDocumentAPI:
             type: object
             additionalProperties: false
@@ -10927,6 +12743,8 @@ components:
                             type: string
                 size:
                     $ref: '#/components/schemas/ImageSize'
+                song:
+                    $ref: '#/components/schemas/Song'
                 taggedUsers:
                     type: array
                     items:
@@ -10950,18 +12768,28 @@ components:
             properties:
                 congratulationId:
                     type: string
+                durationMs:
+                    type: integer
+                    format: int64
                 message:
                     type: string
+                private:
+                    type: boolean
                 sender:
                     $ref: '#/components/schemas/KudosSender'
+                thumbnailUrl:
+                    type: string
                 timestamp:
                     type: string
                     format: date-time
+                type:
+                    type: string
             required:
                 - congratulationId
                 - sender
                 - message
                 - timestamp
+                - type
         PostMetadata:
             type: object
             additionalProperties: false
@@ -10998,13 +12826,61 @@ components:
                     type: string
                 status:
                     type: string
-                    enum:
-                        - completed
-                        - in_progress
             required:
                 - id
                 - content
                 - category
+        PreviewTaskFromImageInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskFromImageInputBody.json
+                    readOnly: true
+                image:
+                    type: string
+                    description: Base64-encoded image (no data URL prefix) to extract tasks from
+                    minLength: 1
+                mimeType:
+                    type: string
+                    description: MIME type of the image (e.g. image/png, image/jpeg). Defaults to image/jpeg if not provided
+                    examples:
+                        - image/png
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - image
+        PreviewTaskFromImageOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewTaskFromImageOutputBody.json
+                    readOnly: true
+                categories:
+                    type: array
+                    description: New categories and their tasks proposed by AI
+                    items:
+                        $ref: '#/components/schemas/NewCategoryWithTasksLocal'
+                tasks:
+                    type: array
+                    description: Tasks proposed for existing categories
+                    items:
+                        $ref: '#/components/schemas/CategoryTaskPairLocal'
+            required:
+                - categories
+                - tasks
         PreviewTaskNaturalLanguageInputBody:
             type: object
             additionalProperties: false
@@ -11164,6 +13040,8 @@ components:
                     $ref: '#/components/schemas/RelationshipInfo'
                 ring_state:
                     $ref: '#/components/schemas/RingState'
+                song:
+                    $ref: '#/components/schemas/Song'
                 streak:
                     type: integer
                     format: int64
@@ -11232,6 +13110,52 @@ components:
             required:
                 - tasks
                 - query
+        ReactToCongratulationOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReactToCongratulationOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Reaction added successfully
+                reaction:
+                    type: string
+                    description: Reaction state after the toggle (null when removed)
+                    examples:
+                        - "\U0001F64C"
+            required:
+                - reaction
+                - message
+        ReactToEncouragementOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ReactToEncouragementOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Reaction added successfully
+                reaction:
+                    type: string
+                    description: Reaction state after the toggle (null when removed)
+                    examples:
+                        - ❤️
+            required:
+                - reaction
+                - message
         RecordInteractionOutputBody:
             type: object
             additionalProperties: false
@@ -11563,10 +13487,15 @@ components:
             properties:
                 request_id:
                     type: string
+                score:
+                    type: integer
+                    description: Friendship score for this pair (0 unless friends)
+                    format: int64
                 status:
                     type: string
             required:
                 - status
+                - score
         Reminder:
             type: object
             additionalProperties: false
@@ -11805,6 +13734,42 @@ components:
                         - Template metrics reset successfully
             required:
                 - message
+        RespondToTaskTagInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RespondToTaskTagInputBody.json
+                    readOnly: true
+                status:
+                    type: string
+                    enum:
+                        - watching
+                        - copied
+                        - untagged
+            required:
+                - status
+        RespondToTaskTagOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RespondToTaskTagOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Response recorded
+            required:
+                - message
         RevenueCatEvent:
             type: object
             additionalProperties: false
@@ -12000,6 +13965,8 @@ components:
                         $ref: '#/components/schemas/ActivityDocument'
                 settings:
                     $ref: '#/components/schemas/UserSettings'
+                song:
+                    $ref: '#/components/schemas/Song'
                 streak:
                     type: integer
                     format: int64
@@ -12036,6 +14003,29 @@ components:
                 - kudosRewards
                 - subscription
                 - settings
+        SaveStatedPreferencesOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SaveStatedPreferencesOutputBody.json
+                    readOnly: true
+                keys:
+                    type: array
+                    description: The user_memory keys written
+                    items:
+                        type: string
+                message:
+                    type: string
+                    examples:
+                        - Preferences saved
+            required:
+                - message
+                - keys
         SendBeakCongratulationParams:
             type: object
             additionalProperties: false
@@ -12210,6 +14200,28 @@ components:
             required:
                 - success
                 - message
+        Song:
+            type: object
+            additionalProperties: false
+            properties:
+                appleMusicUrl:
+                    type: string
+                artist:
+                    type: string
+                artworkUrl:
+                    type: string
+                id:
+                    type: integer
+                    format: int64
+                previewUrl:
+                    type: string
+                title:
+                    type: string
+            required:
+                - id
+                - title
+                - artist
+                - previewUrl
         StartWorkingOutputBody:
             type: object
             additionalProperties: false
@@ -12227,6 +14239,47 @@ components:
                         - Started working on task
             required:
                 - message
+        StatedPreferencesRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/StatedPreferencesRequest.json
+                    readOnly: true
+                nudgeFrequency:
+                    type: string
+                    description: How often they want to be nudged; matches the check-in frequency vocabulary
+                    enum:
+                        - none
+                        - occasionally
+                        - regularly
+                        - frequently
+                peakHours:
+                    type: string
+                    description: When they say they focus best
+                    enum:
+                        - morning
+                        - afternoon
+                        - evening
+                        - night
+                planningStyle:
+                    type: string
+                    description: How much structure they want up front
+                    enum:
+                        - detailed
+                        - flexible
+                        - spontaneous
+                tone:
+                    type: string
+                    description: How the assistant should talk to them
+                    enum:
+                        - encouraging
+                        - direct
+                        - playful
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -12287,6 +14340,53 @@ components:
                     type: string
             required:
                 - status
+        SuggestTaskFieldsInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SuggestTaskFieldsInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: The task text the user is typing
+                    examples:
+                        - gym tomorrow 7-8am every weekday
+                    minLength: 1
+                    maxLength: 1000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        SuggestTaskFieldsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SuggestTaskFieldsOutputBody.json
+                    readOnly: true
+                categoryId:
+                    type: string
+                    description: Suggested existing category id; absent when there is no confident suggestion
+                priority:
+                    type: integer
+                    description: Suggested priority (1-3); absent when there is no confident suggestion
+                    format: int64
+                value:
+                    type: number
+                    description: Suggested difficulty (1-5); absent when there is no confident suggestion
+                    format: double
         SyncEventsOutputBody:
             type: object
             additionalProperties: false
@@ -12324,6 +14424,43 @@ components:
                 - events_total
                 - categories_synced
                 - workspace_name
+        TaggedTaskUser:
+            type: object
+            additionalProperties: false
+            properties:
+                display_name:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profile_picture:
+                    type: string
+                status:
+                    type: string
+            required:
+                - id
+                - handle
+                - display_name
+                - profile_picture
+                - status
+        TaggerInfo:
+            type: object
+            additionalProperties: false
+            properties:
+                display_name:
+                    type: string
+                handle:
+                    type: string
+                id:
+                    type: string
+                profile_picture:
+                    type: string
+            required:
+                - id
+                - display_name
+                - handle
+                - profile_picture
         TaskDocument:
             type: object
             additionalProperties: false
@@ -12345,11 +14482,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChecklistItem'
+                completionType:
+                    type: string
                 content:
                     type: string
                 deadline:
                     type: string
                     format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int64
                 encouragements:
                     type: array
                     items:
@@ -12390,12 +14532,32 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                rescheduleCount:
+                    type: integer
+                    format: int64
+                sessionNote:
+                    type: string
+                sessionPhoto:
+                    type: string
+                sessionTrackable:
+                    type: boolean
+                source:
+                    type: string
                 startDate:
                     type: string
                     format: date-time
                 startTime:
                     type: string
                     format: date-time
+                startedAt:
+                    type: string
+                    format: date-time
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
+                taskId:
+                    type: string
                 templateID:
                     type: string
                 timeCompleted:
@@ -12430,12 +14592,17 @@ components:
             type: object
             additionalProperties: false
             properties:
+                durationMs:
+                    type: integer
+                    format: int64
                 encouragementId:
                     type: string
                 message:
                     type: string
                 sender:
                     $ref: '#/components/schemas/KudosSender'
+                thumbnailUrl:
+                    type: string
                 timestamp:
                     type: string
                     format: date-time
@@ -12582,6 +14749,10 @@ components:
                 streak:
                     type: integer
                     format: int64
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 timesCompleted:
                     type: integer
                     format: int64
@@ -12686,6 +14857,10 @@ components:
                 streak:
                     type: integer
                     format: int64
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
                 timesCompleted:
                     type: integer
                     format: int64
@@ -13157,6 +15332,27 @@ components:
                     readOnly: true
                 name:
                     type: string
+        UpdatePersonalizationRequest:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdatePersonalizationRequest.json
+                    readOnly: true
+                enabled:
+                    type: boolean
+                    description: False turns personalization off; the worker stops deriving anything for this user. Setting it true also clears any pause.
+                pausedUntil:
+                    type: string
+                    description: Pause personalization until this instant. The worker skips the user while it is in the future.
+                    format: date-time
+                shareStruggles:
+                    type: boolean
+                    description: Opt in to letting close friends be prompted when you are stuck — a stalled task, a streak about to break. Defaults to false and stays false unless this is sent as true. Achievement-based kudos prompts do not depend on it.
         UpdatePostOutputBody:
             type: object
             additionalProperties: false
@@ -13193,8 +15389,8 @@ components:
                     $ref: '#/components/schemas/ImageSize'
                 taggedUsers:
                     type: array
-                    items:
-                        $ref: '#/components/schemas/MentionInput'
+                    description: Tagged user references as [{id, handle}]; malformed entries are dropped, never rejected
+                    items: {}
         UpdateProfileDocument:
             type: object
             additionalProperties: false
@@ -13212,6 +15408,8 @@ components:
                     type: string
                 profile_picture:
                     type: string
+                song:
+                    $ref: '#/components/schemas/Song'
         UpdateProfileOutputBody:
             type: object
             additionalProperties: false
@@ -13261,6 +15459,45 @@ components:
                     type: string
             required:
                 - push_token
+        UpdateStatedFactInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateStatedFactInputBody.json
+                    readOnly: true
+                value:
+                    type: string
+                    description: The new answer; valid values depend on the key
+            required:
+                - value
+        UpdateStatedFactOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateStatedFactOutputBody.json
+                    readOnly: true
+                key:
+                    type: string
+                message:
+                    type: string
+                    examples:
+                        - Preference updated
+                value:
+                    type: string
+            required:
+                - message
+                - key
+                - value
         UpdateTaskChecklistDocument:
             type: object
             additionalProperties: false
@@ -13373,6 +15610,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                sessionTrackable:
+                    type: boolean
                 startDate:
                     type: string
                     format: date-time
@@ -13506,6 +15745,40 @@ components:
                         - Task start date/time updated successfully
             required:
                 - message
+        UpdateTaskTagsInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskTagsInputBody.json
+                    readOnly: true
+                taggedUserIds:
+                    type: array
+                    items:
+                        type: string
+            required:
+                - taggedUserIds
+        UpdateTaskTagsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskTagsOutputBody.json
+                    readOnly: true
+                taggedUsers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaggedTaskUser'
+            required:
+                - taggedUsers
         UpdateTemplateDocument:
             type: object
             additionalProperties: false
@@ -13788,6 +16061,8 @@ components:
                     $ref: '#/components/schemas/DisplaySettings'
                 notifications:
                     $ref: '#/components/schemas/NotificationSettings'
+                personalization:
+                    $ref: '#/components/schemas/PersonalizationSettings'
             required:
                 - notifications
                 - display

@@ -167,6 +167,52 @@ export const markAsCompletedAPI = async (
     return data as unknown as TaskCompletionResult;
 };
 
+type LogProgressDocument = components["schemas"]["LogProgressDocument"];
+
+/**
+ * Log a chunk of work on a task (Sessions) without completing it.
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to log progress on
+ * @param progress - Duration (seconds) plus optional note/photo
+ */
+export const logProgressAPI = async (
+    categoryId: string,
+    taskId: string,
+    progress: LogProgressDocument
+): Promise<{ message: string; entry: TaskDocument; ringDelta?: RingDelta }> => {
+    const { data, error } = await client.POST("/v1/user/tasks/{category}/{id}/progress", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: progress,
+    });
+
+    if (error) {
+        throw new Error(`Failed to log progress: ${JSON.stringify(error)}`);
+    }
+    if (!data) {
+        throw new Error("No response data from logging progress");
+    }
+
+    return data as unknown as { message: string; entry: TaskDocument; ringDelta?: RingDelta };
+};
+
+/**
+ * Get the Sessions progress-log history for a task (timeline + running total).
+ * @param taskId - The ID of the task to fetch progress for
+ */
+export const getTaskProgressAPI = async (
+    taskId: string
+): Promise<{ entries: TaskDocument[]; totalCount: number; totalSeconds: number }> => {
+    const { data, error } = await client.GET("/v1/user/tasks/{id}/progress", {
+        params: withAuthHeaders({ path: { id: taskId } }),
+    });
+
+    if (error) {
+        throw new Error(`Failed to load task progress: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as { entries: TaskDocument[]; totalCount: number; totalSeconds: number };
+};
+
 // Tied to the generated contract so it can't silently drift from the backend.
 export type LogTasksResult = components["schemas"]["LogTasksOutputBody"];
 

@@ -98,6 +98,36 @@ type CompleteTaskOutput struct {
 	}
 }
 
+// Log Progress (Sessions)
+type LogProgressInput struct {
+	Authorization string              `header:"Authorization" required:"true"`
+	ID            string              `path:"id" example:"507f1f77bcf86cd799439011"`
+	Category      string              `path:"category" example:"507f1f77bcf86cd799439011"`
+	Body          LogProgressDocument `json:"body"`
+}
+
+type LogProgressOutput struct {
+	Body struct {
+		Message   string           `json:"message" example:"Progress logged successfully"`
+		Entry     TaskDocument     `json:"entry" doc:"The created progress-log record"`
+		RingDelta *rings.RingDelta `json:"ringDelta,omitempty" doc:"Describes the Do ring increment triggered by this log, if any (capped at one per task per day)"`
+	}
+}
+
+// Get Task Progress (Sessions history)
+type GetTaskProgressInput struct {
+	Authorization string `header:"Authorization" required:"true"`
+	ID            string `path:"id" example:"507f1f77bcf86cd799439011"`
+}
+
+type GetTaskProgressOutput struct {
+	Body struct {
+		Entries      []TaskDocument `json:"entries" doc:"Progress-log entries for this task, most recent first"`
+		TotalCount   int            `json:"totalCount" example:"3" doc:"Number of sessions logged"`
+		TotalSeconds int            `json:"totalSeconds" example:"4320" doc:"Total duration logged across all sessions, in seconds"`
+	}
+}
+
 // Delete Task
 type DeleteTaskInput struct {
 	Authorization   string `header:"Authorization" required:"true"`
@@ -351,6 +381,28 @@ func RegisterCompleteTaskOperation(api huma.API, handler *Handler) {
 		Description: "Mark a task as completed",
 		Tags:        []string{"tasks"},
 	}, handler.CompleteTask)
+}
+
+func RegisterLogProgressOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "log-progress",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/{category}/{id}/progress",
+		Summary:     "Log progress on a task",
+		Description: "Records a Sessions progress entry (Log Progress) for a task without completing or archiving it",
+		Tags:        []string{"tasks"},
+	}, handler.LogProgress)
+}
+
+func RegisterGetTaskProgressOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "get-task-progress",
+		Method:      http.MethodGet,
+		Path:        "/v1/user/tasks/{id}/progress",
+		Summary:     "Get task progress history",
+		Description: "Retrieve the Sessions progress-log history for a task",
+		Tags:        []string{"tasks"},
+	}, handler.GetTaskProgress)
 }
 
 func RegisterDeleteTaskOperation(api huma.API, handler *Handler) {

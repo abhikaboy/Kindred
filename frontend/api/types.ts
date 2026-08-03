@@ -157,6 +157,9 @@ export interface Task {
     // Working state — set when user starts working
     workingOnSince?: string;
 
+    // Sessions: whether "Log Progress" should show for this task
+    sessionTrackable?: boolean;
+
     // Completion tracking fields (only populated for completed tasks)
     timeCompleted?: string;
     timeTaken?: string;

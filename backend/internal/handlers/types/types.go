@@ -104,6 +104,22 @@ type TaskDocument struct {
 
 	// Friends tagged on this task (denormalized at tag time).
 	TaggedUsers []TaggedTaskUser `bson:"taggedUsers,omitempty" json:"taggedUsers,omitempty"`
+
+	// SessionTrackable marks a task as eligible for progress logging (Sessions
+	// feature) — auto-derived at creation, user-overridable in Task Detail.
+	SessionTrackable bool `bson:"sessionTrackable,omitempty" json:"sessionTrackable,omitempty"`
+
+	// Sessions / progress-logging fields — only populated on completed-tasks
+	// records. CompletionType distinguishes a real completion ("full", the
+	// default/empty value for pre-existing records) from a progress log
+	// ("progress"), which reuses the completion pipeline for rings/streaks/
+	// history without archiving the source Task.
+	CompletionType  string              `bson:"completionType,omitempty" json:"completionType,omitempty"`
+	SourceTaskID    *primitive.ObjectID `bson:"taskId,omitempty" json:"taskId,omitempty"`
+	DurationSeconds int                 `bson:"durationSeconds,omitempty" json:"durationSeconds,omitempty"`
+	SessionNote     string              `bson:"sessionNote,omitempty" json:"sessionNote,omitempty"`
+	SessionPhoto    string              `bson:"sessionPhoto,omitempty" json:"sessionPhoto,omitempty"`
+	Source          string              `bson:"source,omitempty" json:"source,omitempty"`
 }
 
 // KudosSender is an extended reference to the user who sent an encouragement,

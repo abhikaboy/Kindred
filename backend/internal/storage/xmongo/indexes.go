@@ -349,6 +349,19 @@ var Indexes = []Index{
 		},
 	},
 
+	// Covers GetTaskProgress and the once-per-task-per-day ring cap: filter on
+	// taskId+completionType, sort/range by timeCompleted
+	{
+		Collection: "completed-tasks",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "taskId", Value: 1},
+				{Key: "completionType", Value: 1},
+				{Key: "timeCompleted", Value: -1},
+			},
+		},
+	},
+
 	// Groups collection indexes
 	// Covers GetUserGroups: filter on creator or members._id, filter isDeleted
 	{

@@ -6033,6 +6033,54 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/progress:
+        post:
+            tags:
+                - tasks
+            summary: Log progress on a task
+            description: Records a Sessions progress entry (Log Progress) for a task without completing or archiving it
+            operationId: log-progress
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogProgressDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogProgressOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/tags:
         patch:
             tags:
@@ -6075,6 +6123,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateTaskTagsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{id}/progress:
+        get:
+            tags:
+                - tasks
+            summary: Get task progress history
+            description: Retrieve the Sessions progress-log history for a task
+            operationId: get-task-progress
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTaskProgressOutputBody'
                 default:
                     description: Error
                     content:
@@ -9867,11 +9949,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChecklistItem'
+                completionType:
+                    type: string
                 content:
                     type: string
                 deadline:
                     type: string
                     format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int64
                 encouragements:
                     type: array
                     items:
@@ -9918,6 +10005,14 @@ components:
                 ringDelta:
                     description: Describes the Plan ring increment triggered by this creation so the client can render feedback
                     $ref: '#/components/schemas/RingDelta'
+                sessionNote:
+                    type: string
+                sessionPhoto:
+                    type: string
+                sessionTrackable:
+                    type: boolean
+                source:
+                    type: string
                 startDate:
                     type: string
                     format: date-time
@@ -9931,6 +10026,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaggedTaskUser'
+                taskId:
+                    type: string
                 templateID:
                     type: string
                 timeCompleted:
@@ -10002,6 +10099,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                sessionTrackable:
+                    type: boolean
                 startDate:
                     type: string
                     format: date-time
@@ -11529,6 +11628,38 @@ components:
             required:
                 - reports
                 - total
+        GetTaskProgressOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetTaskProgressOutputBody.json
+                    readOnly: true
+                entries:
+                    type: array
+                    description: Progress-log entries for this task, most recent first
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                totalCount:
+                    type: integer
+                    description: Number of sessions logged
+                    format: int64
+                    examples:
+                        - 3
+                totalSeconds:
+                    type: integer
+                    description: Total duration logged across all sessions, in seconds
+                    format: int64
+                    examples:
+                        - 4320
+            required:
+                - entries
+                - totalCount
+                - totalSeconds
         GetTodayResponseBody:
             type: object
             additionalProperties: false
@@ -11864,6 +11995,55 @@ components:
                         $ref: '#/components/schemas/CalendarInfo'
             required:
                 - calendars
+        LogProgressDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogProgressDocument.json
+                    readOnly: true
+                durationSeconds:
+                    type: integer
+                    description: Duration of this work session, in seconds
+                    format: int64
+                    examples:
+                        - 1800
+                note:
+                    type: string
+                    description: Optional note about this session
+                photo:
+                    type: string
+                    description: Optional photo URL for this session
+            required:
+                - durationSeconds
+        LogProgressOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LogProgressOutputBody.json
+                    readOnly: true
+                entry:
+                    description: The created progress-log record
+                    $ref: '#/components/schemas/TaskDocument'
+                message:
+                    type: string
+                    examples:
+                        - Progress logged successfully
+                ringDelta:
+                    description: Describes the Do ring increment triggered by this log, if any (capped at one per task per day)
+                    $ref: '#/components/schemas/RingDelta'
+            required:
+                - message
+                - entry
         LogTaskEntry:
             type: object
             additionalProperties: false
@@ -14302,11 +14482,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChecklistItem'
+                completionType:
+                    type: string
                 content:
                     type: string
                 deadline:
                     type: string
                     format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int64
                 encouragements:
                     type: array
                     items:
@@ -14350,6 +14535,14 @@ components:
                 rescheduleCount:
                     type: integer
                     format: int64
+                sessionNote:
+                    type: string
+                sessionPhoto:
+                    type: string
+                sessionTrackable:
+                    type: boolean
+                source:
+                    type: string
                 startDate:
                     type: string
                     format: date-time
@@ -14363,6 +14556,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaggedTaskUser'
+                taskId:
+                    type: string
                 templateID:
                     type: string
                 timeCompleted:
@@ -15415,6 +15610,8 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Reminder'
+                sessionTrackable:
+                    type: boolean
                 startDate:
                     type: string
                     format: date-time

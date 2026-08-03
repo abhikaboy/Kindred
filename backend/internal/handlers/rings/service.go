@@ -43,9 +43,11 @@ func NewRingService(ringStates, users *mongo.Collection) *RingService {
 	}
 }
 
-// todayInTimezone returns today's date (midnight UTC representation) based on
+// TodayInTimezone returns today's date (midnight UTC representation) based on
 // the given IANA timezone string. If the timezone is invalid, UTC is used.
-func todayInTimezone(timezone string) time.Time {
+// Exported so other packages can key day-boundary checks (e.g. Sessions'
+// once-per-task-per-day ring cap) off the same "today" the rings use.
+func TodayInTimezone(timezone string) time.Time {
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		loc = time.UTC
@@ -57,7 +59,7 @@ func todayInTimezone(timezone string) time.Time {
 // GetOrCreateToday returns today's ring state for the user, creating one with
 // default targets if it does not already exist.
 func (s *RingService) GetOrCreateToday(ctx context.Context, userID primitive.ObjectID, timezone string) (*RingState, error) {
-	today := todayInTimezone(timezone)
+	today := TodayInTimezone(timezone)
 	now := time.Now()
 
 	filter := bson.M{
@@ -114,7 +116,7 @@ func (s *RingService) IncrementRing(ctx context.Context, userID primitive.Object
 		return nil, nil, err
 	}
 
-	today := todayInTimezone(timezone)
+	today := TodayInTimezone(timezone)
 	now := time.Now()
 
 	ringField := string(ringType) + ".current"
@@ -204,7 +206,7 @@ func (s *RingService) IncrementRing(ctx context.Context, userID primitive.Object
 // CalculateScore computes the productivity score for a user based on recent
 // ring closures and streak.
 func (s *RingService) CalculateScore(ctx context.Context, userID primitive.ObjectID, timezone string) (int, error) {
-	today := todayInTimezone(timezone)
+	today := TodayInTimezone(timezone)
 	windowStart := today.AddDate(0, 0, -ScoreRingWindow+1)
 
 	// Query ring states for the last 7 days.
@@ -278,7 +280,7 @@ func (s *RingService) GetHistory(ctx context.Context, userID primitive.ObjectID,
 		days = 7
 	}
 
-	today := todayInTimezone(timezone)
+	today := TodayInTimezone(timezone)
 	startDate := today.AddDate(0, 0, -days+1)
 
 	filter := bson.M{
@@ -338,7 +340,7 @@ func (s *RingService) ClaimReward(ctx context.Context, userID primitive.ObjectID
 	}
 
 	// Mark reward on ring state.
-	today := todayInTimezone(timezone)
+	today := TodayInTimezone(timezone)
 	_, err = s.ringStates.UpdateOne(ctx, bson.M{
 		"user_id": userID,
 		"date":    today,

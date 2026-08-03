@@ -458,6 +458,9 @@ func (s *Service) UpdatePartialTask(
 	if updated.Integration != "" {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].integration", Value: updated.Integration})
 	}
+	if updated.SessionTrackable != nil {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].sessionTrackable", Value: *updated.SessionTrackable})
+	}
 
 	update := bson.D{{Key: "$set", Value: updateFields}}
 	if rescheduleInc != nil {
@@ -695,6 +698,127 @@ func (s *Service) CompleteTask(
 		TasksComplete: userAfter.TasksComplete,
 		NextFlexTask:  flexResult,
 	}, nil
+}
+
+// highValueThreshold is the Value (0-10 scale) at or above which a task is
+// considered "high value" for auto-enabling session tracking.
+const highValueThreshold = 8.0
+
+// sessionTrackableDeadlineWindow is how far out a deadline must be for a task
+// to be considered long-running enough to auto-enable session tracking.
+const sessionTrackableDeadlineWindow = 7 * 24 * time.Hour
+
+// deriveSessionTrackable computes the default session_trackable value for a
+// new task: a checklist, a deadline more than ~7 days out, or high value all
+// suggest a longer-running goal worth logging incremental progress on.
+func deriveSessionTrackable(checklist []ChecklistItem, deadline *time.Time, value float64) bool {
+	if len(checklist) > 0 {
+		return true
+	}
+	if deadline != nil && deadline.After(time.Now().Add(sessionTrackableDeadlineWindow)) {
+		return true
+	}
+	return value >= highValueThreshold
+}
+
+// ProgressLogResult is the outcome of logging a Sessions progress entry.
+type ProgressLogResult struct {
+	Entry        TaskDocument
+	RingEligible bool // first progress log for this task today; caller may award Do-ring credit
+}
+
+// LogProgress creates a CompletedTask record tagged completion_type: progress
+// for the given task, without archiving or deleting the source task. It
+// reuses the completion pipeline (rings/streaks/history) by writing into the
+// same completed-tasks collection, keyed by taskId + completionType instead
+// of by the task's own _id, so multiple sessions can be logged per task.
+func (s *Service) LogProgress(userId, categoryId, id primitive.ObjectID, timezone string, body LogProgressDocument) (*ProgressLogResult, error) {
+	ctx := context.Background()
+
+	pipeline := getTasksByUserPipeline(userId)
+	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{"_id": id}}})
+	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []TaskDocument
+	if err := cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return nil, errors.New("task not found")
+	}
+	task := tasks[0]
+	if task.CategoryID != categoryId {
+		return nil, errors.New("task does not belong to the given category")
+	}
+
+	now := xutils.NowUTC()
+	today := rings.TodayInTimezone(timezone)
+	tomorrow := today.Add(24 * time.Hour)
+
+	existingToday, err := s.CompletedTasks.CountDocuments(ctx, bson.M{
+		"taskId":         id,
+		"completionType": string(CompletionProgress),
+		"timeCompleted":  bson.M{"$gte": today, "$lt": tomorrow},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	entry := task
+	entry.ID = primitive.NewObjectID()
+	entry.CategoryID = categoryId
+	entry.UserID = userId
+	entry.TimeCompleted = &now
+	entry.CompletionType = string(CompletionProgress)
+	entry.SourceTaskID = &id
+	entry.DurationSeconds = body.DurationSeconds
+	entry.SessionNote = body.Note
+	entry.SessionPhoto = body.Photo
+	entry.Source = "manual"
+
+	if _, err := s.CompletedTasks.InsertOne(ctx, entry); err != nil {
+		return nil, err
+	}
+
+	return &ProgressLogResult{Entry: entry, RingEligible: existingToday == 0}, nil
+}
+
+// ProgressSummary is a task's Sessions progress history.
+type ProgressSummary struct {
+	Entries      []TaskDocument
+	TotalCount   int
+	TotalSeconds int
+}
+
+// GetTaskProgress returns the progress-log history for a task, most recent
+// first, along with a running session count/duration total.
+func (s *Service) GetTaskProgress(userId, id primitive.ObjectID) (*ProgressSummary, error) {
+	ctx := context.Background()
+
+	cursor, err := s.CompletedTasks.Find(ctx, bson.M{
+		"user":           userId,
+		"taskId":         id,
+		"completionType": string(CompletionProgress),
+	}, options.Find().SetSort(bson.D{{Key: "timeCompleted", Value: -1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var entries []TaskDocument
+	if err := cursor.All(ctx, &entries); err != nil {
+		return nil, err
+	}
+
+	summary := &ProgressSummary{Entries: entries, TotalCount: len(entries)}
+	for _, e := range entries {
+		summary.TotalSeconds += e.DurationSeconds
+	}
+	return summary, nil
 }
 
 func (s *Service) BulkCompleteTask(userId primitive.ObjectID, tasks []BulkCompleteTaskItem) (*BulkCompleteTaskOutput, error) {

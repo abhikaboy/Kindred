@@ -40,6 +40,8 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterGetTaskOperation(api, handler)
 	RegisterUpdateTaskOperation(api, handler)
 	RegisterCompleteTaskOperation(api, handler)
+	RegisterLogProgressOperation(api, handler)
+	RegisterGetTaskProgressOperation(api, handler)
 	RegisterBulkCompleteTaskOperation(api, handler)
 	RegisterDeleteTaskOperation(api, handler)
 	RegisterBulkDeleteTaskOperation(api, handler)
