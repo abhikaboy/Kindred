@@ -89,3 +89,20 @@ export function useUpdateTaskTags() {
     onSuccess: () => invalidateTasks(qc),
   });
 }
+
+// Sessions: logs a progress entry without completing/archiving the task, so
+// (unlike useCompleteTask) it does NOT invalidate the workspace tree — the
+// source task is untouched. Callers refetch progress history separately via
+// useTaskProgress.
+export function useLogProgress() {
+  return $api.useMutation("post", "/v1/user/tasks/{category}/{id}/progress");
+}
+
+export function useTaskProgress(taskId: string | undefined) {
+  return $api.useQuery(
+    "get",
+    "/v1/user/tasks/{id}/progress",
+    { params: { header: AUTH_HEADER, path: { id: taskId ?? "" } } },
+    { enabled: Boolean(taskId) }
+  );
+}

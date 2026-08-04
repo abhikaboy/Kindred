@@ -2920,6 +2920,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log progress on a task
+         * @description Records a Sessions progress entry (Log Progress) for a task without completing or archiving it
+         */
+        post: operations["log-progress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}/tags": {
         parameters: {
             query?: never;
@@ -2938,6 +2958,26 @@ export interface paths {
          * @description Replace the set of friends tagged on a task
          */
         patch: operations["update-task-tags"];
+        trace?: never;
+    };
+    "/v1/user/tasks/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get task progress history
+         * @description Retrieve the Sessions progress-log history for a task
+         */
+        get: operations["get-task-progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/tasks/active/{category}/{id}": {
@@ -5098,9 +5138,12 @@ export interface components {
             blueprintId?: string;
             categoryID?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
+            completionType?: string;
             content: string;
             /** Format: date-time */
             deadline?: string;
+            /** Format: int64 */
+            durationSeconds?: number;
             encouragements?: components["schemas"]["TaskKudos"][];
             flexInfo?: components["schemas"]["FlexInstanceInfo"];
             id: string;
@@ -5124,6 +5167,10 @@ export interface components {
             rescheduleCount?: number;
             /** @description Describes the Plan ring increment triggered by this creation so the client can render feedback */
             ringDelta?: components["schemas"]["RingDelta"];
+            sessionNote?: string;
+            sessionPhoto?: string;
+            sessionTrackable?: boolean;
+            source?: string;
             /** Format: date-time */
             startDate: string;
             /** Format: date-time */
@@ -5131,6 +5178,7 @@ export interface components {
             /** Format: date-time */
             startedAt?: string;
             taggedUsers?: components["schemas"]["TaggedTaskUser"][];
+            taskId?: string;
             templateID?: string;
             /** Format: date-time */
             timeCompleted?: string;
@@ -5164,6 +5212,7 @@ export interface components {
             recurFrequency?: string;
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
+            sessionTrackable?: boolean;
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -6079,6 +6128,28 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        GetTaskProgressOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetTaskProgressOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Progress-log entries for this task, most recent first */
+            entries: components["schemas"]["TaskDocument"][];
+            /**
+             * Format: int64
+             * @description Number of sessions logged
+             * @example 3
+             */
+            totalCount: number;
+            /**
+             * Format: int64
+             * @description Total duration logged across all sessions, in seconds
+             * @example 4320
+             */
+            totalSeconds: number;
+        };
         GetTodayResponseBody: {
             /**
              * Format: uri
@@ -6262,6 +6333,38 @@ export interface components {
              */
             readonly $schema?: string;
             calendars: components["schemas"]["CalendarInfo"][];
+        };
+        LogProgressDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogProgressDocument.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Duration of this work session, in seconds
+             * @example 1800
+             */
+            durationSeconds: number;
+            /** @description Optional note about this session */
+            note?: string;
+            /** @description Optional photo URL for this session */
+            photo?: string;
+        };
+        LogProgressOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LogProgressOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description The created progress-log record */
+            entry: components["schemas"]["TaskDocument"];
+            /** @example Progress logged successfully */
+            message: string;
+            /** @description Describes the Do ring increment triggered by this log, if any (capped at one per task per day) */
+            ringDelta?: components["schemas"]["RingDelta"];
         };
         LogTaskEntry: {
             /**
@@ -7561,9 +7664,12 @@ export interface components {
             blueprintId?: string;
             categoryID?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
+            completionType?: string;
             content: string;
             /** Format: date-time */
             deadline?: string;
+            /** Format: int64 */
+            durationSeconds?: number;
             encouragements?: components["schemas"]["TaskKudos"][];
             flexInfo?: components["schemas"]["FlexInstanceInfo"];
             id: string;
@@ -7585,6 +7691,10 @@ export interface components {
             reminders?: components["schemas"]["Reminder"][];
             /** Format: int64 */
             rescheduleCount?: number;
+            sessionNote?: string;
+            sessionPhoto?: string;
+            sessionTrackable?: boolean;
+            source?: string;
             /** Format: date-time */
             startDate: string;
             /** Format: date-time */
@@ -7592,6 +7702,7 @@ export interface components {
             /** Format: date-time */
             startedAt?: string;
             taggedUsers?: components["schemas"]["TaggedTaskUser"][];
+            taskId?: string;
             templateID?: string;
             /** Format: date-time */
             timeCompleted?: string;
@@ -8242,6 +8353,7 @@ export interface components {
             recurType?: string;
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
+            sessionTrackable?: boolean;
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -14457,6 +14569,46 @@ export interface operations {
             };
         };
     };
+    "log-progress": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogProgressDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogProgressOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "update-task-tags": {
         parameters: {
             query?: never;
@@ -14484,6 +14636,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTaskTagsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-task-progress": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTaskProgressOutputBody"];
                 };
             };
             /** @description Error */

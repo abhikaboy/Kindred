@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowSquareOut, Check, Play, Stop, Trash } from "@phosphor-icons/react"
+import { ArrowSquareOut, ChartLineUp, Check, Play, Stop, Trash } from "@phosphor-icons/react"
 import { useNavigate } from "react-router-dom"
 import {
   ContextMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/context-menu"
 import { AUTH_HEADER, useActivateTask, useCompleteTask } from "@/hooks/useTaskActions"
 import { DeleteTaskDialog } from "@/components/task/DeleteTaskDialog"
+import { LogProgressDialog } from "@/components/task/LogProgressDialog"
 import { useCreate } from "@/components/create/CreateContext"
 import { useRingUpdate } from "@/components/rings/RingUpdateContext"
 import { showTaskCompleteToast } from "@/components/TaskCompleteToast"
@@ -26,6 +27,7 @@ export function TaskContextMenu({
   const activateTask = useActivateTask()
   const completeTask = useCompleteTask()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [logProgressOpen, setLogProgressOpen] = useState(false)
   const { openCreatePost } = useCreate()
   const { showRingUpdate } = useRingUpdate()
 
@@ -86,6 +88,11 @@ export function TaskContextMenu({
           Complete
         </ContextMenuItem>
 
+        <ContextMenuItem disabled={!hasCategoryID} onClick={() => setLogProgressOpen(true)}>
+          <ChartLineUp size={14} />
+          Log Progress
+        </ContextMenuItem>
+
         <ContextMenuSeparator />
 
         <ContextMenuItem
@@ -99,6 +106,12 @@ export function TaskContextMenu({
       </ContextMenuContent>
 
       <DeleteTaskDialog task={task} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      <LogProgressDialog
+        task={task}
+        open={logProgressOpen}
+        onOpenChange={setLogProgressOpen}
+        onLogged={(delta) => showRingUpdate(delta)}
+      />
     </ContextMenu>
   )
 }

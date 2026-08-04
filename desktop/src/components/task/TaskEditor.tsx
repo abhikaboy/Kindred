@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarBlank,
+  ChartLineUp,
   Check,
   Flag,
   Note,
@@ -23,6 +24,7 @@ import type { FriendReference } from "@/hooks/useConnections";
 import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
 import { DeleteTaskDialog } from "@/components/task/DeleteTaskDialog";
+import { LogProgressDialog } from "@/components/task/LogProgressDialog";
 import { cn } from "@/lib/utils";
 import { fireConfetti } from "@/lib/confetti";
 import { useCreate } from "@/components/create/CreateContext";
@@ -34,6 +36,7 @@ import {
   taskToUpdateDocument,
   useActivateTask,
   useCompleteTask,
+  useTaskProgress,
   useUpdateTask,
   useUpdateTaskTags,
 } from "@/hooks/useTaskActions";
@@ -70,6 +73,12 @@ function PrioritySelector({ value, onChange }: { value: number; onChange: (v: nu
 // Midnight (local) of the given date, as an ISO string — the "date only" start value.
 export const midnightIso = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+
+function formatSessionDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.round((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
 
 export function BackLink() {
   return (
@@ -123,11 +132,13 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
   const [startTime, setStartTime] = useState<string | undefined>(task.startTime);
   const [deadline, setDeadline] = useState<string | undefined>(task.deadline);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [logProgressOpen, setLogProgressOpen] = useState(false);
 
   const updateTask = useUpdateTask();
   const updateTags = useUpdateTaskTags();
   const completeTask = useCompleteTask();
   const activateTask = useActivateTask();
+  const { data: progress } = useTaskProgress(task.id);
   const { openCreatePost } = useCreate();
   const { showRingUpdate } = useRingUpdate();
 
@@ -238,8 +249,7 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           </button>
           <button
             type="button"
-            onClick={handleDelete}
-            disabled={deleteTask.isPending}
+            onClick={() => setDeleteOpen(true)}
             aria-label="Delete task"
             className="mt-1.5 shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
           >
@@ -270,8 +280,18 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
         </button>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Peers, same secondary weight — logging progress never auto-completes the task. */}
+          <PrimaryButton
+            title="Log Progress"
+            secondary
+            onClick={() => setLogProgressOpen(true)}
+            className="w-auto px-5 py-2.5"
+          >
+            <ChartLineUp size={16} weight="bold" />
+          </PrimaryButton>
           <PrimaryButton
             title={completeTask.isPending ? "Completing…" : "Mark Complete"}
+            secondary
             disabled={completeTask.isPending}
             onClick={handleComplete}
             className="w-auto px-5 py-2.5"
@@ -304,6 +324,33 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           onChangeDeadline={handleDeadlineChange}
         />
       </DataCard>
+
+      {(progress?.entries?.length ?? 0) > 0 && (
+        <DataCard
+          title={`Progress · ${progress!.entries!.length} session${progress!.entries!.length === 1 ? "" : "s"} · ${formatSessionDuration(progress!.totalSeconds ?? 0)}`}
+          icon={<ChartLineUp size={20} weight="regular" className="text-foreground" />}
+        >
+          <div className="flex flex-col gap-3">
+            {progress!.entries!.map((entry) => (
+              <div key={entry.id} className="flex flex-col gap-0.5">
+                <div className="flex items-center justify-between">
+                  <ThemedText type="defaultSemiBold">
+                    {entry.durationSeconds != null ? formatSessionDuration(entry.durationSeconds) : ""}
+                  </ThemedText>
+                  <ThemedText type="caption" className="text-muted-foreground">
+                    {entry.timeCompleted ? new Date(entry.timeCompleted).toLocaleDateString() : ""}
+                  </ThemedText>
+                </div>
+                {entry.sessionNote && (
+                  <ThemedText type="lightBody" className="text-muted-foreground">
+                    {entry.sessionNote}
+                  </ThemedText>
+                )}
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
 
       <DataCard title="Priority" icon={<Flag size={20} weight="regular" className="text-foreground" />}>
         <PrioritySelector
@@ -343,6 +390,14 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           </div>
         </DataCard>
       )}
+
+      <DeleteTaskDialog task={task} open={deleteOpen} onOpenChange={setDeleteOpen} onDeleted={done} />
+      <LogProgressDialog
+        task={task}
+        open={logProgressOpen}
+        onOpenChange={setLogProgressOpen}
+        onLogged={(delta) => showRingUpdate(delta)}
+      />
     </div>
   );
 }
