@@ -1,5 +1,6 @@
 import { useState, type JSX } from "react";
-import { ChatCircle, Plus } from "@phosphor-icons/react";
+import { ChatCircle, Plus, ShareNetwork } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ThemedText";
@@ -25,6 +26,7 @@ type ReactionRowProps = {
 };
 
 export function ReactionRow({
+  postId,
   groups,
   onToggle,
   kudos,
@@ -40,6 +42,15 @@ export function ReactionRow({
     { label?: string; people: Person[] }[] | null
   >(null);
   const { fetchUsers } = useUsersByIds();
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(`kindred://posting/${postId}`);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  };
 
   const openReactionViewer = async () => {
     // Resolve every reactor once, then bucket per emoji into viewer groups.
@@ -136,9 +147,18 @@ export function ReactionRow({
       <Button
         variant="ghost"
         size="sm"
+        onClick={handleShare}
+        aria-label="Copy post link"
+        className="ml-auto"
+      >
+        <ShareNetwork size={14} />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onToggleComments}
         aria-expanded={commentsOpen}
-        className="ml-auto"
       >
         <ChatCircle size={14} />
         <ThemedText type="smallerDefault" as="span">

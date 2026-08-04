@@ -7,6 +7,7 @@ import {
     Dimensions,
     Platform,
     Image as RNImage,
+    Share,
 } from "react-native";
 import { ThemedText } from "../ThemedText";
 import type { TaggedUser } from "./types";
@@ -24,7 +25,6 @@ import { useTasks } from "@/contexts/tasksContext";
 import type { components } from "@/api/generated/types";
 import { showToast } from "@/utils/showToast";
 import * as Clipboard from 'expo-clipboard';
-import * as SMS from 'expo-sms';
 import PostCardHeader from "./PostCardHeader";
 import PostCardMedia from "./PostCardMedia";
 import PostCardFooter from "./PostCardFooter";
@@ -423,10 +423,9 @@ const PostCard = React.memo(({
         if (!id) return;
 
         try {
-            await SMS.sendSMSAsync(
-                [],
-                `Check out this post on Kindred! kindred://posting/${id}`
-            );
+            await Share.share({
+                message: `Check out this post on Kindred! kindred://posting/${id}`,
+            });
         } catch (error) {
             console.error('Error sharing post:', error);
             showToast('Failed to share post', 'danger');
