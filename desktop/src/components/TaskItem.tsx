@@ -102,7 +102,7 @@ export function TaskItem({
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <ThemedText type="default" className="line-clamp-2 break-words leading-6">
+              <ThemedText type="default" className="break-words leading-6">
                 {task.content || "Untitled task"}
               </ThemedText>
               {task.notes && (

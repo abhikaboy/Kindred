@@ -13,15 +13,18 @@ const PROXY_CATEGORY_NAME = "!-proxy-!";
 const isRealCategory = (c: CategoryDocument) =>
   c.name !== PROXY_CATEGORY_NAME && !(c.id ?? "").startsWith("upcoming-");
 
+const taskCount = (ws: WorkspaceResult) =>
+  (ws.categories ?? []).reduce((sum, c) => sum + (c.tasks?.length ?? 0), 0);
+
 // Backend $group has no $sort, so order isn't stable across refetches — sort by
-// name here to keep the sidebar from reshuffling.
+// task count (most tasks first) here, falling back to name to keep ties stable.
 const stripProxyCategories = (workspaces: WorkspaceResult[]): WorkspaceResult[] =>
   workspaces
     .map((ws) => ({
       ...ws,
       categories: (ws.categories ?? []).filter(isRealCategory),
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => taskCount(b) - taskCount(a) || a.name.localeCompare(b.name));
 
 // One fetch returns the whole workspace → category → task tree.
 // react-query is the store; Authorization is injected by the client middleware.

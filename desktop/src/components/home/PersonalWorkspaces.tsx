@@ -71,7 +71,11 @@ export function PersonalWorkspaces() {
       ) : workspaces.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {workspaces.map((ws) => (
-            <BentoTile key={ws.name} contentClassName="h-full">
+            <BentoTile
+              key={ws.name}
+              contentClassName="h-full"
+              className={pendingTasks(ws).length === 0 ? "opacity-50" : undefined}
+            >
               <WorkspaceRow ws={ws} />
             </BentoTile>
           ))}

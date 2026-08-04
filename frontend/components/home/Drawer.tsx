@@ -252,6 +252,11 @@ const DrawerContent = ({
                     </View>
                     {workspaces
                         .filter((workspace) => !workspace.isBlueprint)
+                        .slice()
+                        .sort(
+                            (a, b) =>
+                                pendingWorkspaceTaskCount(b.categories) - pendingWorkspaceTaskCount(a.categories)
+                        )
                         .map((workspace) => {
                             const taskCount = pendingWorkspaceTaskCount(workspace.categories);
                             return (

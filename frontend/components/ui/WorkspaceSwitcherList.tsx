@@ -40,6 +40,8 @@ export function WorkspaceSwitcherList({ workspaces, selected, onSelectCalendar, 
             )}
             {workspaces
                 .filter((workspace) => !workspace.isBlueprint)
+                .slice()
+                .sort((a, b) => activeTaskCount(b) - activeTaskCount(a))
                 .map((workspace) => {
                     const IconComponent = workspace.icon
                         ? ((PhosphorIcons as any)[workspace.icon] as

@@ -62,6 +62,8 @@ export function CalendarEventCard({ task, top, height, leftPct, widthPct, onResc
   };
 
   const box = preview ?? { top, height };
+  // Too short to fit a time line above the name without clipping the name — drop the time.
+  const showTime = box.height >= 40;
 
   return (
     <div
@@ -81,9 +83,11 @@ export function CalendarEventCard({ task, top, height, leftPct, widthPct, onResc
           className="pointer-events-none mt-0.5 shrink-0 text-primary/40 transition-colors group-hover:text-primary/70"
         />
         <div className="min-w-0 flex-1">
-          <ThemedText type="caption" className="text-primary">
-            {task.startTime ? format(new Date(task.startTime), "h:mm a") : ""}
-          </ThemedText>
+          {showTime && task.startTime && (
+            <ThemedText type="caption" className="text-primary">
+              {format(new Date(task.startTime), "h:mm a")}
+            </ThemedText>
+          )}
           <ThemedText type="default" className="line-clamp-2 leading-5">
             {task.content || "Untitled task"}
           </ThemedText>
