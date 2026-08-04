@@ -3,7 +3,9 @@ import { friendshipToastMessage } from "@/hooks/useFriendshipBump";
 
 describe("friendshipToastMessage", () => {
   it("shows a short points bump when the level holds", () => {
-    expect(friendshipToastMessage({ delta: 3, score: 30, leveledUp: false }, "Sarah")).toBe("+3 with Sarah");
+    expect(friendshipToastMessage({ delta: 3, score: 30, leveledUp: false }, "Sarah")).toBe(
+      "Friendship +3 with Sarah"
+    );
   });
 
   it("announces the new level when the bump crosses a floor", () => {

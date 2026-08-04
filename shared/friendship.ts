@@ -50,8 +50,8 @@ export const FRIENDSHIP_ACTIONS: { label: string; points: number }[] = [
     { label: "React to their post or kudos", points: 1 },
 ];
 
-/** Short bump label for confirmation feedback, e.g. "+3 with Sarah". */
+/** Short bump label for confirmation feedback, e.g. "Friendship +3 with Sarah". */
 export function friendshipBumpLabel(delta: number, name?: string): string {
-    const d = `+${Math.max(0, delta)}`;
+    const d = `Friendship +${Math.max(0, delta)}`;
     return name ? `${d} with ${name}` : d;
 }

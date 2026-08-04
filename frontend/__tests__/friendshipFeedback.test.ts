@@ -2,7 +2,7 @@ import { friendshipFeedback } from "@/utils/friendship";
 
 describe("friendshipFeedback", () => {
     it("shows the points gained on a normal bump", () => {
-        expect(friendshipFeedback({ score: 30, delta: 3, leveledUp: false })).toBe("+3");
+        expect(friendshipFeedback({ score: 30, delta: 3, leveledUp: false })).toBe("Friendship +3");
     });
 
     it("shows the new level name on a level up", () => {
