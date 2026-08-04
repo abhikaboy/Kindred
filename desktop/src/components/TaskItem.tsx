@@ -81,7 +81,7 @@ export function TaskItem({
   const encouragements = task.encouragements ?? [];
   const encouraged = encouragements.length > 0;
   const encourageMode = Boolean(onEncourage);
-  const clickable = Boolean(linkToDetail) && !encourageMode;
+  const clickable = Boolean(linkToDetail) && !encourageMode && !task.isPhantom;
   const goToDetail = () => navigate(`/task/${task.id}`);
 
   const inner = (
@@ -93,12 +93,13 @@ export function TaskItem({
       className={cn(
         "rounded-2xl border px-4 py-3.5 transition-colors",
         encouraged ? "border-border/60 bg-primary/5" : "border-border/60 bg-card",
-        (encourageMode || clickable) ? "cursor-pointer hover:border-primary/60" : "hover:border-border"
+        (encourageMode || clickable) ? "cursor-pointer hover:border-primary/60" : "hover:border-border",
+        task.isPhantom && "border-dashed opacity-45 hover:border-border/60"
       )}
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
     >
       <div className="flex items-start gap-3">
-        {!completed && !encourageMode && !preview && <CompleteCheckbox className="mt-0.5" />}
+        {!completed && !encourageMode && !preview && !task.isPhantom && <CompleteCheckbox className="mt-0.5" />}
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -141,6 +142,6 @@ export function TaskItem({
       </button>
     );
   }
-  if (preview) return inner;
+  if (preview || task.isPhantom) return inner;
   return <TaskContextMenu task={task}>{inner}</TaskContextMenu>;
 }

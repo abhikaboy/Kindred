@@ -24,6 +24,7 @@ export function useAllTasks(): TaskDocument[] {
     for (const ws of data ?? []) {
       for (const cat of ws.categories ?? []) {
         for (const task of cat.tasks ?? []) {
+          if (task.isPhantom) continue;
           tasks.push({ ...task, categoryID: task.categoryID ?? cat.id });
         }
       }

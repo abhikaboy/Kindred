@@ -77,11 +77,15 @@ export function CategoryCard({
         </ThemedText>
       ) : (
         <div className="flex flex-col gap-3">
-          {tasks.map((task) => (
-            <SwipeToComplete key={task.id} task={task} categoryId={category.id}>
-              <TaskItem task={task} />
-            </SwipeToComplete>
-          ))}
+          {tasks.map((task) =>
+            task.isPhantom ? (
+              <TaskItem key={task.id} task={task} />
+            ) : (
+              <SwipeToComplete key={task.id} task={task} categoryId={category.id}>
+                <TaskItem task={task} />
+              </SwipeToComplete>
+            )
+          )}
         </div>
       )}
     </section>
