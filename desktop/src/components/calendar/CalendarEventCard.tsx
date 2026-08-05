@@ -84,11 +84,11 @@ export function CalendarEventCard({ task, top, height, leftPct, widthPct, onResc
         />
         <div className="min-w-0 flex-1">
           {showTime && task.startTime && (
-            <ThemedText type="caption" className="text-primary">
+            <ThemedText type="caption" className="block whitespace-nowrap text-primary">
               {format(new Date(task.startTime), "h:mm a")}
             </ThemedText>
           )}
-          <ThemedText type="default" className="leading-5">
+          <ThemedText type="default" className="block break-words leading-5">
             {task.content || "Untitled task"}
           </ThemedText>
         </div>
