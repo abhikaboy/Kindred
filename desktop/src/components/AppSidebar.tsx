@@ -6,6 +6,7 @@ import {
   CalendarBlank,
   Newspaper,
   MagnifyingGlass,
+  ChartLineUp,
   Plus,
   Sparkle,
   User,
@@ -39,6 +40,7 @@ const MAIN = [
   { title: "Feed", url: "/feed", icon: Newspaper },
   // Search now covers both people and blueprints (see routes/search.tsx).
   { title: "Search", url: "/search", icon: MagnifyingGlass },
+  { title: "Activity", url: "/activity", icon: ChartLineUp },
   { title: "Profile", url: "/profile", icon: User },
 ] as const;
 
