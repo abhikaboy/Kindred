@@ -4,7 +4,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import { CalendarConnectionsDrawer } from "@/components/calendar/CalendarConnectionsDrawer";
 
-export type ViewMode = "week" | "month";
+export type ViewMode = "day" | "week" | "month";
 
 type Props = {
   anchorDate: Date;
@@ -19,7 +19,7 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
     <div className="flex items-center justify-between gap-3 px-1 pb-3">
       <div className="flex items-center gap-2">
         <ThemedText type="titleFraunces" className="text-2xl">
-          {format(anchorDate, "MMMM yyyy")}
+          {format(anchorDate, mode === "day" ? "MMMM d, yyyy" : "MMMM yyyy")}
         </ThemedText>
         <button aria-label="Previous" onClick={() => onStep(-1)} className="rounded-md p-1 hover:bg-muted">
           <CaretLeft size={18} />
@@ -35,7 +35,7 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
       <div className="flex items-center gap-2">
         <CalendarConnectionsDrawer />
         <div className="flex items-center rounded-full border p-0.5">
-        {(["week", "month"] as const).map((m) => (
+        {(["day", "week", "month"] as const).map((m) => (
           <button
             key={m}
             onClick={() => onModeChange(m)}

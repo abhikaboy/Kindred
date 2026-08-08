@@ -15,10 +15,11 @@ export function isMultiDay(task: TaskDocument): boolean {
   return deadlineDay > startDay;
 }
 
-// Per-day buckets for the 7 days from weekStart. Multi-day tasks are excluded;
-// they render as spanning bars via spanningTasksForWeek.
-export function tasksForWeek(allTasks: TaskDocument[], weekStart: Date): Record<string, WeekDayTasks> {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+// Per-day buckets for `dayCount` days starting at weekStart (7 for the week view,
+// 1 for the day view). Multi-day tasks are excluded; they render as spanning bars
+// via spanningTasksForWeek.
+export function tasksForWeek(allTasks: TaskDocument[], weekStart: Date, dayCount = 7): Record<string, WeekDayTasks> {
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
   const out: Record<string, WeekDayTasks> = {};
   for (const day of days) out[dayKey(day)] = { timed: [], allDay: [] };
   for (const t of allTasks) {
@@ -48,10 +49,11 @@ export type SpanningBar = {
   row: number;           // 0-based lane for vertical stacking (no column overlap within a row)
 };
 
-// Multi-day tasks whose [startDay, deadlineDay] intersects the visible week, laid out into rows.
-export function spanningTasksForWeek(allTasks: TaskDocument[], weekStart: Date): SpanningBar[] {
+// Multi-day tasks whose [startDay, deadlineDay] intersects the visible range, laid out into rows.
+export function spanningTasksForWeek(allTasks: TaskDocument[], weekStart: Date, dayCount = 7): SpanningBar[] {
   const day0 = startOfDay(weekStart);
-  const day6 = addDays(day0, 6);
+  const lastCol = dayCount - 1;
+  const dayLast = addDays(day0, lastCol);
 
   const bars: Omit<SpanningBar, "row">[] = [];
   for (const task of allTasks) {
@@ -62,13 +64,13 @@ export function spanningTasksForWeek(allTasks: TaskDocument[], weekStart: Date):
     const startDay = startOfDay(new Date(startIso));
     const deadlineDay = startOfDay(new Date(task.deadline));
 
-    // Skip tasks entirely outside the visible week
-    if (deadlineDay < day0 || startDay > day6) continue;
+    // Skip tasks entirely outside the visible range
+    if (deadlineDay < day0 || startDay > dayLast) continue;
 
     const clippedLeft = startDay < day0;
-    const clippedRight = deadlineDay > day6;
-    const startCol = Math.max(0, Math.min(6, differenceInCalendarDays(startDay, day0)));
-    const endCol = Math.max(0, Math.min(6, differenceInCalendarDays(deadlineDay, day0)));
+    const clippedRight = deadlineDay > dayLast;
+    const startCol = Math.max(0, Math.min(lastCol, differenceInCalendarDays(startDay, day0)));
+    const endCol = Math.max(0, Math.min(lastCol, differenceInCalendarDays(deadlineDay, day0)));
 
     bars.push({ task, startCol, endCol, clippedLeft, clippedRight });
   }
@@ -103,9 +105,9 @@ const minuteOfDay = (iso: string): number => {
 // minute; "start" runs from the start minute to midnight.
 export type SpanningEdge = { task: TaskDocument; startMin: number; endMin: number; kind: "start" | "end" };
 
-// Per-day edge blocks for spanning tasks whose endpoints fall within the visible week.
-export function spanningEdgesForWeek(allTasks: TaskDocument[], weekStart: Date): Record<string, SpanningEdge[]> {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(weekStart), i));
+// Per-day edge blocks for spanning tasks whose endpoints fall within the visible range.
+export function spanningEdgesForWeek(allTasks: TaskDocument[], weekStart: Date, dayCount = 7): Record<string, SpanningEdge[]> {
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(startOfDay(weekStart), i));
   const out: Record<string, SpanningEdge[]> = {};
   for (const day of days) out[dayKey(day)] = [];
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { addMonths, addWeeks, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 import { PlannerHeader, type ViewMode } from "@/components/calendar/PlannerHeader";
 import { WeekPager } from "@/components/calendar/WeekPager";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
@@ -49,50 +49,60 @@ function CalendarBody({
 
   const range = useMemo(
     () =>
-      mode === "week"
-        ? { start: weekStart, end: endOfWeek(weekStart) }
-        : { start: startOfWeek(startOfMonth(monthAnchor)), end: endOfWeek(endOfMonth(monthAnchor)) },
+      mode === "month"
+        ? { start: startOfWeek(startOfMonth(monthAnchor)), end: endOfWeek(endOfMonth(monthAnchor)) }
+        : { start: weekStart, end: endOfWeek(weekStart) },
     [mode, weekStart, monthAnchor]
   );
   const density = useTaskCountsByDay(range.start, range.end);
   const buckets = useDailyTasks(selectedDate);
 
   const onStep = (dir: -1 | 1) => {
-    if (mode === "week") setSelectedDate((d) => addWeeks(d, dir));
+    if (mode === "day") setSelectedDate((d) => addDays(d, dir));
+    else if (mode === "week") setSelectedDate((d) => addWeeks(d, dir));
     else setMonthAnchor((d) => addMonths(d, dir));
   };
   const onToday = () => {
     const now = new Date();
     setSelectedDate(now);
     setMonthAnchor(now);
-    setMode("week");
+    if (mode === "month") setMode("week");
   };
 
   return (
     <div className="flex h-full flex-col p-4">
       <PlannerHeader
-        anchorDate={mode === "week" ? selectedDate : monthAnchor}
+        anchorDate={mode === "month" ? monthAnchor : selectedDate}
         mode={mode}
         onStep={onStep}
         onModeChange={setMode}
         onToday={onToday}
       />
       <div className="flex min-h-0 flex-1 gap-4">
-        {mode === "week" ? (
-          <>
-            <WeekPager allTasks={allTasks} weekStart={weekStart} selectedDate={selectedDate} onSelectDate={setSelectedDate} onStepWeek={onStep} onCreateRange={onCreateRange} onReschedule={onReschedule} />
-            <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
-          </>
-        ) : (
+        {mode === "month" ? (
           <MonthGrid
             monthAnchor={monthAnchor}
             density={density}
             onSelectDay={(d) => {
               setSelectedDate(d);
-              setMode("week");
+              setMode("day");
             }}
             dropKeyFor={(d) => `day:${dayKey(d)}`}
           />
+        ) : (
+          <>
+            <WeekPager
+              allTasks={allTasks}
+              unit={mode}
+              anchor={mode === "day" ? selectedDate : weekStart}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              onStep={onStep}
+              onCreateRange={onCreateRange}
+              onReschedule={onReschedule}
+            />
+            <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
+          </>
         )}
       </div>
     </div>

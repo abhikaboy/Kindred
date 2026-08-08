@@ -4,6 +4,7 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { HOUR_HEIGHT, layoutDayEvents, minutesToY, nowMinutes, yToMinutes } from "@/lib/timeline";
 import { CalendarEventCard } from "@/components/calendar/CalendarEventCard";
 import { useDropTarget, useDragState } from "@/components/calendar/DragContext";
+import { useTaskPeek } from "@/components/calendar/TaskPeekContext";
 import { dayKey, type WeekDayTasks } from "@/lib/weekTasks";
 import type { SpanningBar, SpanningEdge } from "@/lib/weekTasks";
 import { ThemedText } from "@/components/ThemedText";
@@ -14,20 +15,22 @@ type Reschedule = (task: TaskDocument, patch: { startTime?: string; deadline?: s
 
 const ROW_H = 22; // px per spanning-bar lane
 
-function SpanningBars({ bars }: { bars: SpanningBar[] }) {
+function SpanningBars({ bars, dayCount, onOpen }: { bars: SpanningBar[]; dayCount: number; onOpen: (task: TaskDocument) => void }) {
   if (bars.length === 0) return null;
   const maxRow = Math.max(...bars.map((b) => b.row));
   const regionH = (maxRow + 1) * ROW_H;
   return (
     <div className="relative" style={{ height: regionH }}>
       {bars.map((bar) => {
-        const leftPct = (bar.startCol / 7) * 100;
-        const widthPct = ((bar.endCol - bar.startCol + 1) / 7) * 100;
+        const leftPct = (bar.startCol / dayCount) * 100;
+        const widthPct = ((bar.endCol - bar.startCol + 1) / dayCount) * 100;
         return (
-          <div
+          <button
             key={bar.task.id}
+            type="button"
+            onClick={() => onOpen(bar.task)}
             className={cn(
-              "absolute flex items-center overflow-hidden bg-primary/10 px-1.5",
+              "absolute flex items-center overflow-hidden bg-primary/10 px-1.5 text-left hover:bg-primary/20",
               bar.clippedLeft ? "rounded-l-none" : "rounded-l",
               bar.clippedRight ? "rounded-r-none" : "rounded-r"
             )}
@@ -43,7 +46,7 @@ function SpanningBars({ bars }: { bars: SpanningBar[] }) {
               {bar.task.content || "Untitled"}
             </ThemedText>
             {bar.clippedRight && <CaretRight size={10} className="ml-auto shrink-0 text-primary" />}
-          </div>
+          </button>
         );
       })}
     </div>
@@ -57,8 +60,8 @@ const minuteLabel = (min: number) => format(new Date(0, 0, 0, Math.floor(min / 6
 
 // A spanning task's endpoint drawn in the hourly grid: the deadline day fills down
 // to the due time; the start day fills from the start time onward. Sits behind
-// normal events and is non-interactive.
-function SpanningEdgeBlock({ edge }: { edge: SpanningEdge }) {
+// normal events but is still clickable to open the task.
+function SpanningEdgeBlock({ edge, onOpen }: { edge: SpanningEdge; onOpen: (task: TaskDocument) => void }) {
   const top = minutesToY(edge.startMin);
   const height = Math.max(minutesToY(15), minutesToY(edge.endMin - edge.startMin));
   const label =
@@ -66,9 +69,14 @@ function SpanningEdgeBlock({ edge }: { edge: SpanningEdge }) {
       ? `Due · ${minuteLabel(edge.endMin)}`
       : minuteLabel(edge.startMin);
   return (
-    <div
+    <button
+      type="button"
+      // The column underneath starts its own drag-to-create gesture on pointerdown;
+      // stop it here so clicking an edge block doesn't also open the create-task modal.
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={() => onOpen(edge.task)}
       className={cn(
-        "pointer-events-none absolute inset-x-1 flex overflow-hidden bg-primary/10 px-1.5 py-0.5",
+        "absolute inset-x-1 flex overflow-hidden bg-primary/10 px-1.5 py-0.5 text-left hover:bg-primary/20",
         edge.kind === "end" ? "items-end rounded-b-lg" : "items-start rounded-t-lg"
       )}
       style={{ top, height }}
@@ -76,11 +84,11 @@ function SpanningEdgeBlock({ edge }: { edge: SpanningEdge }) {
       <ThemedText type="caption" className="truncate text-primary">
         {label} · {edge.task.content || "Untitled"}
       </ThemedText>
-    </div>
+    </button>
   );
 }
 
-function DayColumn({ day, tasks, edges, onCreateRange, onReschedule }: { day: Date; tasks: WeekDayTasks; edges: SpanningEdge[]; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule }) {
+function DayColumn({ day, tasks, edges, onCreateRange, onReschedule, onOpenTask }: { day: Date; tasks: WeekDayTasks; edges: SpanningEdge[]; onCreateRange: (day: Date, startMin: number, endMin: number) => void; onReschedule: Reschedule; onOpenTask: (task: TaskDocument) => void }) {
   const dropKey = `weekcol:${dayKey(day)}`;
   const ref = useDropTarget(dropKey);
   const { dragging, hoverKey, pointer, grabOffsetY, previewHeightPx } = useDragState();
@@ -129,7 +137,7 @@ function DayColumn({ day, tasks, edges, onCreateRange, onReschedule }: { day: Da
         <div className="absolute inset-x-0 z-10 border-t-2 border-destructive" style={{ top: minutesToY(nowMinutes()) }} />
       )}
       {edges.map((edge, i) => (
-        <SpanningEdgeBlock key={`edge-${edge.task.id}-${i}`} edge={edge} />
+        <SpanningEdgeBlock key={`edge-${edge.task.id}-${i}`} edge={edge} onOpen={onOpenTask} />
       ))}
       {layoutDayEvents(tasks.timed, day).map((p) => (
         <CalendarEventCard key={p.task.id} task={p.task} top={p.top} height={p.height} leftPct={p.leftPct} widthPct={p.widthPct} onReschedule={onReschedule} />
@@ -156,6 +164,7 @@ function DayColumn({ day, tasks, edges, onCreateRange, onReschedule }: { day: Da
 
 type Props = {
   weekStart: Date;
+  dayCount?: number;
   week: Record<string, WeekDayTasks>;
   spanning: SpanningBar[];
   edges: Record<string, SpanningEdge[]>;
@@ -165,8 +174,9 @@ type Props = {
   onReschedule: Reschedule;
 };
 
-export function WeekGrid({ weekStart, week, spanning, edges, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selectedDate, onSelectDate, onCreateRange, onReschedule }: Props) {
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
+  const { openTask } = useTaskPeek();
   const scrollRef = useRef<HTMLDivElement>(null);
   // On mount, scroll so the current time sits near the top with a little context above.
   useEffect(() => {
@@ -199,7 +209,7 @@ export function WeekGrid({ weekStart, week, spanning, edges, selectedDate, onSel
       <div className="border-b border-border">
         {/* Spanning multi-day bars — positioned relative to the 7-column area */}
         <div className="pl-12">
-          <SpanningBars bars={spanning} />
+          <SpanningBars bars={spanning} dayCount={dayCount} onOpen={openTask} />
         </div>
         {/* Per-day all-day pills */}
         <div className="flex pl-12">
@@ -230,7 +240,7 @@ export function WeekGrid({ weekStart, week, spanning, edges, selectedDate, onSel
         </div>
         <div className="flex flex-1">
           {days.map((day) => (
-            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} edges={edges[dayKey(day)] ?? []} onCreateRange={onCreateRange} onReschedule={onReschedule} />
+            <DayColumn key={day.toISOString()} day={day} tasks={week[dayKey(day)]} edges={edges[dayKey(day)] ?? []} onCreateRange={onCreateRange} onReschedule={onReschedule} onOpenTask={openTask} />
           ))}
         </div>
       </div>

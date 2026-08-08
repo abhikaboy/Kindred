@@ -1,9 +1,15 @@
 export type DayDensity = {
   count: number;
   categoryRefs: { categoryID?: string; categoryName?: string }[];
+  // First few task titles for that day, for the month-view preview; capped, not exhaustive.
+  tasks: { id: string; content: string }[];
 };
 
+const MAX_PREVIEW_TASKS = 3;
+
 type CountableTask = {
+  id?: string;
+  content?: string;
   startDate?: string;
   deadline?: string;
   categoryID?: string;
@@ -40,11 +46,14 @@ export function countTasksByDay(tasks: CountableTask[], start: Date, end: Date):
       days.add(dayKey(date));
     }
     for (const key of days) {
-      const bucket = (out[key] ??= { count: 0, categoryRefs: [] });
+      const bucket = (out[key] ??= { count: 0, categoryRefs: [], tasks: [] });
       bucket.count += 1;
       const ref = { categoryID: task.categoryID, categoryName: task.categoryName };
       if (bucket.categoryRefs.length < 3 && !bucket.categoryRefs.some((r) => r.categoryID === ref.categoryID)) {
         bucket.categoryRefs.push(ref);
+      }
+      if (bucket.tasks.length < MAX_PREVIEW_TASKS) {
+        bucket.tasks.push({ id: task.id ?? "", content: task.content ?? "Untitled" });
       }
     }
   }
