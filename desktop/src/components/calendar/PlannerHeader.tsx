@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, SidebarSimple } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -12,9 +12,11 @@ type Props = {
   onStep: (dir: -1 | 1) => void;
   onModeChange: (m: ViewMode) => void;
   onToday: () => void;
+  showAgenda: boolean;
+  onToggleAgenda: () => void;
 };
 
-export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday }: Props) {
+export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday, showAgenda, onToggleAgenda }: Props) {
   return (
     <div className="flex items-center justify-between gap-3 px-1 pb-3">
       <div className="flex items-center gap-2">
@@ -33,6 +35,16 @@ export function PlannerHeader({ anchorDate, mode, onStep, onModeChange, onToday 
       </div>
 
       <div className="flex items-center gap-2">
+        {mode !== "month" && (
+          <button
+            aria-label={showAgenda ? "Hide agenda panel" : "Show agenda panel"}
+            aria-pressed={showAgenda}
+            onClick={onToggleAgenda}
+            className={cn("rounded-md p-1.5 hover:bg-muted", showAgenda && "bg-primary/15 text-primary")}
+          >
+            <SidebarSimple size={18} />
+          </button>
+        )}
         <CalendarConnectionsDrawer />
         <div className="flex items-center rounded-full border p-0.5">
         {(["day", "week", "month"] as const).map((m) => (

@@ -37,6 +37,7 @@ function CalendarBody({
   const [mode, setMode] = useState<ViewMode>("week");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => new Date());
+  const [showAgenda, setShowAgenda] = useState(true);
 
   const { openCreateTask } = useCreate();
   const onCreateRange = (day: Date, startMin: number, endMin: number) => {
@@ -77,6 +78,8 @@ function CalendarBody({
         onStep={onStep}
         onModeChange={setMode}
         onToday={onToday}
+        showAgenda={showAgenda}
+        onToggleAgenda={() => setShowAgenda((v) => !v)}
       />
       <div className="flex min-h-0 flex-1 gap-4">
         {mode === "month" ? (
@@ -101,7 +104,7 @@ function CalendarBody({
               onCreateRange={onCreateRange}
               onReschedule={onReschedule}
             />
-            <AgendaPanel buckets={buckets} selectedDate={selectedDate} />
+            {showAgenda && <AgendaPanel buckets={buckets} selectedDate={selectedDate} />}
           </>
         )}
       </div>
