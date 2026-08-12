@@ -107,3 +107,7 @@ make test-backend
 - ✅ **Works anywhere** - Local MongoDB or Atlas
 - ✅ **CI/CD ready** - GitHub Actions workflows included
 - ✅ **Pre-commit hooks** - Auto-installed in Nix environment
+
+---
+
+_Last updated: 2026-08-11_
