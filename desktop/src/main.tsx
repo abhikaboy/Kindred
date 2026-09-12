@@ -1,11 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from "@tanstack/react-query";
+import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { queryPersister } from "@/lib/queryPersister";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { toast } from "sonner";
 import { ThemeProvider } from "@/lib/theme";
 import { RingUpdateProvider } from "@/components/rings/RingUpdateContext";
 import { getErrorMessage, isAuthError } from "@/lib/errors";
+import { isNetworkError } from "@/lib/api/client";
 import App from "./App";
 import "./index.css";
 
@@ -31,7 +34,10 @@ const queryClient = new QueryClient({
       // Desktop windows lose/regain focus constantly (alt-tab) — don't refetch on it.
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      retry: false,
+      // Retry only when we couldn't reach the server. A genuine 4xx should
+      // surface immediately rather than being tried again.
+      retry: (failureCount, error) => isNetworkError(error) && failureCount < 1,
+      retryDelay: 1000,
       staleTime: 1000 * 60, // 1 min — data stays fresh across route navigation
       gcTime: 1000 * 60 * 5,
     },
@@ -47,11 +53,22 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: queryPersister,
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+            dehydrateOptions: {
+              // Only persist successful reads. Errors and in-flight state would
+              // rehydrate as a broken screen.
+              shouldDehydrateQuery: (query) => query.state.status === "success",
+            },
+          }}
+        >
           <RingUpdateProvider>
             <App />
           </RingUpdateProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </GoogleOAuthProvider>
     </ThemeProvider>
   </React.StrictMode>,

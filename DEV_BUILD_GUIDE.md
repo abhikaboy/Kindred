@@ -7,6 +7,15 @@
 - Expo Go uses `exp://` scheme which Google rejects for sensitive scopes
 - Development builds use your app's native URL scheme and work correctly
 
+## Native Modules: Rebuild Required
+
+Some changes add native modules, which JS-only reloads cannot pick up. If you
+pull a change that adds one, you must rebuild the dev client and cut fresh EAS
+builds — otherwise the app crashes on startup with an unresolved native module.
+
+Currently:
+- `expo-network` (added for offline/low-connectivity detection)
+
 ## Quick Start: Build and Install
 
 ### 1. Build for iOS Simulator (Fastest for Testing)

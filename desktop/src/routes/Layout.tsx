@@ -3,6 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BrandGlow } from "@/components/BrandGlow";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { FloatingRings } from "@/components/FloatingRings";
 import { CreateProvider } from "@/components/create/CreateContext";
 import {
@@ -93,6 +94,7 @@ export default function AppLayout() {
         <SidebarResizer onWidth={handleWidth} />
         <SidebarInset ref={insetRef} className="h-svh overflow-hidden">
           <BrandGlow />
+          <OfflineBanner />
           <header className="relative z-10 flex h-12 items-center gap-2 pl-1 pr-4">
             <SidebarTrigger />
           </header>

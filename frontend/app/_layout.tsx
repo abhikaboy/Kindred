@@ -13,6 +13,8 @@ import { Accelerometer } from "expo-sensors";
 
 // Import components and contexts after the core modules
 import { AuthProvider } from "@/hooks/useAuth";
+import { isNetworkError } from "@/api/client";
+import { getNetStatus, isOffline, subscribeNetStatus } from "@/utils/netStatus";
 import { OnboardingProvider } from "@/hooks/useOnboarding";
 import { TasksProvider } from "@/contexts/tasksContext";
 import { SelectedCategoryProvider } from "@/contexts/selectedCategoryContext";
@@ -28,7 +30,7 @@ import { FocusModeProvider } from "@/contexts/focusModeContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider, focusManager } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, focusManager, onlineManager } from "@tanstack/react-query";
 import { AnimatePresence } from "moti";
 import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
@@ -81,6 +83,15 @@ try {
 // Restore theme preference while the splash screen is still up
 applyStoredThemePreference();
 
+// React Query's built-in reconnect detection doesn't work on React Native, so
+// `refetchOnReconnect` would never fire. Drive it from our connectivity store
+// instead — this is what makes the app repopulate itself when the user comes
+// back into signal.
+onlineManager.setEventListener((setOnline) => {
+    setOnline(!isOffline(getNetStatus()));
+    return subscribeNetStatus((status) => setOnline(!isOffline(status)));
+});
+
 // Create QueryClient outside component to prevent recreation on every render
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -88,7 +99,10 @@ const queryClient = new QueryClient({
             refetchOnWindowFocus: true,
             refetchOnMount: true,
             refetchOnReconnect: true,
-            retry: false,
+            // Retry only when we couldn't reach the server. A genuine 4xx
+            // should surface immediately rather than being tried again.
+            retry: (failureCount, error) => isNetworkError(error) && failureCount < 1,
+            retryDelay: 1000,
             staleTime: 1000 * 30, // 30 seconds - data considered fresh
             gcTime: 1000 * 60 * 5, // 5 minutes - garbage collect unused data
         },

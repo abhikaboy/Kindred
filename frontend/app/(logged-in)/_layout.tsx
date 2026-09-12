@@ -1,6 +1,7 @@
 // redirect to login if not logged in
 
 import BackButton from "@/components/BackButton";
+import OfflineBanner from "@/components/OfflineBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, router, usePathname, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
@@ -216,15 +217,27 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         const initializeAuth = async () => {
             try {
                 setIsLoading(true);
-                const userData = await fetchAuthData();
+                const result = await fetchAuthData();
 
-                // Check if we got a user back
-                if (!userData) {
+                if (result.status === "unauthenticated") {
                     // First open ever: intro video precedes login. (Old pre-login
                     // onboarding cluster removed — after intro, straight to login.)
                     const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
                     setRedirectPath(hasSeenIntro ? "/login" : "/intro");
+                } else if (result.status === "unverified-offline" && !result.user) {
+                    // We hold tokens but couldn't verify them and have no cached
+                    // profile to render, so there is nothing to show. Still don't
+                    // treat it as a logout — the tokens survive and the next
+                    // launch with a connection will resolve it.
+                    console.warn("Offline with no cached profile; staying on the loading state");
+                } else if (result.status === "unverified-offline") {
+                    // Offline with a cached profile: render the app from cache
+                    // rather than bouncing the user to /login. Skip the network
+                    // side-effects (PostHog identify, timezone sync) — they'd
+                    // just fail — and let them run on the next successful verify.
+                    console.warn("Running from cached session while offline");
                 } else {
+                    const userData = result.user;
 
                     // Identify user in PostHog
                     identify(userData._id, {
@@ -252,8 +265,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     }
                 }
             } catch (error) {
+                // fetchAuthData already distinguishes offline from rejected and
+                // never throws for connectivity, so reaching here means something
+                // genuinely unexpected went wrong.
                 console.error("Authentication failed with error:", error);
-                // If auth fails, clear everything and go to login
                 setRedirectPath("/login");
             } finally {
                 setIsLoading(false);
@@ -482,6 +497,7 @@ const LayoutContent = () => {
 
     return (
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+                <OfflineBanner />
                 <Stack
                     screenOptions={{
                         headerShown: false,

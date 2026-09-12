@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTypedMutation } from "@/hooks/useTypedAPI";
 import { components } from "@/api/generated/types";
 import { router } from "expo-router";
-import client, { setUnauthorizedHandler, clearUnauthorizedHandler } from "@/api/client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import client, { setUnauthorizedHandler, clearUnauthorizedHandler, isNetworkError } from "@/api/client";
 import { createLogger } from "@/utils/logger";
 import * as Sentry from "@sentry/react-native";
 import { showToast } from "@/utils/showToast";
@@ -23,6 +24,60 @@ type RegisterRequestApple = components["schemas"]["RegisterRequestApple"];
 interface AuthData {
     access_token: string;
     refresh_token: string;
+}
+
+/**
+ * Outcome of trying to establish who the user is on startup.
+ *
+ * The third case is the one that matters: we hold valid-looking tokens but
+ * couldn't reach the backend to confirm them. That is not the same as being
+ * logged out, and treating it as such is what strands offline users on the
+ * login screen.
+ */
+export type AuthResult =
+    | { status: "authenticated"; user: SafeUser }
+    | { status: "unauthenticated" }
+    | { status: "unverified-offline"; user: SafeUser | null };
+
+/**
+ * True only when the server actually told us our credentials are no good.
+ * Anything else — unreachable, 5xx, malformed — must not log the user out.
+ */
+function isAuthRejection(error: unknown): boolean {
+    const status = (error as { status?: number })?.status;
+    return status === 401 || status === 403;
+}
+
+const USER_CACHE_KEY = "auth_user_cache";
+
+/**
+ * Last known user profile. Lets the app render offline rather than bouncing to
+ * login when it can't re-verify. A convenience cache, never an authority —
+ * the tokens still gate access and the backend re-verifies once reachable.
+ */
+export async function saveCachedUser(user: SafeUser): Promise<void> {
+    try {
+        await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    } catch (error) {
+        logger.error("Error caching user profile", error);
+    }
+}
+
+export async function getCachedUser(): Promise<SafeUser | null> {
+    try {
+        const raw = await AsyncStorage.getItem(USER_CACHE_KEY);
+        return raw ? (JSON.parse(raw) as SafeUser) : null;
+    } catch {
+        return null;
+    }
+}
+
+export async function clearCachedUser(): Promise<void> {
+    try {
+        await AsyncStorage.removeItem(USER_CACHE_KEY);
+    } catch {
+        // Best-effort.
+    }
 }
 
 export async function saveAuthData(authData: AuthData): Promise<boolean> {
@@ -60,7 +115,7 @@ interface AuthContextType {
     loginWithGoogle: (googleID: string, email?: string, idToken?: string) => Promise<SafeUser | void>;
     logout: () => void;
     refresh: () => void;
-    fetchAuthData: () => Promise<SafeUser | null>;
+    fetchAuthData: () => Promise<AuthResult>;
     updateUser: (updates: Partial<SafeUser>) => void;
     isLoading: boolean;
     isError: boolean;
@@ -401,6 +456,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     function logout() {
         setUser(null);
         SecureStore.deleteItemAsync("auth_data");
+        void clearCachedUser();
         // Clear React Query cache
         queryClient.clear();
         // Reset PostHog identity so subsequent events are anonymous
@@ -414,7 +470,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    async function fetchAuthData(): Promise<SafeUser | null> {
+    async function fetchAuthData(): Promise<AuthResult> {
         const now = Date.now();
         const timeSinceLastFetch = now - lastFetchTime.current;
 
@@ -428,7 +484,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const remainingTime = rateLimit - timeSinceLastFetch;
             logger.debug(`Rate limiting fetchAuthData, waiting ${remainingTime}ms before next call`);
 
-            const promise = new Promise<SafeUser | null>((resolve) => {
+            const promise = new Promise<AuthResult>((resolve) => {
                 setTimeout(() => {
                     fetchPromiseRef.current = null;
                     resolve(fetchAuthData());
@@ -443,7 +499,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.warn("Authenticating with Saved Login");
         lastFetchTime.current = now;
 
-        const fetchPromise = (async (): Promise<SafeUser | null> => {
+        const fetchPromise = (async (): Promise<AuthResult> => {
             try {
                 logger.debug("🔐 fetchAuthData: Step 1 - Getting stored auth tokens");
                 const authData = await getAuthData();
@@ -468,8 +524,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         logger.debug("🔐 Has data:", !!result.data);
 
                         if (result.error) {
-                            logger.error("❌ Token login failed with error:", JSON.stringify(result.error));
-                            throw new Error(`Token login failed: ${JSON.stringify(result.error)}`);
+                            const status = result.response?.status;
+                            logger.error("❌ Token login failed with status", status, JSON.stringify(result.error));
+                            // Attach the status rather than stringifying it into
+                            // the message — the caller has to branch on it to
+                            // decide whether this warrants a logout.
+                            const loginError = new Error(`Token login failed (${status ?? "no status"})`) as Error & { status?: number };
+                            loginError.status = status;
+                            throw loginError;
                         }
 
                         if (result.data) {
@@ -493,36 +555,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                 }
                             }
 
+                            void saveCachedUser(userData);
+
                             fetchPromiseRef.current = null;
-                            return userData;
+                            return { status: "authenticated" as const, user: userData };
                         }
 
+                        // Neither data nor error: the backend is not speaking
+                        // the protocol we expect. Not an auth rejection.
                         logger.error("❌ Token login returned no data and no error - unexpected state");
+                        const cached = await getCachedUser();
+                        if (cached) setUser(cached);
+                        return { status: "unverified-offline" as const, user: cached };
                     } catch (tokenError) {
                         logger.error("❌ Token login exception:", tokenError);
-                        logger.error("❌ Error details:", tokenError.message);
-                        // Only log out if this was an auth rejection (401).
-                        // Network errors or transient failures should not clear the session.
-                        const is401 = tokenError?.message?.includes('401') || tokenError?.status === 401;
-                        if (is401) {
-                            logout();
+
+                        // Couldn't reach the server. Keep the session and run
+                        // from the cached profile — this is the offline path,
+                        // not a logout.
+                        if (isNetworkError(tokenError)) {
+                            logger.warn("Could not verify session, continuing offline");
+                            const cached = await getCachedUser();
+                            if (cached) setUser(cached);
+                            return { status: "unverified-offline" as const, user: cached };
                         }
-                        return null;
+
+                        // The server gave us an answer and it was a rejection.
+                        if (isAuthRejection(tokenError)) {
+                            logout();
+                            return { status: "unauthenticated" as const };
+                        }
+
+                        // Anything else (5xx, malformed response) is the backend
+                        // misbehaving, not the user being logged out.
+                        const cached = await getCachedUser();
+                        if (cached) setUser(cached);
+                        return { status: "unverified-offline" as const, user: cached };
                     }
                 }
 
-                logger.warn("⚠️ No auth data found in storage, returning null");
+                // No tokens at all: genuinely signed out.
+                logger.warn("⚠️ No auth data found in storage");
                 logout();
-                return null;
+                return { status: "unauthenticated" as const };
             } catch (error) {
                 logger.error("Error fetching auth data:", error);
                 // Don't log out on transient errors (network issues, SecureStore hiccups).
                 // The user's session is still valid — we just couldn't verify it right now.
-                return null;
+                const cached = await getCachedUser();
+                if (cached) setUser(cached);
+                return { status: "unverified-offline" as const, user: cached };
             }
         })();
 
-        fetchPromiseRef.current = fetchPromise;
+        // Always release the in-flight promise, not just on the success path.
+        // Offline attempts are now an expected outcome, and leaving a resolved
+        // "unverified-offline" promise parked here would make every later call
+        // return it from cache — the app would never re-verify on reconnect.
+        fetchPromiseRef.current = fetchPromise.finally(() => {
+            fetchPromiseRef.current = null;
+        });
         return fetchPromise;
     }
 

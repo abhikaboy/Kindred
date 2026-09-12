@@ -64,3 +64,35 @@ export function isTokenExpired(token: string, bufferMs = 60_000): boolean {
   if (exp === null) return true;
   return Date.now() + bufferMs >= exp;
 }
+
+const USER_CACHE_KEY = "auth_user";
+
+/**
+ * Last known user profile, cached so the app can render offline instead of
+ * bouncing to the login screen when it can't reach the backend to re-verify.
+ *
+ * This is a convenience cache, never an authority: the tokens are still what
+ * gate access, and the backend re-verifies on every request once reachable.
+ */
+export const cachedUser = {
+  get<T>(): T | null {
+    try {
+      const raw = localStorage.getItem(USER_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  set(user: unknown): void {
+    try {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    } catch {
+      // Quota or serialization failure — the cache is optional, carry on.
+    }
+  },
+
+  clear(): void {
+    localStorage.removeItem(USER_CACHE_KEY);
+  },
+};

@@ -11,7 +11,9 @@
         "@phosphor-icons/react": "^2.1.10",
         "@react-oauth/google": "^0.13.5",
         "@tailwindcss/vite": "^4.3.2",
-        "@tanstack/react-query": "^5.101.2",
+        "@tanstack/query-sync-storage-persister": "^5.102.8",
+        "@tanstack/react-query": "5.102.8",
+        "@tanstack/react-query-persist-client": "^5.102.8",
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-http": "^2.5.9",
         "@tauri-apps/plugin-opener": "^2",
@@ -327,9 +329,15 @@
 
     "@tailwindcss/vite": ["@tailwindcss/vite@4.3.2", "", { "dependencies": { "@tailwindcss/node": "4.3.2", "@tailwindcss/oxide": "4.3.2", "tailwindcss": "4.3.2" }, "peerDependencies": { "vite": "^5.2.0 || ^6 || ^7 || ^8" } }, "sha512-eHpMeX4JXfVNJDEcsouTeCBubJBTcTLigeaw/NTUW6PB5ATKKXdyonnXgTBX2VuRbjz1hjfz6C5XAhr52ImQXA=="],
 
-    "@tanstack/query-core": ["@tanstack/query-core@5.101.2", "", {}, "sha512-hH5MLoJhF7KaIGd7q3xTXGXvslI+GYlM1Z/35aSHHWaCJWB7XvTSHYuV3eM7tw+aE0mT/xMro4M4Q9rCGHT0lw=="],
+    "@tanstack/query-core": ["@tanstack/query-core@5.102.8", "", {}, "sha512-ZNjkJ33CqvPNec/6lZBnHqLc3EVGPZ9ySLhYahU9TcuRFdmwXewuj0c4hwSWcGHqEUwcSrKeZ+oGcvPBqXcQcg=="],
 
-    "@tanstack/react-query": ["@tanstack/react-query@5.101.2", "", { "dependencies": { "@tanstack/query-core": "5.101.2" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-seDkr6kzGzX1okaaTtZPtgA688CDPlXUz1C6xSg0ESqn04Vuc8tlrYms1s3de+znBqhPVxFRfpAfUf+6XvfPWg=="],
+    "@tanstack/query-persist-client-core": ["@tanstack/query-persist-client-core@5.102.8", "", { "dependencies": { "@tanstack/query-core": "5.102.8" } }, "sha512-t3v4/D6ejo/BrPzM5gm/AT3c4CWPCxFa+0cIjAeHAeanGPG6rCjFS1hZnPZH/rf55qe3qYYgx5U6iBZMY1PQjA=="],
+
+    "@tanstack/query-sync-storage-persister": ["@tanstack/query-sync-storage-persister@5.102.8", "", { "dependencies": { "@tanstack/query-core": "5.102.8", "@tanstack/query-persist-client-core": "5.102.8" } }, "sha512-UvIpYl6jipKJHfITAieQaXMvVPoJh2IkQkWDYZNRPycoGbNYdqB+UdRVoXkZagB3EdeKnlC7sA61grsEC87Wfw=="],
+
+    "@tanstack/react-query": ["@tanstack/react-query@5.102.8", "", { "dependencies": { "@tanstack/query-core": "5.102.8" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-TYBea4OuXWD7MhaSHq069TWbFe7rcwWN6kzT7JF0OKi1K6c1gTv2IzD6A6ExJsCMozdkqBWeuIUZmu4KQg0O5A=="],
+
+    "@tanstack/react-query-persist-client": ["@tanstack/react-query-persist-client@5.102.8", "", { "dependencies": { "@tanstack/query-persist-client-core": "5.102.8" }, "peerDependencies": { "@tanstack/react-query": "^5.102.8", "react": "^18 || ^19" } }, "sha512-WOZReC+m9klekPtG7eeZ3txJeMA9lg2R0RytSG3yXcZgJItQAVIyoobJdbdIQtlpgcU2tSzsOEBtJacs2vlCOA=="],
 
     "@tauri-apps/api": ["@tauri-apps/api@2.11.1", "", {}, "sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA=="],
 

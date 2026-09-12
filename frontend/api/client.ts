@@ -3,8 +3,74 @@ import type { paths } from "./generated/types";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import { createLogger } from "@/utils/logger";
+import { reportReachable, reportUnreachable } from "@/utils/netStatus";
 
 const logger = createLogger('API');
+
+/**
+ * Outcome of a token refresh attempt.
+ *
+ * The distinction between "rejected" and "offline" is the whole point: a
+ * rejected refresh means the server told us our credentials are no longer good
+ * and we must log the user out. An offline refresh means we never got an answer
+ * at all, and logging the user out would be destroying a session that is
+ * probably still perfectly valid.
+ */
+export type RefreshResult = "ok" | "rejected" | "offline";
+
+/**
+ * True if this error represents "we could not reach the server", as opposed to
+ * the server giving us an answer we didn't like.
+ *
+ * Covers a thrown `fetch` (TypeError on RN and the web) and aborts from our own
+ * request timeouts.
+ */
+export function isNetworkError(error: unknown): boolean {
+    if (!error) return false;
+    // The legacy axios path in `useRequest` tags its errors explicitly.
+    if ((error as { isNetworkError?: boolean }).isNetworkError) return true;
+    const name = (error as { name?: string }).name;
+    if (name === "AbortError" || name === "TimeoutError") return true;
+    if (error instanceof TypeError) return true;
+    const message = (error as { message?: string }).message ?? "";
+    return /network request failed|failed to fetch|network error|timeout/i.test(message);
+}
+
+/** Requests on the auth-critical path get a tighter budget — startup must not hang. */
+const AUTH_TIMEOUT_MS = 4_000;
+const DEFAULT_TIMEOUT_MS = 8_000;
+
+function timeoutForUrl(url: string): number {
+    return /\/(auth\/refresh|user\/login)$/.test(url) ? AUTH_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+}
+
+/**
+ * `fetch` with a per-request timeout that also keeps the connectivity store up
+ * to date. Without this every request hangs on the platform default (~60s on
+ * iOS), which is the "30 second timeout then logged out" the user sees.
+ *
+ * AbortController rather than `AbortSignal.timeout` for React Native support.
+ */
+export async function fetchWithTimeout(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+    timeoutMs?: number
+): Promise<Response> {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs ?? timeoutForUrl(url));
+
+    try {
+        const response = await fetch(input, { ...init, signal: controller.signal });
+        reportReachable();
+        return response;
+    } catch (error) {
+        if (isNetworkError(error)) reportUnreachable();
+        throw error;
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 // Logout handler registered by AuthProvider to handle 401s
 let onUnauthorized: (() => void) | null = null;
@@ -20,7 +86,7 @@ export function clearUnauthorizedHandler() {
 // --- Token refresh infrastructure ---
 
 // Mutex: only one refresh can happen at a time. Other requests wait for it.
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<RefreshResult> | null = null;
 
 /**
  * Decode the `exp` claim from a JWT without a library.
@@ -54,19 +120,21 @@ function isTokenExpired(token: string, bufferMs = 60_000): boolean {
  * Perform a token refresh by calling the dedicated refresh endpoint.
  * Sends the refresh token and receives new access + refresh tokens.
  *
- * Returns true if refresh succeeded (new tokens saved).
+ * Never collapses "the server rejected us" and "we couldn't reach the server"
+ * into a single failure value — callers need to tell them apart before they
+ * decide to delete the user's tokens.
  */
-async function performRefresh(): Promise<boolean> {
+async function performRefresh(): Promise<RefreshResult> {
     try {
         const authData = await SecureStore.getItemAsync("auth_data");
-        if (!authData) return false;
+        if (!authData) return "rejected";
 
         const { refresh_token } = JSON.parse(authData);
-        if (!refresh_token) return false;
+        if (!refresh_token) return "rejected";
 
         logger.debug("Performing token refresh");
 
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             (process.env.EXPO_PUBLIC_URL ?? "") + "/api/v1/auth/refresh",
             {
                 method: "POST",
@@ -74,12 +142,20 @@ async function performRefresh(): Promise<boolean> {
                     "refresh_token": refresh_token,
                     "Content-Type": "application/json",
                 },
-            }
+            },
+            AUTH_TIMEOUT_MS
         );
 
         if (response.status === 401) {
             logger.warn("Refresh failed: server returned 401");
-            return false;
+            return "rejected";
+        }
+
+        // Any other non-OK status is the server having a bad day, not the user
+        // being logged out. Treat it as transient.
+        if (!response.ok) {
+            logger.warn("Refresh failed with status", response.status);
+            return "offline";
         }
 
         // Check for new tokens in response headers
@@ -95,13 +171,20 @@ async function performRefresh(): Promise<boolean> {
             axios.defaults.headers.common["refresh_token"] = newRefresh;
 
             logger.debug("Token refresh succeeded, new tokens saved");
-            return true;
+            return "ok";
         }
 
-        return false;
+        // 2xx but no tokens in the headers — the server is not speaking the
+        // protocol we expect. Not an auth rejection.
+        logger.warn("Refresh returned no tokens despite an OK status");
+        return "offline";
     } catch (error) {
+        if (isNetworkError(error)) {
+            logger.warn("Token refresh could not reach the server", error);
+            return "offline";
+        }
         logger.error("Token refresh error", error);
-        return false;
+        return "rejected";
     }
 }
 
@@ -110,15 +193,15 @@ async function performRefresh(): Promise<boolean> {
  * If the token is expired, triggers a refresh with a mutex so concurrent
  * callers share a single refresh attempt.
  */
-async function ensureValidToken(): Promise<boolean> {
+async function ensureValidToken(): Promise<RefreshResult> {
     const authData = await SecureStore.getItemAsync("auth_data");
-    if (!authData) return false;
+    if (!authData) return "rejected";
 
     const { access_token } = JSON.parse(authData);
-    if (!access_token) return false;
+    if (!access_token) return "rejected";
 
     // Token still valid — no refresh needed
-    if (!isTokenExpired(access_token)) return true;
+    if (!isTokenExpired(access_token)) return "ok";
 
     // Token expired — refresh, but only one at a time
     if (refreshPromise) {
@@ -136,6 +219,8 @@ async function ensureValidToken(): Promise<boolean> {
 // Create the base client
 const baseClient = createClient<paths>({
     baseUrl: (process.env.EXPO_PUBLIC_URL ?? "") + "/api",
+    // Every request gets a deadline and feeds the connectivity store.
+    fetch: (input: Request) => fetchWithTimeout(input),
 });
 
 // Add request/response interceptors
@@ -198,7 +283,16 @@ baseClient.use({
                 // Tokens match — force a refresh before giving up
                 logger.debug("401 with current tokens, attempting refresh + retry");
                 const refreshed = await performRefresh();
-                if (refreshed) {
+
+                // Couldn't reach the refresh endpoint. We have no evidence the
+                // session is bad, so keep the tokens and let the caller see the
+                // failure as a network error.
+                if (refreshed === "offline") {
+                    logger.warn("Refresh unreachable during 401 handling, keeping session");
+                    return response;
+                }
+
+                if (refreshed === "ok") {
                     // Retry the original request with new tokens
                     const freshAuthData = await SecureStore.getItemAsync("auth_data");
                     if (freshAuthData) {
@@ -207,21 +301,32 @@ baseClient.use({
                         retryHeaders.set("Authorization", `Bearer ${newAccess}`);
                         retryHeaders.set("refresh_token", newRefresh);
 
-                        const retryResponse = await fetch(request.url, {
-                            method: request.method,
-                            headers: retryHeaders,
-                            body: request.method !== "GET" && request.method !== "HEAD" ? request.body : undefined,
-                        });
+                        try {
+                            const retryResponse = await fetchWithTimeout(request.url, {
+                                method: request.method,
+                                headers: retryHeaders,
+                                body: request.method !== "GET" && request.method !== "HEAD" ? request.body : undefined,
+                            });
 
-                        if (retryResponse.status !== 401) {
-                            logger.debug("Retry after refresh succeeded");
-                            return retryResponse;
+                            if (retryResponse.status !== 401) {
+                                logger.debug("Retry after refresh succeeded");
+                                return retryResponse;
+                            }
+                        } catch (error) {
+                            // The retry itself couldn't reach the server. Again,
+                            // no evidence of a bad session — keep the tokens.
+                            if (isNetworkError(error)) {
+                                logger.warn("Retry after refresh unreachable, keeping session");
+                                return response;
+                            }
+                            throw error;
                         }
                     }
                 }
             }
 
-            // Refresh failed or no auth data — genuine auth failure
+            // We got a 401, reached the refresh endpoint, and it still said no.
+            // This is a genuine auth failure, so clearing tokens is correct.
             if (onUnauthorized) {
                 logger.warn("Auth refresh exhausted, triggering logout");
                 await SecureStore.deleteItemAsync("auth_data");

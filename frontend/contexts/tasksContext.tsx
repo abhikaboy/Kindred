@@ -12,6 +12,7 @@ import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategory
 import { isFuture, isPast, isToday } from "date-fns";
 import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getNetStatus, isOffline, subscribeNetStatus } from "@/utils/netStatus";
 import { createLogger } from "@/utils/logger";
 import { InteractionManager } from "react-native";
 import {
@@ -48,6 +49,10 @@ type TaskContextType = {
     updateCategoryTags: (categoryId: string, tags: string[]) => void;
     updateWorkspaceIconColor: (name: string, icon?: string | null, color?: string | null) => Promise<void>;
     fetchingWorkspaces: boolean;
+    /** When the workspace last came from the server, or null if never. */
+    lastSyncedAt: number | null;
+    /** True when we're showing cached data because the server was unreachable. */
+    isShowingStaleData: boolean;
 
     showConfetti: boolean;
     setShowConfetti: (showConfetti: boolean) => void;
@@ -75,6 +80,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const [templates, setTemplates] = useState<any[]>([]);
     const [selected, setSelected] = useState<string>("");
     const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false);
+    const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+    const [isShowingStaleData, setIsShowingStaleData] = useState(false);
     const [task, setTask] = useState<Task | null>(null);
     const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([]);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -158,10 +165,45 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }, [selected, workspaces]);
 
     const invalidateWorkspacesCache = useCallback(async () => {
+        // While offline the cache is the only copy of the user's data —
+        // dropping it would leave them with an empty app until they reconnect.
+        if (isOffline(getNetStatus())) {
+            logger.debug("Skipping cache invalidation while offline");
+            return;
+        }
         try {
             await AsyncStorage.removeItem(WORKSPACES_CACHE_KEY);
         } catch (error) {
             logger.error("Error invalidating workspaces cache", error);
+        }
+    }, [WORKSPACES_CACHE_KEY]);
+
+    /**
+     * Load the cached workspace into state regardless of its age and mark it as
+     * stale. Returns false when there's nothing cached to serve.
+     */
+    const serveFromCache = useCallback(async (): Promise<boolean> => {
+        try {
+            const cached = await AsyncStorage.getItem(WORKSPACES_CACHE_KEY);
+            if (!cached) return false;
+
+            const { data, timestamp, templates: cachedTemplates } = JSON.parse(cached) as {
+                data: Workspace[];
+                timestamp: number;
+                templates?: any[];
+            };
+            if (!Array.isArray(data)) return false;
+
+            startTransition(() => {
+                setRawWorkspaces(data);
+                if (Array.isArray(cachedTemplates)) setTemplates(cachedTemplates);
+                setLastSyncedAt(timestamp);
+                setIsShowingStaleData(true);
+            });
+            return true;
+        } catch (error) {
+            logger.error("Error reading workspaces cache", error);
+            return false;
         }
     }, [WORKSPACES_CACHE_KEY]);
 
@@ -171,6 +213,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
     const fetchWorkspaces = useCallback(async (forceRefresh: boolean = false) => {
         if (!user?._id) return;
+
+        // No point spending the request timeout on a network we already know is
+        // down — go straight to disk.
+        if (isOffline(getNetStatus())) {
+            const served = await serveFromCache();
+            if (served) return;
+        }
 
         if (!forceRefresh) {
             try {
@@ -189,6 +238,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                             if (Array.isArray(cachedTemplates)) {
                                 setTemplates(cachedTemplates);
                             }
+                            setLastSyncedAt(timestamp);
+                            setIsShowingStaleData(false);
                         });
                         return;
                     }
@@ -221,10 +272,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 setTemplates(userTemplates);
             });
 
+            const syncedAt = Date.now();
+            startTransition(() => {
+                setLastSyncedAt(syncedAt);
+                setIsShowingStaleData(false);
+            });
+
             try {
                 await AsyncStorage.setItem(WORKSPACES_CACHE_KEY, JSON.stringify({
                     data: allWorkspaces,
-                    timestamp: Date.now(),
+                    timestamp: syncedAt,
                     templates: userTemplates,
                 }));
             } catch (error) {
@@ -232,11 +289,21 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (error) {
             logger.error("Error fetching workspaces", error);
+
+            // Couldn't reach the server. Fall back to whatever we have on disk
+            // regardless of how old it is — a stale workspace is far better than
+            // an empty screen, and this is the whole point of the cache offline.
+            // Only rethrow if we have nothing at all to show.
+            const served = await serveFromCache();
+            if (served) {
+                logger.warn("Serving stale workspaces after a failed fetch");
+                return;
+            }
             throw error;
         } finally {
             setFetchingWorkspaces(false);
         }
-    }, [user?._id, WORKSPACES_CACHE_KEY, CACHE_DURATION]);
+    }, [user?._id, WORKSPACES_CACHE_KEY, CACHE_DURATION, serveFromCache]);
 
     const addWorkspace = useCallback(async (name: string, category: Categories, icon?: string | null, color?: string | null) => {
         const newWorkspace: Workspace = {
@@ -535,6 +602,26 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return () => { cancelled = true; };
     }, [user?._id, RECENT_WORKSPACES_KEY]);
 
+    // The workspace isn't a react-query resource, so `refetchOnReconnect` does
+    // nothing for it. Refetch ourselves when connectivity returns, otherwise a
+    // user who was offline keeps staring at stale cached data until they
+    // manually pull to refresh.
+    useEffect(() => {
+        if (!user?._id) return;
+
+        let wasOffline = isOffline(getNetStatus());
+        return subscribeNetStatus((status) => {
+            const nowOffline = isOffline(status);
+            if (wasOffline && !nowOffline) {
+                logger.debug("Back online, refreshing workspaces");
+                fetchWorkspaces(true).catch((error) =>
+                    logger.error("Reconnect refresh failed", error)
+                );
+            }
+            wasOffline = nowOffline;
+        });
+    }, [user?._id, fetchWorkspaces]);
+
     // Sync Today's Tasks widget and lock screen circular widget
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
@@ -632,6 +719,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         futureTasks,
         allTasks: unnestedTasks,
         fetchingWorkspaces,
+        lastSyncedAt,
+        isShowingStaleData,
         windowTasks,
         recentWorkspaces,
         getRecentWorkspaces,
@@ -643,7 +732,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         renameWorkspace, renameCategory, getCategoriesByTag, updateCategoryTags, updateWorkspaceIconColor,
         showConfetti, task, getTaskById, doesWorkspaceExist,
         unnestedTasks, startTodayTasks, dueTodayTasks, pastStartTasks, pastDueTasks,
-        futureTasks, fetchingWorkspaces, windowTasks, recentWorkspaces,
+        futureTasks, fetchingWorkspaces, lastSyncedAt, isShowingStaleData, windowTasks, recentWorkspaces,
         getRecentWorkspaces, clearRecentWorkspaces,
     ]);
 

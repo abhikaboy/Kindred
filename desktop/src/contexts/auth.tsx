@@ -7,7 +7,8 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import client, { setUnauthorizedHandler } from "@/lib/api/client";
-import { tokens } from "@/lib/tokens";
+import { tokens, cachedUser } from "@/lib/tokens";
+import { queryPersister } from "@/lib/queryPersister";
 import { decodeIdToken, deriveHandle } from "@/lib/oauth";
 import type { components } from "@/lib/api/types.gen";
 
@@ -46,9 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Only reached on a confirmed auth rejection — the client keeps the session
+    // intact when it merely couldn't reach the server.
     setUnauthorizedHandler(() => {
       tokens.clear();
+      cachedUser.clear();
       queryClient.clear();
+      void queryPersister.removeClient();
       setUser(null);
     });
 
@@ -56,19 +61,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function hydrate() {
       if (!tokens.get()) {
         tokens.clear();
+        cachedUser.clear();
         setIsLoading(false);
         return;
       }
+
+      // Render immediately from the cached profile. If the network is fine this
+      // is replaced a moment later by the verified one; if it isn't, this is
+      // what keeps an offline cold start on the app instead of the login screen.
+      const cached = cachedUser.get<SafeUser>();
+      if (cached) setUser(cached);
+
       // Header is injected by the client middleware; passed empty only to satisfy the typed param.
-      const { data, error: err } = await client.POST("/v1/user/login", {
+      const { data, error: err, response } = await client.POST("/v1/user/login", {
         params: { header: { Authorization: "" } },
       });
       if (cancelled) return;
-      if (err || !data) {
+
+      if (data) {
+        setUser(data);
+        cachedUser.set(data);
+      } else if (response?.status === 401 || response?.status === 403) {
+        // The server actually rejected us. This is the only case that warrants
+        // destroying the session.
         tokens.clear();
+        cachedUser.clear();
         setUser(null);
       } else {
-        setUser(data);
+        // No response at all, or a 5xx: we could not verify, which is not the
+        // same as being logged out. Keep the tokens and run from cache.
+        console.warn("Could not verify session on startup, continuing from cache", err);
       }
       setIsLoading(false);
     }
@@ -80,7 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   // Tokens are persisted automatically by the client middleware from response
-  // headers, so successful login calls only need setUser(data).
+  // headers, so successful login calls only need setUser(data) plus a write to
+  // the profile cache that lets us render offline on the next cold start.
 
   async function sendOTP(phoneNumber: string) {
     setError(null);
@@ -130,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(message);
     }
     setUser(data);
+    cachedUser.set(data);
   }
 
   async function loginWithPhone(phoneNumber: string, password: string) {
@@ -149,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(message);
     }
     setUser(data);
+    cachedUser.set(data);
   }
 
   const fail = (message: string) => {
@@ -238,11 +263,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Register returns the user + auth tokens (the client middleware persists the tokens
     // from the response headers), so we're signed in immediately — no separate login.
     setUser(data);
+    cachedUser.set(data);
   }
 
   function logout() {
     tokens.clear();
+    cachedUser.clear();
     queryClient.clear();
+    // queryClient.clear() only empties memory — drop the persisted copy too, or
+    // the next user to sign in on this machine rehydrates the previous one's data.
+    void queryPersister.removeClient();
     setUser(null);
   }
 

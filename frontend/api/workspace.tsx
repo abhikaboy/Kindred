@@ -4,6 +4,7 @@ import { Categories, Workspace } from "./types";
 import { useRequest } from "@/hooks/useRequest";
 import { showToast } from "@/utils/showToast";
 import { createLogger } from "@/utils/logger";
+import { isNetworkError } from "@/api/client";
 
 const logger = createLogger('WorkspaceAPI');
 
@@ -58,9 +59,15 @@ export const fetchUserWorkspaces = async (userId: string): Promise<Workspace[]> 
             })),
         }));
     } catch (error) {
-        // Log the error for debugiging
         logger.error("Failed to fetch workspaces", error);
-        showToast("Failed to fetch workspaces. Please try again later. " + userId, "danger");
+
+        // Offline is not an error worth a toast — the offline banner already
+        // says so, and the caller falls back to the cached workspace.
+        if (isNetworkError(error)) {
+            throw error;
+        }
+
+        showToast("Failed to fetch workspaces. Please try again later.", "danger");
         // Re-throw with a more user-friendly message
         throw new Error("Failed to fetch workspaces. Please try again later.");
     }
