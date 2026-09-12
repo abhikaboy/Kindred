@@ -4,6 +4,7 @@ import { TaskItem } from "@/components/TaskItem";
 import { SwipeToComplete } from "@/components/SwipeToComplete";
 import { useCreate } from "@/components/create/CreateContext";
 import { Button } from "@/components/ui/button";
+import { CategorySettingsMenu } from "@/components/category/CategorySettingsMenu";
 import type { CategoryDocument } from "@/hooks/useWorkspaces";
 
 // Mirrors the mobile category block: a header (name + accent dot + task count)
@@ -69,6 +70,7 @@ export function CategoryCard({
           <Plus />
           New task
         </Button>
+        <CategorySettingsMenu category={category} />
       </div>
 
       {empty ? (

@@ -134,31 +134,33 @@ export default function WorkspaceScreen() {
         </Button>
       </div>
 
-      {categories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <SortMenu sort={sort} onSelect={selectSort} />
-          <FilterMenu filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
-          <button
-            type="button"
-            onClick={toggleGroupByDay}
-            title="Group by day"
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
-              groupByDay ? "border-primary text-primary" : "text-muted-foreground",
-            )}
-          >
-            <CalendarBlank size={14} />
-            Group by Day
-          </button>
-          <div className="ml-auto">
-            <WorkspaceSettingsMenu
-              workspace={workspace}
-              onRenamed={(newName) => navigate(`/workspace/${encodeURIComponent(newName)}`, { replace: true })}
-              onDeleted={() => navigate("/", { replace: true })}
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {categories.length > 0 && (
+          <>
+            <SortMenu sort={sort} onSelect={selectSort} />
+            <FilterMenu filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
+            <button
+              type="button"
+              onClick={toggleGroupByDay}
+              title="Group by day"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
+                groupByDay ? "border-primary text-primary" : "text-muted-foreground",
+              )}
+            >
+              <CalendarBlank size={14} />
+              Group by Day
+            </button>
+          </>
+        )}
+        <div className="ml-auto">
+          <WorkspaceSettingsMenu
+            workspace={workspace}
+            onRenamed={(newName) => navigate(`/workspace/${encodeURIComponent(newName)}`, { replace: true })}
+            onDeleted={() => navigate("/", { replace: true })}
+          />
         </div>
-      )}
+      </div>
 
       {categories.length === 0 ? (
         <EmptyState

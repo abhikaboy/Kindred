@@ -306,6 +306,40 @@ export function useCreateCategory() {
   });
 }
 
+// Workspaces have no dedicated creation endpoint: a workspace is implicitly
+// created by creating its first category. We create a hidden placeholder
+// category under the new workspace name (mirrors mobile's
+// frontend/api/workspace.tsx createWorkspace) and strip it in useWorkspaces.
+const PROXY_CATEGORY_NAME = "!-proxy-!";
+
+export function useCreateWorkspace() {
+  const qc = useQueryClient();
+  return $api.useMutation("post", "/v1/user/categories", {
+    onMutate: async (vars): Promise<{ previous: Snapshot }> => {
+      await qc.cancelQueries({ queryKey: WORKSPACES_KEY });
+      const previous = qc.getQueriesData<WorkspaceResult[]>({
+        queryKey: WORKSPACES_KEY,
+      });
+      const workspace: WorkspaceResult = {
+        name: vars.body.workspaceName,
+        categories: [],
+        icon: vars.body.icon,
+        color: vars.body.color,
+      };
+      qc.setQueriesData<WorkspaceResult[]>({ queryKey: WORKSPACES_KEY }, (old) =>
+        old ? [...old, workspace] : old
+      );
+      return { previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      ctx?.previous.forEach(([key, data]) => qc.setQueryData(key, data));
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: WORKSPACES_KEY }),
+  });
+}
+
+export { PROXY_CATEGORY_NAME };
+
 export type AiPreviewPayload = {
   categories: components["schemas"]["NewCategoryWithTasksLocal"][];
   tasks: components["schemas"]["CategoryTaskPairLocal"][];

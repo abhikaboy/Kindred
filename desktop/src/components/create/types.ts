@@ -35,3 +35,10 @@ export type CreateCategoryDialogProps = {
   // Fired in the create mutation's onSuccess with the real server category.
   onCreated?: (cat: SelectedCategory) => void;
 };
+
+export type CreateWorkspaceDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  // Fired in the create mutation's onSuccess with the new workspace's name.
+  onCreated?: (workspaceName: string) => void;
+};

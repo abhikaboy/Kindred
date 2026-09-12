@@ -1,14 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { CreateTaskDialog } from "@/components/create/CreateTaskDialog";
 import { CreateCategoryDialog } from "@/components/create/CreateCategoryDialog";
+import { CreateWorkspaceDialog } from "@/components/create/CreateWorkspaceDialog";
 import { CreatePostModal, type PostPrefill } from "@/components/feed/CreatePostModal";
 import type { SelectedCategory, TaskPrefill } from "@/components/create/types";
 
 type CreateContextValue = {
   openCreateTask: (prefill?: TaskPrefill) => void;
   openCreateCategory: (workspaceName?: string) => void;
-  // Opens the category dialog primed for a NEW workspace (workspaces are created
-  // by adding their first category under a new name — there's no standalone flow).
+  // Opens a dedicated dialog that collects a name/icon/color for a brand-new
+  // workspace (workspaces have no standalone backend endpoint — creating one
+  // creates a hidden placeholder category under the new name, see
+  // useCreateActions.useCreateWorkspace).
   openCreateWorkspace: () => void;
   // Opens the post composer, optionally pre-selecting a just-completed task.
   openCreatePost: (prefill?: PostPrefill) => void;
@@ -47,6 +50,8 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
 
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryWorkspace, setCategoryWorkspace] = useState<string | undefined>();
+
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   // Inline-create callback: set when the task dialog requests a new category.
   const categoryOnCreated = useRef<((cat: SelectedCategory) => void) | undefined>(undefined);
   // Ordered ids of the categories currently on screen, for the Shift+1..9 hotkeys.
@@ -67,9 +72,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openCreateWorkspace = useCallback(() => {
-    categoryOnCreated.current = undefined;
-    setCategoryWorkspace(""); // empty workspace field -> user names a new workspace
-    setCategoryOpen(true);
+    setWorkspaceOpen(true);
   }, []);
 
   const openCreatePost = useCallback((prefill?: PostPrefill) => {
@@ -86,7 +89,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const anyOpen = taskOpen || categoryOpen;
+  const anyOpen = taskOpen || categoryOpen || workspaceOpen;
   useEffect(() => {
     if (anyOpen) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -143,6 +146,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
           categoryOnCreated.current = undefined;
         }}
       />
+      <CreateWorkspaceDialog open={workspaceOpen} onOpenChange={setWorkspaceOpen} />
       <CreatePostModal open={postOpen} onClose={() => setPostOpen(false)} prefill={postPrefill} />
     </CreateContext.Provider>
   );
