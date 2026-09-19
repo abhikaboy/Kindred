@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/auth";
 import { AppSidebar } from "@/components/AppSidebar";
 import { BrandGlow } from "@/components/BrandGlow";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { FloatingRings } from "@/components/FloatingRings";
 import { CreateProvider } from "@/components/create/CreateContext";
 import {
   SidebarInset,
@@ -61,6 +60,7 @@ function SidebarResizer({ onWidth }: { onWidth: (w: number) => void }) {
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
   const insetRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const [width, setWidth] = useState<number>(() => {
     const saved = Number(localStorage.getItem(WIDTH_KEY));
     return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
@@ -93,18 +93,16 @@ export default function AppLayout() {
         <AppSidebar />
         <SidebarResizer onWidth={handleWidth} />
         <SidebarInset ref={insetRef} className="h-svh overflow-hidden">
-          <BrandGlow />
+          {/* BrandGlow owns its own scroll subscription: it only listens when it
+              actually renders (dark mode), so light mode pays nothing per scroll. */}
+          <BrandGlow scrollRef={mainRef} hostRef={insetRef} />
           <OfflineBanner />
           <header className="relative z-10 flex h-12 items-center gap-2 pl-1 pr-4">
             <SidebarTrigger />
           </header>
-          <main
-            className="relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pb-12"
-            onScroll={(e) => insetRef.current?.style.setProperty("--brand-scroll", String(e.currentTarget.scrollTop))}
-          >
+          <main ref={mainRef} className="relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pt-8 pb-12">
             <Outlet />
           </main>
-          <FloatingRings />
         </SidebarInset>
       </CreateProvider>
     </SidebarProvider>

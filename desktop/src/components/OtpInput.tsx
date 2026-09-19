@@ -109,8 +109,8 @@ export function OtpInput({
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onFocus={(e) => e.currentTarget.select()}
                     className={cn(
-                        "size-16 rounded-2xl bg-secondary border-2 border-transparent",
-                        "text-center text-3xl font-sans font-semibold text-foreground",
+                        "size-14 rounded-xl bg-secondary border-2 border-transparent",
+                        "text-center text-2xl font-sans font-semibold text-foreground",
                         "outline-none focus:border-primary transition-colors",
                         disabled && "opacity-50 cursor-not-allowed"
                     )}

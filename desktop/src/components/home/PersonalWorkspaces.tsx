@@ -63,13 +63,13 @@ export function PersonalWorkspaces() {
     <div className="flex flex-col gap-4">
       <SectionHeader title="Personal Workspaces" />
       {isLoading ? (
-        <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-3xl" />
+            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
           ))}
         </div>
       ) : workspaces.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {workspaces.map((ws) => (
             <BentoTile
               key={ws.name}

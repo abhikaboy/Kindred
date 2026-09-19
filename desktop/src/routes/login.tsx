@@ -17,7 +17,7 @@ type LoginMode = "otp" | "password";
 
 // Shared look for the social auth buttons — mirrors mobile's OnboardModal styling.
 const SOCIAL_BUTTON_CLASS =
-  "rounded-[14px] border border-black/10 bg-white py-4 text-[16px] font-medium text-[#1F1F1F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:opacity-90";
+  "rounded-[14px] border border-black/10 bg-white py-3 text-[15px] font-medium text-[#1F1F1F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:opacity-90";
 
 // Google's official "G" mark — no brand-color equivalent in phosphor-icons.
 function GoogleGLogo({ size = 20 }: { size?: number }) {

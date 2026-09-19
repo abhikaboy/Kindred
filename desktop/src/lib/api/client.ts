@@ -12,16 +12,17 @@ const logger = {
   info: console.info,
 };
 
-// Dev leaves this empty → requests hit "/api" and the Vite proxy forwards them.
-// Production builds have no proxy, so default to the absolute backend (public URL,
-// not a secret). Override with VITE_API_URL for a different backend.
-const API_ORIGIN =
-  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://kindredtodo.com" : "");
+// Dev and prod both talk to the real backend (public URL, not a secret). Dev can
+// do this directly — rather than through the Vite proxy — because the dev server
+// runs on port 3000, which is in the backend's CORS allowlist (see
+// backend/internal/server/server.go). Override with VITE_API_URL for a different
+// backend, e.g. a local API.
+const API_ORIGIN = import.meta.env.VITE_API_URL || "https://kindredtodo.com";
 const API_BASE = API_ORIGIN + "/api";
 
 // The built desktop app is served from tauri:// with no dev proxy, and the webview's
 // fetch is CORS-blocked by the backend allowlist. Route through the Tauri HTTP plugin
-// (native, no CORS). Dev (localhost:1420) keeps the browser fetch + Vite proxy.
+// (native, no CORS). Dev keeps the browser fetch — its origin is allowlisted.
 const httpFetch: typeof fetch =
   import.meta.env.PROD && isTauri()
     ? (tauriFetch as typeof fetch)

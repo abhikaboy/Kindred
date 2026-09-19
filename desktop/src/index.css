@@ -85,11 +85,13 @@
     --chart-4: #FF5C5F;
     --chart-5: #919090;
     --radius: 0.625rem;
-    --sidebar: #F5F5F5;
+    /* The floating sidebar is a near-white card that separates from the page by
+       its drop shadow rather than by a heavy fill. */
+    --sidebar: #FBFBFC;
     --sidebar-foreground: #13121F;
     --sidebar-primary: #854DFF;
     --sidebar-primary-foreground: #FFFFFF;
-    --sidebar-accent: #E5E5E5;
+    --sidebar-accent: #EFEFF2;
     --sidebar-accent-foreground: #13121F;
     --sidebar-border: #66666633;
     --sidebar-ring: #854DFF;

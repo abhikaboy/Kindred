@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 // Loose, diffuse, low-opacity shadow (per design pref) — single source for all tiles.
 const TILE =
-  "rounded-3xl border bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)]";
+  "rounded-2xl border bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)]";
 
 export function BentoTile({
   title,

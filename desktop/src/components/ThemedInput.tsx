@@ -19,14 +19,16 @@ type Props = {
   className?: string;
 };
 
+// Sizing is tuned for a pointer, not a thumb — the mobile app's taller fields
+// look oversized in a desktop window.
 const baseInput =
-  "bg-secondary text-foreground rounded-xl px-6 py-4 text-base font-sans font-light border border-border w-full outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-50";
+  "bg-secondary text-foreground rounded-xl px-4 py-3 text-[15px] font-sans font-light border border-border w-full outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-50";
 
 const ghostInput =
-  "bg-transparent border-0 px-0 py-4 text-base font-sans font-light text-foreground w-full outline-none placeholder:text-muted-foreground disabled:opacity-50";
+  "bg-transparent border-0 px-0 py-3 text-[15px] font-sans font-light text-foreground w-full outline-none placeholder:text-muted-foreground disabled:opacity-50";
 
 const baseTextarea =
-  "bg-secondary text-foreground rounded-xl px-6 py-4 text-base font-sans font-light border border-border w-full outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-50 min-h-[120px] align-top resize-y";
+  "bg-secondary text-foreground rounded-xl px-4 py-3 text-[15px] font-sans font-light border border-border w-full outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-50 min-h-[120px] align-top resize-y";
 
 const ThemedInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, Props>(
   function ThemedInput(

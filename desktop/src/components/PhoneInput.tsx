@@ -47,11 +47,11 @@ export function PhoneInput({
     };
 
     return (
-        <div className="flex items-center bg-secondary rounded-2xl pl-5">
+        <div className="flex items-center bg-secondary rounded-xl pl-4">
             <select
                 value={dialCode}
                 onChange={(e) => handleDialCode(e.target.value)}
-                className="bg-transparent text-foreground font-sans font-medium text-lg outline-none py-5 pr-3 cursor-pointer"
+                className="bg-transparent text-foreground font-sans font-medium text-[15px] outline-none py-3 pr-2 cursor-pointer"
                 aria-label="Country dial code"
             >
                 {DIAL_CODES.map((opt) => (
@@ -69,7 +69,7 @@ export function PhoneInput({
                 placeholder={placeholder}
                 autoFocus={autoFocus}
                 maxLength={14}
-                className="flex-1 bg-transparent text-foreground font-sans text-lg py-5 pr-6 outline-none placeholder:text-muted-foreground"
+                className="flex-1 bg-transparent text-foreground font-sans text-[15px] py-3 pr-4 outline-none placeholder:text-muted-foreground"
             />
         </div>
     );

@@ -32,9 +32,12 @@ export default defineConfig(async () => ({
   //
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
-  // 2. tauri expects a fixed port, fail if that port is not available
+  // 2. tauri expects a fixed port, fail if that port is not available.
+  // 3000 (not Tauri's default 1420) because that origin is in the backend's CORS
+  // allowlist, which lets dev call the prod API directly. Keep tauri.conf.json's
+  // devUrl in sync.
   server: {
-    port: 1420,
+    port: 3000,
     strictPort: true,
     host: host || false,
     hmr: host
@@ -50,8 +53,8 @@ export default defineConfig(async () => ({
     },
     // Dev server must be allowed to serve ../shared, which sits outside the root.
     fs: { allow: [path.resolve(__dirname, "..")] },
-    // Dev-only proxy so web (localhost:1420) can hit the API without CORS.
-    // Tauri desktop has no CORS restriction; prod web sets VITE_API_URL instead.
+    // Fallback proxy for any relative "/api" request. The API client now uses an
+    // absolute origin (see src/lib/api/client.ts), so this is normally unused.
     proxy: {
       "/api": {
         target: process.env.VITE_API_URL || "https://kindredtodo.com",
