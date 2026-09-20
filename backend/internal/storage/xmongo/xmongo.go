@@ -71,6 +71,17 @@ func validateEnvironment(ctx context.Context, client *mongo.Client, environment 
 	return nil
 }
 
+// requiredCollections are mapped whether or not they already exist in the
+// database. The map is otherwise built from ListCollectionNames, which means a
+// brand-new collection is missing until something creates it — and services
+// that look it up get a nil handle and silently disable themselves. Mongo
+// creates a collection on first write, so handing back a handle eagerly is
+// enough; listing it here just removes the ordering dependency on the one-off
+// commands in cmd/db.
+var requiredCollections = []string{
+	"contact_links",
+}
+
 func setupCollections(ctx context.Context, db *mongo.Database) (map[string]*mongo.Collection, error) {
 	collectionNames, err := db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
@@ -79,6 +90,11 @@ func setupCollections(ctx context.Context, db *mongo.Database) (map[string]*mong
 	collections := make(map[string]*mongo.Collection)
 	for _, name := range collectionNames {
 		collections[name] = db.Collection(name)
+	}
+	for _, name := range requiredCollections {
+		if _, ok := collections[name]; !ok {
+			collections[name] = db.Collection(name)
+		}
 	}
 	return collections, nil
 }
