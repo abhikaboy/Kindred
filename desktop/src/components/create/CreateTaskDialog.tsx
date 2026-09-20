@@ -13,6 +13,7 @@ import { RepeatPopover } from "@/components/create/RepeatPopover";
 import { MorePopover } from "@/components/create/MorePopover";
 import { AiTaskPanel } from "@/components/create/AiTaskPanel";
 import { SuggestionRow } from "@/components/create/SuggestionRow";
+import { NotesLinkPreview } from "@/components/create/NotesLinkPreview";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
 import type { CreateTaskDialogProps, SelectedCategory } from "@/components/create/types";
@@ -197,6 +198,7 @@ export function CreateTaskDialog({
                         placeholder="Add a description…"
                         className="min-h-24 w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
                     />
+                    <NotesLinkPreview notes={form.notes} />
                 </div>
 
                 <TaskTimeline
