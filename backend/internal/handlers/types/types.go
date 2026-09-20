@@ -78,6 +78,11 @@ type TaskDocument struct {
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 
+	// Links are URLs attached to the task. Entries with source "notes" are
+	// derived from the notes body and re-synced on every notes edit; entries
+	// with source "manual" were added by the user and are never auto-removed.
+	Links []TaskLink `bson:"links,omitempty" json:"links,omitempty"`
+
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 
@@ -250,6 +255,14 @@ type FlexInstanceInfo struct {
 	InstanceNumber int    `bson:"instanceNumber" json:"instanceNumber"`
 	Target         int    `bson:"target" json:"target"`
 	Period         string `bson:"period" json:"period"`
+}
+
+// TaskLink is a URL attached to a task, either extracted from the notes or
+// added explicitly by the user.
+type TaskLink struct {
+	URL    string `bson:"url" json:"url" doc:"Absolute URL of the link"`
+	Title  string `bson:"title,omitempty" json:"title,omitempty" doc:"Display label; defaults to the link host"`
+	Source string `bson:"source,omitempty" json:"source,omitempty" enum:"notes,manual" doc:"Where the link came from"`
 }
 
 type ChecklistItem struct {
@@ -514,7 +527,7 @@ func DefaultUserSettings() UserSettings {
 		},
 		DashboardConfiguration: DashboardConfiguration{
 			Stats:             true,
-			JumpBackIn:        true,
+			JumpBackIn:        false,
 			Kudos:             true,
 			Upcoming:          true,
 			GoogleCalendar:    true,

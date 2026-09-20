@@ -15,10 +15,10 @@ export function ProfileSongWidget() {
         return (
             <button
                 onClick={() => navigate("/profile/edit")}
-                className="flex w-full items-center gap-3 rounded-xl border border-border px-3 py-2.5 text-left transition-opacity hover:opacity-70"
+                className="flex w-full items-center gap-3 rounded-xl bg-secondary/60 p-3 text-left transition-colors hover:bg-secondary"
             >
-                <span className="grid size-10 place-items-center rounded-md bg-secondary">
-                    <MusicNote className="size-5 text-muted-foreground" />
+                <span className="grid size-11 place-items-center rounded-lg bg-primary/10">
+                    <MusicNote className="size-5 text-primary" />
                 </span>
                 <ThemedText type="caption">Add music to your profile</ThemedText>
             </button>
@@ -38,26 +38,26 @@ export function ProfileSongWidget() {
     };
 
     return (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary px-3 py-2">
+        <div className="flex items-center gap-3 rounded-xl bg-secondary/60 p-3">
             {song.artworkUrl ? (
-                <img src={song.artworkUrl} alt="" className="size-11 rounded-md object-cover" />
+                <img src={song.artworkUrl} alt="" className="size-11 rounded-lg object-cover" />
             ) : (
-                <div className="grid size-11 place-items-center rounded-md bg-muted">
-                    <MusicNote className="size-5 text-muted-foreground" />
+                <div className="grid size-11 place-items-center rounded-lg bg-primary/10">
+                    <MusicNote className="size-5 text-primary" />
                 </div>
             )}
             <div className="min-w-0 flex-1">
-                <ThemedText type="defaultSemiBold" as="div" className="truncate">
+                <ThemedText type="smallerDefault" as="div" className="truncate text-foreground/90">
                     {song.title}
                 </ThemedText>
-                <ThemedText type="caption" as="div" className="truncate">
+                <ThemedText type="caption" as="div" className="truncate text-xs">
                     {song.artist}
                 </ThemedText>
             </div>
             <button
                 onClick={toggle}
                 aria-label={playing ? "Pause preview" : "Play preview"}
-                className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20"
             >
                 {playing ? <Pause weight="fill" className="size-4" /> : <Play weight="fill" className="size-4" />}
             </button>

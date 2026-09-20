@@ -126,6 +126,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		StartDate:      taskParams.StartDate,
 		Notes:          taskParams.Notes,
 		Checklist:      taskParams.Checklist,
+		Links:          SyncNotesLinks(NormalizeLinks(taskParams.Links), taskParams.Notes),
 		Reminders:      taskParams.Reminders,
 		Integration:    taskParams.Integration,
 		Timestamp:      time.Now(),
@@ -856,6 +857,40 @@ func (h *Handler) UpdateTaskNotes(ctx context.Context, input *UpdateTaskNotesInp
 
 	resp := &UpdateTaskNotesOutput{}
 	resp.Body.Message = "Task notes updated successfully"
+	return resp, nil
+}
+
+// UpdateTaskLinks replaces the link list on a task
+func (h *Handler) UpdateTaskLinks(ctx context.Context, input *UpdateTaskLinksInput) (*UpdateTaskLinksOutput, error) {
+	id, err := primitive.ObjectIDFromHex(input.ID)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid task ID format", err)
+	}
+
+	categoryID, err := primitive.ObjectIDFromHex(input.Category)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid category ID format", err)
+	}
+
+	// Extract user_id from context (set by auth middleware)
+	context_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(context_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	err = h.service.UpdateTaskLinks(id, categoryID, userObjID, input.Body)
+	if err != nil {
+		slog.Error("Failed to update task links", "taskId", id.Hex(), "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to update task links. Please try again.", err)
+	}
+
+	resp := &UpdateTaskLinksOutput{}
+	resp.Body.Message = "Task links updated successfully"
 	return resp, nil
 }
 

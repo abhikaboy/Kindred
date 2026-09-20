@@ -36,6 +36,7 @@ type CreateTaskParams struct {
 
 	Notes       string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist   []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Links       []TaskLink      `bson:"links,omitempty" json:"links,omitempty"`
 	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
 
@@ -60,6 +61,7 @@ type FlexDetails = types.FlexDetails
 type FlexTemplateState = types.FlexTemplateState
 type FlexInstanceInfo = types.FlexInstanceInfo
 type TaggedTaskUser = types.TaggedTaskUser
+type TaskLink = types.TaskLink
 
 type UpdateTaskDocument struct {
 	Priority       int           `bson:"priority" json:"priority"`
@@ -81,6 +83,7 @@ type UpdateTaskDocument struct {
 
 	Notes       string              `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist   []ChecklistItem     `bson:"checklist,omitempty" json:"checklist,omitempty"`
+	Links       []TaskLink          `bson:"links,omitempty" json:"links,omitempty"`
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
 
@@ -127,6 +130,13 @@ type LogProgressDocument struct {
 
 type UpdateTaskNotesDocument struct {
 	Notes string `bson:"notes" json:"notes"`
+}
+
+// UpdateTaskLinksDocument replaces the full link list on a task. Callers send
+// the list they want stored; notes-derived links are re-added on the next notes
+// edit regardless, so removing one here only sticks until the notes change.
+type UpdateTaskLinksDocument struct {
+	Links []TaskLink `bson:"links" json:"links"`
 }
 
 type UpdateTaskChecklistDocument struct {

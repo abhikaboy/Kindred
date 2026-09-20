@@ -1,4 +1,8 @@
 import { components } from "./generated/types";
+import type { TaskLink } from "@shared/taskLinks";
+
+/** Re-exported so callers can type task links without reaching into @shared. */
+export type { TaskLink, TaskLinkSource } from "@shared/taskLinks";
 
 export type RequestFunction = (method: string, url: string, body?: any) => Promise<any>;
 
@@ -146,6 +150,7 @@ export interface Task {
     startDate?: string;
     notes?: string;
     checklist?: ChecklistItem[];
+    links?: TaskLink[];
     reminders?: Reminder[];
     integration?: string; // Integration app name (amazon, gmail, etc.)
 

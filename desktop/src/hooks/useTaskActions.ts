@@ -28,6 +28,7 @@ export function taskToUpdateDocument(
     content: task.content,
     deadline: task.deadline,
     integration: task.integration,
+    links: task.links,
     notes: task.notes,
     priority: task.priority,
     public: task.public,
@@ -63,6 +64,15 @@ export function useCompleteTask() {
 export function useUpdateTask() {
   const qc = useQueryClient();
   return $api.useMutation("patch", "/v1/user/tasks/{category}/{id}", {
+    onSuccess: () => invalidateTasks(qc),
+  });
+}
+
+// Links are their own endpoint so attaching or removing one doesn't have to
+// replay the whole task document.
+export function useUpdateTaskLinks() {
+  const qc = useQueryClient();
+  return $api.useMutation("post", "/v1/user/tasks/{category}/{id}/links", {
     onSuccess: () => invalidateTasks(qc),
   });
 }

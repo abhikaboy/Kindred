@@ -10,6 +10,7 @@ import type { TaggedTaskUser, PendingTaggedTask, TagStatus } from "./types";
 type TaskDocument = components["schemas"]["TaskDocument"];
 type UpdateTaskChecklistDocument = components["schemas"]["UpdateTaskChecklistDocument"];
 type UpdateTaskNotesDocument = components["schemas"]["UpdateTaskNotesDocument"];
+type UpdateTaskLinksDocument = components["schemas"]["UpdateTaskLinksDocument"];
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 type CompleteTaskDocument = components["schemas"]["CompleteTaskDocument"];
 type TemplateTaskDocument = components["schemas"]["TemplateTaskDocument"];
@@ -100,6 +101,32 @@ export const updateNotesAPI = async (categoryId: string, taskId: string, notes: 
 
     if (error) {
         throw new Error(`Failed to update notes: ${JSON.stringify(error)}`);
+    }
+};
+
+/**
+ * Update task links
+ * API: Makes POST request to replace the links/attachments on a task
+ * Frontend: The links are updated on the task in TaskContext
+ *
+ * Links typed into the notes are added by the server on every notes edit, so
+ * this only needs to be called for links the user attaches or removes by hand.
+ * @param categoryId - The ID of the category the task belongs to
+ * @param taskId - The ID of the task to update
+ * @param links - The full replacement link list
+ */
+export const updateLinksAPI = async (
+    categoryId: string,
+    taskId: string,
+    links: UpdateTaskLinksDocument["links"]
+): Promise<void> => {
+    const { error } = await client.POST("/v1/user/tasks/{category}/{id}/links", {
+        params: withAuthHeaders({ path: { category: categoryId, id: taskId } }),
+        body: { links },
+    });
+
+    if (error) {
+        throw new Error(`Failed to update links: ${JSON.stringify(error)}`);
     }
 };
 

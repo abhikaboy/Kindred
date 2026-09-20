@@ -2880,6 +2880,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update task links
+         * @description Replace the links/attachments on a task
+         */
+        post: operations["update-task-links"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}/move": {
         parameters: {
             query?: never;
@@ -5150,6 +5170,7 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
+            links?: components["schemas"]["TaskLink"][] | null;
             notes?: string;
             posted: boolean;
             /** Format: int64 */
@@ -5204,6 +5225,7 @@ export interface components {
             /** Format: date-time */
             deadline?: string;
             integration?: string;
+            links?: components["schemas"]["TaskLink"][] | null;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -7653,6 +7675,14 @@ export interface components {
             id: string;
             profile_picture: string;
         };
+        TaskLink: {
+            /** @description Where the link came from */
+            source?: "notes" | "manual";
+            /** @description Display label; defaults to the link host */
+            title?: string;
+            /** @description Absolute URL of the link */
+            url: string;
+        };
         TaskDocument: {
             /**
              * Format: uri
@@ -7676,6 +7706,7 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
+            links?: components["schemas"]["TaskLink"][] | null;
             notes?: string;
             posted: boolean;
             /** Format: int64 */
@@ -8344,6 +8375,7 @@ export interface components {
             deadline?: string;
             generateTemplate?: boolean;
             integration?: string;
+            links?: components["schemas"]["TaskLink"][] | null;
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -8361,6 +8393,25 @@ export interface components {
             templateID?: string;
             /** Format: double */
             value: number;
+        };
+        UpdateTaskLinksDocument: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskLinksDocument.json
+             */
+            readonly $schema?: string;
+            links: components["schemas"]["TaskLink"][] | null;
+        };
+        UpdateTaskLinksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UpdateTaskLinksOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Task links updated successfully */
+            message: string;
         };
         UpdateTaskNotesDocument: {
             /**
@@ -14470,6 +14521,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTaskChecklistOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "update-task-links": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskLinksDocument"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateTaskLinksOutputBody"];
                 };
             };
             /** @description Error */

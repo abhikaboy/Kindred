@@ -52,6 +52,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterGetTasksWithStartTimesOlderThanOneDayOperation(api, handler)
 	RegisterGetRecurringTasksWithPastDeadlinesOperation(api, handler)
 	RegisterUpdateTaskNotesOperation(api, handler)
+	RegisterUpdateTaskLinksOperation(api, handler)
 	RegisterUpdateTaskChecklistOperation(api, handler)
 	RegisterUpdateTaskDeadlineOperation(api, handler)
 	RegisterUpdateTaskStartOperation(api, handler)

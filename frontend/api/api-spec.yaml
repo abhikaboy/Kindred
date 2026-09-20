@@ -5933,6 +5933,54 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/links:
+        post:
+            tags:
+                - tasks
+            summary: Update task links
+            description: Replace the links/attachments on a task
+            operationId: update-task-links
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateTaskLinksDocument'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateTaskLinksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/move:
         post:
             tags:
@@ -9972,6 +10020,11 @@ components:
                 lastEdited:
                     type: string
                     format: date-time
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskLink'
+                    nullable: true
                 notes:
                     type: string
                 posted:
@@ -10082,6 +10135,11 @@ components:
                     format: date-time
                 integration:
                     type: string
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskLink'
+                    nullable: true
                 notes:
                     type: string
                 priority:
@@ -14461,6 +14519,24 @@ components:
                 - display_name
                 - handle
                 - profile_picture
+        TaskLink:
+            type: object
+            additionalProperties: false
+            properties:
+                source:
+                    type: string
+                    description: Where the link came from
+                    enum:
+                        - notes
+                        - manual
+                title:
+                    type: string
+                    description: Display label; defaults to the link host
+                url:
+                    type: string
+                    description: Absolute URL of the link
+            required:
+                - url
         TaskDocument:
             type: object
             additionalProperties: false
@@ -14505,6 +14581,11 @@ components:
                 lastEdited:
                     type: string
                     format: date-time
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskLink'
+                    nullable: true
                 notes:
                     type: string
                 posted:
@@ -15591,6 +15672,11 @@ components:
                     type: boolean
                 integration:
                     type: string
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskLink'
+                    nullable: true
                 notes:
                     type: string
                 priority:
@@ -15630,6 +15716,41 @@ components:
                 - recurring
                 - recurDetails
                 - public
+        UpdateTaskLinksDocument:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskLinksDocument.json
+                    readOnly: true
+                links:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskLink'
+                    nullable: true
+            required:
+                - links
+        UpdateTaskLinksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UpdateTaskLinksOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task links updated successfully
+            required:
+                - message
         UpdateTaskNotesDocument:
             type: object
             additionalProperties: false

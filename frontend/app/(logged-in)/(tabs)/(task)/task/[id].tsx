@@ -29,9 +29,10 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI, getTaskProgressAPI, type RingDelta } from "@/api/task";
 import { TaskScheduleRoute } from "@/components/task/TaskScheduleRoute";
 import Checklist from "@/components/task/Checklist";
+import TaskLinks from "@/components/task/TaskLinks";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp } from "phosphor-react-native";
+import { Note, LinkSimple, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp } from "phosphor-react-native";
 import LogProgressBottomSheetModal from "@/components/modals/LogProgressBottomSheetModal";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
@@ -680,6 +681,21 @@ export default function Task() {
                                             color: ThemedColor.text,
                                             fontFamily: "OutfitLight",
                                         }}
+                                    />
+                                </DataCard>
+                                <DataCard
+                                    title="Links"
+                                    key="links"
+                                    icon={<LinkSimple size={20} color={ThemedColor.text} weight="regular" />}
+                                >
+                                    <TaskLinks
+                                        categoryId={categoryId as string}
+                                        taskId={id as string}
+                                        links={task?.links}
+                                        notes={localNotes}
+                                        onLinksChange={(links) =>
+                                            updateTask(categoryId as string, id as string, { links })
+                                        }
                                     />
                                 </DataCard>
                                 {/* Checklist temporarily removed for debugging */}

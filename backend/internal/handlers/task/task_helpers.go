@@ -587,6 +587,7 @@ func buildTaskDocument(taskParams CreateTaskParams, userID, categoryID primitive
 		StartDate:  taskParams.StartDate,
 		Notes:      taskParams.Notes,
 		Checklist:  taskParams.Checklist,
+		Links:      SyncNotesLinks(NormalizeLinks(taskParams.Links), taskParams.Notes),
 		Reminders:  taskParams.Reminders,
 		Timestamp:  now,
 		LastEdited: now,

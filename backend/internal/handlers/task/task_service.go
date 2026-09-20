@@ -401,6 +401,28 @@ func (s *Service) UpdatePartialTask(
 	// Read the stored dates before the write, while they are still the old ones.
 	rescheduleInc := s.rescheduleInc(ctx, id, categoryId, updated.StartDate, updated.Deadline)
 
+	// Links auto-populate from URLs in the notes. A caller that sends its own
+	// link list is the source of truth for the manual entries; otherwise merge
+	// against what's stored so manual links survive a notes-only edit.
+	setLinks := false
+	if updated.Notes != "" {
+		baseline := NormalizeLinks(updated.Links)
+		if updated.Links == nil {
+			if existing, getErr := s.GetTaskByID(id, ownerUserID); getErr == nil {
+				baseline = existing.Links
+			} else {
+				slog.WarnContext(ctx, "Skipping notes link sync; task lookup failed", "id", id.Hex(), "error", getErr)
+			}
+		}
+		// Always written, even when empty, so deleting the last URL from the
+		// notes actually clears the list.
+		updated.Links = SyncNotesLinks(baseline, updated.Notes)
+		setLinks = true
+	} else if updated.Links != nil {
+		updated.Links = NormalizeLinks(updated.Links)
+		setLinks = true
+	}
+
 	options := options.UpdateOptions{
 		ArrayFilters: &options.ArrayFilters{
 			Filters: bson.A{
@@ -454,6 +476,9 @@ func (s *Service) UpdatePartialTask(
 	}
 	if updated.Checklist != nil {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].checklist", Value: updated.Checklist})
+	}
+	if setLinks {
+		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].links", Value: updated.Links})
 	}
 	if updated.Integration != "" {
 		updateFields = append(updateFields, bson.E{Key: "tasks.$[t].integration", Value: updated.Integration})
@@ -1527,19 +1552,57 @@ func (s *Service) UpdateTaskNotes(
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "Updating task notes", slog.String("categoryId", categoryId.Hex()), slog.String("id", id.Hex()), slog.String("userId", userId.Hex()))
 
+	// Links auto-populate from URLs in the notes. Read the current list first so
+	// manually attached links survive the sync; if the read fails we still save
+	// the notes rather than failing the whole edit, and leave links untouched.
+	fields := bson.D{
+		{"tasks.$[t].notes", updated.Notes},
+		{"tasks.$[t].lastEdited", xutils.NowUTC()},
+	}
+	if existing, getErr := s.GetTaskByID(id, userId); getErr == nil {
+		fields = append(fields, bson.E{Key: "tasks.$[t].links", Value: SyncNotesLinks(existing.Links, updated.Notes)})
+	} else {
+		slog.WarnContext(ctx, "Skipping notes link sync; task lookup failed", "id", id.Hex(), "error", getErr)
+	}
+
+	_, err := s.Tasks.UpdateOne(
+		ctx,
+		bson.M{"_id": categoryId},
+		bson.D{{"$set", fields}},
+		getTaskArrayFilterOptions(id),
+	)
+
+	return handleMongoError(ctx, "update task notes", err)
+}
+
+// UpdateTaskLinks replaces the link list on a task.
+func (s *Service) UpdateTaskLinks(
+	id primitive.ObjectID,
+	categoryId primitive.ObjectID,
+	userId primitive.ObjectID,
+	updated UpdateTaskLinksDocument) error {
+
+	ctx := context.Background()
+
+	if err := s.verifyCategoryOwnership(ctx, categoryId, userId); err != nil {
+		return errors.New("error verifying category ownership, user must not own this category: " + err.Error())
+	}
+
+	slog.LogAttrs(ctx, slog.LevelInfo, "Updating task links", slog.String("categoryId", categoryId.Hex()), slog.String("id", id.Hex()), slog.String("userId", userId.Hex()))
+
 	_, err := s.Tasks.UpdateOne(
 		ctx,
 		bson.M{"_id": categoryId},
 		bson.D{
 			{"$set", bson.D{
-				{"tasks.$[t].notes", updated.Notes},
+				{"tasks.$[t].links", NormalizeLinks(updated.Links)},
 				{"tasks.$[t].lastEdited", xutils.NowUTC()},
 			}},
 		},
 		getTaskArrayFilterOptions(id),
 	)
 
-	return handleMongoError(ctx, "update task notes", err)
+	return handleMongoError(ctx, "update task links", err)
 }
 
 // UpdateTaskChecklist updates the checklist field of a task

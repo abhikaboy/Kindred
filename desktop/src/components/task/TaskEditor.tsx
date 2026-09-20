@@ -18,6 +18,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 import { MentionTextarea } from "@/components/inputs/MentionTextarea";
 import { DataCard } from "@/components/task/DataCard";
 import { TaskTagsCard } from "@/components/task/TaskTagsCard";
+import { TaskLinksCard } from "@/components/task/TaskLinksCard";
 import { KudosBubble } from "@/components/kudos/KudosBubble";
 import { tagPayload, pendingIds } from "@/lib/tags";
 import type { FriendReference } from "@/hooks/useConnections";
@@ -314,6 +315,8 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           className="w-full resize-y bg-transparent px-0 py-4 text-base font-light text-foreground outline-none placeholder:text-muted-foreground"
         />
       </DataCard>
+
+      <TaskLinksCard task={task} categoryId={categoryId} notes={notes} />
 
       <DataCard title="Schedule" icon={<CalendarBlank size={20} weight="regular" className="text-foreground" />}>
         <ScheduleTimeline

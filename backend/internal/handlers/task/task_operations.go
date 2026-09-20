@@ -259,6 +259,20 @@ type UpdateTaskNotesOutput struct {
 	}
 }
 
+// Update Task Links
+type UpdateTaskLinksInput struct {
+	Authorization string                  `header:"Authorization" required:"true"`
+	ID            string                  `path:"id" example:"507f1f77bcf86cd799439011"`
+	Category      string                  `path:"category" example:"507f1f77bcf86cd799439011"`
+	Body          UpdateTaskLinksDocument `json:"body"`
+}
+
+type UpdateTaskLinksOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Task links updated successfully"`
+	}
+}
+
 // Update Task Checklist
 type UpdateTaskChecklistInput struct {
 	Authorization string                      `header:"Authorization" required:"true"`
@@ -469,6 +483,17 @@ func RegisterUpdateTaskNotesOperation(api huma.API, handler *Handler) {
 		Description: "Update the notes field of a task",
 		Tags:        []string{"tasks"},
 	}, handler.UpdateTaskNotes)
+}
+
+func RegisterUpdateTaskLinksOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "update-task-links",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/{category}/{id}/links",
+		Summary:     "Update task links",
+		Description: "Replace the links/attachments on a task",
+		Tags:        []string{"tasks"},
+	}, handler.UpdateTaskLinks)
 }
 
 func RegisterUpdateTaskChecklistOperation(api huma.API, handler *Handler) {
