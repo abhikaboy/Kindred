@@ -30,6 +30,7 @@ import type { DashboardConfiguration, UserSettings } from "@/api/settings";
 import { useQueryClient } from "@tanstack/react-query";
 import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
+import QuickCapture from "@/components/dashboard/QuickCapture";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 import type { HomeTour } from "@/hooks/useHomeTour";
 
@@ -113,7 +114,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     const { data: settings } = useUserSettings();
     const { mutate: saveDashboardConfig } = useUpdateDashboardConfiguration();
     const defaultConfig: DashboardConfiguration = {
-        stats: true, jump_back_in: true, kudos: true, upcoming: true,
+        stats: true, jump_back_in: false, kudos: true, upcoming: true,
         google_calendar: true, recent_workspaces: true, recently_completed: true,
     };
     const dashboardConfig = settings?.dashboard_configuration ?? defaultConfig;
@@ -385,6 +386,14 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     />
                     {dashboardConfig.stats && <DashboardStats onExpandChange={handleStatsExpandChange} />}
                 </View> */}
+
+                {/* Quick capture sits above the rings: the first thing on the home
+                    screen should be the cheapest way to get a task in. */}
+                {!tour.active && (
+                    <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
+                        <QuickCapture />
+                    </View>
+                )}
 
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
                 <View ref={(node) => tour.registerSection("rings", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, zIndex: ringsExpanded ? 999 : 0 }}>

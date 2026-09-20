@@ -43,6 +43,30 @@ export const createTaskAPI = async (
 };
 
 /**
+ * Create a task without choosing a category
+ * API: Makes POST request to create the task in the user's Inbox
+ * Frontend: The task isn't in a known category yet, so callers refresh the
+ * workspace tree rather than inserting optimistically
+ *
+ * A background job moves the task into a real category shortly after.
+ * @param task - The task data to create
+ */
+export const createTaskAutoAPI = async (
+    task: CreateTaskParams
+): Promise<TaskDocument & { ringDelta?: RingDelta }> => {
+    const { data, error } = await client.POST("/v1/user/tasks/auto", {
+        params: withAuthHeaders({}),
+        body: task,
+    });
+
+    if (error) {
+        throw new Error(`Failed to create task: ${JSON.stringify(error)}`);
+    }
+
+    return data as unknown as TaskDocument & { ringDelta?: RingDelta };
+};
+
+/**
  * Remove a task from a category
  * API: Makes DELETE request to remove the task
  * Frontend: The task is removed from the category in TaskContext
