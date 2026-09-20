@@ -12,6 +12,7 @@ import (
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/repository"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
@@ -620,4 +621,51 @@ func (s *Service) CreateReferralDocumentForUser(ctx context.Context, userID prim
 // AcceptTerms records the user's acceptance of Terms of Service
 func (s *Service) AcceptTerms(ctx context.Context, userID primitive.ObjectID, termsVersion string) (*time.Time, error) {
 	return s.users.AcceptTerms(ctx, userID, termsVersion)
+}
+
+/*
+Contact-based discovery
+*/
+
+// NotifyContactsOfNewUser tells everyone who already had this user's phone
+// number saved that they have joined Kindred. Safe to call when contact
+// matching is unavailable — it no-ops.
+func (s *Service) NotifyContactsOfNewUser(ctx context.Context, userID primitive.ObjectID) {
+	if s.contactNotifier == nil {
+		return
+	}
+	s.contactNotifier(ctx, userID)
+}
+
+// LinkPhoneNumber attaches an OTP-verified phone number to an existing account.
+//
+// This is the path for accounts that signed up through Apple or Google, which
+// start with no number at all and so are invisible to contact matching. The
+// caller must have already verified the OTP.
+//
+// Returns true when the number was newly linked, which is the caller's signal
+// to run the contact fan-out. Re-linking the same number returns false so we
+// do not re-notify.
+func (s *Service) LinkPhoneNumber(ctx context.Context, userID primitive.ObjectID, phoneNumber string) (bool, error) {
+	e164 := xutils.NormalizeE164(phoneNumber)
+	if e164 == "" {
+		return false, fmt.Errorf("could not interpret %q as a phone number", phoneNumber)
+	}
+	hash := xutils.HashNormalizedPhone(e164)
+
+	user, err := s.users.GetUserByID(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to load user: %w", err)
+	}
+	alreadyLinked := user.PhoneHash == hash
+
+	if err := s.users.UpdateUser(ctx, userID, bson.M{
+		"phone":      e164,
+		"phone_e164": e164,
+		"phone_hash": hash,
+	}); err != nil {
+		return false, fmt.Errorf("failed to link phone number: %w", err)
+	}
+
+	return !alreadyLinked, nil
 }

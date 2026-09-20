@@ -15,6 +15,7 @@ import (
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
 	congratulation "github.com/abhikaboy/Kindred/internal/handlers/congratulation"
 	connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
+	"github.com/abhikaboy/Kindred/internal/handlers/contacts"
 	encouragement "github.com/abhikaboy/Kindred/internal/handlers/encouragement"
 	"github.com/abhikaboy/Kindred/internal/handlers/foryou"
 	group "github.com/abhikaboy/Kindred/internal/handlers/group"
@@ -142,7 +143,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 
 	// Register converted routes
 	health.Routes(api, collections)
-	auth.Routes(api, collections)
+	auth.Routes(api, collections, contacts.NewService(collections).NotifyContactsOfNewUser)
 	category.Routes(api, collections)
 	activity.Routes(api, collections)
 	analytics.Routes(api, collections)

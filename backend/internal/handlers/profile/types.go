@@ -1,6 +1,7 @@
 package Profile
 
 import (
+	"github.com/abhikaboy/Kindred/internal/handlers/contacts"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -77,4 +78,5 @@ type Service struct {
 	Groups         *mongo.Collection
 	Blueprints     *mongo.Collection
 	Notifications  *mongo.Collection
+	Contacts       *contacts.Service
 }

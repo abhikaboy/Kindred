@@ -10,6 +10,7 @@ import {
     type NotificationSettings,
     type DisplaySettings,
     type DashboardConfiguration,
+    type UserSettingsUpdate,
 } from "@/api/settings";
 import { showToast } from "@/utils/showToast";
 
@@ -40,7 +41,7 @@ export function useUpdateSettings() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (settings: Partial<UserSettings>) => updateUserSettings(settings),
+        mutationFn: (settings: UserSettingsUpdate) => updateUserSettings(settings),
         onSuccess: (data, variables) => {
             // Optimistically update the cache
             queryClient.setQueryData(settingsKeys.user(), (old: UserSettings | undefined) => {
@@ -193,7 +194,7 @@ export function useUpdateDashboardConfiguration() {
             const previous = queryClient.getQueryData<UserSettings>(settingsKeys.user());
 
             const defaultDashConfig = {
-                stats: true, jump_back_in: true, kudos: true, upcoming: true,
+                stats: true, jump_back_in: false, kudos: true, upcoming: true,
                 google_calendar: true, recent_workspaces: true, recently_completed: true,
             };
             queryClient.setQueryData(settingsKeys.user(), (old: UserSettings | undefined) => {

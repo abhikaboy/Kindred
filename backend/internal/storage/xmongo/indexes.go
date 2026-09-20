@@ -59,6 +59,40 @@ var Indexes = []Index{
 				}),
 		},
 	},
+	// Contact matching joins on the salted hash of a user's phone number. Not
+	// unique: two accounts can legitimately share a number (family plans,
+	// reused numbers), and a duplicate-key error here would break signup.
+	{
+		Collection: "users",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "phone_hash", Value: 1}},
+			Options: options.Index().
+				SetName("phone_hash_idx").
+				SetPartialFilterExpression(bson.D{
+					{Key: "phone_hash", Value: bson.D{{Key: "$gt", Value: ""}}},
+				}),
+		},
+	},
+	// Contact links: one document per (owner, hashed contact number). The
+	// unique compound index lets contact sync upsert idempotently, and the
+	// phone_hash index powers the reverse lookup when a new user joins.
+	{
+		Collection: "contact_links",
+		Model: mongo.IndexModel{
+			Keys: bson.D{
+				{Key: "owner_id", Value: 1},
+				{Key: "phone_hash", Value: 1},
+			},
+			Options: options.Index().SetName("owner_phone_hash_unique").SetUnique(true),
+		},
+	},
+	{
+		Collection: "contact_links",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "phone_hash", Value: 1}},
+			Options: options.Index().SetName("phone_hash_idx"),
+		},
+	},
 	{
 		Collection: "waitlist",
 		Model: mongo.IndexModel{Keys: bson.D{

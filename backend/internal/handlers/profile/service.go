@@ -8,6 +8,7 @@ import (
 	"time"
 
 	Connection "github.com/abhikaboy/Kindred/internal/handlers/connection"
+	"github.com/abhikaboy/Kindred/internal/handlers/contacts"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,6 +28,7 @@ func NewService(collections map[string]*mongo.Collection) *Service {
 		Groups:         collections["groups"],
 		Blueprints:     collections["blueprints"],
 		Notifications:  collections["notifications"],
+		Contacts:       contacts.NewService(collections),
 	}
 }
 
@@ -639,55 +641,11 @@ func parseUserIDs(raw []string, max int) ([]primitive.ObjectID, error) {
 	return out, nil
 }
 
-// FindUsersByPhoneNumbers efficiently finds users matching any of the provided phone numbers
-// Uses a single database query with $in operator to avoid multiple scans
-// Returns users with phone numbers included for contact name mapping
-// Excludes the authenticated user from results
-func (s *Service) FindUsersByPhoneNumbers(phoneNumbers []string, excludeUserID primitive.ObjectID) ([]types.UserExtendedReferenceWithPhone, error) {
-	ctx := context.Background()
-
-	// Return empty if no phone numbers provided
-	if len(phoneNumbers) == 0 {
-		return []types.UserExtendedReferenceWithPhone{}, nil
-	}
-
-	// Use $in operator for efficient single-query lookup, but exclude the authenticated user
-	filter := bson.M{
-		"phone": bson.M{
-			"$in": phoneNumbers,
-		},
-		"_id": bson.M{
-			"$ne": excludeUserID,
-		},
-	}
-
-	// Project only the fields needed for UserExtendedReferenceWithPhone
-	projection := bson.M{
-		"_id":             1,
-		"display_name":    1,
-		"handle":          1,
-		"profile_picture": 1,
-		"phone":           1, // Include phone to map back to contact names
-	}
-
-	cursor, err := s.Profiles.Find(ctx, filter, options.Find().SetProjection(projection))
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var internalResults []types.UserExtendedReferenceWithPhoneInternal
-	if err := cursor.All(ctx, &internalResults); err != nil {
-		return nil, err
-	}
-
-	// Convert internal to API type
-	results := make([]types.UserExtendedReferenceWithPhone, len(internalResults))
-	for i, internal := range internalResults {
-		results[i] = *internal.ToAPI()
-	}
-
-	return results, nil
+// SyncContacts records the caller's hashed address-book numbers and returns the
+// users they match. Delegates to the contacts service, which owns the
+// contact_links collection and the "someone you know joined" fan-out.
+func (s *Service) SyncContacts(ctx context.Context, ownerID primitive.ObjectID, phoneHashes []string) ([]contacts.UserMatch, error) {
+	return s.Contacts.SyncContacts(ctx, ownerID, phoneHashes)
 }
 
 // GetUsersByIDs returns extended references for the given user IDs in a single

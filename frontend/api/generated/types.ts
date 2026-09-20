@@ -6708,6 +6708,7 @@ export interface components {
             checkin_frequency: string;
             comments: boolean;
             congratulations: boolean;
+            contact_joins: boolean;
             encouragements: boolean;
             friend_activity: boolean;
             friend_posts: boolean;

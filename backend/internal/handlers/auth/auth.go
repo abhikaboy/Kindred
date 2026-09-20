@@ -11,6 +11,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/storage/xmongo"
 	"github.com/abhikaboy/Kindred/internal/xvalidator"
+	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -347,9 +348,20 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 	}
 
 	now := time.Now().UTC()
+	// Derived from the raw phone so contact matching has something indexed to
+	// join on. Both are empty when the number is missing or unparseable, which
+	// simply means this account is undiscoverable by contact sync.
+	phoneE164 := xutils.NormalizeE164(input.Body.Phone)
+	phoneHash := ""
+	if phoneE164 != "" {
+		phoneHash = xutils.HashNormalizedPhone(phoneE164)
+	}
+
 	user := User{
 		Email:           input.Body.Email,
 		Phone:           input.Body.Phone,
+		PhoneE164:       phoneE164,
+		PhoneHash:       phoneHash,
 		Password:        hashedPassword, // Store the hashed password
 		ID:              id,
 		RefreshToken:    refresh,
@@ -440,6 +452,17 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 				slog.String("error", err.Error()))
 		}
 	}()
+
+	// Tell anyone who already has this number in their contacts that they
+	// joined. Fire-and-forget: a fan-out failure must never fail a signup.
+	if phoneHash != "" {
+		go func() {
+			notifyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			h.service.NotifyContactsOfNewUser(notifyCtx, id)
+		}()
+	}
 
 	slog.LogAttrs(ctx, slog.LevelInfo, "User registered successfully",
 		slog.String("userId", id.Hex()),
@@ -821,5 +844,61 @@ func (h *Handler) AcceptTermsHuma(ctx context.Context, input *AcceptTermsInput) 
 	resp.Body.TermsVersion = input.Body.TermsVersion
 
 	slog.Info("Terms accepted", "user_id", user_id, "version", input.Body.TermsVersion)
+	return resp, nil
+}
+
+// LinkPhoneHuma attaches an OTP-verified phone number to the signed-in account.
+//
+// Apple and Google signups create accounts with no phone number, so those users
+// are invisible to contact matching until they link one here. On a successful
+// first link we run the same contact fan-out that registration does.
+func (h *Handler) LinkPhoneHuma(ctx context.Context, input *LinkPhoneInput) (*LinkPhoneOutput, error) {
+	errs := xvalidator.Validator.Validate(input.Body)
+	if len(errs) > 0 {
+		return nil, huma.Error400BadRequest("Please provide a valid phone number and verification code", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	userIDStr, err := RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
+	if err != nil {
+		slog.Error("Failed to verify OTP during phone linking", "error", err, "userId", userID.Hex())
+		return nil, huma.Error500InternalServerError("Unable to verify code. The verification service may be temporarily unavailable.", err)
+	}
+	if !valid {
+		slog.Warn("Invalid OTP code during phone linking", "userId", userID.Hex(), "status", status)
+		return nil, huma.Error401Unauthorized("Invalid or expired verification code. Please request a new one.", nil)
+	}
+
+	newlyLinked, err := h.service.LinkPhoneNumber(ctx, userID, input.Body.PhoneNumber)
+	if err != nil {
+		slog.Error("Failed to link phone number", "error", err, "userId", userID.Hex())
+		return nil, huma.Error500InternalServerError("Unable to link this phone number. Please try again.", err)
+	}
+
+	// Only fan out the first time a number is attached, so someone re-verifying
+	// the same number does not notify their contacts twice.
+	if newlyLinked {
+		go func() {
+			notifyCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			h.service.NotifyContactsOfNewUser(notifyCtx, userID)
+		}()
+	}
+
+	resp := &LinkPhoneOutput{}
+	resp.Body.Message = "Phone number linked successfully"
+	resp.Body.Phone = xutils.NormalizeE164(input.Body.PhoneNumber)
+
+	slog.Info("Phone number linked", "userId", userID.Hex(), "newlyLinked", newlyLinked)
 	return resp, nil
 }

@@ -141,23 +141,26 @@ export interface UserExtendedReferenceWithPhone {
     display_name: string;
     handle: string;
     profile_picture: string;
-    phone: string;
+    /** Hash of the contact number that matched this user, for local name mapping. */
+    phone_hash: string;
 }
 
 /**
- * Find users by phone numbers (efficient single-query lookup)
- * This uses a single database query with $in operator for optimal performance
- * Returns users with phone numbers included for contact name mapping
+ * Find users by hashed contact phone numbers.
+ *
+ * The caller passes salted SHA-256 hashes of E.164-normalized numbers (see
+ * utils/phone.ts) — raw numbers never leave the device. The server also records
+ * these hashes so it can notify us when one of these contacts joins Kindred.
  */
-export const findUsersByPhoneNumbers = async (phoneNumbers: string[]): Promise<UserExtendedReferenceWithPhone[]> => {
+export const findUsersByPhoneHashes = async (phoneHashes: string[]): Promise<UserExtendedReferenceWithPhone[]> => {
     // Use the openapi-fetch client with type casting until OpenAPI types are regenerated
     const { data, error } = await (client as any).POST("/v1/user/profiles/find-by-phone", {
         params: withAuthHeaders({}),
-        body: { numbers: phoneNumbers },
+        body: { phone_hashes: phoneHashes },
     });
 
     if (error) {
-        throw new Error(`Failed to find users by phone numbers: ${JSON.stringify(error)}`);
+        throw new Error(`Failed to find users by phone hashes: ${JSON.stringify(error)}`);
     }
 
     return (data as any) || [];

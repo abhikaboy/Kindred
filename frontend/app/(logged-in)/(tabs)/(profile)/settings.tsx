@@ -52,6 +52,11 @@ export default function Settings() {
         contentFilter: true,
     });
 
+    // Notification-scoped toggles. Kept separate from localSettings because
+    // those all write into settings.display, while these write into
+    // settings.notifications.
+    const [contactJoins, setContactJoins] = useState(true);
+
     // Check-in frequency options
     const checkinFrequencyOptions = ['None', 'Occasionally', 'Regularly', 'Frequently'];
     const [checkinFrequency, setCheckinFrequency] = useState('Regularly');
@@ -94,6 +99,7 @@ export default function Settings() {
                 'frequently': 'Frequently',
             };
             setCheckinFrequency(frequencyMap[userSettings.notifications?.checkin_frequency ?? 'regularly'] ?? 'Regularly');
+            setContactJoins(userSettings.notifications?.contact_joins ?? true);
         }
     }, [userSettings]);
 
@@ -116,6 +122,20 @@ export default function Settings() {
         } catch (error) {
             console.error('Error loading calendar connections:', error);
         }
+    };
+
+    const handleContactJoinsToggle = () => {
+        const newValue = !contactJoins;
+        setContactJoins(newValue);
+
+        updateSettings({
+            notifications: {
+                contact_joins: newValue,
+            },
+        });
+        capture(AnalyticsEvents.SETTINGS_CHANGED, {
+            setting_name: 'contactJoins',
+        });
     };
 
     const handleToggle = (key: keyof typeof localSettings) => {
@@ -435,6 +455,14 @@ export default function Settings() {
                             />
                         )}
                     </View>
+                    <SettingsCard>
+                        <SettingsToggleRow
+                            label="Contacts Joining Kindred"
+                            value={contactJoins}
+                            onValueChange={handleContactJoinsToggle}
+                            isLast
+                        />
+                    </SettingsCard>
                 </SettingsSection>
 
                 <SettingsSection title="DISPLAY">

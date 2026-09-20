@@ -37,6 +37,10 @@ const (
 	// send kudos to a friend. The `user` on the document is the friend the kudos
 	// would be for, not the person who did anything to the receiver.
 	NotificationTypeKudosSuggestion NotificationType = "KUDOS_SUGGESTION"
+	// NotificationTypeContactJoined tells the receiver that someone already in
+	// their phone contacts has created a Kindred account. The `user` on the
+	// document is the person who joined.
+	NotificationTypeContactJoined NotificationType = "CONTACT_JOINED"
 )
 
 // NotificationDocument represents a notification stored in the database

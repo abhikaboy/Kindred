@@ -32,10 +32,21 @@ export const getUserSettings = async (): Promise<UserSettings> => {
 };
 
 /**
+ * A partial settings update. Nested groups are themselves partial, because
+ * updateUserSettings deep-merges each group over the current server values —
+ * callers routinely send a single flag like `{ notifications: { comments: false } }`.
+ */
+export type UserSettingsUpdate = Omit<Partial<UserSettings>, "notifications" | "display" | "dashboard_configuration"> & {
+    notifications?: Partial<NotificationSettings>;
+    display?: Partial<DisplaySettings>;
+    dashboard_configuration?: Partial<DashboardConfiguration>;
+};
+
+/**
  * Update user settings
  * Updates settings for the authenticated user (supports partial updates)
  */
-export const updateUserSettings = async (settings: Partial<UserSettings>): Promise<{ message: string }> => {
+export const updateUserSettings = async (settings: UserSettingsUpdate): Promise<{ message: string }> => {
     // Fetch current settings first to merge with the update
     const currentSettings = await getUserSettings();
 

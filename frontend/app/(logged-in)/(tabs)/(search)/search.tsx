@@ -21,7 +21,7 @@ import {
     searchBlueprintsFromBackend,
     autocompleteBlueprintsFromBackend,
 } from "@/api/blueprint";
-import { searchProfiles, autocompleteProfiles, findUsersByPhoneNumbers, getSuggestedUsers } from "@/api/profile";
+import { searchProfiles, autocompleteProfiles, findUsersByPhoneHashes, getSuggestedUsers } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
@@ -163,9 +163,9 @@ const Search = (props: Props) => {
     // Store contacts map ref to access in mutation callback
     const contactsMapRef = useRef<{ [phoneNumber: string]: string }>({});
 
-    // TanStack Query mutation for finding users by phone numbers
+    // TanStack Query mutation for finding users by hashed contact numbers
     const findUsersMutation = useMutation({
-        mutationFn: findUsersByPhoneNumbers,
+        mutationFn: findUsersByPhoneHashes,
         onSuccess: (matchedUsers) => {
             console.log(`Found ${matchedUsers.length} matching users on Kindred:`, matchedUsers);
 
@@ -173,7 +173,7 @@ const Search = (props: Props) => {
                 // Map matched users to MatchedContact format with contact names
                 const newMatchedContacts: MatchedContact[] = matchedUsers.map((user) => ({
                     user,
-                    contactName: contactsMapRef.current[user.phone] || "Unknown",
+                    contactName: contactsMapRef.current[user.phone_hash] || "Unknown",
                 }));
 
                 // Save to AsyncStorage
@@ -494,7 +494,7 @@ const Search = (props: Props) => {
             }
 
             // If no numbers returned, permission was likely denied or no contacts exist
-            if (contactsResponse.numbers.length === 0) {
+            if (contactsResponse.phoneHashes.length === 0) {
                 // The hook already returns alerts for permission issues which we handled above
                 // Only show this alert if permission was granted but no numbers found
                 const { status } = await Contacts.getPermissionsAsync();
@@ -507,14 +507,13 @@ const Search = (props: Props) => {
                 return;
             }
 
-            console.log("Contacts response:", contactsResponse);
-            console.log(`Total phone numbers: ${contactsResponse.numbers.length}`);
+            console.log(`Total phone numbers: ${contactsResponse.phoneHashes.length}`);
 
             // Store contacts map for use in mutation callback
             contactsMapRef.current = contactsResponse.contactsMap;
 
             // Use TanStack Query mutation for efficient single-query database lookup
-            findUsersMutation.mutate(contactsResponse.numbers);
+            findUsersMutation.mutate(contactsResponse.phoneHashes);
         } catch (error) {
             console.error("Error getting contacts:", error);
             setAlertTitle("Error");

@@ -64,7 +64,8 @@ type NotificationType =
     | "ABSOLUTE"
     | "RELATIVE"
     | "FOLLOW_UP"
-    | "live_activity";
+    | "live_activity"
+    | "contact_joined";
 
 interface NotificationData {
     type?: NotificationType;
@@ -135,6 +136,13 @@ function getNotificationRoute(data: NotificationData | undefined): string | null
                 return `/(logged-in)/posting/${data.post_id}`;
             }
             return "/(logged-in)/(tabs)/(feed)/feed";
+        case "contact_joined":
+            // Open the profile of the person who joined so the obvious next
+            // action is following them.
+            if (data.user_id) {
+                return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.user_id}`;
+            }
+            return "/(logged-in)/(tabs)/(feed)/feed?page=notifications";
         case "rings_closed":
             if (data.user_id) {
                 return `/(logged-in)/(tabs)/(feed,search,profile)/account/${data.user_id}`;

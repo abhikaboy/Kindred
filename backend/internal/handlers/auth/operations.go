@@ -366,6 +366,37 @@ func RegisterVerifyOTPOperation(api huma.API, handler *Handler) {
 	})
 }
 
+// Link Phone Operation Types
+
+type LinkPhoneInput struct {
+	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
+	Body          struct {
+		PhoneNumber string `json:"phone_number" validate:"required" example:"+15551234567" doc:"Phone number to link, in any common format"`
+		Code        string `json:"code" validate:"required" example:"1234" doc:"OTP code previously sent to this number"`
+	} `json:"body"`
+}
+
+type LinkPhoneOutput struct {
+	Body struct {
+		Message string `json:"message" example:"Phone number linked successfully"`
+		Phone   string `json:"phone" example:"+15551234567" doc:"The linked number, normalized to E.164"`
+	}
+}
+
+// RegisterLinkPhoneOperation registers the phone-linking endpoint
+func RegisterLinkPhoneOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "link-phone",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/phone",
+		Summary:     "Link a phone number",
+		Description: "Attaches an OTP-verified phone number to the signed-in account. Accounts created via Apple or Google start without one, which makes them undiscoverable by contact matching.",
+		Tags:        []string{"auth"},
+	}, func(ctx context.Context, input *LinkPhoneInput) (*LinkPhoneOutput, error) {
+		return handler.LinkPhoneHuma(ctx, input)
+	})
+}
+
 // RegisterLoginWithOTPOperation registers the login with OTP endpoint
 func RegisterLoginWithOTPOperation(api huma.API, handler *Handler) {
 	huma.Register(api, huma.Operation{

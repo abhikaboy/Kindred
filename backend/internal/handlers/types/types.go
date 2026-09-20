@@ -347,6 +347,11 @@ type User struct {
 	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
 	Email          string               `bson:"email" json:"email"`
 	Phone          string               `bson:"phone" json:"phone"`
+	// PhoneE164 is Phone normalized to E.164, and PhoneHash is its salted
+	// SHA-256. Both are derived from Phone on write; PhoneHash is what contact
+	// matching joins against so we never need the raw number of a non-user.
+	PhoneE164      string               `bson:"phone_e164,omitempty" json:"phone_e164,omitempty"`
+	PhoneHash      string               `bson:"phone_hash,omitempty" json:"phone_hash,omitempty"`
 	Password       string               `bson:"password" json:"password"`
 	AppleID        string               `bson:"apple_id,omitempty" json:"apple_id,omitempty"`
 	GoogleID       string               `bson:"google_id,omitempty" json:"google_id,omitempty"`
@@ -499,6 +504,8 @@ type NotificationSettings struct {
 	Encouragements   bool   `bson:"encouragements" json:"encouragements"`
 	Congratulations  bool   `bson:"congratulations" json:"congratulations"`
 	FriendRequests   bool   `bson:"friend_requests" json:"friend_requests"`
+	// ContactJoins controls the "someone in your contacts joined Kindred" push.
+	ContactJoins     bool   `bson:"contact_joins" json:"contact_joins"`
 }
 
 // DashboardConfiguration controls visibility of dashboard sections
@@ -534,6 +541,7 @@ func DefaultUserSettings() UserSettings {
 			Encouragements:   true,
 			Congratulations:  true,
 			FriendRequests:   true,
+			ContactJoins:     true,
 		},
 		Display: DisplaySettings{
 			ShowTaskDetails:     true,
@@ -826,30 +834,12 @@ type UserExtendedReference struct {
 	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
 }
 
-// UserExtendedReferenceWithPhone includes phone number for contact matching
-type UserExtendedReferenceWithPhone struct {
-	ID             string `bson:"_id" json:"_id" example:"507f1f77bcf86cd799439011" doc:"User ID"`
-	DisplayName    string `bson:"display_name" json:"display_name" example:"John Doe" doc:"User display name"`
-	Handle         string `bson:"handle" json:"handle" example:"johndoe" doc:"User handle"`
-	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
-	Phone          string `bson:"phone" json:"phone" example:"+1234567890" doc:"User phone number"`
-}
-
 // Internal version for MongoDB operations
 type UserExtendedReferenceInternal struct {
 	ID             primitive.ObjectID `bson:"_id"`
 	DisplayName    string             `bson:"display_name"`
 	Handle         string             `bson:"handle"`
 	ProfilePicture string             `bson:"profile_picture"`
-}
-
-// Internal version with phone for contact matching
-type UserExtendedReferenceWithPhoneInternal struct {
-	ID             primitive.ObjectID `bson:"_id"`
-	DisplayName    string             `bson:"display_name"`
-	Handle         string             `bson:"handle"`
-	ProfilePicture string             `bson:"profile_picture"`
-	Phone          string             `bson:"phone"`
 }
 
 // Helper function to convert from internal to API type
@@ -859,17 +849,6 @@ func (u *UserExtendedReferenceInternal) ToAPI() *UserExtendedReference {
 		DisplayName:    u.DisplayName,
 		Handle:         u.Handle,
 		ProfilePicture: u.ProfilePicture,
-	}
-}
-
-// Helper function to convert from internal with phone to API type
-func (u *UserExtendedReferenceWithPhoneInternal) ToAPI() *UserExtendedReferenceWithPhone {
-	return &UserExtendedReferenceWithPhone{
-		ID:             u.ID.Hex(),
-		DisplayName:    u.DisplayName,
-		Handle:         u.Handle,
-		ProfilePicture: u.ProfilePicture,
-		Phone:          u.Phone,
 	}
 }
 

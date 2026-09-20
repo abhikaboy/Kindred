@@ -3,6 +3,7 @@ package Profile
 import (
 	"net/http"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/contacts"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -99,16 +100,21 @@ type GetSuggestedUsersOutput struct {
 }
 
 // Find Users by Phone Numbers
+//
+// The client sends salted SHA-256 hashes of E.164-normalized contact numbers,
+// never the numbers themselves (see frontend/utils/phone.ts). Hashes are also
+// persisted as contact links so we can notify the owner when one of those
+// contacts later joins.
 type FindUsersByPhoneNumbersInput struct {
 	Authorization string `header:"Authorization" required:"true" doc:"Bearer token for authentication"`
 	RefreshToken  string `header:"refresh_token" required:"true" doc:"Refresh token for authentication"`
 	Body          struct {
-		Numbers []string `json:"numbers" minItems:"1" maxItems:"1000" doc:"List of phone numbers to search for"`
+		PhoneHashes []string `json:"phone_hashes" minItems:"1" maxItems:"1000" doc:"Salted SHA-256 hashes of E.164 contact phone numbers"`
 	}
 }
 
 type FindUsersByPhoneNumbersOutput struct {
-	Body []types.UserExtendedReferenceWithPhone `json:"body"`
+	Body []contacts.UserMatch `json:"body"`
 }
 
 // Get Users by IDs (batch)
@@ -250,8 +256,8 @@ func RegisterFindUsersByPhoneNumbersOperation(api huma.API, handler *Handler) {
 		OperationID: "find-users-by-phone-numbers",
 		Method:      http.MethodPost,
 		Path:        "/v1/user/profiles/find-by-phone",
-		Summary:     "Find users by phone numbers",
-		Description: "Efficiently find users matching any of the provided phone numbers using a single database query",
+		Summary:     "Find users by hashed phone numbers",
+		Description: "Finds users matching any of the provided hashed contact numbers in a single indexed query, and records the hashes so the caller can be notified when one of those contacts joins",
 		Tags:        []string{"profiles"},
 	}, handler.FindUsersByPhoneNumbers)
 }

@@ -1,10 +1,13 @@
 package auth
 
 import (
+	"context"
+
 	"github.com/abhikaboy/Kindred/internal/config"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/internal/repository"
 	mongorepo "github.com/abhikaboy/Kindred/internal/repository/mongo"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,7 +25,20 @@ type Service struct {
 	referrals       *mongo.Collection
 	congratulations *mongo.Collection
 	config          config.Config
+
+	// contactNotifier runs the "someone you know joined Kindred" fan-out after
+	// a phone number is attached to an account.
+	//
+	// It is injected rather than imported because the contacts package depends
+	// on notifications and connections, both of which depend on this package —
+	// importing it directly would be a cycle. internal/server wires it up; when
+	// it is nil the fan-out simply does not run, which is the right behaviour
+	// for tests and for the one-off commands in cmd/db.
+	contactNotifier ContactNotifier
 }
+
+// ContactNotifier notifies a new user's phone contacts that they have joined.
+type ContactNotifier func(ctx context.Context, userID primitive.ObjectID)
 
 func newService(users repository.UserRepository, categories *mongo.Collection, referrals *mongo.Collection, congratulations *mongo.Collection, cfg config.Config) *Service {
 	return &Service{
@@ -32,6 +48,11 @@ func newService(users repository.UserRepository, categories *mongo.Collection, r
 		congratulations: congratulations,
 		config:          cfg,
 	}
+}
+
+// SetContactNotifier injects the contact fan-out. Safe to leave unset.
+func (s *Service) SetContactNotifier(notifier ContactNotifier) {
+	s.contactNotifier = notifier
 }
 
 func NewServiceWithConfig(collections map[string]*mongo.Collection, cfg config.Config) *Service {

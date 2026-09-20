@@ -12,12 +12,17 @@ import (
 /*
 Router maps endpoints to handlers
 */
-func Routes(api huma.API, collections map[string]*mongo.Collection) {
+// Routes wires up the auth endpoints. contactNotifier runs the "someone you
+// know joined Kindred" fan-out once a phone number is attached to an account;
+// it is passed in rather than constructed here because the contacts package
+// transitively imports this one. Pass nil to disable the fan-out.
+func Routes(api huma.API, collections map[string]*mongo.Collection, contactNotifier ContactNotifier) {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 	service := NewServiceWithConfig(collections, cfg)
+	service.SetContactNotifier(contactNotifier)
 	authHandler := Handler{service, cfg}
 
 	RegisterAuthOperations(api, &authHandler)
@@ -62,6 +67,7 @@ func RegisterAuthOperations(api huma.API, handler *Handler) {
 	RegisterSendOTPOperation(api, handler)
 	RegisterVerifyOTPOperation(api, handler)
 	RegisterLoginWithOTPOperation(api, handler)
+	RegisterLinkPhoneOperation(api, handler)
 	RegisterDeleteAccountOperation(api, handler)
 	RegisterAcceptTermsOperation(api, handler)
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import * as Contacts from 'expo-contacts';
 import { Platform, Linking } from 'react-native';
+import { hashPhone } from '@/utils/phone';
 
 export interface ContactInfo {
     id: string;
@@ -16,8 +17,12 @@ export interface AlertButton {
 }
 
 export interface ContactsResponse {
-    numbers: string[];
-    contactsMap: { [phoneNumber: string]: string }; // Map of phone number to contact name
+    /**
+     * Salted SHA-256 hashes of the E.164-normalized contact numbers. Only these
+     * are ever sent to the server — raw numbers stay on the device.
+     */
+    phoneHashes: string[];
+    contactsMap: { [phoneHash: string]: string }; // Map of phone hash to contact name
     alert?: {
         title: string;
         message: string;
@@ -60,7 +65,7 @@ export function useContacts() {
                 if (status === 'denied') {
                     // Permission was explicitly denied
                     return {
-                        numbers: [],
+                        phoneHashes: [],
                         contactsMap: {},
                         alert: {
                             title: 'Contacts Permission Denied',
@@ -83,7 +88,7 @@ export function useContacts() {
                 } else {
                     // Permission request was cancelled or not determined
                     return {
-                        numbers: [],
+                        phoneHashes: [],
                         contactsMap: {},
                         alert: {
                             title: 'Permission Required',
@@ -103,32 +108,35 @@ export function useContacts() {
             });
 
             if (!data || data.length === 0) {
-                return { numbers: [], contactsMap: {} };
+                return { phoneHashes: [], contactsMap: {} };
             }
 
-            // Extract all phone numbers into a flat array and create a map
-            const phoneNumbers: string[] = [];
-            const contactsMap: { [phoneNumber: string]: string } = {};
-            
-            data.forEach(contact => {
-                const contactName = contact.name || 'Unknown';
-                
-                if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-                    contact.phoneNumbers.forEach(phoneNumber => {
-                        const number = phoneNumber.number || phoneNumber.digits;
-                        if (number) {
-                            phoneNumbers.push(number);
-                            contactsMap[number] = contactName;
-                        }
-                    });
-                }
-            });
+            // Normalize and hash every number on-device. contactsMap is keyed by
+            // hash so matched users can still be labelled with the local
+            // contact's name without that name or number leaving the phone.
+            // Numbers that can't be parsed into E.164 hash to null and are
+            // dropped, since they could never match a stored user anyway.
+            const contactsMap: { [phoneHash: string]: string } = {};
 
-            return { numbers: phoneNumbers, contactsMap };
+            for (const contact of data) {
+                const contactName = contact.name || 'Unknown';
+                if (!contact.phoneNumbers?.length) continue;
+
+                for (const phoneNumber of contact.phoneNumbers) {
+                    const number = phoneNumber.number || phoneNumber.digits;
+                    if (!number) continue;
+
+                    const hash = await hashPhone(number);
+                    if (!hash) continue;
+                    contactsMap[hash] = contactName;
+                }
+            }
+
+            return { phoneHashes: Object.keys(contactsMap), contactsMap };
         } catch (error) {
             console.error('Error fetching contacts:', error);
             return {
-                numbers: [],
+                phoneHashes: [],
                 contactsMap: {},
                 alert: {
                     title: 'Error',

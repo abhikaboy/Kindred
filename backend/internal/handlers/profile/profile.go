@@ -304,9 +304,9 @@ func (h *Handler) FindUsersByPhoneNumbers(ctx context.Context, input *FindUsersB
 		return nil, huma.Error400BadRequest("Invalid user ID format", err)
 	}
 
-	users, err := h.service.FindUsersByPhoneNumbers(input.Body.Numbers, userID)
+	users, err := h.service.SyncContacts(ctx, userID, input.Body.PhoneHashes)
 	if err != nil {
-		slog.Error("Failed to find users by phone numbers", "userId", userID.Hex(), "error", err)
+		slog.Error("Failed to find users by phone hashes", "userId", userID.Hex(), "error", err)
 		return nil, huma.Error500InternalServerError("Unable to find users by phone numbers. Please try again.", err)
 	}
 
