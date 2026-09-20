@@ -8,6 +8,7 @@ import {
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { ProductivityRings } from "@/components/home/ProductivityRings";
+import { QuickCapture } from "@/components/home/QuickCapture";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday } from "@/hooks/useRings";
 import { useTodayTasks } from "@/hooks/useHomeTasks";
@@ -138,34 +139,38 @@ export function TodayHero() {
   const streak = data?.current_streak;
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)] lg:flex-row lg:items-center lg:gap-8">
-      <ProductivityRings />
+    <div className="flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)]">
+      <QuickCapture />
 
-      <div className="hidden w-px self-stretch bg-border lg:block" />
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
+        <ProductivityRings />
 
-      <WeekStrip />
+        <div className="hidden w-px self-stretch bg-border lg:block" />
 
-      <div className="hidden w-px self-stretch bg-border lg:block" />
+        <WeekStrip />
 
-      <div className="flex flex-col gap-3">
-        <Stat
-          icon={Gauge}
-          value={score ?? "—"}
-          label={`Productivity score ${score ?? 0} of 100`}
-          meter={(score ?? 0) / 100}
-        />
-        <Stat
-          icon={Fire}
-          value={streak ?? "—"}
-          label={`${streak ?? 0} day streak`}
-          accent={(streak ?? 0) > 0}
-        />
-        <Stat
-          icon={ListChecks}
-          value={dueToday}
-          label={`${dueToday} due today`}
-          accent={dueToday > 0}
-        />
+        <div className="hidden w-px self-stretch bg-border lg:block" />
+
+        <div className="flex flex-col gap-3">
+          <Stat
+            icon={Gauge}
+            value={score ?? "—"}
+            label={`Productivity score ${score ?? 0} of 100`}
+            meter={(score ?? 0) / 100}
+          />
+          <Stat
+            icon={Fire}
+            value={streak ?? "—"}
+            label={`${streak ?? 0} day streak`}
+            accent={(streak ?? 0) > 0}
+          />
+          <Stat
+            icon={ListChecks}
+            value={dueToday}
+            label={`${dueToday} due today`}
+            accent={dueToday > 0}
+          />
+        </div>
       </div>
     </div>
   );
