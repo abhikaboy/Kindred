@@ -13,11 +13,13 @@ import (
 /*
 Cron sets up periodic background jobs for tasks, reminders, and checkins.
 */
-func Cron(collections map[string]*mongo.Collection) *cron.Cron {
+// geminiService is passed through so the auto-categorization sweep can reach
+// the classifier; a nil service just disables that step.
+func Cron(collections map[string]*mongo.Collection, geminiService any) *cron.Cron {
 	service := newService(collections, nil)
 	handler := Handler{
 		service:       service,
-		geminiService: nil,
+		geminiService: geminiService,
 	}
 
 	c := cron.New()
@@ -96,6 +98,10 @@ func Cron(collections map[string]*mongo.Collection) *cron.Cron {
 		if notifCount, ok := deadlineResult["notifications_sent"].(int); ok && notifCount > 0 {
 			slog.Info("Deadline live activity notifications sent", "count", notifCount)
 		}
+
+		/* Auto-categorization — file Inbox tasks the user chose not to sort */
+
+		handler.AutoCategorizeSweep()
 	})
 	if err != nil {
 		slog.Error("Error adding cron job", "error", err)

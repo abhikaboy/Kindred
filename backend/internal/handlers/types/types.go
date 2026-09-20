@@ -28,6 +28,10 @@ type CategoryDocument struct {
 	Integration   string              `bson:"integration,omitempty" json:"integration,omitempty"` // Format: "gcal:{connection_id}:{calendar_id}"
 	PushEnabled   bool                `bson:"push_enabled,omitempty" json:"push_enabled,omitempty"`
 	Tags          []string            `bson:"tags,omitempty" json:"tags,omitempty"`
+
+	// IsInbox marks the per-user holding category that auto-categorized tasks
+	// land in before the background job files them. There is at most one.
+	IsInbox bool `bson:"isInbox,omitempty" json:"isInbox,omitempty"`
 }
 
 type WorkspaceDocument struct {
@@ -77,6 +81,19 @@ type TaskDocument struct {
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+
+	// AutoCategorize marks a task the user chose not to file: it sits in their
+	// Inbox until the background categorization job finds it a home. Cleared
+	// once the job places the task, or gives up on it.
+	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty"`
+
+	// AutoCategorizeAttempts counts classification runs, so a task the model
+	// can't place doesn't get retried forever.
+	AutoCategorizeAttempts int `bson:"autoCategorizeAttempts,omitempty" json:"autoCategorizeAttempts,omitempty"`
+
+	// AutoCategorizedAt is set when the job moved the task, so clients can flag
+	// a freshly auto-filed task for the user to double-check.
+	AutoCategorizedAt *time.Time `bson:"autoCategorizedAt,omitempty" json:"autoCategorizedAt,omitempty"`
 
 	// Links are URLs attached to the task. Entries with source "notes" are
 	// derived from the notes body and re-synced on every notes edit; entries

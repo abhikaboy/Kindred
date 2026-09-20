@@ -276,6 +276,16 @@ export function useCreateTask() {
   });
 }
 
+// Auto-categorize: the task is created in the Inbox and a background job moves
+// it, so there's no category to insert into optimistically — just refetch once
+// the server has filed it into the Inbox.
+export function useCreateTaskAuto() {
+  const qc = useQueryClient();
+  return $api.useMutation("post", "/v1/user/tasks/auto", {
+    onSettled: () => invalidateTasks(qc),
+  });
+}
+
 export function useCreateCategory() {
   const qc = useQueryClient();
   return $api.useMutation("post", "/v1/user/categories", {

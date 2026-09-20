@@ -44,6 +44,10 @@ type CreateTaskParams struct {
 	// deadline >7 days out, or high value) when the caller sets it explicitly.
 	SessionTrackable *bool `bson:"sessionTrackable,omitempty" json:"sessionTrackable,omitempty"`
 
+	// AutoCategorize lets the caller skip picking a category: the task is filed
+	// into the user's Inbox and a background job moves it once it has a guess.
+	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty"`
+
 	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
 

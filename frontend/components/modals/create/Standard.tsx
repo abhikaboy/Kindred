@@ -48,11 +48,15 @@ type Props = {
     tutorial?: boolean; // Onboarding tutorial: lock the task name + hide the tag option
 };
 
+// Sentinel id for the "Auto" dropdown option: the user declines to pick a
+// category and the backend files the task from its Inbox in the background.
+const AUTO_CATEGORY_ID = "__auto__";
+
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
     const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
     const { request } = useRequest();
-    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task } = useTasks();
+    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task, fetchWorkspaces } = useTasks();
     const { selectedCategory, setCreateCategory } = useSelectedCategory();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
@@ -224,6 +228,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         // so an empty selected-workspace list must not block it.
         if (!selectedCategory?.id) return;
 
+        const autoCategorize = selectedCategory.id === AUTO_CATEGORY_ID;
+
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
@@ -295,8 +301,11 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             posted: false,
         };
 
-        // Add optimistically to UI
-        addToCategory(selectedCategory.id, optimisticTask);
+        // Auto-categorized tasks have no known destination category yet, so
+        // there's nothing to insert into — the list refreshes after the create.
+        if (!autoCategorize) {
+            addToCategory(selectedCategory.id, optimisticTask);
+        }
         resetTaskCreation();
 
         // Make API call in background
@@ -327,6 +336,37 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 details.flex = flexDetails;
             }
             postBody.recurDetails = details as RecurDetails;
+        }
+
+        if (autoCategorize) {
+            try {
+                const response = await request("POST", "/user/tasks/auto", postBody as CreateTaskParams);
+                // The task landed in the Inbox; pull the workspace tree so it shows up.
+                await fetchWorkspaces(true);
+                showRingUpdate((response as any)?.ringDelta);
+                queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
+                capture(AnalyticsEvents.TASK_CREATED, {
+                    source: "create_modal",
+                    auto_categorize: true,
+                    has_deadline: !!deadline,
+                    has_checklist: false,
+                });
+                const { showToastable } = await import("react-native-toastable");
+                showToastable({
+                    message: "Added to your Inbox — we'll file it shortly.",
+                    status: "success",
+                    duration: 3000,
+                });
+            } catch (error) {
+                console.error("Failed to create task:", error);
+                const { showToastable } = await import("react-native-toastable");
+                showToastable({
+                    message: "Failed to create task. Please try again.",
+                    status: "danger",
+                    duration: 3000,
+                });
+            }
+            return;
         }
 
         try {
@@ -525,6 +565,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 <View style={{ width: "76%" }}>
                     <Dropdown
                         options={[
+                            { label: "✨ Auto — file it for me", id: AUTO_CATEGORY_ID, special: false },
                             ...(availableCategories || [])
                                 .filter((c) => c.name !== "!-proxy-!")
                                 .map((c) => {

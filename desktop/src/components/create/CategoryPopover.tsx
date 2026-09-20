@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CaretDown, CaretRight, Plus, Stack } from "@phosphor-icons/react";
+import { CaretDown, CaretRight, MagicWand, Plus, Stack } from "@phosphor-icons/react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PropertyPill } from "@/components/create/PropertyPill";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,18 @@ export function CategoryPopover({
   onSelect,
   onNew,
   breadcrumb,
+  auto = false,
+  onSelectAuto,
 }: {
   workspaces: WorkspaceResult[];
   selected: SelectedCategory | null;
   onSelect: (c: SelectedCategory) => void;
   onNew: () => void;
   breadcrumb?: boolean;
+  // Auto mode: the user declines to file the task and a background job picks
+  // the category. Omitting onSelectAuto hides the option entirely.
+  auto?: boolean;
+  onSelectAuto?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -58,8 +64,10 @@ export function CategoryPopover({
       type="button"
       className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-foreground transition-colors hover:bg-muted"
     >
-      {selected ? dot(selected.workspaceName) : <Stack size={14} />}
-      {selected ? (
+      {auto ? <MagicWand size={14} className="text-primary" /> : selected ? dot(selected.workspaceName) : <Stack size={14} />}
+      {auto ? (
+        <span className="whitespace-nowrap text-primary">Auto</span>
+      ) : selected ? (
         <span className="flex items-center gap-1 whitespace-nowrap">
           <span className="text-muted-foreground">{selected.workspaceName}</span>
           <CaretRight size={11} className="text-muted-foreground/60" />
@@ -74,9 +82,9 @@ export function CategoryPopover({
     <PropertyPill
       active
       className="font-medium"
-      icon={selected ? dot(selected.workspaceName) : <Stack size={14} />}
+      icon={auto ? <MagicWand size={14} /> : selected ? dot(selected.workspaceName) : <Stack size={14} />}
     >
-      {selected?.name ?? "Category"}
+      {auto ? "Auto" : (selected?.name ?? "Category")}
     </PropertyPill>
   );
 
@@ -84,6 +92,26 @@ export function CategoryPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={trigger} />
       <PopoverContent className="w-[36rem] max-w-[calc(100vw-2rem)] p-2">
+        {onSelectAuto ? (
+          <button
+            type="button"
+            onClick={() => {
+              onSelectAuto();
+              setOpen(false);
+            }}
+            className={cn(
+              "mb-2 flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted",
+              auto && "bg-muted",
+            )}
+          >
+            <MagicWand size={14} className="text-primary" />
+            <span>Auto</span>
+            <span className="truncate text-xs text-muted-foreground">
+              File it for me — lands in your Inbox until it's sorted
+            </span>
+          </button>
+        ) : null}
+
         {/* Workspaces flow across 3 columns; each group stays intact for easy scanning. */}
         <div className="relative">
           <div

@@ -36,6 +36,13 @@ type CreateTaskInput struct {
 	Body          CreateTaskParams `json:"body"`
 }
 
+// CreateTaskAutoInput is CreateTaskInput without the category — that's the
+// whole point of the endpoint.
+type CreateTaskAutoInput struct {
+	Authorization string           `header:"Authorization" required:"true"`
+	Body          CreateTaskParams `json:"body"`
+}
+
 type CreateTaskOutput struct {
 	Body struct {
 		TaskDocument
@@ -351,6 +358,17 @@ func RegisterCreateTaskOperation(api huma.API, handler *Handler) {
 		Description: "Create a new task in a specific category",
 		Tags:        []string{"tasks"},
 	}, handler.CreateTask)
+}
+
+func RegisterCreateTaskAutoOperation(api huma.API, handler *Handler) {
+	huma.Register(api, huma.Operation{
+		OperationID: "create-task-auto",
+		Method:      http.MethodPost,
+		Path:        "/v1/user/tasks/auto",
+		Summary:     "Create a task without choosing a category",
+		Description: "Create a task in the user's Inbox and queue it for automatic categorization",
+		Tags:        []string{"tasks"},
+	}, handler.CreateTaskAuto)
 }
 
 func RegisterGetTasksOperation(api huma.API, handler *Handler) {

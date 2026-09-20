@@ -1,4 +1,4 @@
-import { CalendarBlank, Clock, Play, Repeat, Sparkle } from "@phosphor-icons/react";
+import { CalendarBlank, Clock, MagicWand, Play, Repeat, Sparkle } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -127,6 +127,7 @@ export function TaskItem({
               {scheduledTime && <Chip icon={Clock} label={scheduledTime} />}
               {deadline && <Chip icon={CalendarBlank} label={`Due ${deadline}`} />}
               {task.recurring && <Chip icon={Repeat} label="Recurring" />}
+              {task.autoCategorize && <Chip icon={MagicWand} label="Sorting…" active />}
               {working && <Chip icon={Play} label="in progress" active />}
             </div>
           )}

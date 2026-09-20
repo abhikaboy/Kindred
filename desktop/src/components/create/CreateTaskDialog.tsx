@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import type { CreateTaskDialogProps, SelectedCategory } from "@/components/create/types";
 import {
     useCreateTask,
+    useCreateTaskAuto,
     applySchedule,
     buildCreateTaskParams,
     clearSchedule,
@@ -40,6 +41,8 @@ export function CreateTaskDialog({
 }: CreateTaskDialogProps) {
     const [form, setForm] = useState<TaskFormState>(emptyTaskForm);
     const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null);
+    // Auto mode defers filing to the background job, so no category is needed.
+    const [autoCategory, setAutoCategory] = useState(false);
     const [mode, setMode] = useState<"Manual" | "AI">("Manual");
     const titleRef = useRef<HTMLTextAreaElement>(null);
     const submitRef = useRef<HTMLButtonElement>(null);
@@ -47,6 +50,7 @@ export function CreateTaskDialog({
     const { data: workspaces } = useWorkspaces();
     const { data: friends } = useFriends();
     const createTask = useCreateTask();
+    const createTaskAuto = useCreateTaskAuto();
 
     const allCategories = useMemo<SelectedCategory[]>(
         () =>
@@ -68,6 +72,7 @@ export function CreateTaskDialog({
             startTime: prefill?.startTime ?? null,
         });
         setSelectedCategory(prefill?.categoryId ? allCategories.find((c) => c.id === prefill.categoryId) ?? null : null);
+        setAutoCategory(false);
         const raf = requestAnimationFrame(() => titleRef.current?.focus());
         return () => cancelAnimationFrame(raf);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,7 +98,7 @@ export function CreateTaskDialog({
         setForm(clearSchedule);
     };
 
-    const canSubmit = form.content.trim().length > 0 && !!selectedCategory;
+    const canSubmit = form.content.trim().length > 0 && (autoCategory || !!selectedCategory);
 
     // Inline @-mention adds to the same tag list the MorePopover checklist writes.
     const addTag = (f: FriendReference) =>
@@ -104,11 +109,17 @@ export function CreateTaskDialog({
         );
 
     const submit = () => {
-        if (!canSubmit || !selectedCategory) return;
-        createTask.mutate({
-            params: { header: CREATE_AUTH, path: { category: selectedCategory.id } },
-            body: buildCreateTaskParams(form),
-        });
+        if (!canSubmit) return;
+        const body = buildCreateTaskParams(form);
+
+        if (autoCategory) {
+            createTaskAuto.mutate({ params: { header: CREATE_AUTH }, body });
+        } else if (selectedCategory) {
+            createTask.mutate({
+                params: { header: CREATE_AUTH, path: { category: selectedCategory.id } },
+                body,
+            });
+        }
         onOpenChange(false);
     };
 
@@ -161,7 +172,12 @@ export function CreateTaskDialog({
                         breadcrumb
                         workspaces={workspaces ?? []}
                         selected={selectedCategory}
-                        onSelect={setSelectedCategory}
+                        auto={autoCategory}
+                        onSelect={(c) => {
+                            setAutoCategory(false);
+                            setSelectedCategory(c);
+                        }}
+                        onSelectAuto={() => setAutoCategory(true)}
                         onNew={() =>
                             onRequestNewCategory(selectedCategory?.workspaceName ?? firstWorkspaceName, setSelectedCategory)
                         }
@@ -187,7 +203,10 @@ export function CreateTaskDialog({
                         categories={allCategories}
                         selectedCategoryId={selectedCategory?.id}
                         onApply={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-                        onSelectCategory={setSelectedCategory}
+                        onSelectCategory={(c) => {
+                            setAutoCategory(false);
+                            setSelectedCategory(c);
+                        }}
                         onDismiss={dismissSchedule}
                     />
                     <MentionTextarea

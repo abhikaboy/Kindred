@@ -5746,6 +5746,38 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/auto:
+        post:
+            tags:
+                - tasks
+            summary: Create a task without choosing a category
+            description: Create a task in the user's Inbox and queue it for automatic categorization
+            operationId: create-task-auto
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateTaskParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateTaskOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}:
         post:
             tags:
@@ -8853,6 +8885,9 @@ components:
                     type: string
                 isBlueprint:
                     type: boolean
+                isInbox:
+                    type: boolean
+                    description: Holding category for tasks awaiting automatic categorization
                 lastEdited:
                     type: string
                     format: date-time
@@ -9989,6 +10024,17 @@ components:
                     readOnly: true
                 active:
                     type: boolean
+                autoCategorize:
+                    type: boolean
+                    description: Task is waiting in the Inbox for the background categorization job
+                autoCategorizeAttempts:
+                    type: integer
+                    format: int64
+                    description: How many times the classifier has tried to place this task
+                autoCategorizedAt:
+                    type: string
+                    format: date-time
+                    description: When the background job filed this task
                 blueprintId:
                     type: string
                 categoryID:
@@ -10124,6 +10170,9 @@ components:
                     readOnly: true
                 active:
                     type: boolean
+                autoCategorize:
+                    type: boolean
+                    description: File this task into the Inbox and let the background job choose its category
                 checklist:
                     type: array
                     items:
@@ -14550,6 +14599,17 @@ components:
                     readOnly: true
                 active:
                     type: boolean
+                autoCategorize:
+                    type: boolean
+                    description: Task is waiting in the Inbox for the background categorization job
+                autoCategorizeAttempts:
+                    type: integer
+                    format: int64
+                    description: How many times the classifier has tried to place this task
+                autoCategorizedAt:
+                    type: string
+                    format: date-time
+                    description: When the background job filed this task
                 blueprintId:
                     type: string
                 categoryID:

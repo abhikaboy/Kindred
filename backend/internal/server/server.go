@@ -204,7 +204,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
 
-	cronScheduler := task.Cron(collections)
+	cronScheduler := task.Cron(collections, geminiService)
 
 	// Wire up calendar cron jobs
 	if calendarConns := collections["calendar_connections"]; calendarConns != nil {

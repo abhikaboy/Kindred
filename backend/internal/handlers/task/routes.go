@@ -36,6 +36,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	RegisterLogTasksOperation(api, handler)
 	RegisterSuggestTaskFieldsOperation(api, handler)
 	RegisterCreateTaskOperation(api, handler)
+	RegisterCreateTaskAutoOperation(api, handler)
 	RegisterGetTasksOperation(api, handler)
 	RegisterGetTaskOperation(api, handler)
 	RegisterUpdateTaskOperation(api, handler)

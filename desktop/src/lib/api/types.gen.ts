@@ -2836,6 +2836,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a task without choosing a category
+         * @description Create a task without choosing a category in a specific category
+         */
+        post: operations["create-task-auto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}": {
         parameters: {
             query?: never;
@@ -4388,6 +4408,8 @@ export interface components {
             id: string;
             integration?: string;
             isBlueprint?: boolean;
+            /** @description Holding category for tasks awaiting automatic categorization */
+            isInbox?: boolean;
             /** Format: date-time */
             lastEdited: string;
             name: string;
@@ -5155,6 +5177,18 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            /** @description Task is waiting in the Inbox for the background categorization job */
+            autoCategorize?: boolean;
+            /**
+             * Format: int64
+             * @description How many times the classifier has tried to place this task
+             */
+            autoCategorizeAttempts?: number;
+            /**
+             * Format: date-time
+             * @description When the background job filed this task
+             */
+            autoCategorizedAt?: string;
             blueprintId?: string;
             categoryID?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
@@ -5220,6 +5254,8 @@ export interface components {
              */
             readonly $schema?: string;
             active?: boolean;
+            /** @description File this task into the Inbox and let the background job choose its category */
+            autoCategorize?: boolean;
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
             /** Format: date-time */
@@ -7691,6 +7727,18 @@ export interface components {
              */
             readonly $schema?: string;
             active: boolean;
+            /** @description Task is waiting in the Inbox for the background categorization job */
+            autoCategorize?: boolean;
+            /**
+             * Format: int64
+             * @description How many times the classifier has tried to place this task
+             */
+            autoCategorizeAttempts?: number;
+            /**
+             * Format: date-time
+             * @description When the background job filed this task
+             */
+            autoCategorizedAt?: string;
             blueprintId?: string;
             categoryID?: string;
             checklist?: components["schemas"]["ChecklistItem"][];
@@ -14384,6 +14432,41 @@ export interface operations {
                 /** @example 507f1f77bcf86cd799439011 */
                 category: string;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-task-auto": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {

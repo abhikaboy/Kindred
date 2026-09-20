@@ -77,6 +77,36 @@ func (h *Handler) GetTasksByUser(ctx context.Context, input *GetTasksByUserInput
 	return &GetTasksByUserOutput{Body: tasks}, nil
 }
 
+// CreateTaskAuto creates a task without the caller choosing a category. The
+// task lands in the user's Inbox flagged for auto-categorization, and the
+// background job files it once the classifier has a confident guess.
+func (h *Handler) CreateTaskAuto(ctx context.Context, input *CreateTaskAutoInput) (*CreateTaskOutput, error) {
+	user_id, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Please log in to continue", err)
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(user_id)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	inbox, err := h.service.EnsureInboxCategory(ctx, userObjID)
+	if err != nil {
+		slog.Error("Failed to resolve inbox category", "userId", userObjID.Hex(), "error", err)
+		return nil, huma.Error500InternalServerError("Unable to file this task right now. Please try again.", err)
+	}
+
+	body := input.Body
+	body.AutoCategorize = true
+
+	return h.CreateTask(ctx, &CreateTaskInput{
+		Authorization: input.Authorization,
+		Category:      inbox.ID.Hex(),
+		Body:          body,
+	})
+}
+
 func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*CreateTaskOutput, error) {
 	errs := validator.Validate(input.Body)
 	if len(errs) > 0 {
@@ -127,6 +157,7 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		Notes:          taskParams.Notes,
 		Checklist:      taskParams.Checklist,
 		Links:          SyncNotesLinks(NormalizeLinks(taskParams.Links), taskParams.Notes),
+		AutoCategorize: taskParams.AutoCategorize,
 		Reminders:      taskParams.Reminders,
 		Integration:    taskParams.Integration,
 		Timestamp:      time.Now(),

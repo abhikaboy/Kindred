@@ -151,6 +151,11 @@ export interface Task {
     notes?: string;
     checklist?: ChecklistItem[];
     links?: TaskLink[];
+
+    // Auto-categorization: set while the task waits in the Inbox for the
+    // background job, and stamped once that job files it.
+    autoCategorize?: boolean;
+    autoCategorizedAt?: string;
     reminders?: Reminder[];
     integration?: string; // Integration app name (amazon, gmail, etc.)
 
