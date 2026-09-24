@@ -158,7 +158,6 @@ export default function PostDetail() {
                             : 0
                     }
                     priority="low"
-                    points={0}
                     timeTaken={0}
                     category={post.task?.category?.name}
                     taskName={post.task?.content}
