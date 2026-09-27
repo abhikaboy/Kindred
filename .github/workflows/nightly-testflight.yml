@@ -1,0 +1,68 @@
+name: Nightly TestFlight
+
+# Each night, ships an iOS build to TestFlight if the app changed since the last one.
+# The `testflight-latest` tag marks the commit of the last triggered build.
+on:
+    schedule:
+        - cron: '0 8 * * *' # 08:00 UTC, ~4am ET
+    workflow_dispatch:
+        inputs:
+            force:
+                description: 'Build even if nothing changed'
+                type: boolean
+                default: false
+
+concurrency:
+    group: nightly-testflight
+    cancel-in-progress: false
+
+jobs:
+    testflight:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write # move the testflight-latest tag
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Check for app changes
+              id: changes
+              run: |
+                  git fetch --tags --force
+                  if [ "${{ inputs.force }}" = "true" ]; then
+                      echo "Forced build."
+                      echo "changed=true" >> "$GITHUB_OUTPUT"
+                  elif ! git rev-parse -q --verify refs/tags/testflight-latest >/dev/null; then
+                      echo "No previous TestFlight tag; building."
+                      echo "changed=true" >> "$GITHUB_OUTPUT"
+                  # frontend bundles shared/, so shared-only changes ship too.
+                  elif git diff --quiet testflight-latest HEAD -- frontend shared; then
+                      echo "No changes to frontend/ or shared/ since the last TestFlight build."
+                      echo "changed=false" >> "$GITHUB_OUTPUT"
+                  else
+                      git diff --stat testflight-latest HEAD -- frontend shared | tail -1
+                      echo "changed=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - uses: oven-sh/setup-bun@v2
+              if: steps.changes.outputs.changed == 'true'
+
+            - name: Install dependencies
+              if: steps.changes.outputs.changed == 'true'
+              working-directory: frontend
+              run: bun install --frozen-lockfile
+
+            - name: Build and submit to TestFlight
+              if: steps.changes.outputs.changed == 'true'
+              working-directory: frontend
+              env:
+                  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+              # --no-wait returns once the build is queued; EAS submits it when it finishes.
+              run: bunx eas-cli@latest build -p ios --profile production --auto-submit --non-interactive --no-wait
+
+            - name: Mark this commit as the latest TestFlight build
+              if: steps.changes.outputs.changed == 'true'
+              run: |
+                  git tag -f testflight-latest HEAD
+                  git push -f origin refs/tags/testflight-latest

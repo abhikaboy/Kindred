@@ -1,6 +1,6 @@
 # Kindred Project Makefile
 
-.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit loadtest loadtest-quick e2e e2e-smoke e2e-studio e2e-record e2e-hierarchy
+.PHONY: help generate-api build-backend test-backend lint-backend dev-frontend generate-types clean install-hooks bump-version uninstall-hooks test-hook ci-test ci-test-short ci-coverage install-pre-commit-framework run-pre-commit loadtest loadtest-quick e2e e2e-smoke e2e-studio e2e-record e2e-hierarchy
 
 # Default target
 help: ## Show this help message
@@ -225,6 +225,9 @@ create-test-db: ## Create an ephemeral test database with fixtures (for inspecti
 	@echo "✅ Ephemeral test database created"
 
 # Git Hooks
+bump-version: ## Bump the remote EAS iOS build number (VERSION=1.2.3 also sets the marketing version)
+	./scripts/bump-version.sh $(if $(VERSION),--version $(VERSION))
+
 install-hooks: ## Install pre-commit hooks
 	@echo "🪝 Installing pre-commit hooks..."
 	@if [ -f .git/hooks/pre-commit ]; then \
