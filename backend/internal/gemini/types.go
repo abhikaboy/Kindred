@@ -350,6 +350,22 @@ type SuggestTaskFieldsFlowOutput struct {
 	Value      *float64 `json:"value,omitempty"      jsonschema_description:"Difficulty from 1 (trivial) to 5 (very hard). Omit when the text gives no sense of effort."`
 }
 
+// --- Predict tasks flow types ---
+
+type PredictTasksFlowInput struct {
+	Context string `json:"context"`
+}
+
+type PredictedTaskDraft struct {
+	Content    string `json:"content" jsonschema_description:"A new task title in the user's style, 2-7 words, imperative."`
+	SignalID   string `json:"signalId" jsonschema_description:"The id of the ONE signal (e.g. S2) this task comes from."`
+	CategoryID string `json:"categoryId,omitempty" jsonschema_description:"Hex id of one listed category if it fits better than the signal's own. Usually omit."`
+}
+
+type PredictTasksFlowOutput struct {
+	Predictions []PredictedTaskDraft `json:"predictions"`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`

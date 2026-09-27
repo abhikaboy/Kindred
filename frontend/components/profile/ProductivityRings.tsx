@@ -11,7 +11,7 @@ import {
 import Svg, { Circle, G } from "react-native-svg";
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
-import { Check, LockSimple, Gift, Target, Fire, CalendarCheck } from "phosphor-react-native";
+import { Check, LockSimple, Target, Fire, CalendarCheck } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
@@ -22,6 +22,7 @@ import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import RewardUnboxingModal from "@/components/modals/RewardUnboxingModal";
+
 import DefaultModal from "@/components/modals/DefaultModal";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { showToast } from "@/utils/showToast";
@@ -441,28 +442,18 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
 
             {/* Claim reward button */}
             {canClaimReward && !expandedRing && (
-                <TouchableOpacity
+                <PrimaryButton
+                    title={isClaiming ? "Claiming..." : "Claim Reward"}
                     onPress={handleClaim}
                     disabled={isClaiming}
-                    activeOpacity={0.8}
                     style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        paddingVertical: 14,
-                        borderRadius: 14,
-                        borderWidth: 1.5,
-                        borderColor: ThemedColor.primary,
-                        backgroundColor: ThemedColor.primary + "10",
-                        opacity: isClaiming ? 0.6 : 1,
+                        shadowColor: ThemedColor.primary,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 10,
+                        elevation: 6,
                     }}
-                >
-                    <Gift size={20} color={ThemedColor.primary} weight="fill" />
-                    <ThemedText style={{ color: ThemedColor.primary, fontWeight: "600", fontSize: 15, fontFamily: "Outfit" }}>
-                        {isClaiming ? "Claiming..." : "Claim Reward"}
-                    </ThemedText>
-                </TouchableOpacity>
+                />
             )}
 
             {/* Unboxing modal */}

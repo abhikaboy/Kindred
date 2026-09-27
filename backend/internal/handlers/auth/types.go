@@ -63,6 +63,9 @@ func NewServiceWithConfig(collections map[string]*mongo.Collection, cfg config.C
 type Handler struct {
 	service *Service
 	config  config.Config
+
+	// guestLimiter caps POST /v1/auth/guest per client IP. Nil disables it.
+	guestLimiter *guestRateLimiter
 }
 
 type TokenResponse struct {

@@ -25,9 +25,11 @@
 		CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */; };
 		CD951F23FBC42A4EFB966780 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DAF7AC83A408E0DCFF8015 /* NotificationService.swift */; };
 		D071D52BEA44426781DD6547 /* LockScreenRectangularWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* KindredWidgetKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* KindredWidgetKit.swift */; };
 		D74373A9CDAA45A6BC9E6FEA /* TodayTasksWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */; };
 		F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		B0F0A1C2D3E4F50617283941 /* Outfit-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B0F0A1C2D3E4F50617283940 /* Outfit-Variable.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +67,7 @@
 /* Begin PBXFileReference section */
 		06460054AEF7672B35150EAB /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LockScreenRectangularWidget.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* KindredWidgetKit.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = KindredWidgetKit.swift; sourceTree = "<group>"; };
 		100B260B7478F5992BEF35A1 /* Pods-ExpoWidgetsTarget.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.release.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Kindred.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kindred.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Kindred/Images.xcassets; sourceTree = "<group>"; };
@@ -97,6 +100,7 @@
 		F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LockScreenCircularWidget.swift; sourceTree = "<group>"; };
 		FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = TodayTasksWidget.swift; sourceTree = "<group>"; };
 		FFE1203633A7A2BD75CC6D39 /* libPods-ExpoWidgetsTarget.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ExpoWidgetsTarget.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0F0A1C2D3E4F50617283940 /* Outfit-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Outfit-Variable.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -236,7 +240,9 @@
 				7C57403AAC094F158CAD6795 /* ActivityStreakWidget.swift */,
 				F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */,
 				0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */,
+				A1B2C3D4E5F60718293A4B5D /* KindredWidgetKit.swift */,
 				945E96DA121A4FCDACC81C69 /* LockScreenInlineWidget.swift */,
+				B0F0A1C2D3E4F50617283940 /* Outfit-Variable.ttf */,
 				2CB053368BA54E089B590CE9 /* ExpoWidgetsTarget.entitlements */,
 			);
 			path = ExpoWidgetsTarget;
@@ -322,6 +328,7 @@
 				0EC1DB026C8D65BDFE5436FC /* [Expo] Configure project */,
 				22BF9A253EF14DB3A6A5A523 /* Sources */,
 				A95FBF4E219A42A9993184B5 /* Frameworks */,
+				B0F0A1C2D3E4F50617283942 /* Resources */,
 				DEDF0B007EA4312FD3266179 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -389,6 +396,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0F0A1C2D3E4F50617283942 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0F0A1C2D3E4F50617283941 /* Outfit-Variable.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -647,6 +662,7 @@
 				BA302843886A403BBF93CBCB /* ActivityStreakWidget.swift in Sources */,
 				A095DCD999A3407CB9D4750E /* LockScreenCircularWidget.swift in Sources */,
 				D071D52BEA44426781DD6547 /* LockScreenRectangularWidget.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* KindredWidgetKit.swift in Sources */,
 				77C415824DBE47FDABE094D9 /* LockScreenInlineWidget.swift in Sources */,
 				61F89489C5AE64C2744BD14C /* ExpoModulesProvider.swift in Sources */,
 			);

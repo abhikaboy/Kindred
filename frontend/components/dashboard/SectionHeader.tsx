@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, type StyleProp, type TextStyle } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { Eye, EyeSlash } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -14,12 +14,19 @@ interface SectionHeaderProps {
     variant?: "caption" | "prominent";
 }
 
+/** Section title as on the dashboard ("Personal Workspaces", "Activity Rings"). */
+export const SectionTitle = ({ title, style }: { title: string; style?: StyleProp<TextStyle> }) => (
+    <ThemedText type="default" style={[{ fontSize: 17 }, style]}>
+        {title}
+    </ThemedText>
+);
+
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, visible, onToggleVisibility, right, variant = "caption" }) => {
     const ThemedColor = useThemeColor();
     return (
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             {variant === "prominent"
-                ? <ThemedText type="default" style={{ fontSize: 17 }}>{title}</ThemedText>
+                ? <SectionTitle title={title} />
                 : <ThemedText type="caption" style={{ letterSpacing: 0.5 }}>{title}</ThemedText>}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 {right}

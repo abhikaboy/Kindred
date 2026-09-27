@@ -230,6 +230,7 @@ export interface User {
     id: string;
     email: string;
     appleAccountID: string;
+    isGuest?: boolean;
 }
 
 export interface UserResponse {

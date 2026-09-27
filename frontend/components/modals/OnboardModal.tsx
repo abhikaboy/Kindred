@@ -27,12 +27,13 @@ type Props = {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     mode: "register" | "login";
+    onSwitchMode?: (mode: "register" | "login") => void;
 };
 
 export const OnboardModal = (props: Props) => {
     const { register, login, registerWithGoogle, loginWithGoogle } = useAuth();
     const { updateOnboardingData, updateAppleId, updateGoogleId } = useOnboarding();
-    const { mode, visible, setVisible } = props;
+    const { mode, visible, setVisible, onSwitchMode } = props;
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const colorScheme = useColorScheme();
@@ -322,10 +323,10 @@ export const OnboardModal = (props: Props) => {
                             />
                             <View style={styles.titleSection}>
                                 <ThemedText type="title" style={styles.welcomeTitle}>
-                                    {mode === "login" ? "Welcome back" : "Almost there!"}
+                                    {mode === "login" ? "Welcome back" : "Create your account"}
                                 </ThemedText>
                                 <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
-                                    {mode === "login" ? "Choose your sign in method" : "Choose your sign in method"}
+                                    {mode === "login" ? "Choose how to sign in" : "Choose how to sign up"}
                                 </ThemedText>
                             </View>
                         </View>
@@ -405,8 +406,8 @@ export const OnboardModal = (props: Props) => {
                                 </ThemedText>
                                 <TouchableOpacity
                                     onPress={() => {
-                                        // Toggle between login and register would go here
-                                        // For now, just close the modal
+                                        setVisible(false);
+                                        onSwitchMode?.(mode === "login" ? "register" : "login");
                                     }}>
                                     <ThemedText
                                         type="caption"

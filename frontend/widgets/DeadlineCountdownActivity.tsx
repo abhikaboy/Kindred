@@ -1,8 +1,21 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, cornerRadius, background, frame, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Link, ZStack, Circle } from '@expo/ui/swift-ui';
+import {
+    background,
+    font,
+    foregroundStyle,
+    frame,
+    lineLimit,
+    multilineTextAlignment,
+    monospacedDigit,
+    padding,
+    resizable,
+    shapes,
+    tint,
+    widgetURL,
+} from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type DeadlineCountdownProps = {
@@ -12,6 +25,9 @@ export type DeadlineCountdownProps = {
     priority: number;
     categoryId: string;
     taskId: string;
+    /** File URL of the Kindred check in the app group, set by liveActivityManager. */
+    brandMarkUri?: string;
+    /** Set by liveActivityManager.deadlineStatus as the deadline approaches. */
     accentColor: string;
     statusLabel: string;
 };
@@ -19,178 +35,113 @@ export type DeadlineCountdownProps = {
 const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     'widget';
 
-    const PRIORITY_LABELS = ['', 'Low', 'Medium', 'High'];
-    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    // Matches the app's dark surface and the widgets' Outfit type (weights by instance name)
+    const BG = '#0C0C1A';
+    const BRAND = '#854DFF';
+    const SOFT = '#B89BFF';
+    const WHITE = '#FFFFFF';
+    const MUTED = '#FFFFFF8C';
+    const TRACK = '#FFFFFF1F';
+    const LIGHT = 'Outfit-Thin_Light';
+    const REGULAR = 'Outfit-Thin_Regular';
+    const MEDIUM = 'Outfit-Thin_Medium';
 
-    const { taskName, workspaceName, deadline, priority, categoryId, taskId, accentColor, statusLabel } = props;
-    const deadlineDate = new Date(deadline);
-    const countdownStart = new Date(deadlineDate.getTime() - 60 * 60 * 1000);
-    const priorityLabel = PRIORITY_LABELS[Math.min(priority, 3)];
-    const encodedName = encodeURIComponent(taskName);
-    const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
-    const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
-    const dismissLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=dismiss`;
+    const { brandMarkUri, taskName, workspaceName, deadline, categoryId, taskId, accentColor, statusLabel } = props;
+    const accent = accentColor || SOFT;
+    const timerDate = new Date(deadline);
+    const overdue = statusLabel === 'Overdue';
+    const status = statusLabel;
+    // Empties over the final hour before the deadline
+    const progress = overdue ? null : (
+        <ProgressView
+            timerInterval={{ lower: new Date(timerDate.getTime() - 60 * 60 * 1000), upper: timerDate }}
+            countsDown={true}
+            modifiers={[tint(accent)]}
+        />
+    );
+    const context = <Text modifiers={[font({ family: LIGHT, size: 12 }), foregroundStyle(MUTED), lineLimit(1)]}>{workspaceName}</Text>;
+
+    const base = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodeURIComponent(taskName)}`;
+    const completeLink = `${base}&action=complete`;
+    const dismissLink = `${base}&action=dismiss`;
+
+    // The Kindred check from the logged-out screen
+    const mark = (height: number) =>
+        brandMarkUri ? (
+            <Image uiImage={brandMarkUri} modifiers={[resizable(), frame({ width: height * 1.24, height })]} />
+        ) : (
+            <Image systemName="checkmark" color={BRAND} size={height} />
+        );
+
+    const statusRow = (
+        <HStack spacing={6} alignment="center">
+            {mark(11)}
+            <Text modifiers={[font({ family: MEDIUM, size: 12 }), foregroundStyle(accent)]}>{status}</Text>
+            {context}
+        </HStack>
+    );
+
+    const timer = (size: number) => (
+        <Text
+            date={timerDate}
+            dateStyle="timer"
+            modifiers={[font({ family: REGULAR, size }), monospacedDigit(), foregroundStyle(WHITE), lineLimit(1), multilineTextAlignment('leading'), frame({ maxWidth: 9999, alignment: 'leading' })]}
+        />
+    );
+
+    const actions = (
+        <HStack spacing={8}>
+            <Link destination={dismissLink}>
+                <ZStack modifiers={[frame({ width: 36, height: 36 })]}>
+                    <Circle modifiers={[foregroundStyle(TRACK)]} />
+                    <Image systemName="xmark" color={MUTED} size={12} />
+                </ZStack>
+            </Link>
+            <Link destination={completeLink}>
+                <HStack spacing={6} modifiers={[padding({ horizontal: 14 }), frame({ height: 36 }), background(BRAND, shapes.capsule())]}>
+                    <Image systemName="checkmark" color={WHITE} size={12} />
+                    <Text modifiers={[font({ family: MEDIUM, size: 14 }), foregroundStyle(WHITE)]}>Done</Text>
+                </HStack>
+            </Link>
+        </HStack>
+    );
+
+    const main = (timerSize: number) => (
+        <HStack alignment="bottom" spacing={12}>
+            <VStack alignment="leading" spacing={0} modifiers={[frame({ maxWidth: 9999, alignment: 'leading' })]}>
+                <Text modifiers={[font({ family: REGULAR, size: 16 }), foregroundStyle(WHITE), lineLimit(1)]}>{taskName}</Text>
+                {timer(timerSize)}
+            </VStack>
+            <VStack modifiers={[padding({ bottom: 6 })]}>{actions}</VStack>
+        </HStack>
+    );
 
     return {
         banner: (
-            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink)]}>
-                {/* Row 1: Status + Countdown */}
-                <HStack alignment="center" modifiers={[frame({ maxWidth: 9999 })]}>
-                    <HStack alignment="center" spacing={5}>
-                        <Image systemName="circle.fill" color={accentColor} size={7} />
-                        <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(accentColor)]}>
-                            {statusLabel.toUpperCase()}
-                        </Text>
-                    </HStack>
-                    <Spacer />
-                    <Text
-                        date={deadlineDate}
-                        dateStyle="timer"
-                        modifiers={[font({ weight: 'bold', size: 15, design: 'rounded' }), foregroundStyle(accentColor), monospacedDigit()]}
-                    />
-                </HStack>
-
-                {/* Row 2: Task name */}
-                <Text modifiers={[font({ weight: 'semibold', size: 17 }), primary, lineLimit(2)]}>
-                    {taskName}
-                </Text>
-
-                {/* Row 3: Workspace + Priority */}
-                <HStack spacing={6}>
-                    <Text modifiers={[font({ size: 13 }), secondary]}>
-                        {workspaceName}
-                    </Text>
-                    {priorityLabel ? (
-                        <Text modifiers={[font({ weight: 'medium', size: 12 }), foregroundStyle(accentColor)]}>
-                            {priorityLabel}
-                        </Text>
-                    ) : null}
-                </HStack>
-
-                {/* Row 4: Depleting progress bar */}
-                <ProgressView
-                    timerInterval={{ lower: countdownStart, upper: deadlineDate }}
-                    countsDown={true}
-                />
-
-                {/* Row 5: CTA Buttons */}
-                <HStack spacing={8}>
-                    <Link
-                        destination={completeLink}
-                        modifiers={[
-                            font({ weight: 'semibold', size: 14 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 16, vertical: 10 }),
-                            background(accentColor),
-                            cornerRadius(12),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Mark as Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={dismissLink}
-                        modifiers={[
-                            font({ weight: 'medium', size: 14 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 16, vertical: 10 }),
-                            background('#4C1D95'),
-                            cornerRadius(12),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 14 }), foregroundStyle('#FFFFFF')]}>
-                            Dismiss
-                        </Text>
-                    </Link>
-                </HStack>
+            <VStack
+                alignment="leading"
+                spacing={10}
+                modifiers={[padding({ horizontal: 20, vertical: 16 }), frame({ maxWidth: 9999, alignment: 'leading' }), background(BG), widgetURL(base)]}
+            >
+                {statusRow}
+                {main(38)}
+                {progress}
             </VStack>
         ),
-        compactLeading: (
-            <HStack alignment="center" spacing={4}>
-                <Image systemName="circle.fill" color={accentColor} size={6} />
-                <Text modifiers={[font({ weight: 'semibold', size: 12 }), primary, lineLimit(1)]}>
-                    {taskName}
-                </Text>
-            </HStack>
-        ),
+        compactLeading: mark(14),
         compactTrailing: (
             <Text
-                date={deadlineDate}
+                date={timerDate}
                 dateStyle="timer"
-                modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(accentColor)]}
+                modifiers={[font({ family: MEDIUM, size: 14 }), monospacedDigit(), foregroundStyle(accent), frame({ width: 52, alignment: 'trailing' })]}
             />
         ),
-        minimal: (
-            <Image systemName="clock.fill" color={accentColor} />
-        ),
-        expandedLeading: (
-            <VStack alignment="leading" spacing={2} modifiers={[padding({ all: 8 })]}>
-                <Image systemName="circle.fill" color={accentColor} size={8} />
-                <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(accentColor)]}>
-                    {statusLabel}
-                </Text>
-            </VStack>
-        ),
-        expandedTrailing: (
-            <VStack alignment="trailing" spacing={2} modifiers={[padding({ all: 8 })]}>
-                <Text
-                    date={deadlineDate}
-                    dateStyle="timer"
-                    modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(accentColor)]}
-                />
-                <Text modifiers={[font({ size: 10 }), secondary]}>
-                    remaining
-                </Text>
-            </VStack>
-        ),
+        minimal: mark(14),
+        expandedLeading: <VStack modifiers={[padding({ leading: 8, top: 6 })]}>{statusRow}</VStack>,
         expandedBottom: (
-            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
-                <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
-                    {taskName}
-                </Text>
-                <Text modifiers={[font({ size: 13 }), secondary]}>
-                    {workspaceName}
-                </Text>
-                <ProgressView
-                    timerInterval={{ lower: countdownStart, upper: deadlineDate }}
-                    countsDown={true}
-                />
-                <HStack spacing={8}>
-                    <Link
-                        destination={completeLink}
-                        modifiers={[
-                            font({ weight: 'semibold', size: 13 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 14, vertical: 8 }),
-                            background(accentColor),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={dismissLink}
-                        modifiers={[
-                            font({ weight: 'medium', size: 13 }),
-                            foregroundStyle('#FFFFFF'),
-                            padding({ horizontal: 14, vertical: 8 }),
-                            background('#4C1D95'),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Dismiss
-                        </Text>
-                    </Link>
-                </HStack>
+            <VStack alignment="leading" spacing={10} modifiers={[padding({ horizontal: 8, bottom: 8 })]}>
+                {main(32)}
+                {progress}
             </VStack>
         ),
     };

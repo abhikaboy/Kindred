@@ -5,15 +5,22 @@ import { ThemedText } from "@/components/ThemedText";
 export function SectionHeader({
   title,
   right,
+  variant = "caption",
 }: {
   title: string;
   right?: ReactNode;
+  /** "prominent" renders a body-size sentence-case title instead of the small caption. */
+  variant?: "caption" | "prominent";
 }) {
   return (
     <div className="flex items-center justify-between">
-      <ThemedText type="caption" className="uppercase tracking-wider">
-        {title}
-      </ThemedText>
+      {variant === "prominent" ? (
+        <ThemedText type="larger_default">{title}</ThemedText>
+      ) : (
+        <ThemedText type="caption" className="uppercase tracking-wider">
+          {title}
+        </ThemedText>
+      )}
       {right}
     </div>
   );

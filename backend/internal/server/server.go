@@ -205,42 +205,48 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	// TODO: Convert remaining routes to Huma
 	// socket.Routes(api, collections, stream)
 
-	cronScheduler := task.Cron(collections, geminiService)
-
-	// Wire up calendar cron jobs
-	if calendarConns := collections["calendar_connections"]; calendarConns != nil {
-		// Watch channel renewal (every 6h)
-		renewalJob := jobs.NewCalendarWatchRenewalJob(calendarConns, collections["categories"], cfg)
-		renewalJob.StartCron(cronScheduler)
-
-		// Connection heartbeat (every 1h)
-		heartbeatJob := jobs.NewCalendarHeartbeatJob(calendarConns, collections["categories"], cfg)
-		heartbeatJob.StartCron(cronScheduler)
-
-		// Calendar push worker (drains the calendar_push_outbox, mirroring Kindred task changes to Google Calendar)
-		pushWorker := jobs.NewCalendarPushWorker(calendarConns, collections["categories"], cfg)
-		pushWorker.StartCron(cronScheduler)
+	// Local runs share the real database, and these jobs send pushes and call Google.
+	// DISABLE_BACKGROUND_JOBS=true serves the API without scheduling any of them.
+	if os.Getenv("DISABLE_BACKGROUND_JOBS") == "true" {
+		slog.Warn("Background jobs disabled (DISABLE_BACKGROUND_JOBS=true): no reminders, recurring tasks, calendar sync, or kudos")
 	} else {
-		slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
-	}
+		cronScheduler := task.Cron(collections, geminiService)
 
-	// Kudos suggester (every 15m) — joins the moments Kindred can see to the
-	// `user_memory` policy the productivity-agent worker writes.
-	//
-	// OFF BY DEFAULT. This job dispatches real push notifications, and a push
-	// cannot be unsent. Deploying the code and enabling the job are therefore
-	// two separate decisions: set KUDOS_SUGGESTER_ENABLED=true on the host once
-	// you are ready to watch it. Turning it back off is a restart, not a revert.
-	if os.Getenv("KUDOS_SUGGESTER_ENABLED") == "true" {
-		kudosJob := jobs.NewKudosSuggesterJob(collections, jobs.DefaultKudosPolicy())
-		if kudosJob.Ready() {
-			kudosJob.StartCron(cronScheduler)
-			slog.Info("Kudos suggester enabled")
+		// Wire up calendar cron jobs
+		if calendarConns := collections["calendar_connections"]; calendarConns != nil {
+			// Watch channel renewal (every 6h)
+			renewalJob := jobs.NewCalendarWatchRenewalJob(calendarConns, collections["categories"], cfg)
+			renewalJob.StartCron(cronScheduler)
+
+			// Connection heartbeat (every 1h)
+			heartbeatJob := jobs.NewCalendarHeartbeatJob(calendarConns, collections["categories"], cfg)
+			heartbeatJob.StartCron(cronScheduler)
+
+			// Calendar push worker (drains the calendar_push_outbox, mirroring Kindred task changes to Google Calendar)
+			pushWorker := jobs.NewCalendarPushWorker(calendarConns, collections["categories"], cfg)
+			pushWorker.StartCron(cronScheduler)
 		} else {
-			slog.Warn("Kudos suggester disabled: required collections not available")
+			slog.Warn("Calendar jobs disabled: calendar_connections collection not available")
 		}
-	} else {
-		slog.Info("Kudos suggester dormant (set KUDOS_SUGGESTER_ENABLED=true to enable)")
+
+		// Kudos suggester (every 15m) — joins the moments Kindred can see to the
+		// `user_memory` policy the productivity-agent worker writes.
+		//
+		// OFF BY DEFAULT. This job dispatches real push notifications, and a push
+		// cannot be unsent. Deploying the code and enabling the job are therefore
+		// two separate decisions: set KUDOS_SUGGESTER_ENABLED=true on the host once
+		// you are ready to watch it. Turning it back off is a restart, not a revert.
+		if os.Getenv("KUDOS_SUGGESTER_ENABLED") == "true" {
+			kudosJob := jobs.NewKudosSuggesterJob(collections, jobs.DefaultKudosPolicy())
+			if kudosJob.Ready() {
+				kudosJob.StartCron(cronScheduler)
+				slog.Info("Kudos suggester enabled")
+			} else {
+				slog.Warn("Kudos suggester disabled: required collections not available")
+			}
+		} else {
+			slog.Info("Kudos suggester dormant (set KUDOS_SUGGESTER_ENABLED=true to enable)")
+		}
 	}
 
 	xlog.ServerLog("All routes registered, Fiber app ready")

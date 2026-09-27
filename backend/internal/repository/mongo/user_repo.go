@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type userRepo struct {
@@ -140,4 +141,12 @@ func (r *userRepo) CheckCredits(ctx context.Context, id primitive.ObjectID, cred
 
 func (r *userRepo) LinkGoogleID(ctx context.Context, id primitive.ObjectID, googleID string) error {
 	return updateOneByID(ctx, r.collection, id, bson.M{"$set": bson.M{"google_id": googleID}})
+}
+
+func (r *userRepo) HandleExists(ctx context.Context, handle string) (bool, error) {
+	count, err := r.collection.CountDocuments(ctx, bson.M{"handle": handle}, options.Count().SetLimit(1))
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

@@ -1,12 +1,9 @@
-import { LockSimple } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth";
-import { useRingsToday } from "@/hooks/useRings";
 import { cn } from "@/lib/utils";
 import { ThemedText } from "@/components/ThemedText";
 import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
 import { ProfileSongWidget } from "@/components/profile/ProfileSongWidget";
 import { CompleteProfileCard } from "@/components/profile/CompleteProfileCard";
-import { ProfileScoreArc } from "@/components/profile/ProfileScoreArc";
 import { ProfileCheerSection } from "@/components/profile/ProfileCheerSection";
 import { ProfileTasks } from "@/components/profile/ProfileTasks";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
@@ -18,7 +15,6 @@ function SectionCard({ children, className }: { children: React.ReactNode; class
 
 export default function ProfileScreen() {
     const { user } = useAuth();
-    const rings = useRingsToday();
 
     if (!user) return null;
 
@@ -48,21 +44,8 @@ export default function ProfileScreen() {
                     </SectionCard>
                 </div>
 
-                {/* Side column — private score + gallery. */}
+                {/* Side column — gallery. */}
                 <div className="flex flex-col gap-6">
-                    <SectionCard className="flex flex-col items-center gap-3">
-                        <div className="flex w-full items-center justify-between">
-                            <ThemedText type="subtitle" as="h3">
-                                Productivity
-                            </ThemedText>
-                            <div className="flex items-center gap-1 opacity-60">
-                                <LockSimple className="size-3.5" />
-                                <ThemedText type="caption">Only you</ThemedText>
-                            </div>
-                        </div>
-                        {!rings.isLoading && <ProfileScoreArc score={rings.data?.productivity_score ?? 0} />}
-                    </SectionCard>
-
                     <SectionCard className="flex flex-col gap-3">
                         <ThemedText type="subtitle" as="h3">
                             Gallery

@@ -38,6 +38,8 @@ func InitGenkit(collections map[string]*mongo.Collection, unsplashClient *unspla
 		QueryTasksFlow:                   flows.QueryTasksFlow,
 		EditTasksFlow:                    flows.EditTasksFlow,
 		IntentRouterFlow:                 flows.IntentRouterFlow,
+		SuggestTaskFieldsFlow:            flows.SuggestTaskFieldsFlow,
+		PredictTasksFlow:                 flows.PredictTasksFlow,
 		Tools:                            tools,
 	}
 }

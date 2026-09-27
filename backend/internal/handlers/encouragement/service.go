@@ -713,7 +713,7 @@ func (s *Service) NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.Ob
 
 		notification := xutils.Notification{
 			Token:   encourager.PushToken,
-			Title:   "They did it! 🎉",
+			Title:   "They did it!",
 			Message: message,
 			Data: map[string]string{
 				"type":          "task_completion",

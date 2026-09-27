@@ -2140,6 +2140,26 @@ export interface paths {
         patch: operations["mark-all-notifications-read"];
         trace?: never;
     };
+    "/v1/user/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link a phone number
+         * @description Attaches an OTP-verified phone number to the signed-in account. Accounts created via Apple or Google start without one, which makes them undiscoverable by contact matching.
+         */
+        post: operations["link-phone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/posts": {
         parameters: {
             query?: never;
@@ -2362,8 +2382,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Find users by phone numbers
-         * @description Efficiently find users matching any of the provided phone numbers using a single database query
+         * Find users by hashed phone numbers
+         * @description Finds users matching any of the provided hashed contact numbers in a single indexed query, and records the hashes so the caller can be notified when one of those contacts joins
          */
         post: operations["find-users-by-phone-numbers"];
         delete?: never;
@@ -2836,26 +2856,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/user/tasks/auto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a task without choosing a category
-         * @description Create a task without choosing a category in a specific category
-         */
-        post: operations["create-task-auto"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/user/tasks/{category}/{id}": {
         parameters: {
             query?: never;
@@ -3034,6 +3034,26 @@ export interface paths {
          * @description Change the active status of a task
          */
         post: operations["activate-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a task without choosing a category
+         * @description Create a task in the user's Inbox and queue it for automatic categorization
+         */
+        post: operations["create-task-auto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3294,6 +3314,26 @@ export interface paths {
          * @description Convert natural language to structured filters and return matching tasks using AI
          */
         post: operations["query-tasks-natural-language"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Predict tasks the user will need next
+         * @description Mines the user's category rhythms, weekday habits, upcoming deadlines and recent completions, then suggests new tasks grounded in them. Never replays an existing or past task. Returns an empty list when AI is unavailable, and consumes no credits.
+         */
+        get: operations["get-task-predictions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5204,7 +5244,8 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs attached to the task, from the notes or added by hand */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             posted: boolean;
             /** Format: int64 */
@@ -5261,7 +5302,8 @@ export interface components {
             /** Format: date-time */
             deadline?: string;
             integration?: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs to attach; links found in the notes are added automatically */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -5802,8 +5844,8 @@ export interface components {
              * @example https://example.com/schemas/FindUsersByPhoneNumbersInputBody.json
              */
             readonly $schema?: string;
-            /** @description List of phone numbers to search for */
-            numbers: string[];
+            /** @description Salted SHA-256 hashes of E.164 contact phone numbers */
+            phone_hashes: string[];
         };
         FlexDetails: {
             period: string;
@@ -6186,6 +6228,16 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        GetTaskPredictionsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetTaskPredictionsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Up to three tasks the user will likely need next, each with the reason */
+            predictions: components["schemas"]["TaskPrediction"][];
+        };
         GetTaskProgressOutputBody: {
             /**
              * Format: uri
@@ -6382,6 +6434,39 @@ export interface components {
             icon: string;
             id: string;
             name: string;
+        };
+        LinkPhoneInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LinkPhoneInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description OTP code previously sent to this number
+             * @example 1234
+             */
+            code: string;
+            /**
+             * @description Phone number to link, in any common format
+             * @example +15551234567
+             */
+            phone_number: string;
+        };
+        LinkPhoneOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LinkPhoneOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Phone number linked successfully */
+            message: string;
+            /**
+             * @description The linked number, normalized to E.164
+             * @example +15551234567
+             */
+            phone: string;
         };
         ListCalendarsOutputBody: {
             /**
@@ -7712,14 +7797,6 @@ export interface components {
             id: string;
             profile_picture: string;
         };
-        TaskLink: {
-            /** @description Where the link came from */
-            source?: "notes" | "manual";
-            /** @description Display label; defaults to the link host */
-            title?: string;
-            /** @description Absolute URL of the link */
-            url: string;
-        };
         TaskDocument: {
             /**
              * Format: uri
@@ -7755,7 +7832,8 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs attached to the task, from the notes or added by hand */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             posted: boolean;
             /** Format: int64 */
@@ -7805,6 +7883,27 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
             type: string;
+        };
+        TaskLink: {
+            /**
+             * @description Where the link came from
+             * @enum {string}
+             */
+            source?: "notes" | "manual";
+            /** @description Display label; defaults to the link host */
+            title?: string;
+            /** @description Absolute URL of the link */
+            url: string;
+        };
+        TaskPrediction: {
+            /** @description Category the task most likely belongs in */
+            categoryId?: string;
+            /** @description Suggested task text, ready to drop into the composer */
+            content: string;
+            /** @description Signal behind the suggestion: follow_up, deadline, category_rhythm or weekday */
+            kind: string;
+            /** @description Why this is suggested now */
+            reason: string;
         };
         TaskQueryFilters: {
             /**
@@ -8424,7 +8523,7 @@ export interface components {
             deadline?: string;
             generateTemplate?: boolean;
             integration?: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -8450,7 +8549,8 @@ export interface components {
              * @example https://example.com/schemas/UpdateTaskLinksDocument.json
              */
             readonly $schema?: string;
-            links: components["schemas"]["TaskLink"][] | null;
+            /** @description Full replacement link list */
+            links: components["schemas"]["TaskLink"][];
         };
         UpdateTaskLinksOutputBody: {
             /**
@@ -8694,7 +8794,7 @@ export interface components {
              */
             profile_picture: string;
         };
-        UserExtendedReferenceWithPhone: {
+        UserMatch: {
             /**
              * @description User ID
              * @example 507f1f77bcf86cd799439011
@@ -8710,11 +8810,8 @@ export interface components {
              * @example johndoe
              */
             handle: string;
-            /**
-             * @description User phone number
-             * @example +1234567890
-             */
-            phone: string;
+            /** @description Hash of the contact number that matched this user */
+            phone_hash: string;
             /**
              * @description Profile picture URL
              * @example https://example.com/avatar.jpg
@@ -13137,6 +13234,42 @@ export interface operations {
             };
         };
     };
+    "link-phone": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkPhoneInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkPhoneOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-posts": {
         parameters: {
             query?: {
@@ -13621,7 +13754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserExtendedReferenceWithPhone"][];
+                    "application/json": components["schemas"]["UserMatch"][];
                 };
             };
             /** @description Error */
@@ -14461,41 +14594,6 @@ export interface operations {
             };
         };
     };
-    "create-task-auto": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTaskParams"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateTaskOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "delete-task": {
         parameters: {
             query?: {
@@ -14884,6 +14982,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivateTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-task-auto": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTaskOutputBody"];
                 };
             };
             /** @description Error */
@@ -15352,6 +15485,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueryTasksNaturalLanguageOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-task-predictions": {
+        parameters: {
+            query?: {
+                /**
+                 * @description User's timezone (IANA format)
+                 * @example America/New_York
+                 */
+                timezone?: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTaskPredictionsOutputBody"];
                 };
             };
             /** @description Error */

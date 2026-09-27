@@ -15,13 +15,14 @@ function labelFor(date: Date): string {
 }
 
 // Flattens every category's (already-filtered) tasks into date buckets,
-// sorted chronologically with undated tasks last. Ported from mobile's
-// WorkspaceContent groupedByDay memo.
+// sorted chronologically with undated tasks last. Phantom tasks are skipped:
+// every grouped row is completable, and a phantom has no real task to complete.
 export function groupTasksByDay(categories: CategoryDocument[]): DayGroup[] {
   const groups = new Map<string, DayGroup>();
 
   for (const category of categories) {
     for (const task of category.tasks) {
+      if (task.isPhantom) continue;
       const dateValue = task.startDate || task.deadline;
       let key = "no-date";
       let date: Date | null = null;

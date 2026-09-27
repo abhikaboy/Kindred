@@ -72,7 +72,7 @@ export function CreateTaskDialog({
             startTime: prefill?.startTime ?? null,
         });
         setSelectedCategory(prefill?.categoryId ? allCategories.find((c) => c.id === prefill.categoryId) ?? null : null);
-        setAutoCategory(false);
+        setAutoCategory(!!prefill?.auto && !prefill?.categoryId);
         const raf = requestAnimationFrame(() => titleRef.current?.focus());
         return () => cancelAnimationFrame(raf);
         // eslint-disable-next-line react-hooks/exhaustive-deps

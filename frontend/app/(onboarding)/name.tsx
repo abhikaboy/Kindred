@@ -90,7 +90,7 @@ const NameOnboarding = (props: Props) => {
                     } else {
                         await registerWithGoogle(DEFAULT_PICTURE);
                     }
-                    showToast("Account created successfully! 🎉", "success");
+                    showToast("Account created successfully", "success");
                     capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
                         step_name: OnboardingSteps.NAME.name,
                         step_index: OnboardingSteps.NAME.index,

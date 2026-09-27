@@ -2,22 +2,25 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, type Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useOptionalAuth } from '@/hooks/useAuth';
+import { useOptionalAuth, getAuthData, getCachedUser, getHasEverSignedIn } from '@/hooks/useAuth';
+import { enterAsNewGuest, routeForGuest, TABS_ROUTE } from '@/utils/guestEntry';
 import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
 
 /**
  * Entry point that determines where to route the user:
- * - First time users -> productivity onboarding
- * - Returning users without auth -> login
- * - Authenticated users -> main app
+ * - Stored session (or user already in context) -> main app, or the tutorial
+ *   for a guest who hasn't finished it
+ * - No session, never signed in on this device -> new guest session
+ * - No session, signed in before (logged out) -> login
+ *
+ * Decides from storage rather than the context user, which is still null on a
+ * cold start because nothing has loaded auth before this screen mounts.
  */
 export default function Index() {
     const router = useRouter();
     const auth = useOptionalAuth();
     const user = auth?.user ?? null;
-    const [isChecking, setIsChecking] = useState(true);
     const [nextRoute, setNextRoute] = useState<Href | null>(null);
-    const [canTransition, setCanTransition] = useState(false);
 
     useEffect(() => {
         checkInitialRoute();
@@ -25,14 +28,44 @@ export default function Index() {
 
     const checkInitialRoute = async () => {
         try {
-            // If user is authenticated, go to main app
+            // Already signed in this launch (e.g. just logged in from /login;
+            // tokens may still be mid-write).
             if (user) {
-                setNextRoute('/(logged-in)/(tabs)/(task)');
+                setNextRoute(user.isGuest ? await routeForGuest(user._id) : TABS_ROUTE);
                 return;
             }
 
-            // ponytail: intro video temporarily disabled — new users go straight
-            // to login. Restore by un-commenting the block below.
+            // Stored session: the logged-in layout verifies it and redirects if
+            // it has been rejected.
+            const [tokens, cached] = await Promise.all([getAuthData(), getCachedUser()]);
+            if (tokens) {
+                const route = cached?.isGuest ? await routeForGuest(cached._id) : TABS_ROUTE;
+                if (route === TABS_ROUTE || !auth) {
+                    setNextRoute(route);
+                    return;
+                }
+                // The tutorial sits outside the logged-in layout, so nothing
+                // there loads the user; verify here before sending the guest back.
+                const result = await auth.fetchAuthData();
+                if (result.status === 'authenticated') {
+                    setNextRoute(result.user.isGuest ? await routeForGuest(result.user._id) : TABS_ROUTE);
+                    return;
+                }
+                if (result.status === 'unverified-offline') {
+                    setNextRoute(result.user ? route : TABS_ROUTE);
+                    return;
+                }
+                // Rejected: the session is gone, continue as signed out.
+            }
+
+            // Nobody has ever signed in here: start as a guest (no intro video).
+            if (!(await getHasEverSignedIn())) {
+                setNextRoute(auth ? await enterAsNewGuest(auth.startGuestSession) : '/login');
+                return;
+            }
+
+            // ponytail: intro video temporarily disabled — signed-out returning
+            // users go straight to login. Restore by un-commenting the block below.
             // const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
             // if (!hasSeenIntro) {
             //     setNextRoute('/intro');
@@ -43,26 +76,15 @@ export default function Index() {
             console.error('Error checking initial route:', error);
             // Default to login on error
             setNextRoute('/login');
-        } finally {
-            setIsChecking(false);
         }
     };
 
-    // Navigate once both route is determined and animation is complete
+    // Navigate as soon as the route is known; don't wait on a fade
     useEffect(() => {
-        if (nextRoute && canTransition) {
+        if (nextRoute) {
             router.replace(nextRoute);
         }
-    }, [nextRoute, canTransition]);
+    }, [nextRoute]);
 
-    const handleAnimationComplete = () => {
-        setCanTransition(true);
-    };
-
-    // Show splash screen while checking or waiting for animation
-    if (isChecking || !canTransition) {
-        return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
-    }
-
-    return null;
+    return <EnhancedSplashScreen ready={false} />;
 }

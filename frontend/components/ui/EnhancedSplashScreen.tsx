@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Image, Animated, StyleSheet, Dimensions } from 'react-native';
 import { Easing as RNEasing } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
+
+// Must match the expo-splash-screen config in app.json for a seamless handoff
+const SPLASH_BACKGROUND = '#13121F';
 
 interface EnhancedSplashScreenProps {
     onAnimationComplete?: () => void;
@@ -15,31 +17,10 @@ export default function EnhancedSplashScreen({
     minDisplayTime = 0,
     ready = true,
 }: EnhancedSplashScreenProps) {
-    const ThemedColor = useThemeColor();
     const [animationComplete, setAnimationComplete] = useState(false);
 
-    const scaleAnim = useRef(new Animated.Value(0.5)).current;
-    const fadeAnim = useRef(new Animated.Value(0)).current;
     const fadeOutAnim = useRef(new Animated.Value(1)).current;
     const mountedAt = useRef(Date.now()).current;
-
-    useEffect(() => {
-        // Logo entrance
-        Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 300,
-                easing: RNEasing.out(RNEasing.ease),
-                useNativeDriver: true,
-            }),
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                tension: 40,
-                friction: 8,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, []);
 
     // Fade out the whole screen once ready (and after minDisplayTime, if set)
     useEffect(() => {
@@ -48,7 +29,7 @@ export default function EnhancedSplashScreen({
         const timer = setTimeout(() => {
             Animated.timing(fadeOutAnim, {
                 toValue: 0,
-                duration: 300,
+                duration: 200,
                 easing: RNEasing.out(RNEasing.ease),
                 useNativeDriver: true,
             }).start(() => {
@@ -70,24 +51,18 @@ export default function EnhancedSplashScreen({
             style={[
                 styles.container,
                 {
-                    backgroundColor: ThemedColor.primary,
+                    backgroundColor: SPLASH_BACKGROUND,
                     opacity: fadeOutAnim,
                 },
             ]}>
-            <Animated.View
-                style={[
-                    styles.logoContainer,
-                    {
-                        opacity: fadeAnim,
-                        transform: [{ scale: scaleAnim }],
-                    },
-                ]}>
+            {/* Static logo so the handoff from the native splash is seamless */}
+            <View style={styles.logoContainer}>
                 <Image
                     source={require('@/assets/splash-icon-dark.png')}
                     style={styles.logo}
                     resizeMode="contain"
                 />
-            </Animated.View>
+            </View>
         </Animated.View>
     );
 }

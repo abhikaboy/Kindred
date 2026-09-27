@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { SortDirection, SortOption } from "@/lib/categorySort";
 import { EMPTY_FILTERS, type FilterState } from "@/lib/taskFilters";
 
@@ -34,27 +34,34 @@ function loadGroupByDay(ws: string | undefined): boolean {
   return !!ws && localStorage.getItem(groupKey(ws)) === "day";
 }
 
-export function useWorkspaceState(workspaceName: string | undefined) {
-  const [sort, setSort] = useState<SortState>(() => loadSort(workspaceName));
-  const [filters, setFilters] = useState<FilterState>(() => loadFilters(workspaceName));
-  const [groupByDay, setGroupByDay] = useState<boolean>(() => loadGroupByDay(workspaceName));
+type Prefs = { ws: string | undefined; sort: SortState; filters: FilterState; groupByDay: boolean };
 
-  // Reload when the user switches workspaces (each has independent prefs).
-  useEffect(() => {
-    setSort(loadSort(workspaceName));
-    setFilters(loadFilters(workspaceName));
-    setGroupByDay(loadGroupByDay(workspaceName));
-  }, [workspaceName]);
+function loadPrefs(ws: string | undefined): Prefs {
+  return { ws, sort: loadSort(ws), filters: loadFilters(ws), groupByDay: loadGroupByDay(ws) };
+}
+
+export function useWorkspaceState(workspaceName: string | undefined) {
+  const [stored, setStored] = useState<Prefs>(() => loadPrefs(workspaceName));
+
+  // Prefs are tagged with their workspace and reloaded during render on a switch,
+  // so the first render of /workspace/B never shows A's sort/filters.
+  let prefs = stored;
+  if (stored.ws !== workspaceName) {
+    prefs = loadPrefs(workspaceName);
+    setStored(prefs);
+  }
 
   // Tap an option: unselected -> descending; same option -> ascending; tap
   // again -> clears back to the workspace's natural order.
   const selectSort = useCallback(
     (option: SortOption) => {
       if (!workspaceName) return;
-      setSort((prev) => {
+      setStored((prev) => {
+        const base = withWs(prev, workspaceName);
+        const cur = base.sort;
         let next: SortState;
-        if (prev?.option === option) {
-          next = prev.direction === "descending" ? { option, direction: "ascending" } : null;
+        if (cur?.option === option) {
+          next = cur.direction === "descending" ? { option, direction: "ascending" } : null;
         } else {
           next = { option, direction: "descending" };
         }
@@ -65,7 +72,7 @@ export function useWorkspaceState(workspaceName: string | undefined) {
           localStorage.removeItem(sortKey(workspaceName));
           localStorage.removeItem(sortKey(workspaceName) + "-direction");
         }
-        return next;
+        return { ...base, sort: next };
       });
     },
     [workspaceName],
@@ -74,14 +81,15 @@ export function useWorkspaceState(workspaceName: string | undefined) {
   const toggleFilter = useCallback(
     (category: keyof FilterState, option: string) => {
       if (!workspaceName) return;
-      setFilters((prev) => {
-        const group = prev[category] as Record<string, boolean>;
+      setStored((prev) => {
+        const base = withWs(prev, workspaceName);
+        const group = base.filters[category] as Record<string, boolean>;
         const next: FilterState = {
-          ...prev,
+          ...base.filters,
           [category]: { ...group, [option]: !group[option] },
         };
         localStorage.setItem(filtersKey(workspaceName), JSON.stringify(next));
-        return next;
+        return { ...base, filters: next };
       });
     },
     [workspaceName],
@@ -89,18 +97,32 @@ export function useWorkspaceState(workspaceName: string | undefined) {
 
   const clearFilters = useCallback(() => {
     if (!workspaceName) return;
-    setFilters(EMPTY_FILTERS);
     localStorage.removeItem(filtersKey(workspaceName));
+    setStored((prev) => ({ ...withWs(prev, workspaceName), filters: EMPTY_FILTERS }));
   }, [workspaceName]);
 
   const toggleGroupByDay = useCallback(() => {
     if (!workspaceName) return;
-    setGroupByDay((prev) => {
-      const next = !prev;
+    setStored((prev) => {
+      const base = withWs(prev, workspaceName);
+      const next = !base.groupByDay;
       localStorage.setItem(groupKey(workspaceName), next ? "day" : "none");
-      return next;
+      return { ...base, groupByDay: next };
     });
   }, [workspaceName]);
 
-  return { sort, selectSort, filters, toggleFilter, clearFilters, groupByDay, toggleGroupByDay };
+  return {
+    sort: prefs.sort,
+    selectSort,
+    filters: prefs.filters,
+    toggleFilter,
+    clearFilters,
+    groupByDay: prefs.groupByDay,
+    toggleGroupByDay,
+  };
+}
+
+// Guards an updater against a snapshot still tagged with another workspace.
+function withWs(prev: Prefs, ws: string): Prefs {
+  return prev.ws === ws ? prev : loadPrefs(ws);
 }

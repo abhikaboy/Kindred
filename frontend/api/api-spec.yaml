@@ -4457,6 +4457,40 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/phone:
+        post:
+            tags:
+                - auth
+            summary: Link a phone number
+            description: Attaches an OTP-verified phone number to the signed-in account. Accounts created via Apple or Google start without one, which makes them undiscoverable by contact matching.
+            operationId: link-phone
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LinkPhoneInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LinkPhoneOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/posts:
         get:
             tags:
@@ -4951,8 +4985,8 @@ paths:
         post:
             tags:
                 - profiles
-            summary: Find users by phone numbers
-            description: Efficiently find users matching any of the provided phone numbers using a single database query
+            summary: Find users by hashed phone numbers
+            description: Finds users matching any of the provided hashed contact numbers in a single indexed query, and records the hashes so the caller can be notified when one of those contacts joins
             operationId: find-users-by-phone-numbers
             parameters:
                 - name: Authorization
@@ -4983,7 +5017,7 @@ paths:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/UserExtendedReferenceWithPhone'
+                                    $ref: '#/components/schemas/UserMatch'
                 default:
                     description: Error
                     content:
@@ -5746,38 +5780,6 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
-    /v1/user/tasks/auto:
-        post:
-            tags:
-                - tasks
-            summary: Create a task without choosing a category
-            description: Create a task in the user's Inbox and queue it for automatic categorization
-            operationId: create-task-auto
-            parameters:
-                - name: Authorization
-                  in: header
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateTaskParams'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CreateTaskOutputBody'
-                default:
-                    description: Error
-                    content:
-                        application/problem+json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}:
         post:
             tags:
@@ -6293,6 +6295,38 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/auto:
+        post:
+            tags:
+                - tasks
+            summary: Create a task without choosing a category
+            description: Create a task in the user's Inbox and queue it for automatic categorization
+            operationId: create-task-auto
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateTaskParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateTaskOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/bulk/complete:
         post:
             tags:
@@ -6755,6 +6789,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/QueryTasksNaturalLanguageOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/predictions:
+        get:
+            tags:
+                - tasks
+                - ai
+            summary: Predict tasks the user will need next
+            description: Mines the user's category rhythms, weekday habits, upcoming deadlines and recent completions, then suggests new tasks grounded in them. Never replays an existing or past task. Returns an empty list when AI is unavailable, and consumes no credits.
+            operationId: get-task-predictions
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: timezone
+                  in: query
+                  description: User's timezone (IANA format)
+                  explode: false
+                  schema:
+                    type: string
+                    description: User's timezone (IANA format)
+                    examples:
+                        - America/New_York
+                  example: America/New_York
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTaskPredictionsOutputBody'
                 default:
                     description: Error
                     content:
@@ -10029,12 +10100,12 @@ components:
                     description: Task is waiting in the Inbox for the background categorization job
                 autoCategorizeAttempts:
                     type: integer
-                    format: int64
                     description: How many times the classifier has tried to place this task
+                    format: int64
                 autoCategorizedAt:
                     type: string
-                    format: date-time
                     description: When the background job filed this task
+                    format: date-time
                 blueprintId:
                     type: string
                 categoryID:
@@ -10068,9 +10139,9 @@ components:
                     format: date-time
                 links:
                     type: array
+                    description: URLs attached to the task, from the notes or added by hand
                     items:
                         $ref: '#/components/schemas/TaskLink'
-                    nullable: true
                 notes:
                     type: string
                 posted:
@@ -10186,9 +10257,9 @@ components:
                     type: string
                 links:
                     type: array
+                    description: URLs to attach; links found in the notes are added automatically
                     items:
                         $ref: '#/components/schemas/TaskLink'
-                    nullable: true
                 notes:
                     type: string
                 priority:
@@ -11065,15 +11136,15 @@ components:
                     examples:
                         - https://example.com/schemas/FindUsersByPhoneNumbersInputBody.json
                     readOnly: true
-                numbers:
+                phone_hashes:
                     type: array
-                    description: List of phone numbers to search for
+                    description: Salted SHA-256 hashes of E.164 contact phone numbers
                     items:
                         type: string
                     minItems: 1
                     maxItems: 1000
             required:
-                - numbers
+                - phone_hashes
         FlexDetails:
             type: object
             additionalProperties: false
@@ -11735,6 +11806,24 @@ components:
             required:
                 - reports
                 - total
+        GetTaskPredictionsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetTaskPredictionsOutputBody.json
+                    readOnly: true
+                predictions:
+                    type: array
+                    description: Up to three tasks the user will likely need next, each with the reason
+                    items:
+                        $ref: '#/components/schemas/TaskPrediction'
+            required:
+                - predictions
         GetTaskProgressOutputBody:
             type: object
             additionalProperties: false
@@ -12085,6 +12174,53 @@ components:
                 - handle
                 - name
                 - icon
+        LinkPhoneInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LinkPhoneInputBody.json
+                    readOnly: true
+                code:
+                    type: string
+                    description: OTP code previously sent to this number
+                    examples:
+                        - "1234"
+                phone_number:
+                    type: string
+                    description: Phone number to link, in any common format
+                    examples:
+                        - "+15551234567"
+            required:
+                - phone_number
+                - code
+        LinkPhoneOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/LinkPhoneOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Phone number linked successfully
+                phone:
+                    type: string
+                    description: The linked number, normalized to E.164
+                    examples:
+                        - "+15551234567"
+            required:
+                - message
+                - phone
         ListCalendarsOutputBody:
             type: object
             additionalProperties: false
@@ -12675,6 +12811,8 @@ components:
                     type: boolean
                 congratulations:
                     type: boolean
+                contact_joins:
+                    type: boolean
                 encouragements:
                     type: boolean
                 friend_activity:
@@ -12697,6 +12835,7 @@ components:
                 - encouragements
                 - congratulations
                 - friend_requests
+                - contact_joins
         PendingTaggedTask:
             type: object
             additionalProperties: false
@@ -14568,24 +14707,6 @@ components:
                 - display_name
                 - handle
                 - profile_picture
-        TaskLink:
-            type: object
-            additionalProperties: false
-            properties:
-                source:
-                    type: string
-                    description: Where the link came from
-                    enum:
-                        - notes
-                        - manual
-                title:
-                    type: string
-                    description: Display label; defaults to the link host
-                url:
-                    type: string
-                    description: Absolute URL of the link
-            required:
-                - url
         TaskDocument:
             type: object
             additionalProperties: false
@@ -14604,12 +14725,12 @@ components:
                     description: Task is waiting in the Inbox for the background categorization job
                 autoCategorizeAttempts:
                     type: integer
-                    format: int64
                     description: How many times the classifier has tried to place this task
+                    format: int64
                 autoCategorizedAt:
                     type: string
-                    format: date-time
                     description: When the background job filed this task
+                    format: date-time
                 blueprintId:
                     type: string
                 categoryID:
@@ -14643,9 +14764,9 @@ components:
                     format: date-time
                 links:
                     type: array
+                    description: URLs attached to the task, from the notes or added by hand
                     items:
                         $ref: '#/components/schemas/TaskLink'
-                    nullable: true
                 notes:
                     type: string
                 posted:
@@ -14755,6 +14876,44 @@ components:
                 - message
                 - timestamp
                 - type
+        TaskLink:
+            type: object
+            additionalProperties: false
+            properties:
+                source:
+                    type: string
+                    description: Where the link came from
+                    enum:
+                        - notes
+                        - manual
+                title:
+                    type: string
+                    description: Display label; defaults to the link host
+                url:
+                    type: string
+                    description: Absolute URL of the link
+            required:
+                - url
+        TaskPrediction:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                    description: Category the task most likely belongs in
+                content:
+                    type: string
+                    description: Suggested task text, ready to drop into the composer
+                kind:
+                    type: string
+                    description: 'Signal behind the suggestion: follow_up, deadline, category_rhythm or weekday'
+                reason:
+                    type: string
+                    description: Why this is suggested now
+            required:
+                - content
+                - reason
+                - kind
         TaskQueryFilters:
             type: object
             additionalProperties: false
@@ -15736,7 +15895,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/TaskLink'
-                    nullable: true
                 notes:
                     type: string
                 priority:
@@ -15789,9 +15947,9 @@ components:
                     readOnly: true
                 links:
                     type: array
+                    description: Full replacement link list
                     items:
                         $ref: '#/components/schemas/TaskLink'
-                    nullable: true
             required:
                 - links
         UpdateTaskLinksOutputBody:
@@ -16173,7 +16331,7 @@ components:
                 - display_name
                 - handle
                 - profile_picture
-        UserExtendedReferenceWithPhone:
+        UserMatch:
             type: object
             additionalProperties: false
             properties:
@@ -16192,11 +16350,9 @@ components:
                     description: User handle
                     examples:
                         - johndoe
-                phone:
+                phone_hash:
                     type: string
-                    description: User phone number
-                    examples:
-                        - "+1234567890"
+                    description: Hash of the contact number that matched this user
                 profile_picture:
                     type: string
                     description: Profile picture URL
@@ -16207,7 +16363,7 @@ components:
                 - display_name
                 - handle
                 - profile_picture
-                - phone
+                - phone_hash
         UserReference:
             type: object
             additionalProperties: false

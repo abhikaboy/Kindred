@@ -27,6 +27,7 @@ type FlowSet struct {
 	EditTasksFlow                    *core.Flow[EditTasksFlowInput, EditTasksFlowOutput, struct{}]
 	IntentRouterFlow                 *core.Flow[IntentRouterInput, IntentRouterOutput, struct{}]
 	SuggestTaskFieldsFlow            *core.Flow[SuggestTaskFieldsFlowInput, SuggestTaskFieldsFlowOutput, struct{}]
+	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -566,6 +567,38 @@ Rules:
 			return *resp, nil
 		})
 
+	// "Suggested for you": turns mined signals into new tasks. The caller owns
+	// reasons and dedupe, so the model only has to write good task titles.
+	predictTasksFlow := genkit.DefineFlow(g, "predictTasksFlow",
+		func(ctx context.Context, input PredictTasksFlowInput) (PredictTasksFlowOutput, error) {
+			prompt := `You anticipate the next tasks a user will need to add to their to-do app, before they think of them.
+
+You are given their workspaces and categories, a numbered list of signals mined from their history, and every task title they already have or had.
+
+For the strongest signals, write ONE new task each (at most 5 in total, strongest first):
+- It must be a task they do not already have. Never repeat, rephrase or lightly vary an existing or past title. "Gym" after "Gym" is useless; "Plan next week's workouts" after a run of workouts is useful.
+- It must follow directly from its signal: the next step after a completion, a prep step for a deadline, or the next item in a category's pattern (a progression, the thing that usually comes after, the thing that is running low).
+- Be concrete and specific, using nouns from the user's own tasks. Do not invent people, places or facts that are not in the input.
+- Match the user's writing style: their casing, brevity, and vocabulary. 2-7 words, imperative, no trailing period, no emojis.
+- A short schedule phrase ("tonight", "tomorrow") is allowed only when the signal makes timing obvious.
+- Skip a signal rather than write something generic like "Review tasks" or "Work on project". Returning fewer tasks is better than returning weak ones.
+
+` + input.Context
+
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.PredictTasks")
+			defer span.End()
+			resp, _, err := genkit.GenerateData[PredictTasksFlowOutput](ctx, g, ai.WithPrompt(prompt))
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return PredictTasksFlowOutput{}, err
+			}
+			if resp == nil {
+				return PredictTasksFlowOutput{}, nil
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -577,5 +610,6 @@ Rules:
 		EditTasksFlow:                    editTasksFlow,
 		IntentRouterFlow:                 intentRouterFlow,
 		SuggestTaskFieldsFlow:            suggestTaskFieldsFlow,
+		PredictTasksFlow:                 predictTasksFlow,
 	}
 }

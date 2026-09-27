@@ -4,6 +4,10 @@
   <dict>
     <key>ExpoWidgetsAppGroupIdentifier</key>
     <string>group.com.kindred.kindredtsl</string>
+    <key>UIAppFonts</key>
+    <array>
+      <string>Outfit-Variable.ttf</string>
+    </array>
     <key>NSExtension</key>
     <dict>
       <key>NSExtensionPointIdentifier</key>

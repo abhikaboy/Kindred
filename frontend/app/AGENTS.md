@@ -3,7 +3,7 @@
 expo-router file-based routes. Folder structure == navigation structure.
 
 ## Key files
-- `_layout.tsx` — root layout: all providers (Auth, Tasks, bottom-sheet, portals, Sentry), font loading (Outfit / Fraunces / SofiaSans), QueryClient.
+- `_layout.tsx` — root layout: all providers (Auth, Tasks, bottom-sheet, portals, Sentry), font loading (Outfit / Fraunces), QueryClient.
 - `index.tsx` — auth gate; first launch → `/intro` (video), otherwise → `/login`. Don't change without updating the auth flow.
 - `(logged-in)/_layout.tsx` — protected layout; render-blocking during auth init. Owns push-notification handling, deep-link routing (`getNotificationRoute()`, 15+ `NotificationType`s), widget updates, and Live Activity triggers.
 - `(logged-in)/(tabs)/_layout.tsx` — 5-tab bar (Tasks, Feed, Search, Activity, Profile) with Phosphor icons.

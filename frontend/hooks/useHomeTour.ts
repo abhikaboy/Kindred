@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Dimensions, ScrollView, View, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { Dimensions, ScrollView, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -31,8 +31,9 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
     const scrollY = useRef(0);
     const autoChecked = useRef(false);
 
-    const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        scrollY.current = e.nativeEvent.contentOffset.y;
+    // fed from the home scroll view's UI-thread handler
+    const onScrollY = useCallback((y: number) => {
+        scrollY.current = y;
     }, []);
 
     const registerSection = useCallback((key: TourKey, node: View | null) => {
@@ -140,7 +141,7 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
         skip,
         visibleUpTo,
         registerSection,
-        onScroll,
+        onScrollY,
         activeSectionTop,
     };
 }

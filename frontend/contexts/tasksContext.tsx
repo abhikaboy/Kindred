@@ -30,12 +30,7 @@ import {
     updateCategoryById,
     updateWorkspaceByName,
 } from "@/utils/workspaceTree";
-import {
-    TodayTasksWidgetUpdater as TodayTasksWidget,
-    WorkspaceSnapshotWidgetUpdater as WorkspaceSnapshotWidget,
-    LockScreenCircularWidgetUpdater as LockScreenCircularWidget,
-    LockScreenRectangularWidgetUpdater as LockScreenRectangularWidget,
-} from "@/widgets/widgetUpdaters";
+import { syncTaskWidgets } from "@/widgets/syncWidgets";
 
 const logger = createLogger('TasksContext');
 
@@ -323,7 +318,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         }
-        res.push(...require("@/__scratch_mockTasks").default); // SCRATCH-MOCK remove
         return res;
     }, [workspaces]);
 
@@ -824,66 +818,13 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         });
     }, [userId, fetchWorkspaces]);
 
-    // Sync Today's Tasks widget and lock screen circular widget
+    // Keep home and lock screen widgets in step with the task list
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
-            // Everything in unnestedTasks is open (completed tasks move to a
-            // separate collection); `active` now means in-progress, so don't
-            // filter the list on it — show all open tasks.
-            const incompleteTasks = unnestedTasks;
-            const completedCount = unnestedTasks.filter(t => !t.active).length;
-            const totalCount = unnestedTasks.length;
-
-            const taskTitles = incompleteTasks.slice(0, 3).map(t => t.content);
-
-            const groupMap = new Map<string, string[]>();
-            incompleteTasks.forEach(t => {
-                const ws = t.workspaceName || 'Tasks';
-                if (!groupMap.has(ws)) groupMap.set(ws, []);
-                groupMap.get(ws)!.push(t.content);
-            });
-            const workspaceGroups = Array.from(groupMap.entries()).map(([workspaceName, tasks]) => ({
-                workspaceName,
-                tasks,
-            }));
-
-            TodayTasksWidget.updateSnapshot({ completedCount, totalCount, taskTitles, workspaceGroups });
-            LockScreenCircularWidget.updateSnapshot({ completedCount, totalCount });
-
-            const nextDue = dueTodayTasks
-                .filter(t => t.deadline)
-                .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())[0];
-
-            if (nextDue) {
-                const dueDate = new Date(nextDue.deadline!);
-                const dueTime = dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                LockScreenRectangularWidget.updateSnapshot({ taskTitle: nextDue.content, dueTime });
-            } else {
-                LockScreenRectangularWidget.updateSnapshot({ taskTitle: '', dueTime: '' });
-            }
+            syncTaskWidgets(unnestedTasks, workspaces);
         });
         return () => handle.cancel();
-    }, [unnestedTasks, dueTodayTasks]);
-
-    // Sync Workspace Snapshot widget
-    useEffect(() => {
-        if (workspaces.length === 0) return;
-        const handle = InteractionManager.runAfterInteractions(() => {
-            const firstWorkspace = workspaces.find(w => !w.isBlueprint) || workspaces[0];
-            if (!firstWorkspace) return;
-            const allTasks = firstWorkspace.categories.flatMap(c => c.tasks);
-            const pendingCount = allTasks.length;
-            const topTasks = allTasks.slice(0, 3).map(t => t.content);
-
-            WorkspaceSnapshotWidget.updateSnapshot({
-                workspaceName: firstWorkspace.name,
-                workspaceColor: firstWorkspace.color || '',
-                pendingCount,
-                topTasks,
-            });
-        });
-        return () => handle.cancel();
-    }, [workspaces]);
+    }, [unnestedTasks, workspaces]);
 
     // Every function here is stable; getters read the latest committed state.
     const actions = useMemo<TaskActions>(() => ({

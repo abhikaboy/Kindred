@@ -18,7 +18,7 @@ const BORDER_SPEED = 0.045;
 const VB = 100;
 const PERIMETER = 4 * VB;
 // Blob radius in viewBox units.
-const RADIUS = 40;
+const RADIUS = 16;
 
 type BlobConfig = {
     phase: number;
@@ -50,7 +50,7 @@ type BorderGlowProps = {
 export const BorderGlow: React.FC<BorderGlowProps> = ({
     colors = DEFAULT_COLORS,
     active = false,
-    intensity = 0.8,
+    intensity = 0.3,
     style,
 }) => {
     const time = useSharedValue(0);

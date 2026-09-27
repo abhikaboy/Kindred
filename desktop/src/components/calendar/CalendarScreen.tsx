@@ -14,15 +14,16 @@ import { useUpdateTask, taskToUpdateDocument, AUTH_HEADER } from "@/hooks/useTas
 import { yToMinutes, rescheduleToStart } from "@/lib/timeline";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
-function DragGhost() {
+function DragGhost({ allTasks }: { allTasks: TaskDocument[] }) {
   const { dragging, pointer } = useDragState();
   if (!dragging || !pointer) return null;
+  const title = allTasks.find((t) => t.id === dragging.taskId)?.content;
   return (
     <div
-      className="pointer-events-none fixed z-50 rounded-full bg-primary px-3 py-1.5 text-primary-foreground shadow-lg"
+      className="pointer-events-none fixed z-50 max-w-64 truncate rounded-full bg-primary px-3 py-1.5 text-primary-foreground shadow-lg"
       style={{ left: pointer.x + 12, top: pointer.y + 12 }}
     >
-      Scheduling…
+      {title || "Scheduling…"}
     </div>
   );
 }
@@ -43,7 +44,7 @@ function CalendarBody({
   const onCreateRange = (day: Date, startMin: number, endMin: number) => {
     const start = new Date(day); start.setHours(Math.floor(startMin / 60), startMin % 60, 0, 0);
     const end = new Date(day); end.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0);
-    openCreateTask({ startTime: start.toISOString(), startDate: start.toISOString(), deadline: end.toISOString() });
+    openCreateTask({ startTime: start.toISOString(), startDate: start.toISOString(), deadline: end.toISOString(), auto: true });
   };
 
   const weekStart = useMemo(() => startOfWeek(selectedDate), [selectedDate]);
@@ -67,7 +68,10 @@ function CalendarBody({
     const now = new Date();
     setSelectedDate(now);
     setMonthAnchor(now);
-    if (mode === "month") setMode("week");
+  };
+  const onModeChange = (m: ViewMode) => {
+    if (m === "month") setMonthAnchor(selectedDate);
+    setMode(m);
   };
 
   return (
@@ -76,7 +80,7 @@ function CalendarBody({
         anchorDate={mode === "month" ? monthAnchor : selectedDate}
         mode={mode}
         onStep={onStep}
-        onModeChange={setMode}
+        onModeChange={onModeChange}
         onToday={onToday}
         showAgenda={showAgenda}
         onToggleAgenda={() => setShowAgenda((v) => !v)}
@@ -104,7 +108,7 @@ function CalendarBody({
               onCreateRange={onCreateRange}
               onReschedule={onReschedule}
             />
-            {showAgenda && <AgendaPanel buckets={buckets} selectedDate={selectedDate} />}
+            {showAgenda && <AgendaPanel buckets={buckets} selectedDate={selectedDate} onAddTask={() => openCreateTask({ startDate: selectedDate.toISOString(), auto: true })} />}
           </>
         )}
       </div>
@@ -154,7 +158,7 @@ export function CalendarScreen() {
     <TaskPeekProvider>
       <DragProvider onDrop={handleDrop}>
         <CalendarBody allTasks={allTasks} onReschedule={handleReschedule} />
-        <DragGhost />
+        <DragGhost allTasks={allTasks} />
       </DragProvider>
     </TaskPeekProvider>
   );

@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import {
   CalendarBlank,
   Fire,
-  Gauge,
   ListChecks,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { ProductivityRings } from "@/components/home/ProductivityRings";
 import { QuickCapture } from "@/components/home/QuickCapture";
+import { QuickLogDay } from "@/components/home/QuickLogDay";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday } from "@/hooks/useRings";
 import { useTodayTasks } from "@/hooks/useHomeTasks";
@@ -128,20 +128,17 @@ function WeekStrip() {
 }
 
 // WHOOP-style band: the rings keep their place as the headline metric, with the
-// week strip and the streak/score stats the API already returns filling the
+// week strip and the streak/due-today stats the API already returns filling the
 // width beside them, and one contextual call to action.
 export function TodayHero() {
   const { data } = useRingsToday();
   const todayTasks = useTodayTasks();
 
   const dueToday = todayTasks.length;
-  const score = data?.productivity_score;
   const streak = data?.current_streak;
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)]">
-      <QuickCapture />
-
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
         <ProductivityRings />
 
@@ -152,12 +149,6 @@ export function TodayHero() {
         <div className="hidden w-px self-stretch bg-border lg:block" />
 
         <div className="flex flex-col gap-3">
-          <Stat
-            icon={Gauge}
-            value={score ?? "—"}
-            label={`Productivity score ${score ?? 0} of 100`}
-            meter={(score ?? 0) / 100}
-          />
           <Stat
             icon={Fire}
             value={streak ?? "—"}
@@ -172,6 +163,9 @@ export function TodayHero() {
           />
         </div>
       </div>
+
+      <QuickLogDay />
+      <QuickCapture />
     </div>
   );
 }

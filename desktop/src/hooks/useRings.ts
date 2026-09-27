@@ -12,3 +12,12 @@ export function useRingsToday(): UseQueryResult<RingTodayResponse> {
     params: { header: { Authorization: "" } },
   } as never) as UseQueryResult<RingTodayResponse>;
 }
+
+export type RingState = components["schemas"]["RingState"];
+
+// Last 7 days of ring state, for the per-ring history strip.
+export function useRingsHistory(): UseQueryResult<components["schemas"]["GetHistoryResponseBody"]> {
+  return $api.useQuery("get", "/v1/user/rings/history", {
+    params: { query: { days: 7 } },
+  } as never) as UseQueryResult<components["schemas"]["GetHistoryResponseBody"]>;
+}

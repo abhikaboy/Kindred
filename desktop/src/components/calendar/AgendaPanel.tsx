@@ -9,11 +9,22 @@ import { cn } from "@/lib/utils";
 import type { DailyBuckets } from "@/lib/dailyTasks";
 import type { TaskDocument } from "@/hooks/useWorkspaces";
 
-const SECTIONS: { key: keyof DailyBuckets; label: string }[] = [
-  { key: "overdueTasks", label: "Overdue" },
+// Mirrors mobile's day list: the selected day's tasks, plus Overdue and In progress
+// only when that day is today.
+const SECTIONS: { key: keyof DailyBuckets; label: string; todayOnly?: boolean }[] = [
+  { key: "overdueTasks", label: "Overdue", todayOnly: true },
   { key: "tasksForSelectedDate", label: "Today" },
-  { key: "upcomingTasks", label: "Upcoming" },
+  { key: "openTasks", label: "In progress", todayOnly: true },
 ];
+
+// Timed tasks first by (startTime ?? deadline); untimed last.
+const timeOf = (t: TaskDocument) => {
+  const iso = t.startTime ?? t.deadline;
+  if (!iso) return Infinity;
+  const d = new Date(iso);
+  return d.getHours() === 0 && d.getMinutes() === 0 ? Infinity : d.getTime();
+};
+const byTime = (a: TaskDocument, b: TaskDocument) => timeOf(a) - timeOf(b);
 
 const DRAG_HINT_KEY = "kindred.calendar.dragHintSeen";
 
@@ -61,16 +72,34 @@ function UnscheduledChips({ tasks }: { tasks: TaskDocument[] }) {
   );
 }
 
-export function AgendaPanel({ buckets, selectedDate }: { buckets: DailyBuckets; selectedDate: Date }) {
+export function AgendaPanel({ buckets, selectedDate, onAddTask }: { buckets: DailyBuckets; selectedDate: Date; onAddTask: () => void }) {
   const dayLabel = isToday(selectedDate) ? "Today" : format(selectedDate, "EEE, MMM d");
+  const today = isToday(selectedDate);
   const { openTask } = useTaskPeek();
   const { startDrag, dragging } = useDrag();
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-4">
       <CalendarDragHint />
       {SECTIONS.map((s) => {
-        const tasks = buckets[s.key] as TaskDocument[];
-        if (tasks.length === 0) return null;
+        if (s.todayOnly && !today) return null;
+        const raw = buckets[s.key] as TaskDocument[];
+        const tasks = s.key === "tasksForSelectedDate" ? [...raw].sort(byTime) : raw;
+        if (tasks.length === 0) {
+          if (s.key !== "tasksForSelectedDate") return null;
+          return (
+            <div key={s.key} className="flex flex-col gap-2">
+              <ThemedText type="subtitle">{dayLabel}</ThemedText>
+              <button
+                type="button"
+                onClick={onAddTask}
+                className="flex flex-col items-start gap-1 rounded-xl border border-dashed p-4 text-left transition-colors hover:bg-muted/50"
+              >
+                <ThemedText type="caption">Nothing planned yet</ThemedText>
+                <ThemedText type="caption" className="text-primary">+ Add a task</ThemedText>
+              </button>
+            </div>
+          );
+        }
         const label = s.key === "tasksForSelectedDate" ? dayLabel : s.label;
         return (
           <div key={s.key} className="flex flex-col gap-2">

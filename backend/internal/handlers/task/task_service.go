@@ -834,7 +834,8 @@ func (s *Service) GetTaskProgress(userId, id primitive.ObjectID) (*ProgressSumma
 	}
 	defer cursor.Close(ctx)
 
-	var entries []TaskDocument
+	// Non-nil so tasks with no progress encode as [] rather than null
+	entries := []TaskDocument{}
 	if err := cursor.All(ctx, &entries); err != nil {
 		return nil, err
 	}

@@ -1,5 +1,24 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, Animated, InteractionManager } from "react-native";
+import {
+    ScrollView,
+    View,
+    Switch,
+    TouchableOpacity,
+    TextInput,
+    RefreshControl,
+    Animated,
+    InteractionManager,
+    Platform,
+} from "react-native";
+import Reanimated, {
+    Easing,
+    SharedValue,
+    runOnJS,
+    useAnimatedScrollHandler,
+    useReducedMotion,
+    useSharedValue,
+    withTiming,
+} from "react-native-reanimated";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
@@ -33,9 +52,8 @@ import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import QuickCapture from "@/components/dashboard/QuickCapture";
 import QuickLogDay from "@/components/dashboard/QuickLogDay";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
-import CaptureBlur from "@/components/dashboard/CaptureBlur";
-import type { SharedValue } from "react-native-reanimated";
 import type { HomeTour } from "@/hooks/useHomeTour";
+import { hapticLight } from "@/utils/haptics";
 
 interface HomeScrollContentProps {
     workspaces: any[];
@@ -53,9 +71,14 @@ interface HomeScrollContentProps {
     onStatsExpandChange?: (expanded: boolean) => void;
     kudosOffsetRef: React.MutableRefObject<number>;
     tour: HomeTour;
-    // 0..1 while QuickCapture is focused; drives the blur over everything else
-    captureFocus: SharedValue<number>;
+    /** tab glow pull progress (0-1); when set, iOS pull-to-refresh drives the glow instead of the spinner */
+    glowPull?: SharedValue<number>;
+    /** bumped on release to replay the glow's opening */
+    glowReplay?: SharedValue<number>;
 }
+
+// overscroll (px) that arms a refresh; the glow tracks progress toward it
+const PULL_DISTANCE = 96;
 
 // Temporarily hidden from the dashboard (kept in code for easy re-enable).
 // Flip to true to bring the KUDOS row back.
@@ -77,7 +100,8 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
     onStatsExpandChange,
     kudosOffsetRef,
     tour,
-    captureFocus,
+    glowPull,
+    glowReplay,
 }) {
     const { showAlert } = useAlert();
     const [statsExpanded, setStatsExpanded] = useState(false);
@@ -355,16 +379,61 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         onKudosLayout({ y, height });
     };
 
+    // iOS overscroll lifts the tab glow; release past the threshold refreshes and replays its opening.
+    // Android can't overscroll past 0, and reduced motion has no animation to show, so both keep the spinner.
+    const reduceMotion = useReducedMotion();
+    const glowRefresh = Platform.OS === "ios" && !reduceMotion && !!onRefresh && !!glowPull && !!glowReplay;
+    const refreshingRef = useRef(refreshing);
+    refreshingRef.current = refreshing;
+    const refreshFromPull = useCallback(() => {
+        if (!refreshingRef.current) onRefresh?.();
+    }, [onRefresh]);
+    const onScrollY = tour.onScrollY;
+    const dragging = useSharedValue(false);
+    const armed = useSharedValue(false);
+    const scrollHandler = useAnimatedScrollHandler(
+        {
+            onBeginDrag: () => {
+                dragging.value = true;
+                armed.value = false;
+            },
+            onScroll: (e) => {
+                runOnJS(onScrollY)(e.contentOffset.y);
+                if (!glowRefresh || !glowPull || !dragging.value) return;
+                const progress = Math.min(Math.max(-e.contentOffset.y / PULL_DISTANCE, 0), 1);
+                glowPull.value = progress;
+                if (progress >= 1 && !armed.value) {
+                    armed.value = true;
+                    runOnJS(hapticLight)();
+                } else if (progress < 1) {
+                    armed.value = false;
+                }
+            },
+            onEndDrag: () => {
+                dragging.value = false;
+                if (!glowRefresh || !glowPull || !glowReplay) return;
+                if (armed.value) {
+                    armed.value = false;
+                    glowReplay.value += 1;
+                    runOnJS(refreshFromPull)();
+                } else {
+                    glowPull.value = withTiming(0, { duration: 300, easing: Easing.bezier(0.2, 0, 0, 1) });
+                }
+            },
+        },
+        [glowRefresh, onScrollY, refreshFromPull]
+    );
+
     return (
-        <ScrollView
+        <Reanimated.ScrollView
             ref={scrollRef}
             style={{ gap: 16 }}
             contentContainerStyle={{ gap: 16 }}
             showsVerticalScrollIndicator={false}
-            onScroll={tour.onScroll}
+            onScroll={scrollHandler}
             scrollEventThrottle={16}
             refreshControl={
-                onRefresh ? (
+                onRefresh && !glowRefresh ? (
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
@@ -377,8 +446,6 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
             <MotiView style={{ gap: 16, marginTop: 0 }}>
                 {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
                 <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
-                {/* Extends past the content so short pages still blur to the bottom edge */}
-                <CaptureBlur progress={captureFocus} style={{ zIndex: 996, bottom: -1000 }} />
 
                 {!tour.active && <TaggedTaskBanners />}
 
@@ -403,7 +470,7 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
 
                 {!tour.active && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, zIndex: 997 }}>
-                        <QuickCapture focusProgress={captureFocus} />
+                        <QuickCapture />
                     </View>
                 )}
 
@@ -549,6 +616,6 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                     }}
                 />
             )}
-        </ScrollView>
+        </Reanimated.ScrollView>
     );
 });

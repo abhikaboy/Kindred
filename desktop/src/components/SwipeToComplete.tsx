@@ -85,6 +85,8 @@ export function SwipeToComplete({
   const passedThreshold = width > 0 && dx >= threshold && !done;
 
   const complete = useCallback(() => {
+    // Phantoms are client-side placeholders for recurring templates; there's no task to complete.
+    if (task.isPhantom) return;
     const w = rowRef.current?.offsetWidth ?? 0;
     setDone(true);
     setTransition(true);
@@ -112,15 +114,15 @@ export function SwipeToComplete({
         },
       },
     );
-  }, [categoryId, task.id, task.content, completeTask, openCreatePost]);
+  }, [categoryId, task.id, task.content, task.isPhantom, completeTask, openCreatePost]);
 
   const control = useMemo<CompleteControl>(
-    () => ({ complete, pending: done || completeTask.isPending }),
-    [complete, done, completeTask.isPending],
+    () => ({ complete, pending: done || completeTask.isPending || !!task.isPhantom }),
+    [complete, done, completeTask.isPending, task.isPhantom],
   );
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (done || completeTask.isPending) return;
+    if (done || completeTask.isPending || task.isPhantom) return;
     dragging.current = true;
     startX.current = e.clientX;
     setTransition(false);

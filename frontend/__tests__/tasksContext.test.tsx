@@ -15,15 +15,7 @@ jest.mock("@/api/category", () => ({
 }));
 jest.mock("react-native-toastable", () => ({ showToastable: jest.fn() }));
 jest.mock("@/components/ui/DefaultToast", () => () => null);
-jest.mock("@/widgets/widgetUpdaters", () => {
-    const updater = { updateSnapshot: jest.fn() };
-    return {
-        TodayTasksWidgetUpdater: updater,
-        WorkspaceSnapshotWidgetUpdater: updater,
-        LockScreenCircularWidgetUpdater: updater,
-        LockScreenRectangularWidgetUpdater: updater,
-    };
-});
+jest.mock("@/widgets/syncWidgets", () => ({ syncTaskWidgets: jest.fn() }));
 
 import React from "react";
 import { act, render, waitFor } from "@testing-library/react-native";

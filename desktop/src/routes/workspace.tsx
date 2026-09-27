@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CalendarBlank, Plus, Stack } from "@phosphor-icons/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CategoryCard } from "@/components/CategoryCard";
@@ -12,11 +12,10 @@ import { TaskItem } from "@/components/TaskItem";
 import { SortMenu } from "@/components/workspace/SortMenu";
 import { FilterMenu } from "@/components/workspace/FilterMenu";
 import { WorkspaceSettingsMenu } from "@/components/workspace/WorkspaceSettingsMenu";
-import { useWorkspace, useWorkspaces, type CategoryDocument } from "@/hooks/useWorkspaces";
+import { useWorkspace, useWorkspaces } from "@/hooks/useWorkspaces";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
-import { sortCategories } from "@/lib/categorySort";
-import { applyTaskFilters } from "@/lib/taskFilters";
 import { groupTasksByDay } from "@/lib/groupByDay";
+import { orderWorkspaceCategories } from "@/lib/workspaceCategories";
 import { cn } from "@/lib/utils";
 
 // Arrow-key nav shouldn't fire while typing or with a dialog/menu open.
@@ -25,6 +24,10 @@ function navBlocked(target: EventTarget | null): boolean {
   if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return true;
   return !!document.querySelector('[role="dialog"], [role="menu"]');
 }
+
+// Last scroll offset per workspace (like mobile WorkspaceContent), so switching
+// back returns to where the user left off.
+const scrollPositions = new Map<string, number>();
 
 export default function WorkspaceScreen() {
   const { name: rawName } = useParams();
@@ -37,24 +40,41 @@ export default function WorkspaceScreen() {
     useWorkspaceState(name);
 
   const categories = workspace?.categories ?? [];
-  const [selected, setSelected] = useState(0);
+  // Highlight is tagged with its workspace so a switch resets it on the same render.
+  const [selection, setSelection] = useState({ ws: name, index: 0 });
+  const selected = selection.ws === name ? selection.index : 0;
   const selectedRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Only keyboard moves scroll the highlight into view; a workspace switch restores scroll instead.
+  const scrollToSelected = useRef(false);
 
-  // Reset the highlighted category when the workspace changes.
-  useEffect(() => setSelected(0), [name]);
-
-  // Keep the highlighted category in view while arrowing through a long list.
   useEffect(() => {
+    if (!scrollToSelected.current) return;
+    scrollToSelected.current = false;
     selectedRef.current?.scrollIntoView({ block: "nearest" });
   }, [selected]);
 
-  // Tasks filtered per category, then categories reordered per the sort pref.
-  // Filtering never hides a category outright (it just empties its task list),
-  // so "this workspace is empty" still reflects real content, not the filter.
-  const visibleCategories = useMemo<CategoryDocument[]>(() => {
-    const filtered = categories.map((c) => ({ ...c, tasks: applyTaskFilters(c.tasks, filters) }));
-    return sort ? sortCategories(filtered, sort.option, sort.direction) : filtered;
-  }, [categories, filters, sort]);
+  // The scroll container is Layout's <main>; record its offset under the
+  // current workspace and restore it once this workspace's content is mounted.
+  const hasWorkspace = !!workspace;
+  useLayoutEffect(() => {
+    const scroller = rootRef.current?.closest("main");
+    if (!scroller || !name) return;
+    scroller.scrollTop = scrollPositions.get(name) ?? 0;
+    const onScroll = () => scrollPositions.set(name, scroller.scrollTop);
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [name, hasWorkspace]);
+
+  // One ordered list of real categories drives rendering, arrow/Enter nav, the
+  // highlight, and Shift+1..9. Filtering empties task lists but never hides a
+  // category, so "this workspace is empty" reflects real content.
+  const { categories: visibleCategories, upcoming } = useMemo(
+    () => orderWorkspaceCategories(categories, sort, filters),
+    [categories, sort, filters],
+  );
+
+  const isEmpty = visibleCategories.length === 0 && !upcoming;
 
   const dayGroups = useMemo(
     () => (groupByDay ? groupTasksByDay(visibleCategories) : []),
@@ -74,11 +94,16 @@ export default function WorkspaceScreen() {
         const next = e.key === "ArrowLeft" ? (idx - 1 + list.length) % list.length : (idx + 1) % list.length;
         navigate(`/workspace/${encodeURIComponent(list[next].name)}`);
       } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        if (categories.length === 0) return;
+        if (visibleCategories.length === 0) return;
         e.preventDefault();
-        setSelected((s) => Math.max(0, Math.min(categories.length - 1, e.key === "ArrowUp" ? s - 1 : s + 1)));
+        scrollToSelected.current = true;
+        setSelection((prev) => {
+          const s = prev.ws === name ? prev.index : 0;
+          const index = Math.max(0, Math.min(visibleCategories.length - 1, e.key === "ArrowUp" ? s - 1 : s + 1));
+          return { ws: name, index };
+        });
       } else if (e.key === "Enter") {
-        const cat = categories[selected];
+        const cat = visibleCategories[selected];
         if (!cat) return;
         e.preventDefault();
         openCreateTask({ categoryId: cat.id });
@@ -86,10 +111,10 @@ export default function WorkspaceScreen() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [allWorkspaces, name, categories, selected, navigate, openCreateTask]);
+  }, [allWorkspaces, name, visibleCategories, selected, navigate, openCreateTask]);
 
   // Register the on-screen categories (first 9) so Shift+1..9 creates a task in each.
-  const shortcutIds = (workspace?.categories ?? []).slice(0, 9).map((c) => c.id).join(",");
+  const shortcutIds = visibleCategories.slice(0, 9).map((c) => c.id).join(",");
   useEffect(() => {
     const ids = shortcutIds ? shortcutIds.split(",") : [];
     setCategoryShortcuts(ids.map((id) => ({ id })));
@@ -123,7 +148,7 @@ export default function WorkspaceScreen() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-6">
+    <div ref={rootRef} className="mx-auto flex max-w-2xl flex-col gap-6 pt-6">
       <div className="flex items-center justify-between gap-4">
         <ThemedText type="titleFraunces" as="h1">
           {workspace.name}
@@ -135,7 +160,7 @@ export default function WorkspaceScreen() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {categories.length > 0 && (
+        {!isEmpty && (
           <>
             <SortMenu sort={sort} onSelect={selectSort} />
             <FilterMenu filters={filters} onToggle={toggleFilter} onClear={clearFilters} />
@@ -162,7 +187,7 @@ export default function WorkspaceScreen() {
         </div>
       </div>
 
-      {categories.length === 0 ? (
+      {isEmpty ? (
         <EmptyState
           icon={Stack}
           title="This workspace is empty"
@@ -206,6 +231,7 @@ export default function WorkspaceScreen() {
               />
             </div>
           ))}
+          {upcoming && <CategoryCard category={upcoming} accent={workspace.color} />}
         </div>
       )}
     </div>

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useTasks } from '@/contexts/tasksContext';
-import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
+import { reconcileActivities, tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
 import type { Task } from '@/api/types';
 import type { ActiveTaskActivityProps } from '@/widgets/ActiveTaskActivity';
-import type { DeadlineCountdownProps } from '@/widgets/DeadlineCountdownActivity';
+import type { DeadlineActivityInput } from '@/utils/liveActivityManager';
 
 function buildActiveTaskProps(task: Task): ActiveTaskActivityProps {
     return {
@@ -17,7 +17,7 @@ function buildActiveTaskProps(task: Task): ActiveTaskActivityProps {
     };
 }
 
-function buildDeadlineProps(task: Task): DeadlineCountdownProps {
+function buildDeadlineProps(task: Task): DeadlineActivityInput {
     return {
         taskName: task.content,
         workspaceName: task.workspaceName || 'Tasks',
@@ -25,8 +25,6 @@ function buildDeadlineProps(task: Task): DeadlineCountdownProps {
         priority: task.priority,
         categoryId: task.categoryID || '',
         taskId: task.id,
-        accentColor: '#8B5CF6',
-        statusLabel: 'Due Soon',
     };
 }
 
@@ -42,6 +40,11 @@ export function useLiveActivityScheduler(): void {
             const fiveMinAgo = now - 5 * 60 * 1000;
             const thirtyMinFromNow = now + 30 * 60 * 1000;
             const sixtyFiveMinFromNow = now + 65 * 60 * 1000;
+
+            reconcileActivities(
+                tasksRef.current.map((t) => ({ id: t.id, deadline: t.deadline, timeCompleted: (t as any).timeCompleted })),
+                now,
+            ).catch(() => {});
 
             for (const task of tasksRef.current) {
                 if (!task.active) continue;

@@ -45,7 +45,6 @@ const PhoneOnboarding = () => {
     const [showCountryPicker, setShowCountryPicker] = useState(false);
     const [countryCode, setCountryCode] = useState("+1");
     const [phoneNumber, setPhoneNumber] = useState("");
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Verification state
     const [codeSent, setCodeSent] = useState(false);
@@ -224,7 +223,7 @@ const PhoneOnboarding = () => {
     };
 
     const isValidPhone = phoneNumber.length >= 10;
-    const canContinue = isValidPhone && agreedToTerms;
+    const canContinue = isValidPhone;
 
     // Animation interpolations
     const phoneEntryOpacity = transitionAnim.interpolate({
@@ -354,40 +353,9 @@ const PhoneOnboarding = () => {
                                 Standard messaging rates may apply
                             </ThemedText>
 
-                            {/* Terms checkbox — sits below helper text, behind keyboard */}
-                            <Animated.View style={[styles.termsContainer, { opacity: fadeAnimation }]}>
-                                <TouchableOpacity
-                                    testID="terms-checkbox"
-                                    style={styles.checkboxContainer}
-                                    onPress={() => setAgreedToTerms(!agreedToTerms)}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={[styles.checkbox, {
-                                        backgroundColor: agreedToTerms ? ThemedColor.primary : 'transparent',
-                                        borderColor: agreedToTerms ? ThemedColor.primary : ThemedColor.caption,
-                                    }]}>
-                                        {agreedToTerms && <Ionicons name="checkmark" size={16} color="white" />}
-                                    </View>
-                                    <View style={styles.termsTextContainer}>
-                                        <ThemedText style={[styles.termsText, { color: ThemedColor.text }]}>
-                                            I agree to the{' '}
-                                            <ThemedText
-                                                style={[styles.termsLink, { color: ThemedColor.primary }]}
-                                                onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
-                                            >
-                                                Terms of Service
-                                            </ThemedText>
-                                            {' '}and{' '}
-                                            <ThemedText
-                                                style={[styles.termsLink, { color: ThemedColor.primary }]}
-                                                onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
-                                            >
-                                                Privacy Policy
-                                            </ThemedText>
-                                        </ThemedText>
-                                    </View>
-                                </TouchableOpacity>
-                            </Animated.View>
+                            {sendOTPError && (
+                                <ThemedText style={styles.errorText}>{sendOTPError}</ThemedText>
+                            )}
                         </Animated.View>
                     )}
 
@@ -473,12 +441,30 @@ const PhoneOnboarding = () => {
                     >
                         <Animated.View style={[styles.buttonContainer, { opacity: fadeAnimation }]}>
                             {!codeSent ? (
+                                <>
                                 <PrimaryButton
                                     testID="send-code-btn"
                                     title={sendingOTP ? "Sending..." : "Send Code"}
                                     onPress={handleSendCode}
                                     disabled={!canContinue || sendingOTP}
                                 />
+                                <ThemedText style={[styles.termsText, { color: ThemedColor.caption }]}>
+                                    By continuing, you agree to our{' '}
+                                    <ThemedText
+                                        style={[styles.termsLink, { color: ThemedColor.primary }]}
+                                        onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
+                                    >
+                                        Terms of Service
+                                    </ThemedText>
+                                    {' '}and{' '}
+                                    <ThemedText
+                                        style={[styles.termsLink, { color: ThemedColor.primary }]}
+                                        onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
+                                    >
+                                        Privacy Policy
+                                    </ThemedText>
+                                </ThemedText>
+                                </>
                             ) : (
                                 <PrimaryButton
                                     testID="verify-btn"
@@ -638,9 +624,10 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     termsText: {
-        fontSize: 14,
+        fontSize: 12,
         fontFamily: 'Outfit',
-        lineHeight: 20,
+        lineHeight: 16,
+        textAlign: 'center',
     },
     termsLink: {
         fontWeight: '600',
@@ -648,6 +635,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         width: '100%',
+        gap: 12,
     },
 });
 

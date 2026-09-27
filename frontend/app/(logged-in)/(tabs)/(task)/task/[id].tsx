@@ -56,7 +56,7 @@ import DefaultToast from "@/components/ui/DefaultToast";
 import { logger } from "@/utils/logger";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { tryStartActiveTaskActivity, tryStartDeadlineActivity, endActivity, isActivityRunning } from '@/utils/liveActivityManager';
+import { tryStartActiveTaskActivity, tryStartDeadlineActivity, endActivity, dismissActivity, isActivityRunning } from '@/utils/liveActivityManager';
 import type { DeadlineCountdownProps } from "@/widgets/DeadlineCountdownActivity";
 import type { ActiveTaskActivityProps } from "@/widgets/ActiveTaskActivity";
 import type { LiveActivity } from "expo-widgets";
@@ -134,12 +134,18 @@ export default function Task() {
         handledActionRef.current = actionKey;
 
         if (action === 'dismiss') {
-            endActivity(id as string).finally(() => router.back());
-        } else if (action === 'complete' && task) {
+            dismissActivity(id as string).finally(() => router.back());
+        } else if (action === 'complete' && task && categoryId) {
             endActivity(id as string);
-            markTaskAsCompleted(task);
+            capture(AnalyticsEvents.TASK_COMPLETED, { source: "live_activity" });
+            markTaskAsCompleted(categoryId as string, id as string, {
+                id: task.id,
+                content: task.content,
+                value: task.value,
+                public: task.public,
+            });
         }
-    }, [action, id, task, markTaskAsCompleted]);
+    }, [action, id, categoryId, task, markTaskAsCompleted]);
 
     // Function to refresh task data after edit
     const refreshTaskData = () => {
@@ -174,9 +180,7 @@ export default function Task() {
             priority: task.priority || 0,
             categoryId: categoryId as string,
             taskId: id as string,
-            accentColor: '#8B5CF6',
-            statusLabel: 'Due Soon',
-        });
+        }, { userInitiated: true });
 
         if (!started) {
             showToastable({
@@ -210,7 +214,7 @@ export default function Task() {
             hasEndTime: !!endTime,
             categoryId: categoryId as string,
             taskId: id as string,
-        });
+        }, { userInitiated: true });
 
         if (!started) {
             showToastable({
@@ -296,8 +300,8 @@ export default function Task() {
         getTaskProgressAPI(id)
             .then(({ entries, totalSeconds }) => {
                 if (!isMounted.current) return;
-                setProgressEntries(entries);
-                setProgressTotalSeconds(totalSeconds);
+                setProgressEntries(entries ?? []);
+                setProgressTotalSeconds(totalSeconds ?? 0);
             })
             .catch((error) => logger.error("Error loading task progress", error));
     }, [id]);

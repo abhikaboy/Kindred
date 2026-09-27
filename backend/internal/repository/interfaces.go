@@ -35,4 +35,6 @@ type UserRepository interface {
 	AddCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType, amount int) error
 	CheckCredits(ctx context.Context, id primitive.ObjectID, creditType types.CreditType) (bool, error)
 	LinkGoogleID(ctx context.Context, id primitive.ObjectID, googleID string) error
+	// HandleExists reports whether any user already has this exact handle.
+	HandleExists(ctx context.Context, handle string) (bool, error)
 }

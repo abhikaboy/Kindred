@@ -155,10 +155,13 @@ const InlineCategoryCreator = ({ onCreated, onCancel, initialName, tutorial = fa
                     ref={inputRef}
                     value={name}
                     onChangeText={(text) => {
-                        setName(text);
+                        setName(text.replace(/\n/g, ""));
                         if (error) setError(false);
                     }}
                     onSubmitEditing={handleCreate}
+                    multiline
+                    scrollEnabled={false}
+                    submitBehavior="submit"
                     placeholder="Category name"
                     placeholderTextColor={error ? ThemedColor.error : ThemedColor.caption}
                     returnKeyType="done"
@@ -267,8 +270,10 @@ const styles = StyleSheet.create({
         fontSize: 18 * SCREEN_SCALE,
         fontWeight: "500",
         fontFamily: "Outfit",
+        // multiline: iOS single-line inputs mis-position the variable Outfit font (clipped, offset)
         padding: 0,
-
+        includeFontPadding: false,
+        textAlignVertical: "center",
     },
     actions: {
         flexDirection: "row",

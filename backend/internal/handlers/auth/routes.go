@@ -23,7 +23,11 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, contactNotif
 	}
 	service := NewServiceWithConfig(collections, cfg)
 	service.SetContactNotifier(contactNotifier)
-	authHandler := Handler{service, cfg}
+	authHandler := Handler{
+		service:      service,
+		config:       cfg,
+		guestLimiter: newGuestRateLimiter(guestRateLimitPerIP, guestRateLimitWindow),
+	}
 
 	RegisterAuthOperations(api, &authHandler)
 }
@@ -60,6 +64,7 @@ func RegisterAuthOperations(api huma.API, handler *Handler) {
 	RegisterRegisterWithAppleOperation(api, handler)
 	RegisterLoginWithGoogleOperation(api, handler)
 	RegisterRegisterWithGoogleOperation(api, handler)
+	RegisterGuestLoginOperation(api, handler)
 	RegisterRefreshTokenOperation(api, handler)
 	RegisterTestOperation(api, handler)
 	RegisterLoginWithTokenOperation(api, handler)

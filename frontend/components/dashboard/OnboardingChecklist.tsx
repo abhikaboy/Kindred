@@ -42,6 +42,8 @@ const TOAST_COPY: Record<ItemKey, string> = {
 
 const dismissKey = (userId: string) => `${userId}-onboarding-checklist-dismissed`;
 const snapshotKey = (userId: string) => `${userId}-onboarding-checklist-snapshot`;
+// Set once every item is done; from then on the card is never mounted again.
+const completeKey = (userId: string) => `${userId}-onboarding-checklist-complete`;
 
 const ITEM_KEYS: ItemKey[] = ['task', 'kudos', 'friend', 'rings'];
 const TOTAL_ITEMS = ITEM_KEYS.length;
@@ -55,6 +57,13 @@ const FALLBACK_CARD_WIDTH = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
 
 const allDone = (c: CompletionMap) => ITEM_KEYS.every((k) => c[k]);
 
+// Items only ever go from undone to done. Some live signals (today's rings,
+// whether any task is open) drop back to false on a new day or before data
+// loads, and treating that as "undone" re-ran the finish celebration.
+const mergeDone = (a: CompletionMap, b: CompletionMap): CompletionMap =>
+    Object.fromEntries(ITEM_KEYS.map((k) => [k, !!(a[k] || b[k])])) as CompletionMap;
+const sameDone = (a: CompletionMap, b: CompletionMap) => ITEM_KEYS.every((k) => !!a[k] === !!b[k]);
+
 const subtitleForRemaining = (remaining: number): string => {
     if (remaining <= 1) return "You're almost there!";
     if (remaining === 2) return "You're making progress";
@@ -66,7 +75,51 @@ interface OnboardingChecklistProps {
     kudosOffsetRef: React.MutableRefObject<number>;
 }
 
-export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scrollRef, kudosOffsetRef }) => {
+/**
+ * Checks storage before mounting the card, so a finished or dismissed
+ * checklist costs nothing on home: no focus refresh, no listeners, no
+ * celebration replay.
+ */
+export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = (props) => {
+    const { user } = useAuth();
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        if (!user?._id) return;
+        let cancelled = false;
+        const id = user._id;
+        AsyncStorage.multiGet([completeKey(id), dismissKey(id), snapshotKey(id)])
+            .then(([[, complete], [, dismissed], [, raw]]) => {
+                if (cancelled) return;
+                if (complete === 'true' || dismissed === 'true') return setShow(false);
+                // Finished before the complete flag existed
+                let snapshot: CompletionMap | null = null;
+                try {
+                    snapshot = raw ? (JSON.parse(raw) as CompletionMap) : null;
+                } catch {}
+                if (snapshot && allDone(snapshot)) {
+                    AsyncStorage.setItem(completeKey(id), 'true').catch(() => {});
+                    return setShow(false);
+                }
+                setShow(true);
+            })
+            .catch(() => {
+                if (!cancelled) setShow(true);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?._id]);
+
+    if (!show) return null;
+    return <OnboardingChecklistCard {...props} onFinished={() => setShow(false)} />;
+};
+
+const OnboardingChecklistCard: React.FC<OnboardingChecklistProps & { onFinished: () => void }> = ({
+    scrollRef,
+    kudosOffsetRef,
+    onFinished,
+}) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const { user, refresh } = useAuth();
@@ -113,7 +166,10 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
         setDismissed(true);
     }, [user?._id]);
 
-    const completion = useMemo(() => {
+    // Everything already recorded as done, so live signals can't un-check it
+    const [saved, setSaved] = useState<CompletionMap | null>(null);
+
+    const liveCompletion = useMemo(() => {
         if (!user) return null;
         // Prefer live local/query signals over the auth user object, which only
         // refreshes on focus — so items check off the moment the user acts.
@@ -124,6 +180,11 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
             rings: base.rings || allClosed,
         };
     }, [user, hasAnyTask, allClosed]);
+
+    const completion = useMemo(
+        () => (liveCompletion && saved ? mergeDone(liveCompletion, saved) : liveCompletion),
+        [liveCompletion, saved]
+    );
 
     const computedVisible = useMemo(() => (completion ? computeVisibleItems(completion) : []), [completion]);
     const computedCompleted = useMemo(() => (completion ? computeCompletedItems(completion) : []), [completion]);
@@ -166,11 +227,14 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
                 duration: CELEBRATION_FADE_MS,
                 easing: Easing.in(Easing.ease),
                 useNativeDriver: true,
-            }).start(() => setCelebrating(false));
+            }).start(() => {
+                setCelebrating(false);
+                onFinished();
+            });
         }, CELEBRATION_HOLD_MS);
 
         celebrationTimers.current.push(fadeTimer);
-    }, [cardOpacity]);
+    }, [cardOpacity, onFinished]);
 
     const snapshotLoadedRef = useRef(false);
     const lastSnapshotRef = useRef<CompletionMap | null>(null);
@@ -181,24 +245,35 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
         if (!snapshotLoadedRef.current) {
             snapshotLoadedRef.current = true;
             AsyncStorage.getItem(snapshotKey(user._id)).then((raw) => {
+                let stored: CompletionMap | null = null;
                 if (raw) {
                     try {
-                        lastSnapshotRef.current = JSON.parse(raw) as CompletionMap;
+                        stored = JSON.parse(raw) as CompletionMap;
                     } catch {}
                 }
-                lastSnapshotRef.current = lastSnapshotRef.current ?? completion;
-                AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(completion)).catch(() => {});
+                // Only the live signals seen so far count as a baseline, never a regression
+                const baseline = stored ? mergeDone(stored, completion) : completion;
+                lastSnapshotRef.current = baseline;
+                setSaved(baseline);
+                AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(baseline)).catch(() => {});
+                // Already finished on arrival: record it quietly, no celebration
+                if (allDone(baseline)) {
+                    AsyncStorage.setItem(completeKey(user._id), 'true').catch(() => {});
+                    onFinished();
+                }
             });
             return;
         }
 
         const prev = lastSnapshotRef.current;
         if (!prev) return;
+        const next = mergeDone(prev, completion);
+        if (sameDone(prev, next)) return;
 
-        const finishing = !allDone(prev) && allDone(completion);
+        const finishing = !allDone(prev) && allDone(next);
 
         ITEM_KEYS.forEach((key) => {
-            if (!prev[key] && completion[key]) {
+            if (!prev[key] && next[key]) {
                 // The final item's payoff is the full-card celebration below —
                 // a per-item haptic + toast there would just compete with it.
                 if (!finishing) {
@@ -214,10 +289,14 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ scroll
             }
         });
 
-        if (finishing) triggerCelebration();
-
-        lastSnapshotRef.current = completion;
-        AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(completion)).catch(() => {});
+        lastSnapshotRef.current = next;
+        setSaved(next);
+        AsyncStorage.setItem(snapshotKey(user._id), JSON.stringify(next)).catch(() => {});
+        if (finishing) {
+            // Written now, not after the animation, so quitting mid-celebration can't replay it
+            AsyncStorage.setItem(completeKey(user._id), 'true').catch(() => {});
+            triggerCelebration();
+        }
     }, [completion, user?._id, triggerCelebration]);
 
     // `celebrating` keeps the card alive through the finish animation even

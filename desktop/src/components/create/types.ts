@@ -13,6 +13,8 @@ export type TaskPrefill = {
   startTime?: string;
   // Open the dialog directly in AI mode (sidebar "Create with AI" / ⇧A).
   ai?: boolean;
+  // Start with Auto Sort on (planner entry points, matching mobile).
+  auto?: boolean;
 };
 
 export type CreateTaskDialogProps = {

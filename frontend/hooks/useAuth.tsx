@@ -13,11 +13,17 @@ import { showToast } from "@/utils/showToast";
 import { ERROR_MESSAGES } from "@/utils/errorParser";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import * as Crypto from "expo-crypto";
+import { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY } from "@/constants/authStorageKeys";
+
+export { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY, guestTutorialDoneKey } from "@/constants/authStorageKeys";
 
 const logger = createLogger('AuthHook');
 
 // Use types from generated schema
-type SafeUser = components["schemas"]["SafeUser"];
+// isGuest is declared here too so guest handling type-checks before the
+// generated schema picks the field up.
+type SafeUser = components["schemas"]["SafeUser"] & { isGuest?: boolean };
 type LoginRequestApple = components["schemas"]["LoginRequestApple"];
 type RegisterRequestApple = components["schemas"]["RegisterRequestApple"];
 
@@ -80,6 +86,54 @@ export async function clearCachedUser(): Promise<void> {
     }
 }
 
+/**
+ * Whether a real (non-guest) account has ever been authenticated on this
+ * device. Decides whether a signed-out launch gets a fresh guest session or
+ * the login screen.
+ */
+export async function getHasEverSignedIn(): Promise<boolean> {
+    try {
+        if ((await AsyncStorage.getItem(HAS_EVER_SIGNED_IN_KEY)) === "true") return true;
+        // Installs from before the flag existed: any leftover app state means a
+        // real account was used here, so send them to login instead of a guest.
+        const keys = await AsyncStorage.getAllKeys();
+        const usedBefore = keys.some(
+            (k) =>
+                k === "hasSeenIntroVideo" ||
+                k.endsWith("-home-tour-seen") ||
+                k.endsWith("-intro-tour-seen") ||
+                k.startsWith("workspaces_cache_") ||
+                k.startsWith("recent_workspaces_"),
+        );
+        if (usedBefore) await markEverSignedIn();
+        return usedBefore;
+    } catch {
+        return false;
+    }
+}
+
+async function markEverSignedIn(): Promise<void> {
+    try {
+        await AsyncStorage.setItem(HAS_EVER_SIGNED_IN_KEY, "true");
+    } catch (error) {
+        logger.error("Error saving sign-in flag", error);
+    }
+}
+
+/** Stable per-install id so the backend can tie repeat guest sessions together. */
+async function getGuestDeviceId(): Promise<string | undefined> {
+    try {
+        const existing = await AsyncStorage.getItem(GUEST_DEVICE_ID_KEY);
+        if (existing) return existing;
+        const id = Crypto.randomUUID();
+        await AsyncStorage.setItem(GUEST_DEVICE_ID_KEY, id);
+        return id;
+    } catch (error) {
+        logger.error("Error reading guest device id", error);
+        return undefined;
+    }
+}
+
 export async function saveAuthData(authData: AuthData): Promise<boolean> {
     try {
         logger.debug("Saving auth data");
@@ -114,6 +168,9 @@ interface AuthContextType {
     registerWithGoogle: (email: string, googleID: string, idToken?: string) => Promise<any>;
     loginWithGoogle: (googleID: string, email?: string, idToken?: string) => Promise<SafeUser | void>;
     logout: () => void;
+    /** Creates an anonymous account and signs into it. Concurrent calls share one request. */
+    startGuestSession: () => Promise<SafeUser>;
+    isGuest: boolean;
     refresh: () => void;
     fetchAuthData: () => Promise<AuthResult>;
     updateUser: (updates: Partial<SafeUser>) => void;
@@ -139,11 +196,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (user) hadSessionRef.current = true;
     }, [user]);
 
+    // Single in-flight guest creation, so double mounts never make two guests.
+    const guestPromiseRef = useRef<Promise<SafeUser> | null>(null);
+
+    // Covers every path that signs a real account in, including registration
+    // in useOnboarding, which calls setUser directly. When a guest is replaced
+    // by a real account, drop the guest's cached queries and profile.
+    const prevUserRef = useRef<SafeUser | null>(null);
+    useEffect(() => {
+        const prev = prevUserRef.current;
+        prevUserRef.current = user;
+        if (!user || user.isGuest) return;
+        void markEverSignedIn();
+        if (prev?.isGuest && prev._id !== user._id) {
+            queryClient.clear();
+            void saveCachedUser(user);
+        }
+    }, [user, queryClient]);
+
     // Register 401 handler so API client can trigger logout
     useEffect(() => {
         setUnauthorizedHandler(() => {
             logger.warn("Auto-logout triggered by 401 response");
             setUser(null);
+            guestPromiseRef.current = null;
             SecureStore.deleteItemAsync("auth_data");
             queryClient.clear();
             if (hadSessionRef.current) router.replace("/login");
@@ -453,7 +529,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
+    async function startGuestSession(): Promise<SafeUser> {
+        if (guestPromiseRef.current) return guestPromiseRef.current;
+
+        const promise = (async (): Promise<SafeUser> => {
+            logger.debug("Guest session attempt");
+            try {
+                const deviceId = await getGuestDeviceId();
+                const result = await client.POST("/v1/auth/guest" as any, {
+                    body: (deviceId ? { deviceId } : {}) as any,
+                });
+
+                if (result.error || !result.data) {
+                    const errorDetail = (result.error as any)?.detail || '';
+                    const errorStatus = result.response?.status;
+                    logger.error("Guest session error", { status: errorStatus, detail: errorDetail });
+                    throw new Error(errorDetail || 'Could not start a guest session.');
+                }
+
+                const userData = result.data as SafeUser;
+
+                // Tokens first: the tutorial makes authenticated calls as soon
+                // as the caller routes there.
+                const accessToken = result.response?.headers?.get('access_token');
+                const refreshToken = result.response?.headers?.get('refresh_token');
+                if (accessToken && refreshToken) {
+                    await saveAuthData({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+                }
+
+                setUser(userData);
+                void saveCachedUser(userData);
+                analytics.identify(userData._id, { display_name: userData.display_name, is_guest: true });
+                analytics.capture(AnalyticsEvents.LOGIN_COMPLETED, { method: "guest" });
+                return userData;
+            } catch (error) {
+                console.error("Guest session failed with exception:", error);
+                analytics.capture(AnalyticsEvents.LOGIN_FAILED, { method: "guest", error: (error as Error).message });
+                Sentry.captureException(error, {
+                    tags: { "auth.method": "guest", "auth.flow": "login" },
+                });
+                throw error;
+            }
+        })();
+
+        // Keep the resolved promise until logout so a late second caller gets
+        // the same guest; drop it on failure so a retry can go through.
+        guestPromiseRef.current = promise;
+        promise.catch(() => {
+            if (guestPromiseRef.current === promise) guestPromiseRef.current = null;
+        });
+        return promise;
+    }
+
     function logout() {
+        guestPromiseRef.current = null;
         setUser(null);
         SecureStore.deleteItemAsync("auth_data");
         void clearCachedUser();
@@ -540,6 +672,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             logger.debug("👤 User ID:", userData._id);
                             logger.debug("👤 Display name:", userData.display_name);
                             setUser(userData);
+                            if (!userData.isGuest) void markEverSignedIn();
 
                             // Update tokens if provided in response headers
                             if (result.response?.headers) {
@@ -638,6 +771,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             registerWithGoogle,
             loginWithGoogle,
             logout,
+            startGuestSession,
+            isGuest: !!user?.isGuest,
             refresh,
             fetchAuthData,
             updateUser,

@@ -80,10 +80,10 @@ type RewardDrop struct {
 
 // RewardPool contains the weighted list of possible reward drops
 var RewardPool = []RewardDrop{
-	{CreditType: "voice", Amount: 1, Weight: 40},
-	{CreditType: "naturalLanguage", Amount: 1, Weight: 40},
-	{CreditType: "analytics", Amount: 1, Weight: 15},
-	{CreditType: "voice", Amount: 2, Weight: 5},
+	{CreditType: "voice", Amount: 1, Weight: 25},
+	{CreditType: "naturalLanguage", Amount: 1, Weight: 25},
+	{CreditType: "analytics", Amount: 1, Weight: 35},
+	{CreditType: "voice", Amount: 2, Weight: 15},
 }
 
 // --- API response types ---

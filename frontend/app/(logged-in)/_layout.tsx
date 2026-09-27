@@ -2,12 +2,14 @@
 
 import BackButton from "@/components/BackButton";
 import OfflineBanner from "@/components/OfflineBanner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getAuthData, getCachedUser, getHasEverSignedIn } from "@/hooks/useAuth";
+import { enterAsNewGuest, TABS_ROUTE } from "@/utils/guestEntry";
 import { Redirect, Slot, Stack, router, usePathname, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 
 import { ScrollView, View, AppState, InteractionManager, LogBox, StyleSheet } from "react-native";
-import { updateStreakWidget } from "@/widgets/updateStreakWidget";
+import { noteTaskCompleted, refreshCompletedToday, syncStreakWidgets } from "@/widgets/syncWidgets";
+import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
 import { type ErrorBoundaryProps } from "expo-router";
@@ -25,7 +27,8 @@ import {
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 import { ThemedView } from "@/components/ThemedView";
 import { useCreateModal } from "@/contexts/createModalContext";
-import CreateModal from "@/components/modals/CreateModal";
+import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import CreateComposer from "@/components/modals/create/composer/CreateComposer";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
@@ -33,7 +36,7 @@ import * as Localization from 'expo-localization';
 import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
+import { endActivity, tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
 import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
 import { useTaskActions, useTasksSelector } from '@/contexts/tasksContext';
@@ -204,7 +207,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 const layout = ({ children }: { children: React.ReactNode }) => {
-    const { user, fetchAuthData } = useAuth();
+    const { user, setUser, fetchAuthData, startGuestSession } = useAuth();
     const { fetchKudosData } = useKudos();
     const { fetchWorkspaces } = useTaskActions();
     const queryClient = useQueryClient();
@@ -229,9 +232,25 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         const initializeAuth = async () => {
             try {
                 setIsLoading(true);
+                // Warm start: render from the cached profile right away and verify
+                // the token in the background; a rejection below still redirects.
+                const [tokens, cached] = await Promise.all([getAuthData(), getCachedUser()]);
+                if (tokens && cached) {
+                    setUser(cached);
+                    setIsLoading(false);
+                }
                 const result = await fetchAuthData();
 
                 if (result.status === "unauthenticated") {
+                    if (!(await getHasEverSignedIn())) {
+                        // Never signed in on this device: continue as a fresh guest
+                        // (no intro video). Hold the splash while it is created.
+                        setIsLoading(true);
+                        const guestRoute = await enterAsNewGuest(startGuestSession);
+                        // Guest already done with the tutorial: just render the app.
+                        if (guestRoute !== TABS_ROUTE) setRedirectPath(guestRoute);
+                        return;
+                    }
                     // First open ever: intro video precedes login. (Old pre-login
                     // onboarding cluster removed — after intro, straight to login.)
                     const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
@@ -293,6 +312,14 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         initializeAuth();
     }, []);
 
+    // Every completion path (detail page, swipe, review, calendar) funnels here
+    useEffect(() => {
+        return taskCompletionEvents.subscribe(({ taskId, newStreak }) => {
+            endActivity(taskId).catch(() => {});
+            noteTaskCompleted(taskId, newStreak);
+        });
+    }, []);
+
     // Update streak widget on app foreground.
     // Initial update deferred via InteractionManager to avoid Hermes GC pressure during startup.
     useEffect(() => {
@@ -300,12 +327,14 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         const subscription = AppState.addEventListener('change', (nextState) => {
             if (nextState === 'active') {
-                updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+                syncStreakWidgets(user._id, user.streak || 0).catch(() => {});
+                refreshCompletedToday().catch(() => {});
             }
         });
 
         const handle = InteractionManager.runAfterInteractions(() => {
-            updateStreakWidget(user._id, user.streak || 0, 0).catch(() => {});
+            syncStreakWidgets(user._id, user.streak || 0).catch(() => {});
+            refreshCompletedToday().catch(() => {});
         });
 
         return () => {
@@ -390,8 +419,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                 priority: parseInt(data.priority || '0', 10),
                 categoryId: data.categoryId || '',
                 taskId: data.taskId || '',
-                accentColor: '#8B5CF6',
-                statusLabel: 'Due Soon',
             });
         };
 
@@ -483,8 +510,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         setSplashDone(true);
     }, []);
 
-    // If no user after loading, redirect based on onboarding status
-    if (!isLoading && !user && redirectPath) {
+    // If no user after loading, redirect based on onboarding status. A just-created
+    // guest has a user but still needs to leave for the tutorial.
+    if (!isLoading && redirectPath && (!user || user.isGuest)) {
         return <Redirect href={redirectPath} />;
     }
 
@@ -519,6 +547,14 @@ const LayoutContent = () => {
     // Don't pay for the sheet until it's first opened; keep it mounted afterwards
     const [createModalMounted, setCreateModalMounted] = useState(visible);
     if (visible && !createModalMounted) setCreateModalMounted(true);
+    // New tasks go to the full-screen composer; editing, blueprints and the
+    // new-category entry still use the sheet.
+    const composerRoute =
+        !modalConfig.edit &&
+        !modalConfig.isBlueprint &&
+        (modalConfig.screen === undefined ||
+            modalConfig.screen === Screen.STANDARD ||
+            modalConfig.screen === Screen.SELECT_WORKSPACE);
 
     // Auto-start live activities when task times arrive (foreground)
     useLiveActivityScheduler();
@@ -548,7 +584,16 @@ const LayoutContent = () => {
                         }}
                     /> */}
                 </Stack>
-                {createModalMounted && <CreateModal visible={visible} setVisible={setVisible} {...modalConfig} />}
+                {createModalMounted && (
+                    <CreateModal visible={visible && !composerRoute} setVisible={setVisible} {...modalConfig} />
+                )}
+                {createModalMounted && (
+                    <CreateComposer
+                        visible={visible && composerRoute}
+                        setVisible={setVisible}
+                        categoryId={modalConfig.categoryId}
+                    />
+                )}
         </View>
     );
 };

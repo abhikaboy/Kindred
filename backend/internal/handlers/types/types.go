@@ -386,6 +386,14 @@ type User struct {
 	TermsVersion          string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 	FirstAllRingsClosedAt *time.Time   `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
 	Song                  *Song        `bson:"song,omitempty" json:"song,omitempty"`
+
+	// IsGuest marks an account created by POST /v1/auth/guest with no
+	// credentials attached. Signing up later upgrades this same document in
+	// place, so the flag is cleared rather than the user being recreated.
+	IsGuest bool `bson:"isGuest,omitempty" json:"isGuest"`
+	// GuestDeviceID is the client-supplied device identifier sent when the
+	// guest was created. Kept for abandoned-guest cleanup and analytics only.
+	GuestDeviceID string `bson:"guestDeviceId,omitempty" json:"guestDeviceId,omitempty"`
 }
 
 type SafeUser struct {
@@ -412,6 +420,7 @@ type SafeUser struct {
 	TermsVersion          string               `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 	FirstAllRingsClosedAt *time.Time           `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
 	Song                  *Song                `bson:"song,omitempty" json:"song,omitempty"`
+	IsGuest               bool                 `bson:"isGuest,omitempty" json:"isGuest"`
 }
 
 // UserSettings contains all user preference settings

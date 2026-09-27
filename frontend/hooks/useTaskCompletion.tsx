@@ -1,9 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { markAsCompletedAPI, setWorkingAPI, type RingDelta } from '@/api/task';
-import {
-    ActiveTaskActivityFactory,
-    DeadlineCountdownActivityFactory,
-} from '@/widgets/widgetUpdaters';
 import { endActivity } from '@/utils/liveActivityManager';
 import { useTasks } from '@/contexts/tasksContext';
 import { Task } from '@/api/types';
@@ -11,7 +7,6 @@ import { showToastable } from 'react-native-toastable';
 import TaskToast from '@/components/ui/TaskToast';
 import DefaultToast from '@/components/ui/DefaultToast';
 import { useAuth } from '@/hooks/useAuth';
-import { updateStreakWidget } from '@/widgets/updateStreakWidget';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsEvents } from '@/utils/analytics';
 import { useQueryClient } from '@tanstack/react-query';
@@ -53,11 +48,7 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         isCompletingRef.current = true;
         setIsCompleting(true);
         try {
-            // endActivity clears the update interval + state; factory ends cover
-            // deadline activities and the rehydrated (no-op instance) case.
             endActivity(taskId).catch(() => {});
-            ActiveTaskActivityFactory.getInstances().forEach((a) => a.end("default"));
-            DeadlineCountdownActivityFactory.getInstances().forEach((a) => a.end("default"));
             setWorkingAPI(categoryId, taskId, false).catch(() => {});
 
             const res = await markAsCompletedAPI(categoryId, taskId, {
@@ -110,11 +101,6 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
             };
 
             const newStreakInfo = (res as any)?.newStreakInfo;
-
-            if (user?._id) {
-                const newStreak = newStreakInfo?.newStreak ?? (user?.streak || 0);
-                updateStreakWidget(user._id, newStreak, 1).catch(() => {});
-            }
 
             let title = "Task completed!";
             let message = `Congrats! Click here to post and document your task!`;

@@ -66,7 +66,7 @@ export function CategoryPopover({
     >
       {auto ? <MagicWand size={14} className="text-primary" /> : selected ? dot(selected.workspaceName) : <Stack size={14} />}
       {auto ? (
-        <span className="whitespace-nowrap text-primary">Auto</span>
+        <span className="whitespace-nowrap text-primary">Auto Sort</span>
       ) : selected ? (
         <span className="flex items-center gap-1 whitespace-nowrap">
           <span className="text-muted-foreground">{selected.workspaceName}</span>
@@ -84,7 +84,7 @@ export function CategoryPopover({
       className="font-medium"
       icon={auto ? <MagicWand size={14} /> : selected ? dot(selected.workspaceName) : <Stack size={14} />}
     >
-      {auto ? "Auto" : (selected?.name ?? "Category")}
+      {auto ? "Auto Sort" : (selected?.name ?? "Category")}
     </PropertyPill>
   );
 
@@ -105,7 +105,7 @@ export function CategoryPopover({
             )}
           >
             <MagicWand size={14} className="text-primary" />
-            <span>Auto</span>
+            <span>Auto Sort</span>
             <span className="truncate text-xs text-muted-foreground">
               File it for me — lands in your Inbox until it's sorted
             </span>

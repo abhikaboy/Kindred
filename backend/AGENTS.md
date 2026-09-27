@@ -25,6 +25,7 @@ Go REST API: **Huma v2** (OpenAPI-first) over a **Fiber v2** server, **MongoDB A
 - `make generate-api` — regenerate the OpenAPI spec + frontend types after changing request/response shapes.
 
 ## Gotchas
+- Local runs use the real database from `.env`, and startup schedules jobs that send reminder/check-in pushes, create recurring tasks, and renew Google Calendar watches. Set `DISABLE_BACKGROUND_JOBS=true` for local/Genkit runs. Without Google Calendar creds, placeholder `GOOGLE_CALENDAR_*` values let config load (calendar features won't work).
 - SSE streaming routes are registered directly on Fiber and **bypass Huma**.
 - Auth middleware only covers the `/v1/user` prefix.
 - Request-scoped Sentry hub must be set by middleware before handlers run.

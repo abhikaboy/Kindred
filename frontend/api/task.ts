@@ -5,6 +5,7 @@ import { logger } from "@/utils/logger";
 import { combineDateAndTime } from "@/utils/timeUtils";
 import { request } from "@/hooks/useRequest";
 import type { TaggedTaskUser, PendingTaggedTask, TagStatus } from "./types";
+import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
 
 // Extract the type definitions from the generated types
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -215,7 +216,9 @@ export const markAsCompletedAPI = async (
     }
 
     // Cast to TaskCompletionResult since the API schema may not be regenerated yet
-    return data as unknown as TaskCompletionResult;
+    const result = data as unknown as TaskCompletionResult;
+    taskCompletionEvents.emit({ taskId, newStreak: (result as any)?.newStreakInfo?.newStreak });
+    return result;
 };
 
 type LogProgressDocument = components["schemas"]["LogProgressDocument"];
@@ -761,6 +764,21 @@ export const suggestTaskFieldsAPI = async (text: string): Promise<TaskFieldSugge
 
     if (error || !data) return {};
     return ((data as any)?.body ?? data) as TaskFieldSuggestion;
+};
+
+export type TaskPrediction = components["schemas"]["TaskPrediction"];
+
+/**
+ * New tasks the user will likely need next, each with the reason. Additive:
+ * any failure yields an empty list.
+ */
+export const getTaskPredictionsAPI = async (): Promise<TaskPrediction[]> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { data, error } = await client.GET("/v1/user/tasks/predictions", {
+        params: withAuthHeaders({ query: { timezone } }),
+    });
+    if (error || !data) return [];
+    return data.predictions ?? [];
 };
 
 export const previewTasksFromNaturalLanguageAPI = async (

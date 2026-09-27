@@ -1,97 +1,106 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check } from "@phosphor-icons/react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemedText } from "@/components/ThemedText";
-import { useRingsToday, type RingProgress } from "@/hooks/useRings";
-import { RING_COLORS } from "@shared/rings";
+import { ConcentricRings } from "@/components/rings/ConcentricRings";
+import { RingDetail } from "@/components/rings/RingDetail";
+import { ScoreInfoDialog } from "@/components/rings/ScoreInfoDialog";
+import { useRingsToday } from "@/hooks/useRings";
+import { RING_COLORS, type RingKey } from "@shared/rings";
+import { cn } from "@/lib/utils";
 
-// Matches mobile: three separate rings, one color each, on a neutral track.
-const SIZE = 80;
-const STROKE = 6;
-const RADIUS = (SIZE - STROKE) / 2;
-const CIRC = 2 * Math.PI * RADIUS;
-
-const RINGS = [
+const RINGS: { key: RingKey; label: string }[] = [
   { key: "plan", label: "Plan" },
   { key: "do", label: "Do" },
   { key: "share", label: "Share" },
-] as const;
+];
 
-function fraction(p: RingProgress): number {
-  if (!p.target || p.target <= 0) return 0;
-  return Math.min(Math.max(p.current / p.target, 0), 1);
+const SCORE_HINT_KEY = "kindred.hint.productivityScore";
+
+// Explains the score once on first view, like mobile's first-touch hint.
+function useScoreInfo() {
+  const [open, setOpen] = useState(() => localStorage.getItem(SCORE_HINT_KEY) == null);
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) localStorage.setItem(SCORE_HINT_KEY, "1");
+  };
+  return { open, onOpenChange };
 }
 
-function Ring({ label, progress, color }: { label: string; progress: RingProgress; color: string }) {
-  const target = fraction(progress);
-  const [fill, setFill] = useState(0);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setFill(target));
-    return () => cancelAnimationFrame(id);
-  }, [target]);
-
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
-        <svg width={SIZE} height={SIZE} className="-rotate-90">
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            fill="none"
-            strokeWidth={STROKE}
-            style={{ stroke: "var(--accent)" }}
-          />
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            fill="none"
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-            strokeDasharray={CIRC}
-            strokeDashoffset={CIRC * (1 - fill)}
-            style={{ stroke: color, transition: "stroke-dashoffset 800ms ease-out" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          {progress.closed ? (
-            <Check size={24} weight="bold" style={{ color }} />
-          ) : (
-            <ThemedText type="defaultSemiBold" className="text-sm">
-              {progress.current}/{progress.target}
-            </ThemedText>
-          )}
-        </div>
-      </div>
-      <ThemedText type="caption" className="uppercase tracking-widest">
-        {label}
-      </ThemedText>
-    </div>
-  );
-}
-
+// Matches the mobile home card: one concentric set with the score in the center
+// and a legend beside it. A legend row opens that ring's detail and isolates it.
 export function ProductivityRings(): React.JSX.Element {
   const { data, isLoading } = useRingsToday();
+  const [hovered, setHovered] = useState<RingKey | null>(null);
+  const [expanded, setExpanded] = useState<RingKey | null>(null);
+  const scoreInfo = useScoreInfo();
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-start gap-8">
-        {RINGS.map((r) => (
-          <div key={r.key} className="flex flex-col items-center gap-1.5">
-            <Skeleton className="size-20 rounded-full" />
-            <Skeleton className="h-3 w-10" />
-          </div>
-        ))}
+      <div className="flex items-center gap-6">
+        <Skeleton className="size-[132px] rounded-full" />
+        <div className="flex w-40 flex-col gap-3">
+          {RINGS.map((r) => (
+            <Skeleton key={r.key} className="h-5 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
+  const rings = data.ring_state;
+  const focused = expanded ?? hovered;
   return (
-    <div className="flex items-start gap-8">
-      {RINGS.map((r) => (
-        <Ring key={r.key} label={r.label} progress={data.ring_state[r.key]} color={RING_COLORS[r.key]} />
-      ))}
+    <div className="flex items-center gap-6">
+      <ConcentricRings
+        rings={rings}
+        dimmedExcept={focused}
+        center={
+          <button
+            type="button"
+            onClick={() => scoreInfo.onOpenChange(true)}
+            aria-label={`Productivity score ${data.productivity_score}. How it works`}
+            className="rounded-full px-2 transition-opacity hover:opacity-70"
+          >
+            <ThemedText type="subtitle" className="tabular-nums">
+              {data.productivity_score}
+            </ThemedText>
+          </button>
+        }
+      />
+      <div className="flex w-40 flex-col gap-3" onMouseLeave={() => setHovered(null)}>
+        {RINGS.map(({ key, label }) => {
+          const progress = rings[key];
+          return (
+            <Popover key={key} open={expanded === key} onOpenChange={(open) => setExpanded(open ? key : null)}>
+              <PopoverTrigger
+                onMouseEnter={() => setHovered(key)}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-md py-1 text-left transition-opacity",
+                  focused && focused !== key && "opacity-30"
+                )}
+              >
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: RING_COLORS[key] }} />
+                <ThemedText type="default" className="flex-1">
+                  {label}
+                </ThemedText>
+                {progress.closed ? (
+                  <Check size={16} weight="bold" style={{ color: RING_COLORS[key] }} />
+                ) : (
+                  <span className="font-sans text-sm font-semibold tabular-nums">
+                    {progress.current}/{progress.target}
+                  </span>
+                )}
+              </PopoverTrigger>
+              <PopoverContent side="right" align="start" sideOffset={16} className="w-80 p-4">
+                <RingDetail ringKey={key} today={progress} onNavigate={() => setExpanded(null)} />
+              </PopoverContent>
+            </Popover>
+          );
+        })}
+      </div>
+      <ScoreInfoDialog score={data.productivity_score} open={scoreInfo.open} onOpenChange={scoreInfo.onOpenChange} />
     </div>
   );
 }

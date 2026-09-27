@@ -9,7 +9,6 @@ import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalProvider } from "@gorhom/portal";
-import { Accelerometer } from "expo-sensors";
 
 // Import components and contexts after the core modules
 import { AuthProvider } from "@/hooks/useAuth";
@@ -117,11 +116,7 @@ export default Sentry.wrap(function RootLayout() {
         Outfit: require("../assets/fonts/Outfit-Variable.ttf"),
         OutfitLight: require("../assets/fonts/Outfit-Light.ttf"),
         Fraunces: require("../assets/fonts/Fraunces-Variable.ttf"),
-        FrauncesItalic: require("../assets/fonts/Fraunces-Italic.ttf"),
-        SofiaSans: require("../assets/fonts/SofiaSans-Variable.ttf"),
     });
-    const [shakeDetected, setShakeDetected] = useState(false);
-    const [subscription, setSubscription] = useState(null);
     const safeAsync = useSafeAsync();
 
     // Automatically clean up old cache entries to prevent unbounded growth
@@ -131,27 +126,6 @@ export default Sentry.wrap(function RootLayout() {
         enableLogging: __DEV__, // Only log in development
     });
 
-
-    // useEffect(() => {
-    //     const subscription = Accelerometer.addListener((data) => {
-    //         const totalForce = Math.abs(data.x) + Math.abs(data.y) + Math.abs(data.z);
-
-    //         if (totalForce > 3) {
-    //             // Adjust the threshold as needed
-    //             setShakeDetected(true);
-    //             // router.push("/AuditLog");
-    //             setTimeout(() => {
-    //                 setShakeDetected(false);
-    //             }, 500); // Reset after a short period
-    //         }
-    //     });
-
-    //     setSubscription(subscription);
-
-    //     return () => {
-    //         subscription.remove();
-    //     };
-    // }, []);
 
     // Wire react-query's focusManager to AppState so refetchOnWindowFocus
     // actually fires when the app returns to the foreground.

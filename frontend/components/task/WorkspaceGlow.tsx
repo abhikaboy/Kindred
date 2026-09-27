@@ -1,4 +1,5 @@
 import React from "react";
+import type { SharedValue } from "react-native-reanimated";
 import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
 
 // hand-tuned strengths — verify on OLED before changing
@@ -13,13 +14,18 @@ const HOME_GLOW: GlowBlob[] = [
     { color: "#4D9EFF", opacity: { dark: 0.06, light: 0.075 }, cx: 82, cy: 90, rx: 30, ry: 14 },
 ];
 
-/** Static two-hue ambient glow behind the task tab. known-app inspired; deliberately faint. */
-function WorkspaceGlow({ variant = "workspace" }: { variant?: "workspace" | "home" }) {
-    return variant === "home" ? (
-        <GlowBackground blobs={HOME_GLOW} light="blobs" />
-    ) : (
-        <GlowBackground blobs={WORKSPACE_GLOW} light="blobs" />
-    );
+/** Static two-hue ambient glow behind the task tab. known-app inspired; deliberately faint.
+    `pull`/`replay` let the home page's pull-to-refresh drive the wash. */
+function WorkspaceGlow({
+    variant = "workspace",
+    pull,
+    replay,
+}: {
+    variant?: "workspace" | "home";
+    pull?: SharedValue<number>;
+    replay?: SharedValue<number>;
+}) {
+    return <GlowBackground blobs={variant === "home" ? HOME_GLOW : WORKSPACE_GLOW} pull={pull} replay={replay} />;
 }
 
 export default React.memo(WorkspaceGlow);

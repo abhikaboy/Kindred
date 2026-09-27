@@ -1,13 +1,16 @@
-import type { TodayTasksWidgetProps } from './TodayTasksWidget';
-import type { WorkspaceSnapshotWidgetProps } from './WorkspaceSnapshotWidget';
-import type { LockScreenCircularProps, LockScreenRectangularProps } from './LockScreenWidgets';
-import type { ActivityStreakWidgetProps } from './ActivityStreakWidget';
+import type {
+    NextTaskWidgetProps,
+    StreakWidgetProps,
+    TimelineEntry,
+    TodayWidgetProps,
+    WorkspaceWidgetProps,
+} from './widgetData';
 import type { ActiveTaskActivityProps } from './ActiveTaskActivity';
 import type { DeadlineCountdownProps } from './DeadlineCountdownActivity';
 
 type WidgetLike<TProps> = {
     updateSnapshot: (props: TProps) => void;
-    updateTimeline: (props: TProps[]) => void;
+    updateTimeline: (entries: TimelineEntry<TProps>[]) => void;
 };
 
 type LiveActivityInstance<TProps> = {
@@ -71,8 +74,8 @@ const createWidgetUpdater = <TProps>(
             try { resolve().updateSnapshot(props); }
             catch (e) { console.warn(`[Widgets] ${name} updateSnapshot failed:`, e); }
         },
-        updateTimeline: (props) => {
-            try { resolve().updateTimeline(props); }
+        updateTimeline: (entries) => {
+            try { resolve().updateTimeline(entries); }
             catch (e) { console.warn(`[Widgets] ${name} updateTimeline failed:`, e); }
         },
     };
@@ -130,34 +133,34 @@ const createLiveActivityFactory = <TProps>(
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayTasksWidgetProps>(
+export const TodayTasksWidgetUpdater = createWidgetUpdater<TodayWidgetProps>(
     'TodayTasksWidget',
-    () => require('./TodayTasksWidget').default,
+    () => require('./nativeWidgets').TodayTasksWidget,
 );
 
-export const WorkspaceSnapshotWidgetUpdater = createWidgetUpdater<WorkspaceSnapshotWidgetProps>(
+export const WorkspaceSnapshotWidgetUpdater = createWidgetUpdater<WorkspaceWidgetProps>(
     'WorkspaceSnapshotWidget',
-    () => require('./WorkspaceSnapshotWidget').default,
+    () => require('./nativeWidgets').WorkspaceSnapshotWidget,
 );
 
-export const ActivityStreakWidgetUpdater = createWidgetUpdater<ActivityStreakWidgetProps>(
+export const ActivityStreakWidgetUpdater = createWidgetUpdater<StreakWidgetProps>(
     'ActivityStreakWidget',
-    () => require('./ActivityStreakWidget').default,
+    () => require('./nativeWidgets').ActivityStreakWidget,
 );
 
-export const LockScreenCircularWidgetUpdater = createWidgetUpdater<LockScreenCircularProps>(
+export const LockScreenCircularWidgetUpdater = createWidgetUpdater<TodayWidgetProps>(
     'LockScreenCircularWidget',
-    () => require('./LockScreenWidgets').LockScreenCircularWidget,
+    () => require('./nativeWidgets').LockScreenCircularWidget,
 );
 
-export const LockScreenRectangularWidgetUpdater = createWidgetUpdater<LockScreenRectangularProps>(
+export const LockScreenRectangularWidgetUpdater = createWidgetUpdater<NextTaskWidgetProps>(
     'LockScreenRectangularWidget',
-    () => require('./LockScreenWidgets').LockScreenRectangularWidget,
+    () => require('./nativeWidgets').LockScreenRectangularWidget,
 );
 
-export const LockScreenInlineWidgetUpdater = createWidgetUpdater<{ streak: number }>(
+export const LockScreenInlineWidgetUpdater = createWidgetUpdater<StreakWidgetProps>(
     'LockScreenInlineWidget',
-    () => require('./LockScreenWidgets').LockScreenInlineWidget,
+    () => require('./nativeWidgets').LockScreenInlineWidget,
 );
 
 export const ActiveTaskActivityFactory = createLiveActivityFactory<ActiveTaskActivityProps>(

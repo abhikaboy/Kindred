@@ -26,9 +26,8 @@ const LoginPhone = () => {
 
     const [phoneNumber, setPhoneNumber] = useState("");
 
-    // The API expects E.164 ("+15551234567"); the input collects bare digits.
-    // Onboarding builds this from an explicit country-code picker, but this
-    // screen has none, so fall back to the shared helper's default region.
+    // The API expects E.164 ("+15551234567"). PhoneInput has its own
+    // country-code picker and emits "+<code><digits>", so this just normalizes.
     const normalizedPhone = normalizeE164(phoneNumber);
     const [otpCode, setOtpCode] = useState("");
     const [password, setPassword] = useState("");
@@ -404,7 +403,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     otpContainer: {
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 16,
         width: '100%',
     },

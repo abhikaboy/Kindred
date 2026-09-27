@@ -8,7 +8,7 @@ import { PersonalWorkspaces } from "@/components/home/PersonalWorkspaces";
 import { SectionHeader } from "@/components/home/SectionHeader";
 
 // Greeting, then one full-width section per concern stacked top to bottom:
-// TODAY, UPCOMING, WORKING ON, workspaces. No side-by-side columns — a section
+// activity rings, UPCOMING, WORKING ON, workspaces. No side-by-side columns — a section
 // owns the full measure so the eye only ever scans in one direction. All
 // borderless (no card wrappers, no nested cards).
 export default function HomeScreen() {
@@ -17,7 +17,7 @@ export default function HomeScreen() {
       <WelcomeHeader />
 
       <section className="flex flex-col gap-4">
-        <SectionHeader title="Today" />
+        <SectionHeader title="Activity Rings" variant="prominent" />
         <TodayHero />
       </section>
 

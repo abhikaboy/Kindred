@@ -4,9 +4,7 @@ import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import MentionTextInput from "../../inputs/MentionTextInput";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
-import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
-import { useApplyCreatedTasks } from "@/hooks/useApplyCreatedTasks";
 import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useBlueprints } from "@/contexts/blueprintContext";
@@ -22,7 +20,7 @@ import HintBubble from "@/components/ui/HintBubble";
 import { CaretUp, CaretDown, Eye, EyeSlash, Flag, Barbell, WarningCircle, Plugs } from "phosphor-react-native";
 import Popover from "react-native-popover-view";
 import type { components } from "@/api/generated/types";
-import { updateTaskAPI, updateTemplateAPI, respondToTaskTagAPI } from "@/api/task";
+import { updateTaskAPI, updateTemplateAPI } from "@/api/task";
 import { ObjectId } from "bson";
 import type { RecurDetails } from "@/api/types";
 import { combineDateAndTime } from "@/utils/timeUtils";
@@ -31,11 +29,10 @@ import { updatePost } from "@/api/post";
 import * as Haptics from "expo-haptics";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
 import { noAppliedSchedule, scheduleUpdates, type AppliedSchedule } from "@/hooks/scheduleUpdates";
 import SuggestionRow from "@/components/modals/create/SuggestionRow";
+import { AUTO_CATEGORY_ID, useSubmitNewTask } from "@/hooks/useSubmitNewTask";
 
 type CreateTaskParams = components["schemas"]["CreateTaskParams"];
 
@@ -49,17 +46,13 @@ type Props = {
     tutorial?: boolean; // Onboarding tutorial: lock the task name + hide the tag option
 };
 
-// Sentinel id for the "Auto" dropdown option: the user declines to pick a
-// category and the backend files the task from its Inbox in the background.
-// Callers can pass it as `categoryId` to open with Auto Sort preselected.
-export const AUTO_CATEGORY_ID = "__auto__";
+// Callers can pass AUTO_CATEGORY_ID as `categoryId` to open with Auto Sort preselected.
+export { AUTO_CATEGORY_ID };
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
     const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
-    const { request } = useRequest();
     const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task } = useTasks();
-    const { applyCreatedTask } = useApplyCreatedTasks();
     const { selectedCategory, setCreateCategory } = useSelectedCategory();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
@@ -96,13 +89,10 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         setTaggedUsers,
         notes,
         checklist,
-        copySourceTaskId,
-        setCopySourceTaskId,
     } = useTaskCreation();
     const ThemedColor = useThemeColor();
     const { capture } = useAnalytics();
-    const queryClient = useQueryClient();
-    const { showRingUpdate } = useRingUpdate();
+    const submitNewTask = useSubmitNewTask();
 
     // Tutorial: a stuck-user hint — the cursor only appears if they haven't
     // tapped Create ~5s after the field finishes auto-typing
@@ -235,8 +225,6 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         // so an empty selected-workspace list must not block it.
         if (!selectedCategory?.id) return;
 
-        const autoCategorize = selectedCategory.id === AUTO_CATEGORY_ID;
-
         // Trim trailing newlines and whitespace from task name
         const trimmedTaskName = taskName.replace(/[\n\r]+$/g, "").trim();
 
@@ -278,140 +266,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             return;
         }
 
-        // Normal mode - create task via API with optimistic update
-        const tempId = new ObjectId().toString();
-
-        // Create optimistic task
-        const optimisticTask: any = {
-            id: tempId,
-            content: trimmedTaskName,
-            priority: priority,
-            value: value,
-            recurring: recurring,
-            public: isPublic,
-            active: false,
-            checklist: checklist,
-            notes: notes,
-            startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
-            reminders: reminders.map((reminder) => ({
-                ...reminder,
-                triggerTime: reminder.triggerTime.toISOString(),
-            })),
-            recurFrequency: recurring ? recurFrequency : undefined,
-            recurDetails: recurring ? (recurDetails as any) : undefined,
-            timestamp: new Date().toISOString(),
-            lastEdited: new Date().toISOString(),
-            userID: "", // Will be populated by backend
-            categoryID: selectedCategory.id,
-            posted: false,
-        };
-
-        // Auto-categorized tasks have no known destination category yet, so
-        // there's nothing to insert into — the list refreshes after the create.
-        if (!autoCategorize) {
-            addToCategory(selectedCategory.id, optimisticTask);
-        }
-        resetTaskCreation();
-
-        // Make API call in background
-        let postBody: any = {
-            content: trimmedTaskName,
-            priority: priority,
-            value: value,
-            recurring: recurring,
-            public: isPublic,
-            active: false,
-            checklist: checklist,
-            notes: notes,
-            startDate: (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString(),
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
-            reminders: reminders.map((reminder) => ({
-                ...reminder,
-                triggerTime: reminder.triggerTime.toISOString(),
-            })),
-            integration: integration || undefined,
-            taggedUserIds: taggedUsers.length > 0 ? taggedUsers.map((u) => u.id) : undefined,
-        };
-        if (recurring || flexDetails) {
-            postBody.recurFrequency = recurFrequency;
-            postBody.recurring = true;
-            const details = { ...recurDetails } as any;
-            if (flexDetails) {
-                details.flex = flexDetails;
-            }
-            postBody.recurDetails = details as RecurDetails;
-        }
-
-        if (autoCategorize) {
-            try {
-                const response = await request("POST", "/user/tasks/auto", postBody as CreateTaskParams);
-                // The task landed in the Inbox; insert it there (refetches only if the Inbox is new).
-                applyCreatedTask(response as any);
-                showRingUpdate((response as any)?.ringDelta);
-                queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
-                capture(AnalyticsEvents.TASK_CREATED, {
-                    source: "create_modal",
-                    auto_categorize: true,
-                    has_deadline: !!deadline,
-                    has_checklist: false,
-                });
-                const { showToastable } = await import("react-native-toastable");
-                showToastable({
-                    message: "Added to your Inbox — we'll file it shortly.",
-                    status: "success",
-                    duration: 3000,
-                });
-            } catch (error) {
-                console.error("Failed to create task:", error);
-                const { showToastable } = await import("react-native-toastable");
-                showToastable({
-                    title: "Couldn't add task",
-                    message: "Something went wrong on our end. Give it another try.",
-                    status: "danger",
-                    duration: 3000,
-                });
-            }
-            return;
-        }
-
-        try {
-            const response = await request("POST", `/user/tasks/${selectedCategory.id}`, postBody as CreateTaskParams);
-
-            // Remove optimistic task and add real one
-            // This ensures we don't have ID mismatches
-            removeFromCategory(selectedCategory.id, tempId);
-            addToCategory(selectedCategory.id, response);
-            if (copySourceTaskId) {
-                respondToTaskTagAPI(copySourceTaskId, "copied").catch(() => {});
-                setCopySourceTaskId(null);
-                queryClient.invalidateQueries({ queryKey: ["taskTags", "pending"] });
-            }
-            showRingUpdate((response as any)?.ringDelta);
-            queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
-            capture(AnalyticsEvents.TASK_CREATED, {
-                source: "create_modal",
-                has_deadline: !!deadline,
-                has_checklist: false,
-            });
-        } catch (error) {
-            console.error("Failed to create task:", error);
-
-            // Remove optimistic task on error
-            removeFromCategory(selectedCategory.id, tempId);
-
-            // Show error toast
-            const { showToastable } = await import("react-native-toastable");
-
-            showToastable({
-                title: "Couldn't add task",
-                message: "Something went wrong on our end. Give it another try.",
-                status: "danger",
-                duration: 3000,
-            });
-        }
+        await submitNewTask(selectedCategory.id);
     };
 
     const updatePost = async () => {

@@ -1,8 +1,21 @@
 'widget';
 
 import React from 'react';
-import { Text, VStack, HStack, Image, ProgressView, Spacer, Link } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, padding, lineLimit, widgetURL, frame, cornerRadius, background, monospacedDigit, tint } from '@expo/ui/swift-ui/modifiers';
+import { Text, VStack, HStack, Image, ProgressView, Link, ZStack, Circle } from '@expo/ui/swift-ui';
+import {
+    background,
+    font,
+    foregroundStyle,
+    frame,
+    lineLimit,
+    multilineTextAlignment,
+    monospacedDigit,
+    padding,
+    resizable,
+    shapes,
+    tint,
+    widgetURL,
+} from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity } from 'expo-widgets';
 
 export type ActiveTaskActivityProps = {
@@ -13,171 +26,120 @@ export type ActiveTaskActivityProps = {
     hasEndTime: boolean;
     categoryId: string;
     taskId: string;
+    /** File URL of the Kindred check in the app group, set by liveActivityManager. */
+    brandMarkUri?: string;
 };
 
 const ActiveTaskActivityComponent = (props: ActiveTaskActivityProps) => {
     'widget';
 
-    const GREEN = '#22C55E';
-    const PURPLE = '#8B5CF6';
-    const LIGHT_PURPLE = '#C4B5FD';
-    const primary = foregroundStyle({ type: 'hierarchical', style: 'primary' });
-    const secondary = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
+    // Matches the app's dark surface and the widgets' Outfit type (weights by instance name)
+    const BG = '#0C0C1A';
+    const BRAND = '#854DFF';
+    const SOFT = '#B89BFF';
+    const WHITE = '#FFFFFF';
+    const MUTED = '#FFFFFF8C';
+    const TRACK = '#FFFFFF1F';
+    const LIGHT = 'Outfit-Thin_Light';
+    const REGULAR = 'Outfit-Thin_Regular';
+    const MEDIUM = 'Outfit-Thin_Medium';
 
-    const { taskName, workspaceName, startTime, endTime, hasEndTime, categoryId, taskId } = props;
-    const startDate = new Date(startTime);
-    const endDate = endTime ? new Date(endTime) : undefined;
-    const encodedName = encodeURIComponent(taskName);
-    const taskLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}`;
-    const completeLink = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodedName}&action=complete`;
+    const { brandMarkUri, taskName, workspaceName, startTime, endTime, hasEndTime, categoryId, taskId } = props;
+    const accent = SOFT;
+    const timerDate = new Date(startTime);
+    const endDate = hasEndTime && endTime ? new Date(endTime) : undefined;
+    const status = 'In progress';
+    const progress = endDate ? (
+        <ProgressView timerInterval={{ lower: timerDate, upper: endDate }} countsDown={false} modifiers={[tint(accent)]} />
+    ) : null;
+    const context = (
+        <HStack spacing={4}>
+            <Text modifiers={[font({ family: LIGHT, size: 12 }), foregroundStyle(MUTED), lineLimit(1)]}>{endDate ? `${workspaceName} · until` : workspaceName}</Text>
+            {endDate ? <Text date={endDate} dateStyle="time" modifiers={[font({ family: LIGHT, size: 12 }), foregroundStyle(MUTED)]} /> : null}
+        </HStack>
+    );
+
+    const base = `kindred:///(logged-in)/(tabs)/(task)/task/${taskId}?categoryId=${categoryId}&name=${encodeURIComponent(taskName)}`;
+    const completeLink = `${base}&action=complete`;
+    const dismissLink = `${base}&action=dismiss`;
+
+    // The Kindred check from the logged-out screen
+    const mark = (height: number) =>
+        brandMarkUri ? (
+            <Image uiImage={brandMarkUri} modifiers={[resizable(), frame({ width: height * 1.24, height })]} />
+        ) : (
+            <Image systemName="checkmark" color={BRAND} size={height} />
+        );
+
+    const statusRow = (
+        <HStack spacing={6} alignment="center">
+            {mark(11)}
+            <Text modifiers={[font({ family: MEDIUM, size: 12 }), foregroundStyle(accent)]}>{status}</Text>
+            {context}
+        </HStack>
+    );
+
+    const timer = (size: number) => (
+        <Text
+            date={timerDate}
+            dateStyle="timer"
+            modifiers={[font({ family: REGULAR, size }), monospacedDigit(), foregroundStyle(WHITE), lineLimit(1), multilineTextAlignment('leading'), frame({ maxWidth: 9999, alignment: 'leading' })]}
+        />
+    );
+
+    const actions = (
+        <HStack spacing={8}>
+            <Link destination={dismissLink}>
+                <ZStack modifiers={[frame({ width: 36, height: 36 })]}>
+                    <Circle modifiers={[foregroundStyle(TRACK)]} />
+                    <Image systemName="xmark" color={MUTED} size={12} />
+                </ZStack>
+            </Link>
+            <Link destination={completeLink}>
+                <HStack spacing={6} modifiers={[padding({ horizontal: 14 }), frame({ height: 36 }), background(BRAND, shapes.capsule())]}>
+                    <Image systemName="checkmark" color={WHITE} size={12} />
+                    <Text modifiers={[font({ family: MEDIUM, size: 14 }), foregroundStyle(WHITE)]}>Done</Text>
+                </HStack>
+            </Link>
+        </HStack>
+    );
+
+    const main = (timerSize: number) => (
+        <HStack alignment="bottom" spacing={12}>
+            <VStack alignment="leading" spacing={0} modifiers={[frame({ maxWidth: 9999, alignment: 'leading' })]}>
+                <Text modifiers={[font({ family: REGULAR, size: 16 }), foregroundStyle(WHITE), lineLimit(1)]}>{taskName}</Text>
+                {timer(timerSize)}
+            </VStack>
+            <VStack modifiers={[padding({ bottom: 6 })]}>{actions}</VStack>
+        </HStack>
+    );
 
     return {
         banner: (
-            <VStack alignment="leading" spacing={12} modifiers={[padding({ horizontal: 20, vertical: 16 }), widgetURL(taskLink), frame({ maxWidth: 9999 })]}>
-                {/* Row 1: Task name + timer */}
-                <HStack alignment="center">
-                    <VStack alignment="leading" spacing={2}>
-                        <Text modifiers={[font({ weight: 'semibold', size: 16 }), primary, lineLimit(1)]}>
-                            {taskName}
-                        </Text>
-                        <HStack alignment="center" spacing={4}>
-                            <Image systemName="circle.fill" color={GREEN} size={5} />
-                            <Text modifiers={[font({ size: 12 }), secondary]}>
-                                {workspaceName}
-                            </Text>
-                        </HStack>
-                    </VStack>
-                    <Spacer />
-                    <Text
-                        date={startDate}
-                        dateStyle="timer"
-                        modifiers={[
-                            font({ weight: 'bold', size: 24, design: 'rounded' }),
-                            foregroundStyle(PURPLE),
-                            monospacedDigit(),
-                        ]}
-                    />
-                </HStack>
-
-                {/* Row 2: Progress bar (only with end time) */}
-                {hasEndTime && endDate ? (
-                    <ProgressView
-                        timerInterval={{ lower: startDate, upper: endDate }}
-                        countsDown={false}
-                    />
-                ) : null}
-
-                {/* Row 3: CTA Buttons */}
-                <HStack spacing={8}>
-                    <Link
-                        destination={completeLink}
-                        modifiers={[
-                            padding({ horizontal: 14, vertical: 7 }),
-                            background(PURPLE),
-                            cornerRadius(18),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={taskLink}
-                        modifiers={[
-                            padding({ horizontal: 14, vertical: 7 }),
-                            background('#4C1D95'),
-                            cornerRadius(18),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
-                            Open Task
-                        </Text>
-                    </Link>
-                </HStack>
+            <VStack
+                alignment="leading"
+                spacing={10}
+                modifiers={[padding({ horizontal: 20, vertical: 16 }), frame({ maxWidth: 9999, alignment: 'leading' }), background(BG), widgetURL(base)]}
+            >
+                {statusRow}
+                {main(38)}
+                {progress}
             </VStack>
         ),
-        compactLeading: (
-            <HStack alignment="center" spacing={4}>
-                <Image systemName="circle.fill" color={GREEN} size={6} />
-                <Text modifiers={[font({ weight: 'semibold', size: 12 }), primary, lineLimit(1)]}>
-                    {taskName}
-                </Text>
-            </HStack>
-        ),
+        compactLeading: mark(14),
         compactTrailing: (
             <Text
-                date={startDate}
+                date={timerDate}
                 dateStyle="timer"
-                modifiers={[font({ weight: 'bold', size: 13, design: 'rounded' }), foregroundStyle(PURPLE)]}
+                modifiers={[font({ family: MEDIUM, size: 14 }), monospacedDigit(), foregroundStyle(accent), frame({ width: 52, alignment: 'trailing' })]}
             />
         ),
-        minimal: (
-            <Image systemName="bolt.fill" color={PURPLE} />
-        ),
-        expandedLeading: (
-            <VStack alignment="leading" spacing={2} modifiers={[padding({ all: 8 })]}>
-                <Image systemName="circle.fill" color={GREEN} size={8} />
-                <Text modifiers={[font({ weight: 'semibold', size: 11 }), foregroundStyle(GREEN)]}>
-                    Active
-                </Text>
-            </VStack>
-        ),
-        expandedTrailing: (
-            <VStack alignment="trailing" spacing={2} modifiers={[padding({ all: 8 })]}>
-                <Text
-                    date={startDate}
-                    dateStyle="timer"
-                    modifiers={[font({ weight: 'bold', size: 22, design: 'rounded' }), foregroundStyle(PURPLE)]}
-                />
-                <Text modifiers={[font({ size: 10 }), secondary]}>
-                    {hasEndTime ? 'remaining' : 'elapsed'}
-                </Text>
-            </VStack>
-        ),
+        minimal: mark(14),
+        expandedLeading: <VStack modifiers={[padding({ leading: 8, top: 6 })]}>{statusRow}</VStack>,
         expandedBottom: (
-            <VStack alignment="leading" spacing={6} modifiers={[padding({ horizontal: 12, vertical: 8 })]}>
-                <Text modifiers={[font({ weight: 'semibold', size: 15 }), primary, lineLimit(1)]}>
-                    {taskName}
-                </Text>
-                <Text modifiers={[font({ size: 13 }), secondary]}>
-                    {workspaceName}
-                </Text>
-                {hasEndTime && endDate ? (
-                    <ProgressView
-                        timerInterval={{ lower: startDate, upper: endDate }}
-                        countsDown={false}
-                    />
-                ) : null}
-                <HStack spacing={8}>
-                    <Link
-                        destination={completeLink}
-                        modifiers={[
-                            padding({ horizontal: 14, vertical: 8 }),
-                            background(PURPLE),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'semibold', size: 13 }), foregroundStyle('#FFFFFF')]}>
-                            Complete
-                        </Text>
-                    </Link>
-                    <Link
-                        destination={taskLink}
-                        modifiers={[
-                            font({ weight: 'medium', size: 13 }),
-                            padding({ horizontal: 14, vertical: 8 }),
-                            cornerRadius(10),
-                            tint('#FFFFFF'),
-                        ]}
-                    >
-                        <Text modifiers={[font({ weight: 'medium', size: 13 }), foregroundStyle('#CCFFFFFF')]}>
-                            Open
-                        </Text>
-                    </Link>
-                </HStack>
+            <VStack alignment="leading" spacing={10} modifiers={[padding({ horizontal: 8, bottom: 8 })]}>
+                {main(32)}
+                {progress}
             </VStack>
         ),
     };

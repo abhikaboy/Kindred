@@ -43,7 +43,7 @@ func (s *Service) NotifyTaggedUsers(task *TaskDocument, taggerID primitive.Objec
 		}
 		notification := xutils.Notification{
 			Token:   receiver.PushToken,
-			Title:   "You've been tagged 👀",
+			Title:   "You've been tagged",
 			Message: fmt.Sprintf("%s tagged you in \"%s\"", tagger.DisplayName, task.Content),
 			Data: map[string]string{
 				"type":      "task_tagged",
@@ -82,8 +82,8 @@ func (s *Service) NotifyTagWatchersOfCompletion(task *TaskDocument, ownerID prim
 		}
 		notification := xutils.Notification{
 			Token:   receiver.PushToken,
-			Title:   "They did it! 🎉",
-			Message: fmt.Sprintf("%s completed \"%s\" 🎉", owner.DisplayName, task.Content),
+			Title:   "They did it!",
+			Message: fmt.Sprintf("%s completed \"%s\"", owner.DisplayName, task.Content),
 			Data: map[string]string{
 				"type":    "task_completed_watcher",
 				"user_id": ownerID.Hex(),
@@ -123,7 +123,7 @@ func (s *Service) notifyTaskCopied(taskID, ownerID, copierID primitive.ObjectID,
 	}
 	_ = xutils.SendNotification(xutils.Notification{
 		Token:   owner.PushToken,
-		Title:   "Your task caught on 💪",
+		Title:   "Your task caught on",
 		Message: fmt.Sprintf("%s copied your task \"%s\"", copier.DisplayName, taskName),
 		Data: map[string]string{
 			"type":    "task_copied",

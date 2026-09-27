@@ -36,18 +36,22 @@ import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Images, Plus } from "phosphor-react-native";
+import { Images, Info, Plus } from "phosphor-react-native";
 import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
-import ProductivityRingsCard from "@/components/profile/ProductivityRings";
+import { ConcentricRings, type RingKey } from "@/components/profile/ProductivityRings";
+import { RING_COLORS } from "@shared/rings";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
 import CachedImage from "@/components/CachedImage";
 import TaskToast from "@/components/ui/TaskToast";
+import TaskChip from "@/components/cards/TaskChip";
 import { Task, RingState } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -86,13 +90,14 @@ function SpotlightKudos({ gif, message }: { gif?: string; message?: string }) {
 }
 
 // Per-phase step dots: phase 1 "Do your first task" (steps 0-2),
-// phase 2 "Share it" (rings → post → kudos).
-function PhaseProgress({ label, current }: { label: string; current: number }) {
+// phase 2 "Share it" (rings → post → kudos). Guests get a single 4-step phase
+// (category → task → complete → rings) since they skip the social part.
+function PhaseProgress({ label, current, total = 3 }: { label: string; current: number; total?: number }) {
     const ThemedColor = useThemeColor();
     return (
         <View style={styles.stepIndicatorRow}>
             <View style={styles.dotsRow}>
-                {[0, 1, 2].map((i) => (
+                {Array.from({ length: total }, (_, i) => i).map((i) => (
                     <View
                         key={i}
                         style={[styles.dot, { backgroundColor: i <= current ? ThemedColor.primary : ThemedColor.tertiary }]}
@@ -100,8 +105,12 @@ function PhaseProgress({ label, current }: { label: string; current: number }) {
                 ))}
             </View>
             <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
-                {label} · Step {current + 1} of 3
+                {label} · Step {current + 1} of {total}
             </ThemedText>
+            {/* Stays up on every step so the example tasks never read as the user's own */}
+            <View style={{ marginLeft: "auto" }}>
+                <TaskChip label="Demo · example tasks" tone="active" Icon={Info} />
+            </View>
         </View>
     );
 }
@@ -122,11 +131,13 @@ const CONGRATS_GIF = "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnp1MHYx
 // which is the direction kudos actually flow in the real app.
 const BEAK_CATEGORY = "Kindred HQ";
 const BEAK_TASK = { id: "beak-demo-task", content: "Ship the new onboarding", value: 5, priority: 1, categoryId: "" };
-const KUDOS_PREFILL = "nice work beak!! 🎉";
+const KUDOS_PREFILL = "nice work beak!!";
 const KUDOS_DEFINITION = "Kudos are quick congrats you send when a friend finishes something.";
 
 // The photo the user "adds" to their post during the guided share step.
 const SHARE_PHOTO = "https://i.pinimg.com/736x/6e/6a/47/6e6a475d2f7967465952e2cbfde1c66e.jpg";
+
+const RINGS_HERO_SIZE = Math.min(screenWidth * 0.5, 200);
 
 const STEP_CATEGORY = 0;
 const STEP_TASK = 1;
@@ -135,11 +146,15 @@ const STEP_RINGS = 3;
 const STEP_SHARE = 4;
 const STEP_CONGRATS = 5;
 
+// Guests run only the core loop (category → task → complete → rings), then land on Home.
+const GUEST_TOTAL_STEPS = STEP_RINGS + 1;
+const GUEST_PHASE_LABEL = "Do your first task";
+
 // Rings explainer copy, revealed one at a time (tap to advance).
-const RING_INFO = [
-    { label: "Plan", desc: "Add tasks to your day" },
-    { label: "Do", desc: "Complete them" },
-    { label: "Share", desc: "Post a win or send kudos" },
+const RING_INFO: { key: RingKey; label: string; desc: string }[] = [
+    { key: "plan", label: "Plan", desc: "Add tasks to your day" },
+    { key: "do", label: "Do", desc: "Complete them" },
+    { key: "share", label: "Share", desc: "Post a win or send kudos" },
 ];
 
 // Demo ring state for the explainer: plan + do closed (they just planned + did a
@@ -164,6 +179,7 @@ export default function TutorialOnboarding() {
     const router = useRouter();
     const { capture } = useAnalytics();
     const { user } = useAuth();
+    const isGuest = useIsGuest();
     const { workspaces, fetchWorkspaces, categories, setSelected } = useTasks();
     const setCreateCategory = useSetCreateCategory();
     const { setTaskName, resetTaskCreation } = useTaskCreationActions();
@@ -173,7 +189,6 @@ export default function TutorialOnboarding() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [showRingCursor, setShowRingCursor] = useState(false); // share-ring guide on the rings step
     const [showShareToast, setShowShareToast] = useState(false); // top toast appears a beat later
-    const [shareClosed, setShareClosed] = useState(false); // share ring closed after posting
     const [sharePhase, setSharePhase] = useState<"toast" | "caption" | "posted">("toast");
     // Composer reveals one element at a time: 1 = preview card, 2 = photo added, 3 = post button
     const [shareStage, setShareStage] = useState(0);
@@ -204,6 +219,11 @@ export default function TutorialOnboarding() {
     const swipeCursorX = useRef(new Animated.Value(0)).current;
     const ringsStepAnim = useRef(new Animated.Value(0)).current; // rings page enter transition
     const [ringIndex, setRingIndex] = useState(0); // which ring is currently shown in the explainer
+    const ringInfoFade = useRef(new Animated.Value(1)).current; // cross-fade as the explainer swaps rings
+    useEffect(() => {
+        ringInfoFade.setValue(0);
+        Animated.timing(ringInfoFade, { toValue: 1, duration: 220, easing: CURSOR_EASE, useNativeDriver: true }).start();
+    }, [ringIndex]);
 
     const captionAnim = useRef(new Animated.Value(0)).current; // caption screen fade-in
     // Feed / congrats beats: beak's cursor clicks your post, kudos take over a
@@ -452,6 +472,8 @@ export default function TutorialOnboarding() {
         }
         // Page-enter transition: fade + slide the rings in
         Animated.timing(ringsStepAnim, { toValue: 1, duration: 600, easing: CURSOR_EASE, useNativeDriver: true }).start();
+        // Guests skip the share sequence, so there's no cursor/toast to reveal
+        if (isGuest) return;
         // Reveal the share-ring cursor after the rings stagger in; the toast
         // follows once the cursor's label finishes typing (onLabelTyped)
         const t1 = setTimeout(() => setShowRingCursor(true), 2500);
@@ -554,7 +576,6 @@ export default function TutorialOnboarding() {
     const handlePostShare = () => {
         if (Platform.OS === "ios") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setSharePhase("posted"); // show the share ring closing
-        setShareClosed(true);
         setTimeout(() => setStep(STEP_CONGRATS), 2600);
     };
 
@@ -577,6 +598,24 @@ export default function TutorialOnboarding() {
         router.push("/(onboarding)/calendar");
     };
 
+    // Guest finish: mark the guest tutorial done and land on Home, where the
+    // home tour picks up. Guarded so repeat taps don't double-navigate.
+    const guestFinishedRef = useRef(false);
+    const handleGuestFinish = async () => {
+        if (guestFinishedRef.current) return;
+        guestFinishedRef.current = true;
+        if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+            step_name: OnboardingSteps.TUTORIAL.name,
+            step_index: OnboardingSteps.TUTORIAL.index,
+        });
+        setSelected(""); // land on the home page, not the Guide workspace
+        if (user?._id) {
+            await AsyncStorage.setItem(`${user._id}-guest-tutorial-done`, "true").catch(() => {});
+        }
+        router.replace("/(logged-in)/(tabs)/(task)");
+    };
+
     // ─── Prompt text per step ───────────────────────────────────────
     const prompts: Record<number, { title: string; subtitle: string }> = {
         0: { title: "Create a category", subtitle: "Workspaces hold categories, and categories hold tasks" },
@@ -586,7 +625,11 @@ export default function TutorialOnboarding() {
 
     return (
         <ThemedView style={styles.mainContainer}>
-            <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
+            {isGuest ? (
+                <OnboardingProgressBar currentStep={Math.min(step, STEP_RINGS) + 1} totalSteps={GUEST_TOTAL_STEPS} />
+            ) : (
+                <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
+            )}
 
             {showConfetti && (
                 <View style={styles.confettiContainer}>
@@ -756,34 +799,44 @@ export default function TutorialOnboarding() {
                                 setRingIndex((i) => i + 1);
                                 return;
                             }
+                            if (isGuest) return; // guests finish via the Continue button
                             setShowRingCursor(true);
                             setShowShareToast(true);
                         }}>
                         <View style={{ marginBottom: 16 }}>
-                            <PhaseProgress label="Share it" current={0} />
+                            {isGuest ? (
+                                <PhaseProgress label={GUEST_PHASE_LABEL} current={STEP_RINGS} total={GUEST_TOTAL_STEPS} />
+                            ) : (
+                                <PhaseProgress label="Share it" current={0} />
+                            )}
                         </View>
                         <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Your daily rings
                         </ThemedText>
 
-                        <ProductivityRingsCard
-                            variant="rings"
-                            staggerMs={600}
-                            ringsOverride={
-                                shareClosed
-                                    ? { ...DEMO_RINGS, share: { current: 1, target: 1, closed: true }, all_closed: true }
-                                    : DEMO_RINGS
-                            }
-                        />
+                        {/* Same concentric set as home; the ring being explained stays lit */}
+                        <View style={styles.ringsHero}>
+                            <ConcentricRings
+                                rings={DEMO_RINGS}
+                                size={RINGS_HERO_SIZE}
+                                strokeWidth={16}
+                                staggerMs={600}
+                                dimmedExcept={RING_INFO[ringIndex].key}
+                            />
+                        </View>
 
                         <View style={styles.ringCards}>
-                            <View style={[styles.ringCard, { backgroundColor: ThemedColor.lightened }]}>
-                                <View style={[styles.ringDot, { backgroundColor: ThemedColor.primary }]} />
+                            <Animated.View
+                                style={[styles.ringCard, { backgroundColor: ThemedColor.lightened, opacity: ringInfoFade }]}>
+                                <View style={[styles.ringDot, { backgroundColor: RING_COLORS[RING_INFO[ringIndex].key] }]} />
                                 <ThemedText type="defaultSemiBold">{RING_INFO[ringIndex].label}</ThemedText>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption, flex: 1 }}>
                                     {RING_INFO[ringIndex].desc}
                                 </ThemedText>
-                            </View>
+                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                    {RING_INFO[ringIndex].key === "share" ? "0/1" : "Done"}
+                                </ThemedText>
+                            </Animated.View>
                             {ringIndex < RING_INFO.length - 1 && (
                                 <ThemedText type="caption" style={{ color: ThemedColor.caption, textAlign: "center" }}>
                                     Tap to see the next ring
@@ -791,7 +844,14 @@ export default function TutorialOnboarding() {
                             )}
                         </View>
 
-                        {showRingCursor && (
+                        {/* Guests end here: no share sequence, just continue to Home */}
+                        {isGuest && (
+                            <View style={styles.guestContinue}>
+                                <PrimaryButton title="Continue" onPress={handleGuestFinish} />
+                            </View>
+                        )}
+
+                        {!isGuest && showRingCursor && (
                             <View style={styles.ringCursor}>
                                 <TutorialCursor
                                     size={34}
@@ -809,10 +869,13 @@ export default function TutorialOnboarding() {
                         <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Share ring closed!
                         </ThemedText>
-                        <ProductivityRingsCard
-                            variant="rings"
-                            ringsOverride={{ ...DEMO_RINGS, share: { current: 1, target: 1, closed: true }, all_closed: true }}
-                        />
+                        <View style={styles.ringsHero}>
+                            <ConcentricRings
+                                rings={{ ...DEMO_RINGS, share: { current: 1, target: 1, closed: true } }}
+                                size={RINGS_HERO_SIZE}
+                                strokeWidth={16}
+                            />
+                        </View>
                     </View>
                 )}
 
@@ -833,7 +896,11 @@ export default function TutorialOnboarding() {
                             {prompts[step].subtitle}
                         </ThemedText>
 
-                        <PhaseProgress label="Do your first task" current={step} />
+                        {isGuest ? (
+                            <PhaseProgress label={GUEST_PHASE_LABEL} current={step} total={GUEST_TOTAL_STEPS} />
+                        ) : (
+                            <PhaseProgress label="Do your first task" current={step} />
+                        )}
                     </Animated.View>
                 ) : null}
 
@@ -841,7 +908,7 @@ export default function TutorialOnboarding() {
             </KeyboardAvoidingView>
 
             {/* Completion toast pinned at the top — persistent, can't be dismissed */}
-            {step === STEP_RINGS && showShareToast && (
+            {!isGuest && step === STEP_RINGS && showShareToast && (
                 <View style={styles.toastOverlay} pointerEvents="box-none">
                     <Animated.View
                         pointerEvents="box-none"
@@ -1097,29 +1164,35 @@ const styles = StyleSheet.create({
     stepIndicatorRow: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
+        gap: 8,
         marginTop: 12,
     },
     ringsStep: {
         paddingHorizontal: HORIZONTAL_PADDING,
         paddingTop: 8,
     },
+    ringsHero: {
+        alignItems: "center",
+        paddingVertical: 24,
+    },
     ringCards: {
-        marginTop: 12,
         gap: 8,
     },
     ringCard: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        borderRadius: 14,
+        gap: 8,
+        borderRadius: 16,
         paddingVertical: 12,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
     },
     ringDot: {
         width: 10,
         height: 10,
         borderRadius: 5,
+    },
+    guestContinue: {
+        marginTop: 24,
     },
     ringCursor: {
         marginTop: 20,

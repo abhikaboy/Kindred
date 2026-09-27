@@ -21,8 +21,11 @@ function notifyError(error: unknown, fallback?: string) {
 const queryClient = new QueryClient({
   // Writes always toast; reads toast only on first-load failure (no stale data to show).
   mutationCache: new MutationCache({
-    onError: (error, _vars, _ctx, mutation) =>
-      notifyError(error, mutation.meta?.errorMessage as string | undefined),
+    // meta.suppressErrorToast: the mutation shows its own error toast.
+    onError: (error, _vars, _ctx, mutation) => {
+      if (mutation.meta?.suppressErrorToast) return;
+      notifyError(error, mutation.meta?.errorMessage as string | undefined);
+    },
   }),
   queryCache: new QueryCache({
     onError: (error, query) => {

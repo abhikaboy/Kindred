@@ -83,11 +83,12 @@ func (s *Service) storeLinks(ctx context.Context, ownerID primitive.ObjectID, ha
 }
 
 // findUsersByPhoneHashes resolves hashes to users in a single indexed query,
-// excluding the caller.
+// excluding the caller and any guest accounts.
 func (s *Service) findUsersByPhoneHashes(ctx context.Context, hashes []string, excludeUserID primitive.ObjectID) ([]UserMatch, error) {
 	filter := bson.M{
 		"phone_hash": bson.M{"$in": hashes},
 		"_id":        bson.M{"$ne": excludeUserID},
+		"isGuest":    bson.M{"$ne": true},
 	}
 	projection := bson.M{
 		"_id":             1,

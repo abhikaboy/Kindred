@@ -10,14 +10,14 @@ import { DrawerLayout } from "react-native-gesture-handler";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
-import { useSharedValue } from "react-native-reanimated";
-import CaptureBlur from "@/components/dashboard/CaptureBlur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
+import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
+import { useIsGuest } from "@/hooks/useIsGuest";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
@@ -28,6 +28,7 @@ import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
 import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { PagerDots, type PagerKind } from "@/components/task/PagerDots";
 import PagerView from "react-native-pager-view";
+import { useSharedValue } from "react-native-reanimated";
 import Confetti from "@/components/ui/Confetti";
 import { MemoDaily } from "./daily";
 import WorkspaceGlow from "@/components/task/WorkspaceGlow";
@@ -53,6 +54,7 @@ type Props = {};
 
 const Home = (props: Props) => {
     const { user, refresh } = useAuth();
+    const isGuest = useIsGuest();
     let ThemedColor = useThemeColor();
 
     const { fetchWorkspaces, setSelected } = useTaskActions();
@@ -142,6 +144,7 @@ const Home = (props: Props) => {
             showWorkspaceSelection={showWorkspaceSelection}
             setShowWorkspaceSelection={setShowWorkspaceSelection}
             userName={user?.display_name}
+            isGuest={isGuest}
             ThemedColor={ThemedColor}
             insets={insets}
             focusMode={focusMode}
@@ -164,6 +167,7 @@ const HomeContent = React.memo(function HomeContent({
     showWorkspaceSelection,
     setShowWorkspaceSelection,
     userName,
+    isGuest,
     ThemedColor,
     insets,
     focusMode,
@@ -179,8 +183,9 @@ const HomeContent = React.memo(function HomeContent({
     const showConfetti = useTasksSelector((s) => s.showConfetti);
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
-    // Shared with QuickCapture so focusing it blurs the header and dashboard on the UI thread
-    const captureFocus = useSharedValue(0);
+    // home pull-to-refresh drives the tab glow: pull lifts the wash, release replays its opening
+    const glowPull = useSharedValue(0);
+    const glowReplay = useSharedValue(0);
     // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
     const { ready: drawerHintReady, done: drawerHintDone } = useFirstTouchHint("drawer_workspaces");
 
@@ -213,7 +218,7 @@ const HomeContent = React.memo(function HomeContent({
             rawTour.skip,
             rawTour.visibleUpTo,
             rawTour.registerSection,
-            rawTour.onScroll,
+            rawTour.onScrollY,
         ]
     );
 
@@ -378,11 +383,7 @@ const HomeContent = React.memo(function HomeContent({
                         focusMode={focusMode}
                         onToggleFocusMode={toggleFocusMode}
                     />
-                    {/* Reaches up under the status bar and out to the screen edges */}
-                    <CaptureBlur
-                        progress={captureFocus}
-                        style={{ top: -insets.top, left: -HORIZONTAL_PADDING, right: -HORIZONTAL_PADDING }}
-                    />
+                    {isGuest && <GuestLoginLink />}
                 </Animated.View>
                 <HomeScrollContent
                     workspaces={workspaces}
@@ -396,11 +397,12 @@ const HomeContent = React.memo(function HomeContent({
                     onRefresh={onRefresh}
                     scrollRef={homeScrollRef}
                     tour={tour}
-                    captureFocus={captureFocus}
                     kudosRef={kudosRef}
                     kudosOffsetRef={kudosOffsetRef}
                     onKudosLayout={onKudosLayout}
                     onStatsExpandChange={setStatsExpanded}
+                    glowPull={glowPull}
+                    glowReplay={glowReplay}
                 />
             </View>
         ),
@@ -408,6 +410,7 @@ const HomeContent = React.memo(function HomeContent({
             insets.top,
             headerDimAnim,
             userName,
+            isGuest,
             ThemedColor,
             onSettingsPress,
             focusMode,
@@ -422,7 +425,6 @@ const HomeContent = React.memo(function HomeContent({
             onRefresh,
             tour,
             onKudosLayout,
-            captureFocus,
         ]
     );
 
@@ -450,7 +452,7 @@ const HomeContent = React.memo(function HomeContent({
                 {/* One swipeable surface: Today · Home · Friends · workspaces */}
                 <View style={styles.viewsContainer}>
                     {/* One glow for the whole tab — blobs shift per view */}
-                    <WorkspaceGlow variant={onHomeOrFriends ? "home" : "workspace"} />
+                    <WorkspaceGlow variant={onHomeOrFriends ? "home" : "workspace"} pull={glowPull} replay={glowReplay} />
 
                     {showConfetti && (
                         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} pointerEvents="none">

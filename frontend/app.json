@@ -126,8 +126,8 @@
           "widgets": [
             {
               "name": "TodayTasksWidget",
-              "displayName": "Today's Tasks",
-              "description": "See your tasks due today and track your progress.",
+              "displayName": "Today",
+              "description": "What's due today, what's late, and how far along you are.",
               "supportedFamilies": [
                 "systemSmall",
                 "systemMedium",
@@ -136,8 +136,8 @@
             },
             {
               "name": "WorkspaceSnapshotWidget",
-              "displayName": "Workspace",
-              "description": "A quick look at your workspace tasks.",
+              "displayName": "Busiest Workspace",
+              "description": "Open tasks in the workspace that needs you most.",
               "supportedFamilies": [
                 "systemSmall",
                 "systemMedium"
@@ -145,8 +145,8 @@
             },
             {
               "name": "ActivityStreakWidget",
-              "displayName": "Activity Streak",
-              "description": "Track your task completion streak.",
+              "displayName": "Streak",
+              "description": "Your streak and the last seven days of activity.",
               "supportedFamilies": [
                 "systemSmall",
                 "systemMedium"
@@ -155,15 +155,15 @@
             {
               "name": "LockScreenCircularWidget",
               "displayName": "Today Progress",
-              "description": "Circular progress ring for today's tasks.",
+              "description": "A ring that fills as you finish today's tasks.",
               "supportedFamilies": [
                 "accessoryCircular"
               ]
             },
             {
               "name": "LockScreenRectangularWidget",
-              "displayName": "Next Task",
-              "description": "Shows your next due task.",
+              "displayName": "Next Up",
+              "description": "Your next deadline, counting down.",
               "supportedFamilies": [
                 "accessoryRectangular"
               ]
@@ -171,7 +171,7 @@
             {
               "name": "LockScreenInlineWidget",
               "displayName": "Streak",
-              "description": "Shows your current streak.",
+              "description": "Your current streak above the clock.",
               "supportedFamilies": [
                 "accessoryInline"
               ]

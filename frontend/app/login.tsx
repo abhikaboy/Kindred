@@ -2,7 +2,7 @@ import { View, Text, Dimensions, Image, TouchableOpacity, Animated } from "react
 import React, { useEffect, useRef, useState } from "react";
 import { Colors } from "@/constants/Colors";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { ErrorBoundaryProps, useRouter } from "expo-router";
+import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -33,8 +33,9 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const login = (props: Props) => {
     let ThemedColor = useThemeColor();
     const router = useRouter();
+    const params = useLocalSearchParams<{ mode?: string }>();
     const [visible, setVisible] = useState(false);
-    const [mode, setMode] = useState<"register" | "login">("register");
+    const [mode, setMode] = useState<"register" | "login">(params.mode === "login" ? "login" : "register");
     const { user } = useAuth();
 
     // Two staggered animations: image slide-up, buttons fade
@@ -42,8 +43,16 @@ const login = (props: Props) => {
     const imageSlide = useRef(new Animated.Value(20)).current;
     const buttonsFade = useRef(new Animated.Value(0)).current;
 
+    // Guests arrive from Home's "Log in" link with mode=login; open the sheet once the screen is up
     useEffect(() => {
-        if (user) {
+        if (params.mode !== "login") return;
+        const t = setTimeout(() => setVisible(true), 300);
+        return () => clearTimeout(t);
+    }, []);
+
+    // A guest can land here to sign into a real account; only bounce once they have.
+    useEffect(() => {
+        if (user && !user.isGuest) {
             router.push("/");
         }
     }, [user]);
@@ -110,7 +119,7 @@ const login = (props: Props) => {
                             lineHeight: 22,
                             opacity: 0.8,
                         }}>
-                        because doing it alone was never actually the plan
+                        Get more done with the people who keep you going.
                     </ThemedText>
                 </View>
                 <View style={{ marginTop: 12 }}>
@@ -154,7 +163,15 @@ const login = (props: Props) => {
                         bottom: 64,
                         opacity: buttonsFade,
                     }}>
-                    <OnboardModal visible={visible} setVisible={setVisible} mode={mode} />
+                    <OnboardModal
+                        visible={visible}
+                        setVisible={setVisible}
+                        mode={mode}
+                        onSwitchMode={(next) => {
+                            setMode(next);
+                            setTimeout(() => setVisible(true), 300);
+                        }}
+                    />
                     <PrimaryButton
                         testID="join-kindred-btn"
                         title="Join Kindred"

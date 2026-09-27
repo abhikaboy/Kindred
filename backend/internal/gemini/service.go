@@ -17,5 +17,7 @@ type GeminiService struct {
 	QueryTasksFlow                   *core.Flow[QueryTasksFlowInput, TaskQueryFiltersOutput, struct{}]
 	EditTasksFlow                    *core.Flow[EditTasksFlowInput, EditTasksFlowOutput, struct{}]
 	IntentRouterFlow                 *core.Flow[IntentRouterInput, IntentRouterOutput, struct{}]
+	SuggestTaskFieldsFlow            *core.Flow[SuggestTaskFieldsFlowInput, SuggestTaskFieldsFlowOutput, struct{}]
+	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
 	Tools                            *ToolSet
 }

@@ -55,6 +55,8 @@ function withPhantomTasks(
     const upcomingCategory = {
       id: `upcoming-${ws.name}`,
       name: "Upcoming",
+      workspaceName: ws.name,
+      tags: [] as string[],
       tasks: upcomingTasks,
     } as CategoryDocument;
     return { ...ws, categories: [...(ws.categories ?? []), upcomingCategory] };

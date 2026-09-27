@@ -24,6 +24,8 @@ import { formatErrorForToast, ERROR_MESSAGES } from '@/utils/errorParser';
 import CalendarSetupBottomSheet from '@/components/modals/CalendarSetupBottomSheet';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsEvents } from '@/utils/analytics';
+import { useQueryClient } from '@tanstack/react-query';
+import { resetFirstLaunch } from '@/utils/resetFirstLaunch';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -34,6 +36,13 @@ export default function Settings() {
     const { hasConsent, resetConsent } = useContactConsent();
     const insets = useSafeAreaInsets();
     const { capture } = useAnalytics();
+    const queryClient = useQueryClient();
+
+    // Developer tools show in dev builds; in TestFlight/release builds they're
+    // revealed by long-pressing the "Settings" title (there's no reliable
+    // TestFlight check, and the tool only touches this device's local state).
+    const [devToolsRevealed, setDevToolsRevealed] = useState(false);
+    const showDevTools = __DEV__ || devToolsRevealed;
 
     // Fetch user settings
     const { data: userSettings, isLoading: isLoadingSettings, error: settingsError } = useUserSettings();
@@ -178,11 +187,6 @@ export default function Settings() {
         }
     };
 
-    const handleSave = () => {
-        // Settings are auto-saved on change, but this can trigger a manual sync
-        showToast('All settings are saved automatically', 'success');
-    };
-
     const handleBack = () => {
         router.back();
     };
@@ -270,6 +274,23 @@ export default function Settings() {
                         capture(AnalyticsEvents.LOGOUT, {});
                         logout();
                         router.replace('/login');
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleResetFirstLaunch = () => {
+        Alert.alert(
+            'Reset to first launch',
+            'Signs out and clears this device\'s onboarding, tour, and cache state, then restarts the app as if it were freshly installed.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: () => {
+                        void resetFirstLaunch({ queryClient, logout });
                     }
                 }
             ]
@@ -389,12 +410,16 @@ export default function Settings() {
                     <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
-                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                <ThemedText
+                    type="defaultSemiBold"
+                    style={styles.headerTitle}
+                    onLongPress={() => setDevToolsRevealed(true)}
+                >
                     Settings
                 </ThemedText>
 
                 <TouchableOpacity
-                    onPress={handleSave}
+                    onPress={handleBack}
                     style={styles.saveButton}
                     disabled={isUpdating}
                 >
@@ -652,6 +677,16 @@ export default function Settings() {
                         iconColor={ThemedColor.text + '60'}
                     />
                 </SettingsSection>
+
+                {showDevTools && (
+                    <SettingsSection title="DEVELOPER">
+                        <SettingsActionRow
+                            label="Reset to first launch"
+                            onPress={handleResetFirstLaunch}
+                            icon="refresh-outline"
+                        />
+                    </SettingsSection>
+                )}
 
                 <SettingsSection title="ACCOUNT" marginBottom={20}>
                     <SettingsActionRow

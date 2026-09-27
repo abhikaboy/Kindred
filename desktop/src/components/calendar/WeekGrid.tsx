@@ -53,6 +53,16 @@ function SpanningBars({ bars, dayCount, onOpen }: { bars: SpanningBar[]; dayCoun
   );
 }
 
+const ALL_DAY_LIMIT = 3;
+
+// Mirrors mobile's all-day chips: note a due time when the deadline lands on this day.
+function dueSuffix(t: TaskDocument, day: Date): string {
+  if (!t.deadline) return "";
+  const d = new Date(t.deadline);
+  if (!isSameDay(d, day) || (d.getHours() === 0 && d.getMinutes() === 0)) return "";
+  return ` · due ${format(d, "h:mm a")}`;
+}
+
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
@@ -126,7 +136,7 @@ function DayColumn({ day, tasks, edges, onCreateRange, onReschedule, onOpenTask 
     <div
       ref={setCol}
       data-weekcol={dayKey(day)}
-      className={cn("relative flex-1 border-l border-border", hot && "bg-primary/5")}
+      className={cn("relative min-w-0 flex-1 border-l border-border", hot && "bg-primary/5")}
       style={{ height: HOUR_HEIGHT * 24 }}
       onPointerDown={onColPointerDown}
     >
@@ -178,6 +188,7 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
   const days = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i));
   const { openTask } = useTaskPeek();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [allDayExpanded, setAllDayExpanded] = useState(false);
   // On mount, scroll so the current time sits near the top with a little context above.
   useEffect(() => {
     const el = scrollRef.current;
@@ -192,7 +203,7 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
             key={day.toISOString()}
             onClick={() => onSelectDate(day)}
             className={cn(
-              "flex flex-1 flex-col items-center gap-0.5 py-2",
+              "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2",
               isSameDay(day, selectedDate) && "bg-primary/10"
             )}
           >
@@ -211,18 +222,44 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
         <div className="pl-12">
           <SpanningBars bars={spanning} dayCount={dayCount} onOpen={openTask} />
         </div>
-        {/* Per-day all-day pills */}
+        {/* Per-day all-day pills, capped so a busy day can't push the timeline off screen */}
         <div className="flex pl-12">
-          {days.map((day) => (
-            <div key={day.toISOString()} className="flex-1 border-l border-border p-1">
-              {week[dayKey(day)].allDay.map((t) => (
-                <div key={t.id} className="mb-0.5 truncate rounded bg-primary/10 px-1.5 py-0.5">
-                  <ThemedText type="caption" className="text-primary">{t.content || "Untitled"}</ThemedText>
-                </div>
-              ))}
-            </div>
-          ))}
+          {days.map((day) => {
+            const allDay = week[dayKey(day)].allDay;
+            const shown = allDayExpanded ? allDay : allDay.slice(0, ALL_DAY_LIMIT);
+            const hidden = allDay.length - shown.length;
+            return (
+              <div key={day.toISOString()} className="flex min-w-0 flex-1 flex-col gap-0.5 border-l border-border p-1">
+                {shown.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => openTask(t)}
+                    className="min-w-0 truncate rounded bg-primary/10 px-1.5 py-0.5 text-left hover:bg-primary/20"
+                  >
+                    <ThemedText type="caption" className="text-primary">
+                      {(t.content || "Untitled") + dueSuffix(t, day)}
+                    </ThemedText>
+                  </button>
+                ))}
+                {hidden > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAllDayExpanded(true)}
+                    className="rounded px-1.5 py-0.5 text-left hover:bg-muted"
+                  >
+                    <ThemedText type="caption">+{hidden} more</ThemedText>
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
+        {allDayExpanded && days.some((d) => week[dayKey(d)].allDay.length > ALL_DAY_LIMIT) && (
+          <button type="button" onClick={() => setAllDayExpanded(false)} className="ml-12 px-2 pb-1 hover:underline">
+            <ThemedText type="caption">Show less</ThemedText>
+          </button>
+        )}
       </div>
       {/* Scrollable timed grid */}
       <div ref={scrollRef} className="relative flex min-h-0 flex-1 overflow-y-auto">

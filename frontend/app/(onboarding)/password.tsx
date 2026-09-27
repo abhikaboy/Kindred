@@ -72,7 +72,7 @@ const PasswordOnboarding = (props: Props) => {
         if (!validationErrors.password && isValid && passwordsMatch) {
             try {
                 await registerWithEmail(DEFAULT_PICTURE);
-                showToast('Account created successfully! 🎉', 'success');
+                showToast('Account created successfully', 'success');
                 capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
                     step_name: OnboardingSteps.PASSWORD.name,
                     step_index: OnboardingSteps.PASSWORD.index,

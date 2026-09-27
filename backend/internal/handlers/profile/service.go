@@ -32,10 +32,16 @@ func NewService(collections map[string]*mongo.Collection) *Service {
 	}
 }
 
-// GetAllProfiles fetches all Profile documents from MongoDB
+// excludeGuestsFilter matches every user who is not a guest. Written as
+// $ne: true rather than false so documents that predate the field still match.
+func excludeGuestsFilter() bson.M {
+	return bson.M{"isGuest": bson.M{"$ne": true}}
+}
+
+// GetAllProfiles fetches all non-guest Profile documents from MongoDB
 func (s *Service) GetAllProfiles() ([]ProfileDocument, error) {
 	ctx := context.Background()
-	cursor, err := s.Profiles.Find(ctx, bson.M{})
+	cursor, err := s.Profiles.Find(ctx, excludeGuestsFilter())
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +156,8 @@ func (s *Service) SearchProfiles(query string) ([]ProfileDocument, error) {
 				}},
 			}},
 		},
+		// Guests are never discoverable
+		bson.D{{Key: "$match", Value: excludeGuestsFilter()}},
 		// $project stage to include score
 		bson.D{
 			{Key: "$addFields", Value: bson.D{
@@ -230,6 +238,9 @@ func (s *Service) AutocompleteProfiles(query string) ([]ProfileDocument, error) 
 				}},
 			}},
 		},
+		// Guests are never discoverable; filter before $limit so they do not
+		// eat into the 10 result slots
+		bson.D{{Key: "$match", Value: excludeGuestsFilter()}},
 		// Add search score
 		bson.D{
 			{Key: "$addFields", Value: bson.D{
@@ -570,6 +581,8 @@ func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
 	ctx := context.Background()
 
 	pipeline := mongo.Pipeline{
+		// Guests are never suggested
+		bson.D{{Key: "$match", Value: excludeGuestsFilter()}},
 		// Add a field with the size of the friends array
 		bson.D{
 			{Key: "$addFields", Value: bson.D{

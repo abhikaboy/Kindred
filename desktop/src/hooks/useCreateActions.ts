@@ -1,5 +1,7 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { $api } from "@/lib/api/query";
+import { isAuthError } from "@/lib/errors";
 import type { components } from "@/lib/api/types.gen";
 import type { ParsedRecurrence, ParsedSchedule } from "@shared/taskSuggest";
 
@@ -254,9 +256,18 @@ type Snapshot = [readonly unknown[], WorkspaceResult[] | undefined][];
 
 // ---- Mutations with optimistic updates ----
 
+// Task creation shows its own titled toast (matching mobile), so it opts out of
+// the generic MutationCache one via meta.
+const CREATE_TASK_META = { suppressErrorToast: true };
+function notifyCreateTaskFailed(error: unknown) {
+  if (isAuthError(error)) return;
+  toast.error("Couldn't add task", { description: "Something went wrong on our end. Give it another try." });
+}
+
 export function useCreateTask() {
   const qc = useQueryClient();
   return $api.useMutation("post", "/v1/user/tasks/{category}", {
+    meta: CREATE_TASK_META,
     onMutate: async (vars): Promise<{ previous: Snapshot }> => {
       const categoryId = vars.params.path.category;
       await qc.cancelQueries({ queryKey: WORKSPACES_KEY });
@@ -269,8 +280,9 @@ export function useCreateTask() {
       );
       return { previous };
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (e, _vars, ctx) => {
       ctx?.previous.forEach(([key, data]) => qc.setQueryData(key, data));
+      notifyCreateTaskFailed(e);
     },
     onSettled: () => invalidateTasks(qc),
   });
@@ -282,6 +294,8 @@ export function useCreateTask() {
 export function useCreateTaskAuto() {
   const qc = useQueryClient();
   return $api.useMutation("post", "/v1/user/tasks/auto", {
+    meta: CREATE_TASK_META,
+    onError: notifyCreateTaskFailed,
     onSettled: () => invalidateTasks(qc),
   });
 }
