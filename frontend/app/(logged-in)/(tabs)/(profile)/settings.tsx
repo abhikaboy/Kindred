@@ -11,8 +11,6 @@ import * as StoreReview from 'expo-store-review';
 import { deleteAccount } from '@/api/auth';
 import { showToast } from '@/utils/showToast';
 import { useContactConsent } from '@/hooks/useContactConsent';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { SUBSCRIPTIONS_ENABLED } from '@/constants/subscription';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { SettingsCard } from '@/components/settings/SettingsCard';
@@ -34,7 +32,6 @@ export default function Settings() {
     const router = useRouter();
     const { logout } = useAuth();
     const { hasConsent, resetConsent } = useContactConsent();
-    const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
     const insets = useSafeAreaInsets();
     const { capture } = useAnalytics();
 
@@ -628,52 +625,6 @@ export default function Settings() {
                         icon="ban-outline"
                     />
                 </SettingsSection>
-
-                {SUBSCRIPTIONS_ENABLED && (
-                <SettingsSection title="SUBSCRIPTION">
-                    <SettingsCard>
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                paddingVertical: 12,
-                            }}
-                            onPress={isPro ? presentCustomerCenter : presentPaywall}
-                            activeOpacity={0.7}
-                        >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                <Ionicons
-                                    name={isPro ? "star" : "star-outline"}
-                                    size={20}
-                                    color={isPro ? ThemedColor.primary : ThemedColor.caption}
-                                />
-                                <ThemedText type="default">
-                                    Kindred Pro
-                                </ThemedText>
-                            </View>
-                            {isPro ? (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: ThemedColor.primary + '15',
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 3,
-                                    borderRadius: 6,
-                                    gap: 4,
-                                }}>
-                                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: ThemedColor.primary }} />
-                                    <ThemedText type="caption" style={{ color: ThemedColor.primary, fontSize: 11, fontWeight: '500' }}>
-                                        Active
-                                    </ThemedText>
-                                </View>
-                            ) : (
-                                <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />
-                            )}
-                        </TouchableOpacity>
-                    </SettingsCard>
-                </SettingsSection>
-                )}
 
                 <SettingsSection title="RESOURCES">
                     <SettingsActionRow

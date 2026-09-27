@@ -38,8 +38,8 @@ import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
-import { RevenueCatProvider } from "@/hooks/useRevenueCat";
 import { AnalyticsProvider } from "@/hooks/useAnalytics";
+import { CreateModalProvider } from "@/contexts/createModalContext";
 import { RingUpdateProvider } from "@/contexts/ringUpdateContext";
 import { RingUpdateOverlay } from "@/components/ui/RingUpdateOverlay";
 import { KudosSentProvider } from "@/contexts/kudosSentContext";
@@ -192,7 +192,7 @@ export default Sentry.wrap(function RootLayout() {
             <AnalyticsProvider>
             <AnimatePresence>
                 <AuthProvider>
-                    <RevenueCatProvider>
+                    <CreateModalProvider>
                     <OnboardingProvider>
                         <FocusModeProvider>
                             <KudosProvider>
@@ -235,7 +235,7 @@ export default Sentry.wrap(function RootLayout() {
                             </KudosProvider>
                         </FocusModeProvider>
                     </OnboardingProvider>
-                    </RevenueCatProvider>
+                    </CreateModalProvider>
                 </AuthProvider>
             </AnimatePresence>
             </AnalyticsProvider>

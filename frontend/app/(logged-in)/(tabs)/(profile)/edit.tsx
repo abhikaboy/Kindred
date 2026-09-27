@@ -15,8 +15,6 @@ import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
-import { useRevenueCat } from "@/hooks/useRevenueCat";
-import { SUBSCRIPTIONS_ENABLED } from "@/constants/subscription";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 
@@ -40,7 +38,6 @@ const Edit = () => {
     const [todaysTasks, setTodaysTasks] = useState(false);
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
-    const { isPro, presentPaywall, presentCustomerCenter } = useRevenueCat();
     const { capture } = useAnalytics();
 
     const pickImage = async () => {
@@ -52,34 +49,6 @@ const Edit = () => {
             console.log("Selected image:", imageUri);
             capture(AnalyticsEvents.PROFILE_AVATAR_CHANGED, {});
         }
-    };
-
-    const handleUpgradePress = async () => {
-        if (Platform.OS === 'web') {
-            setAlertTitle("Kindred Pro");
-            setAlertMessage("In-app purchases are available on iOS and Android. Please upgrade from your mobile device.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-            return;
-        }
-
-        const purchased = await presentPaywall();
-        if (purchased) {
-            setAlertTitle("Welcome to Kindred Pro!");
-            setAlertMessage("You now have unlimited access to all premium features.");
-            setAlertButtons([{ text: "Awesome!", style: "default" }]);
-            setAlertVisible(true);
-        } else if (__DEV__) {
-            setAlertTitle("Development Mode");
-            setAlertMessage("The paywall requires a native development build. It won't work in Expo Go.\n\nRun 'eas build --profile development' to test purchases.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        }
-    };
-
-    const handleManageSubscription = async () => {
-        if (Platform.OS === 'web') return;
-        await presentCustomerCenter();
     };
 
     const handleSave = async () => {
@@ -304,46 +273,6 @@ const Edit = () => {
                 />
             </View>
 
-            {/* Kindred Pro */}
-            {SUBSCRIPTIONS_ENABLED && (isPro ? (
-                <View style={{ marginTop: 32, marginBottom: 16 }}>
-                    <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        marginBottom: 12,
-                    }}>
-                        <Feather name="check-circle" size={20} color={ThemedColor.primary} />
-                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary }}>
-                            Kindred Pro Active
-                        </ThemedText>
-                    </View>
-                    <TouchableOpacity onPress={handleManageSubscription}>
-                        <ThemedText type="default" style={{ textAlign: 'center', opacity: 0.6, textDecorationLine: 'underline' }}>
-                            Manage Subscription
-                        </ThemedText>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <View style={{ marginTop: 32, marginBottom: 16 }}>
-                    <PrimaryButton
-                        title="Upgrade to Kindred Pro"
-                        onPress={handleUpgradePress}
-                        style={{
-                            shadowColor: ThemedColor.primary,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.5,
-                            shadowRadius: 12,
-                            elevation: 8,
-                        }}
-                        textStyle={{
-                            fontSize: 15,
-                            fontWeight: "600",
-                        }}
-                    />
-                </View>
-            ))}
 
             <CustomAlert
                 visible={alertVisible}

@@ -24,7 +24,7 @@ import {
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 import { ThemedView } from "@/components/ThemedView";
-import { CreateModalProvider, useCreateModal } from "@/contexts/createModalContext";
+import { useCreateModal } from "@/contexts/createModalContext";
 import CreateModal from "@/components/modals/CreateModal";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { useKudos } from "@/contexts/kudosContext";
@@ -475,11 +475,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
     }
 
-    return (
-        <CreateModalProvider>
-            <LayoutContent />
-        </CreateModalProvider>
-    );
+    // CreateModalProvider is hoisted to app/_layout.tsx so the FAB in the tabs
+    // layout keeps a valid context across auth-driven route transitions, when
+    // this layout briefly renders a Redirect instead of its children.
+    return <LayoutContent />;
 };
 
 // Separate component to use the CreateModal context
