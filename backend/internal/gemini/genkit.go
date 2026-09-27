@@ -15,7 +15,7 @@ func InitGenkit(collections map[string]*mongo.Collection, unsplashClient *unspla
 	// Initialize Genkit with the Google AI plugin
 	g := genkit.Init(context.Background(),
 		genkit.WithPlugins(&googlegenai.GoogleAI{}),
-		genkit.WithDefaultModel("googleai/gemini-3.8-flash"),
+		genkit.WithDefaultModel("googleai/gemini-3.5-flash"),
 	)
 
 	// Initialize tools
