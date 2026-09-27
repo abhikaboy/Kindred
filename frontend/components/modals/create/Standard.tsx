@@ -6,6 +6,7 @@ import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import Dropdown from "../../inputs/Dropdown";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
+import { useApplyCreatedTasks } from "@/hooks/useApplyCreatedTasks";
 import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useBlueprints } from "@/contexts/blueprintContext";
@@ -56,7 +57,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
     const { ready: createHintReady, done: createHintDone } = useFirstTouchHint("task_create_options");
     const { request } = useRequest();
-    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task, fetchWorkspaces } = useTasks();
+    const { categories, workspaces, addToCategory, updateTask, removeFromCategory, task } = useTasks();
+    const { applyCreatedTask } = useApplyCreatedTasks();
     const { selectedCategory, setCreateCategory } = useSelectedCategory();
     const { addTaskToBlueprintCategory, blueprintCategories } = useBlueprints();
     const {
@@ -341,8 +343,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
         if (autoCategorize) {
             try {
                 const response = await request("POST", "/user/tasks/auto", postBody as CreateTaskParams);
-                // The task landed in the Inbox; pull the workspace tree so it shows up.
-                await fetchWorkspaces(true);
+                // The task landed in the Inbox; insert it there (refetches only if the Inbox is new).
+                applyCreatedTask(response as any);
                 showRingUpdate((response as any)?.ringDelta);
                 queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
                 capture(AnalyticsEvents.TASK_CREATED, {
@@ -361,7 +363,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 console.error("Failed to create task:", error);
                 const { showToastable } = await import("react-native-toastable");
                 showToastable({
-                    message: "Failed to create task. Please try again.",
+                    title: "Couldn't add task",
+                    message: "Something went wrong on our end. Give it another try.",
                     status: "danger",
                     duration: 3000,
                 });
@@ -398,7 +401,8 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
             const { showToastable } = await import("react-native-toastable");
 
             showToastable({
-                message: "Failed to create task. Please try again.",
+                title: "Couldn't add task",
+                message: "Something went wrong on our end. Give it another try.",
                 status: "danger",
                 duration: 3000,
             });
@@ -565,7 +569,7 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
                 <View style={{ width: "76%" }}>
                     <Dropdown
                         options={[
-                            { label: "✨ Auto — file it for me", id: AUTO_CATEGORY_ID, special: false },
+                            { label: "Auto Sort", id: AUTO_CATEGORY_ID, special: false },
                             ...(availableCategories || [])
                                 .filter((c) => c.name !== "!-proxy-!")
                                 .map((c) => {

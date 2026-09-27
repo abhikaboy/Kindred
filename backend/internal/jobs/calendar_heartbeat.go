@@ -87,11 +87,49 @@ func (j *CalendarHeartbeatJob) Run(ctx context.Context) error {
 
 	slog.Info("Calendar heartbeat: checking connections", "total", len(connections))
 
-	var healthy, degraded, broken int
+	var healthy, degraded, broken, deleted int
 
 	for i := range connections {
 		conn := &connections[i]
 		result := j.service.CheckConnectionHealth(ctx, conn)
+
+		// A deleted upstream account can never be recovered — the user cannot
+		// re-authenticate into an account that no longer exists — so remove the
+		// connection instead of leaving it to fail on every future heartbeat.
+		if result.AccountDeleted {
+			deleted++
+			slog.Warn("Heartbeat: upstream account deleted, removing connection",
+				"connection_id", result.ConnectionID,
+				"user_id", result.UserID,
+				"account", result.Account,
+				"message", result.Message)
+
+			if err := j.service.DisconnectProvider(ctx, result.UserID, result.ConnectionID); err != nil {
+				slog.Error("Heartbeat: failed to remove connection for deleted account",
+					"connection_id", result.ConnectionID,
+					"user_id", result.UserID,
+					"account", result.Account,
+					"error", err)
+				sentry.CaptureException(fmt.Errorf("calendar heartbeat: failed to remove connection %s for deleted account %s: %w",
+					result.ConnectionID.Hex(), result.Account, err))
+				continue
+			}
+
+			if client := ph.GetClient(); client != nil {
+				_ = client.Track(ctx, ph.Event{
+					UserID:    result.UserID.Hex(),
+					EventName: "calendar_connection_removed_account_deleted",
+					Category:  "calendar",
+					Properties: map[string]interface{}{
+						"connection_id": result.ConnectionID.Hex(),
+						"account":       result.Account,
+						"message":       result.Message,
+						"duration_ms":   result.Duration.Milliseconds(),
+					},
+				})
+			}
+			continue
+		}
 
 		// Persist the result
 		if err := j.service.UpdateConnectionHealth(ctx, result.ConnectionID, result.Status, result.Message); err != nil {
@@ -155,6 +193,7 @@ func (j *CalendarHeartbeatJob) Run(ctx context.Context) error {
 		"healthy", healthy,
 		"degraded", degraded,
 		"broken", broken,
+		"removed_account_deleted", deleted,
 		"duration_ms", duration.Milliseconds())
 
 	// Alert if any connections are in bad shape

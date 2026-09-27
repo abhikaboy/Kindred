@@ -252,7 +252,7 @@ func (s *Service) CreateEncouragement(r *EncouragementDocumentInternal) (*Encour
 	if r.Type == "video" && r.ThumbnailURL != nil {
 		videoThumb = *r.ThumbnailURL
 	}
-	if err := s.sendEncouragementNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID, videoThumb); err != nil {
+	if err := s.sendEncouragementNotification(r.Receiver, r.Sender, r.TaskName, r.Message, r.Type, r.Scope, r.TaskID, videoThumb); err != nil {
 		slog.Error("Failed to send encouragement notification", "error", err, "receiver_id", r.Receiver)
 	}
 
@@ -351,6 +351,10 @@ func (s *Service) sendReactionNotification(enc *EncouragementDocumentInternal, e
 			"reaction":   emoji,
 			"url":        "/feed?page=notifications",
 		},
+		// The person who reacted is the actor here, not the kudos author.
+		SenderName:   receiver.DisplayName,
+		SenderAvatar: receiver.ProfilePicture,
+		SenderID:     receiver.ID.Hex(),
 	})
 }
 
@@ -548,7 +552,9 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*EncouragementSend
 }
 
 // sendEncouragementNotification sends a push notification when an encouragement is created
-func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, senderName, taskName, encouragementText, encouragementType, scope string, taskID primitive.ObjectID, videoThumbnailURL string) error {
+func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, sender EncouragementSenderInternal, taskName, encouragementText, encouragementType, scope string, taskID primitive.ObjectID, videoThumbnailURL string) error {
+	senderName := sender.Name
+
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -647,6 +653,12 @@ func (s *Service) sendEncouragementNotification(receiverID primitive.ObjectID, s
 		}
 	}
 
+	// Set once rather than on each branch above: iOS renders these as
+	// communication notifications from the encourager.
+	notification.SenderName = sender.Name
+	notification.SenderAvatar = sender.Picture
+	notification.SenderID = sender.ID.Hex()
+
 	return xutils.SendNotification(notification)
 }
 
@@ -710,6 +722,9 @@ func (s *Service) NotifyEncouragersOfCompletion(taskID, taskOwnerID primitive.Ob
 				"task_name":     taskName,
 				"task_id":       taskID.Hex(),
 			},
+			SenderName:   taskOwner.DisplayName,
+			SenderAvatar: taskOwner.ProfilePicture,
+			SenderID:     taskOwnerID.Hex(),
 		}
 
 		err = xutils.SendNotification(notification)

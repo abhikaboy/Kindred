@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Keyboard, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
     BottomSheetFooter,
@@ -15,7 +15,7 @@ import DefaultModal from "./DefaultModal";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { bulkCompleteTasksAPI, logTasksAPI } from "@/api/task";
 import { runEndOfDaySubmission } from "@/utils/endOfDay";
 import { showToast } from "@/utils/showToast";
@@ -85,8 +85,8 @@ interface DayLogFooterProps {
 // Composer lives in its own component with local draft state so the
 // footerComponent identity stays stable as you type (a changing footerComponent
 // remounts the input and drops keyboard focus). BottomSheetFooter keeps it
-// above the keyboard — keyboardBehavior="extend" alone can't lift a
-// bottom-pinned input on a fixed snap point.
+// above the keyboard; the sheet's keyboardBehavior alone can't lift a
+// bottom-pinned input.
 function DayLogFooter({ footerProps, bottomInset, submitting, hasSelections, onAddEntry, onSubmit }: DayLogFooterProps) {
     const ThemedColor = useThemeColor();
     const [draft, setDraft] = useState("");
@@ -129,6 +129,24 @@ function DayLogFooter({ footerProps, bottomInset, submitting, hasSelections, onA
     );
 }
 
+// iOS keyboard height, so the list can scroll clear of it. The sheet grows to fill
+// the screen while typing, but the keyboard still overlaps its bottom, and the
+// footer margin adjustment only reserves the composer's own height. Android runs
+// adjustResize, which already shrinks the sheet, so it stays 0 there.
+function useIosKeyboardHeight() {
+    const [height, setHeight] = useState(0);
+    useEffect(() => {
+        if (Platform.OS !== "ios") return;
+        const show = Keyboard.addListener("keyboardWillShow", (e) => setHeight(e.endCoordinates.height));
+        const hide = Keyboard.addListener("keyboardWillHide", () => setHeight(0));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
+    return height;
+}
+
 interface Props {
     visible: boolean;
     setVisible: (visible: boolean) => void;
@@ -140,7 +158,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
-    const { workspaces, selected, removeFromCategory, fetchWorkspaces } = useTasks();
+    const { removeFromCategory, fetchWorkspaces } = useTaskActions();
     const scrollRef = useRef<BottomSheetScrollViewMethods>(null);
     const setT = useTimeouts();
 
@@ -148,13 +166,24 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     const [entries, setEntries] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
 
-    const workspaceName = selected || workspaces.find((ws) => !ws.isBlueprint)?.name || workspaces[0]?.name;
+    const workspaceName = useTasksSelector(
+        (s) => s.selected || s.workspaces.find((ws) => !ws.isBlueprint)?.name || s.workspaces[0]?.name
+    );
+    // The server creates the workspace's "Logged" category on first use; only
+    // then does the tree need a refetch to show it.
+    const hasLoggedCategory = useTasksSelector(
+        (s) => !!s.workspaces.find((ws) => ws.name === workspaceName)?.categories.some((c) => c.name === "Logged")
+    );
     const hasSelections = checkedIds.size > 0 || entries.length > 0;
+    const keyboardHeight = useIosKeyboardHeight();
+    // One flat object: gorhom reads paddingBottom off it to add the footer height,
+    // and an array style would drop this padding.
+    const scrollContentStyle = useMemo(() => ({ paddingBottom: 8 + keyboardHeight }), [keyboardHeight]);
 
     // Latest values for the submit handler, so it can stay identity-stable (it
     // feeds renderFooter; an unstable handler would remount the composer).
-    const submitDataRef = useRef({ openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged });
-    submitDataRef.current = { openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged };
+    const submitDataRef = useRef({ openTasks, checkedIds, entries, workspaceName, hasLoggedCategory, removeFromCategory, fetchWorkspaces, onLogged });
+    submitDataRef.current = { openTasks, checkedIds, entries, workspaceName, hasLoggedCategory, removeFromCategory, fetchWorkspaces, onLogged };
 
     const toggleTask = (taskId: string) => {
         setCheckedIds((prev) => {
@@ -178,7 +207,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
     // Returns true if the entry was consumed (so the composer can clear it).
     const handleSubmit = useCallback(
         async (extraEntry: string): Promise<boolean> => {
-            const { openTasks, checkedIds, entries, workspaceName, removeFromCategory, fetchWorkspaces, onLogged } =
+            const { openTasks, checkedIds, entries, workspaceName, hasLoggedCategory, removeFromCategory, fetchWorkspaces, onLogged } =
                 submitDataRef.current;
             // Pull in an un-added draft so "type and hit Log" works without tapping +.
             const pendingEntries = extraEntry ? [...entries, extraEntry] : entries;
@@ -194,7 +223,9 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
 
                 result.confirmedCompletions.forEach(({ taskId, categoryId }) => removeFromCategory(categoryId, taskId));
                 setEntries(result.remainingEntries);
-                if (result.loggedCount > 0) fetchWorkspaces(true);
+                if (result.loggedCount > 0 && !hasLoggedCategory) {
+                    fetchWorkspaces(true).catch((error) => console.error("Workspace refresh failed:", error));
+                }
                 queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
                 const total = result.completedCount + result.loggedCount;
@@ -248,7 +279,10 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
             visible={visible}
             setVisible={setVisible}
             enableContentPanningGesture={false}
-            keyboardBehavior="extend"
+            // Grow to full height while typing so the list keeps as much room as
+            // possible; topInset keeps the heading below the status bar.
+            keyboardBehavior="fillParent"
+            topInset={insets.top}
             footerComponent={renderFooter}>
             <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
                 How did today go?
@@ -257,7 +291,7 @@ export default function EndOfDayReviewSheet({ visible, setVisible, openTasks, on
             <BottomSheetScrollView
                 ref={scrollRef}
                 style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={scrollContentStyle}
                 showsVerticalScrollIndicator
                 enableFooterMarginAdjustment
                 keyboardShouldPersistTaps="handled"
@@ -298,9 +332,6 @@ const styles = StyleSheet.create({
     // Flex so the list fills the space above the (absolutely-positioned) footer.
     scroll: {
         flex: 1,
-    },
-    scrollContent: {
-        paddingBottom: 8,
     },
     section: {
         marginBottom: 24,

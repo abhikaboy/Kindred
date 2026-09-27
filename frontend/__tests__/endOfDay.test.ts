@@ -1,6 +1,7 @@
 import {
     END_OF_DAY_HOUR,
     endOfDayDismissKey,
+    quickLogDoneKey,
     isEndOfDayWindow,
     todaysOpenTasks,
     runEndOfDaySubmission,
@@ -139,5 +140,12 @@ describe("runEndOfDaySubmission", () => {
 
         expect(logTasks).not.toHaveBeenCalled();
         expect(result.loggedCount).toBe(0);
+    });
+});
+
+describe("quickLogDoneKey", () => {
+    it("keys by local calendar day, rolling over at midnight", () => {
+        expect(quickLogDoneKey(new Date(2026, 5, 10, 23, 59))).toBe("quicklog-done-2026-06-10");
+        expect(quickLogDoneKey(new Date(2026, 5, 11, 0, 1))).toBe("quicklog-done-2026-06-11");
     });
 });

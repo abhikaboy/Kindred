@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, Animated } from "react-native";
+import { ScrollView, View, Switch, TouchableOpacity, TextInput, RefreshControl, Animated, InteractionManager } from "react-native";
 import { MotiView } from "moti";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
 import WorkspaceTaskPreview from "@/components/dashboard/WorkspaceTaskPreview";
 import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
-import DashboardCards from "@/components/dashboard/DashboardCards";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
@@ -15,6 +14,7 @@ import { KudosCards } from "../cards/KudosCard";
 import { HorseIcon, PlusIcon } from "phosphor-react-native";
 import SectionHeader from "./SectionHeader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+
 import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
 import WorkingOnRow from "./WorkingOnRow";
 import { OnboardingChecklist } from "./OnboardingChecklist";
@@ -31,12 +31,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import QuickCapture from "@/components/dashboard/QuickCapture";
+import QuickLogDay from "@/components/dashboard/QuickLogDay";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
+import CaptureBlur from "@/components/dashboard/CaptureBlur";
+import type { SharedValue } from "react-native-reanimated";
 import type { HomeTour } from "@/hooks/useHomeTour";
 
 interface HomeScrollContentProps {
-    encouragementCount: number;
-    congratulationCount: number;
     workspaces: any[];
     displayWorkspaces: any[];
     fetchingWorkspaces: boolean;
@@ -52,15 +53,15 @@ interface HomeScrollContentProps {
     onStatsExpandChange?: (expanded: boolean) => void;
     kudosOffsetRef: React.MutableRefObject<number>;
     tour: HomeTour;
+    // 0..1 while QuickCapture is focused; drives the blur over everything else
+    captureFocus: SharedValue<number>;
 }
 
 // Temporarily hidden from the dashboard (kept in code for easy re-enable).
 // Flip to true to bring the KUDOS row back.
 const SHOW_KUDOS_ROW = false;
 
-export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
-    encouragementCount,
-    congratulationCount,
+export const HomeScrollContent = React.memo<HomeScrollContentProps>(function HomeScrollContent({
     workspaces,
     displayWorkspaces,
     fetchingWorkspaces,
@@ -76,7 +77,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
     onStatsExpandChange,
     kudosOffsetRef,
     tour,
-}) => {
+    captureFocus,
+}) {
     const { showAlert } = useAlert();
     const [statsExpanded, setStatsExpanded] = useState(false);
     const [ringsExpanded, setRingsExpanded] = useState(false);
@@ -92,13 +94,12 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
         if (namesToLoad.length === 0) return;
         namesToLoad.forEach((name: string) => loadedPreviewNamesRef.current.add(name));
 
-        Promise.all(
-            namesToLoad.map((name: string) =>
-                AsyncStorage.getItem(`workspace-preview-expanded-${name}`).then((v) => [name, v === "true"] as const)
-            )
-        ).then((entries) => {
-            setExpandedPreviews((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
-        });
+        AsyncStorage.multiGet(namesToLoad.map((name: string) => `workspace-preview-expanded-${name}`))
+            .then((pairs) => {
+                const entries = pairs.map(([, v], i) => [namesToLoad[i], v === "true"] as const);
+                setExpandedPreviews((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+            })
+            .catch(() => {});
     }, [workspaces]);
 
     const toggleWorkspacePreview = useCallback((name: string) => {
@@ -207,7 +208,9 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                 console.error("Error checking calendar status:", error);
             }
         };
-        checkCalendarStatus();
+        // Not needed for first paint — let the pager/launch animations settle first
+        const task = InteractionManager.runAfterInteractions(checkCalendarStatus);
+        return () => task.cancel();
     }, []);
 
     const handleCalendarAction = async () => {
@@ -374,6 +377,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             <MotiView style={{ gap: 16, marginTop: 0 }}>
                 {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
                 <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
+                {/* Extends past the content so short pages still blur to the bottom edge */}
+                <CaptureBlur progress={captureFocus} style={{ zIndex: 996, bottom: -1000 }} />
 
                 {!tour.active && <TaggedTaskBanners />}
 
@@ -387,39 +392,25 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                     {dashboardConfig.stats && <DashboardStats onExpandChange={handleStatsExpandChange} />}
                 </View> */}
 
-                {/* Quick capture sits above the rings: the first thing on the home
-                    screen should be the cheapest way to get a task in. */}
-                {!tour.active && (
-                    <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
-                        <QuickCapture />
-                    </View>
-                )}
-
                 {/* Productivity Rings - private to the user, live-updates via useRings cache */}
-                <View ref={(node) => tour.registerSection("rings", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, zIndex: ringsExpanded ? 999 : 0 }}>
+                <View ref={(node) => tour.registerSection("rings", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 12, zIndex: ringsExpanded ? 999 : 0 }}>
+                    <ThemedText type="default" style={{ fontSize: 17 }}>Activity Rings</ThemedText>
                     <ProductivityRingsCard variant="rings" expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
                 </View>
+
+                {/* Unwrapped so it leaves no gap once hidden for the day */}
+                {!tour.active && <QuickLogDay />}
+
+                {!tour.active && (
+                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, zIndex: 997 }}>
+                        <QuickCapture focusProgress={captureFocus} />
+                    </View>
+                )}
 
                 {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
                 {!tour.active && <WorkingOnRow />}
 
                 <Animated.View style={{ opacity: dimAnim }}>
-                {/* Dashboard Cards */}
-                {tour.visibleUpTo("jumpBackIn") && (
-                <View ref={(node) => tour.registerSection("jumpBackIn", node)} style={{ marginLeft: HORIZONTAL_PADDING, gap: 12, marginBottom: 18 }}>
-                    <View style={{ paddingRight: HORIZONTAL_PADDING }}>
-                        <SectionHeader title="JUMP BACK IN" visible={dashboardConfig.jump_back_in} onToggleVisibility={() => toggleSection("jump_back_in")} />
-                    </View>
-                    {!tour.active && hideHintReady && (
-                        <HintBubble
-                            text="Tap the eye to hide any home section"
-                            onDone={hideHintDone}
-                            autoDismissMs={7000}
-                        />
-                    )}
-                    {dashboardConfig.jump_back_in && <DashboardCards />}
-                </View>
-                )}
 
                 {/* Kudos Cards (Encouragements & Congratulations) — temporarily hidden via SHOW_KUDOS_ROW */}
                 {SHOW_KUDOS_ROW && (
@@ -463,15 +454,17 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
 
                 {/* Personal Workspaces Section (replaces Recent Workspaces; WorkspaceGrid kept but unused) */}
                 {tour.visibleUpTo("workspaces") && (
-                <View
-                    ref={(node) => tour.registerSection("workspaces", node)}
-                    style={{
-                        marginHorizontal: HORIZONTAL_PADDING,
-                        gap: 16,
-                    }}>
-                    <View style={{ marginBottom: 8 }}>
+                <ScrollView
+                    horizontal={false}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 108 }}>
+                    <View
+                        ref={(node) => tour.registerSection("workspaces", node)}
+                        style={{ marginBottom: 18 }}>
+                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 16 }}>
                         <SectionHeader
-                            title="PERSONAL WORKSPACES"
+                            title="Personal Workspaces"
+                            variant="prominent"
                             visible={dashboardConfig.recent_workspaces}
                             onToggleVisibility={() => toggleSection("recent_workspaces")}
                             right={
@@ -480,6 +473,14 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                                 </TouchableOpacity>
                             }
                         />
+                        {!tour.active && !workspacesHintReady && hideHintReady && (
+                            <HintBubble
+                                text="Tap the eye to hide any home section"
+                                onDone={hideHintDone}
+                                autoDismissMs={7000}
+                                style={{ marginTop: 8 }}
+                            />
+                        )}
                         {!tour.active && workspacesHintReady && dashboardConfig.recent_workspaces && (
                             <HintBubble
                                 text="Workspaces keep parts of your life separate — tap + to add one"
@@ -489,15 +490,8 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                             />
                         )}
                     </View>
-                </View>
-                )}
-                {tour.visibleUpTo("workspaces") && (
-                <ScrollView
-                    horizontal={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 108 }}>
                     {dashboardConfig.recent_workspaces && (
-                        <View style={{ marginBottom: 18 }}>
+                        <View>
                             {workspaces
                                 .filter((workspace: any) => !workspace.isBlueprint)
                                 .map((workspace: any) => (
@@ -535,6 +529,7 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
                                 ))}
                         </View>
                     )}
+                    </View>
                 {/* Recently Completed Tasks */}
                 {!tour.active && dashboardConfig.recently_completed && <RecentlyCompletedTasks onToggleVisibility={() => toggleSection("recently_completed")} />}
                 </ScrollView>
@@ -556,4 +551,4 @@ export const HomeScrollContent: React.FC<HomeScrollContentProps> = ({
             )}
         </ScrollView>
     );
-};
+});

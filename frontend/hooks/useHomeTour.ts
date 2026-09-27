@@ -6,16 +6,15 @@ import { useAuth } from "@/hooks/useAuth";
 // First-touch guided reveal of the home dashboard. Sections mount one at a time
 // (see HomeScrollContent gating); this hook owns step state + auto-scroll.
 
-export type TourKey = "rings" | "jumpBackIn" | "workspaces";
+export type TourKey = "rings" | "workspaces";
 
 export const HOME_TOUR_STEPS: { key: TourKey; copy: string }[] = [
     { key: "rings", copy: "Close all three rings every day to keep your momentum going." },
-    { key: "jumpBackIn", copy: "Your recent tasks live here — tap one to pick up where you left off." },
     { key: "workspaces", copy: "Workspaces keep the parts of your life separate." },
 ];
 
 // Section keys that map to a real on-screen section (create + swipe are card-only).
-const SECTION_ORDER: TourKey[] = ["rings", "jumpBackIn", "workspaces"];
+const SECTION_ORDER: TourKey[] = ["rings", "workspaces"];
 
 // Where the active section's top should land on screen after auto-scroll.
 const TARGET_TOP = Dimensions.get("window").height * 0.34;

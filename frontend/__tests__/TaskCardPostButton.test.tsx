@@ -4,9 +4,14 @@ import { render, fireEvent } from "@testing-library/react-native";
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock("@/contexts/tasksContext", () => ({
-    useTasks: () => ({ setTask: jest.fn(), updateTask: jest.fn() }),
+    useTaskActions: () => ({ setTask: jest.fn(), updateTask: jest.fn() }),
 }));
-jest.mock("@/contexts/dragContext", () => ({ useDragOptional: () => null }));
+jest.mock("@/contexts/dragContext", () => ({ useDragActionsOptional: () => null }));
+// EditPost pulls in the create-modal tree (and ../shared, which jest can't resolve deps for).
+jest.mock("@react-navigation/native", () => ({ useFocusEffect: () => {} }));
+jest.mock("@/components/modals/edit/EditPost", () => () => null);
+jest.mock("@/components/modals/EncourageModal", () => () => null);
+jest.mock("@/components/modals/CongratulateModal", () => () => null);
 jest.mock("@/hooks/useAnalytics", () => ({ useAnalytics: () => ({ capture: jest.fn() }) }));
 jest.mock("react-native-reanimated", () => {
     const RN = require("react-native");

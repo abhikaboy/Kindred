@@ -17,39 +17,38 @@ interface CacheEntry {
  * Clean up old cache entries from AsyncStorage
  * @param maxAgeMs Maximum age in milliseconds (default: 7 days)
  * @param patterns Array of key patterns to clean (e.g., ['cache_', 'temp_'])
+ * @param skipKeys Keys to leave alone without reading them (e.g. the active user's caches,
+ * which are kept fresh and can be large enough that parsing them just for a timestamp hurts)
+ * @returns Number of entries removed
  */
 export async function cleanupOldCaches(
     maxAgeMs: number = 7 * 24 * 60 * 60 * 1000, // 7 days
-    patterns: string[] = ['cache_', 'workspaces_cache_', 'temp_']
-): Promise<void> {
+    patterns: string[] = ['cache_', 'workspaces_cache_', 'temp_'],
+    skipKeys: string[] = []
+): Promise<number> {
     try {
         const allKeys = await AsyncStorage.getAllKeys();
         const now = Date.now();
+        const candidates = allKeys.filter(
+            (key) => !skipKeys.includes(key) && patterns.some((pattern) => key.includes(pattern))
+        );
+        if (candidates.length === 0) return 0;
+
+        const entries = await AsyncStorage.multiGet(candidates);
         const keysToRemove: string[] = [];
 
-        // Check each key that matches our patterns
-        for (const key of allKeys) {
-            const matchesPattern = patterns.some(pattern => key.includes(pattern));
+        for (const [key, value] of entries) {
+            if (!value) continue;
+            try {
+                const parsed = JSON.parse(value);
 
-            if (matchesPattern) {
-                try {
-                    const value = await AsyncStorage.getItem(key);
-                    if (value) {
-                        const parsed = JSON.parse(value);
-
-                        // Check if it has a timestamp field
-                        if (parsed.timestamp && typeof parsed.timestamp === 'number') {
-                            const age = now - parsed.timestamp;
-
-                            if (age > maxAgeMs) {
-                                keysToRemove.push(key);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    // If we can't parse it, it might be corrupted - consider removing
-                    logger.warn(`Failed to parse cache entry: ${key}`, error);
+                // Check if it has a timestamp field
+                if (parsed && typeof parsed.timestamp === 'number' && now - parsed.timestamp > maxAgeMs) {
+                    keysToRemove.push(key);
                 }
+            } catch (error) {
+                // If we can't parse it, it might be corrupted - consider removing
+                logger.warn(`Failed to parse cache entry: ${key}`, error);
             }
         }
 
@@ -58,8 +57,10 @@ export async function cleanupOldCaches(
             await AsyncStorage.multiRemove(keysToRemove);
             logger.info(`Cleaned up ${keysToRemove.length} old cache entries`);
         }
+        return keysToRemove.length;
     } catch (error) {
         logger.error('Error cleaning up caches', error);
+        return 0;
     }
 }
 

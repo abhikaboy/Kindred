@@ -18,11 +18,19 @@ const ConditionalView = ({
     triggerDep,
     style,
 }: Props) => {
-    const opacity = useRef(new Animated.Value(condition ? 1 : 0)).current;
+    // Lazy-init: `useRef(new Animated.Value())` would allocate on every render.
+    const opacityRef = useRef<Animated.Value | null>(null);
+    if (opacityRef.current === null) opacityRef.current = new Animated.Value(condition ? 1 : 0);
+    const opacity = opacityRef.current;
     const [shouldRender, setShouldRender] = useState(condition);
     const prevCondition = useRef(condition);
 
     useEffect(() => {
+        // Non-animated views render straight off `condition` below; no state to sync.
+        if (!animated) {
+            prevCondition.current = condition;
+            return;
+        }
         if (condition) {
             setShouldRender(true);
             if (animated) {
@@ -51,19 +59,19 @@ const ConditionalView = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [condition, triggerDep, animated, animationDuration]);
 
+    if (!animated) {
+        return condition ? <>{children}</> : null;
+    }
+
     if (!shouldRender) {
         return null;
     }
 
-    if (animated) {
-        return (
-            <Animated.View key={triggerDep} style={[{ opacity }, style]}>
-                {children}
-            </Animated.View>
-        );
-    }
-
-    return <>{children}</>;
+    return (
+        <Animated.View key={triggerDep} style={[{ opacity }, style]}>
+            {children}
+        </Animated.View>
+    );
 };
 
 export default ConditionalView;

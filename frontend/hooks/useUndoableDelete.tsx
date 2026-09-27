@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import { showToastable, hideToastable } from "react-native-toastable";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import { removeFromCategoryAPI, bulkDeleteTasksAPI } from "@/api/task";
 import { Task } from "@/api/types";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
@@ -20,16 +20,16 @@ interface PendingDelete {
 }
 
 export function useUndoableDelete() {
-    const { removeFromCategory, addToCategory } = useTasks();
+    const { removeFromCategory, addToCategory } = useTaskActions();
     const { capture } = useAnalytics();
     const pendingRef = useRef<Map<string, PendingDelete>>(new Map<string, PendingDelete>());
-    const timerRef = useRef<ReturnType<typeof setTimeout>>();
+    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-    // Alert state for recurring task dialog
-    const [alertVisible, setAlertVisible] = useState(false);
-    const [alertTitle, setAlertTitle] = useState("");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+    // Recurring-task dialog buttons; null = closed (the alert only mounts when open)
+    const [alertButtons, setAlertButtons] = useState<AlertButton[] | null>(null);
+    const setAlertVisible = useCallback((visible: boolean) => {
+        if (!visible) setAlertButtons(null);
+    }, []);
 
     const flushPending = useCallback(async () => {
         const entries = Array.from(pendingRef.current.values());
@@ -187,10 +187,6 @@ export function useUndoableDelete() {
         (task: Task, categoryId: string) => {
             if (task.templateID) {
                 // Show recurring task dialog
-                setAlertTitle("Delete Recurring Task");
-                setAlertMessage(
-                    "Do you want to delete only this task or all future tasks?"
-                );
                 setAlertButtons([
                     {
                         text: "Cancel",
@@ -206,7 +202,6 @@ export function useUndoableDelete() {
                         style: "destructive",
                     },
                 ]);
-                setAlertVisible(true);
             } else {
                 enqueuePendingDelete(task, categoryId, false);
             }
@@ -214,12 +209,12 @@ export function useUndoableDelete() {
         [enqueuePendingDelete]
     );
 
-    const alertElement = alertVisible ? (
+    const alertElement = alertButtons ? (
         <CustomAlert
-            visible={alertVisible}
+            visible={true}
             setVisible={setAlertVisible}
-            title={alertTitle}
-            message={alertMessage}
+            title="Delete Recurring Task"
+            message="Do you want to delete only this task or all future tasks?"
             buttons={alertButtons}
         />
     ) : null;

@@ -1,8 +1,8 @@
 import React from "react";
-import { View, Text, Dimensions, StyleSheet } from "react-native";
+import { View, Dimensions, StyleSheet } from "react-native";
 import { ToastableBodyParams, hideToastable } from "react-native-toastable";
 import { ThemedText } from "../ThemedText";
-import Entypo from "@expo/vector-icons/Entypo";
+import { CheckCircle, Info, Warning, WarningCircle, type Icon } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Reanimated, {
@@ -15,7 +15,7 @@ import Reanimated, {
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-export default function DefaultToast({ status, message }: ToastableBodyParams) {
+export default function DefaultToast({ status, message, title }: ToastableBodyParams) {
     const ThemedColor = useThemeColor();
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
@@ -85,80 +85,86 @@ export default function DefaultToast({ status, message }: ToastableBodyParams) {
         return {
             transform: [
                 { translateX: translateX.value },
-                { translateY: translateY.value }
-            ],
+                { translateY: translateY.value },
+            ] as any,
             opacity: opacity.value,
         };
     });
 
-    const statusMapping = {
-        success: {
-            color: ThemedColor.success,
-            icon: "check",
-        },
-        danger: {
-            color: ThemedColor.error,
-            icon: "cross",
-        },
-        warning: {
-            color: ThemedColor.warning,
-            icon: "warning",
-        },
-        info: {
-            color: ThemedColor.primary,
-            icon: "info",
-        },
-        neutral: {
-            color: ThemedColor.caption,
-            icon: "info",
-        },
+    const statusMapping: Record<string, { color: string; Icon: Icon }> = {
+        success: { color: ThemedColor.success, Icon: CheckCircle },
+        danger: { color: ThemedColor.error, Icon: WarningCircle },
+        warning: { color: ThemedColor.warning, Icon: Warning },
+        info: { color: ThemedColor.primary, Icon: Info },
+        neutral: { color: ThemedColor.caption, Icon: Info },
     };
-
-    const styles = StyleSheet.create({
-        container: {
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 20,
-        },
-        toastBody: {
-            minWidth: screenWidth * 0.8,
-            maxWidth: screenWidth * 0.9,
-            alignItems: "center",
-            borderRadius: 12,
-            borderBottomWidth: 3,
-            borderColor: statusMapping[status]?.color || ThemedColor.primary,
-            paddingVertical: 16,
-            paddingHorizontal: 20,
-            backgroundColor: ThemedColor.lightened,
-            shadowColor: "#000",
-            shadowOffset: {
-                width: 0,
-                height: 3,
-            },
-            shadowOpacity: 0.3,
-            shadowRadius: 6,
-            elevation: 8, // For Android shadow
-        },
-        iconContainer: {
-            marginBottom: 8,
-        },
-        messageText: {
-            textAlign: "center",
-            fontSize: 16,
-            lineHeight: 22,
-            flexWrap: "wrap",
-        },
-    });
+    const { color: accent, Icon: StatusIcon } = statusMapping[status ?? "info"] ?? statusMapping.info;
+    // Status colors are hex; drop any alpha channel and apply a soft tint for the icon badge
+    const accentTint = `${String(accent).slice(0, 7)}26`;
 
     return (
         <GestureDetector gesture={panGesture}>
             <Reanimated.View style={animatedStyle as any}>
                 <View style={styles.container}>
-                    <View style={styles.toastBody}>
-                        <ThemedText type="defaultSemiBold" style={{textAlign: "center"}}>{message}</ThemedText>
+                    <View
+                        style={[
+                            styles.toastBody,
+                            { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary },
+                        ]}>
+                        <View style={[styles.iconBadge, { backgroundColor: accentTint }]}>
+                            <StatusIcon size={20} color={accent} weight="fill" />
+                        </View>
+                        <View style={styles.textColumn}>
+                            {title ? (
+                                <ThemedText type="defaultSemiBold" numberOfLines={1}>
+                                    {title}
+                                </ThemedText>
+                            ) : null}
+                            <ThemedText
+                                type={title ? "smallerDefault" : "defaultSemiBold"}
+                                style={title ? { color: ThemedColor.caption } : undefined}
+                                numberOfLines={3}>
+                                {message}
+                            </ThemedText>
+                        </View>
                     </View>
                 </View>
             </Reanimated.View>
         </GestureDetector>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    toastBody: {
+        width: "100%",
+        maxWidth: 480,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        paddingVertical: 12,
+        paddingLeft: 12,
+        paddingRight: 16,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.16,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    iconBadge: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    textColumn: {
+        flex: 1,
+        gap: 2,
+    },
+});

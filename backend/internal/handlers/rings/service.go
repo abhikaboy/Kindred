@@ -484,6 +484,9 @@ func (s *RingService) NotifyAllRingsClosed(userID primitive.ObjectID) {
 						"type":    "rings_closed",
 						"user_id": userID.Hex(),
 					},
+					SenderName:   user.DisplayName,
+					SenderAvatar: user.ProfilePicture,
+					SenderID:     userID.Hex(),
 				})
 			}
 		}

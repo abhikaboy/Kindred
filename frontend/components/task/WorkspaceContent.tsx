@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Dimensions, StyleSheet, ScrollView, View, TouchableOpacity, LayoutAnimation, UIManager, Platform } from "react-native";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Dimensions, StyleSheet, View, TouchableOpacity, LayoutAnimation, UIManager, Platform } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import EditCategory from "@/components/modals/edit/EditCategory";
 import EditWorkspace from "@/components/modals/edit/EditWorkspace";
 import { useCreateModal } from "@/contexts/createModalContext";
@@ -29,7 +29,14 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
-import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
+import { DragProvider, useDrag, useDragActionsOptional, useIsDragging } from "@/contexts/dragContext";
+import Animated, { AnimatedRef, useAnimatedRef, useAnimatedScrollHandler } from "react-native-reanimated";
+import { sortCategories } from "@/utils/categorySort";
+import { setWorkspaceViewState } from "@/hooks/workspaceViewStateStore";
+
+// Last scroll offset per workspace, so a page that the pager unmounted comes
+// back where the user left it.
+const scrollPositions = new Map<string, number>();
 
 /**
  * While a task is being dragged, scroll the workspace when the finger nears the
@@ -38,12 +45,10 @@ import { DragProvider, useDrag, useDragOptional } from "@/contexts/dragContext";
  */
 const DragAutoScroll = ({
     scrollViewRef,
-    scrollOffsetRef,
 }: {
-    scrollViewRef: React.RefObject<ScrollView>;
-    scrollOffsetRef: React.MutableRefObject<number>;
+    scrollViewRef: AnimatedRef<Animated.ScrollView>;
 }) => {
-    const { isDragging, fingerX, fingerY, setScrollOffset, updateDrag } = useDrag();
+    const { isDragging, fingerX, fingerY, scrollY, setScrollOffset, updateDrag } = useDrag();
     useEffect(() => {
         if (!isDragging) return;
         const screenH = Dimensions.get("window").height;
@@ -51,14 +56,14 @@ const DragAutoScroll = ({
         const STEP = 24;
         const interval = setInterval(() => {
             const y = fingerY.value;
+            const current = scrollY.value;
             let next: number | null = null;
             if (y < EDGE) {
-                next = Math.max(0, scrollOffsetRef.current - STEP);
+                next = Math.max(0, current - STEP);
             } else if (y > screenH - EDGE) {
-                next = scrollOffsetRef.current + STEP;
+                next = current + STEP;
             }
             if (next === null) return;
-            scrollOffsetRef.current = next;
             // Keep hit-testing in sync with the programmatic scroll, and refresh
             // the hovered category even though the finger itself is stationary.
             setScrollOffset(next);
@@ -66,7 +71,7 @@ const DragAutoScroll = ({
             updateDrag(fingerX.value, fingerY.value);
         }, 16);
         return () => clearInterval(interval);
-    }, [isDragging, fingerX, fingerY, scrollViewRef, scrollOffsetRef, setScrollOffset, updateDrag]);
+    }, [isDragging, fingerX, fingerY, scrollY, scrollViewRef, setScrollOffset, updateDrag]);
     return null;
 };
 
@@ -92,22 +97,29 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     workspaceName,
 }) => {
     const ThemedColor = useThemeColor();
-    const { workspaces, categories: globalCategories, selected: globalSelected, getWorkspace, updateWorkspaceIconColor } = useTasks();
+    const { updateWorkspaceIconColor } = useTaskActions();
     // Use prop if provided, otherwise fall back to global selected
-    const selected = workspaceName || globalSelected;
-    const currentWorkspace = selected ? getWorkspace(selected) : undefined;
-    const WorkspaceIconComponent = currentWorkspace?.icon
-        ? ((PhosphorIcons as any)[currentWorkspace.icon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
+    const selected = useTasksSelector((s) => workspaceName || s.selected);
+    const workspaceIcon = useTasksSelector((s) => (selected ? s.workspaces.find((ws) => ws.name === selected)?.icon : undefined));
+    const workspaceColor = useTasksSelector((s) => (selected ? s.workspaces.find((ws) => ws.name === selected)?.color : undefined));
+    const WorkspaceIconComponent = workspaceIcon
+        ? ((PhosphorIcons as any)[workspaceIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
         : undefined;
     // When workspaceName prop is provided, derive categories directly from workspaces
     // to avoid depending on the global categories state (which is tied to globalSelected).
-    const categories = workspaceName
-        ? (workspaces.find((ws) => ws.name === workspaceName)?.categories ?? globalCategories)
-        : globalCategories;
+    // Selects an existing reference, so this page only re-renders when its own
+    // workspace's categories change.
+    const categories = useTasksSelector((s) =>
+        workspaceName
+            ? (s.workspaces.find((ws) => ws.name === workspaceName)?.categories ?? s.categories)
+            : s.categories
+    );
     const { applyFilters } = useWorkspaceFilters(selected);
     const { getStateDescription, state } = useWorkspaceState(selected);
     const insets = useSafeAreaInsets();
     const { openModal } = useCreateModal();
+    const openModalRef = useRef(openModal);
+    openModalRef.current = openModal;
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
@@ -144,6 +156,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     const toggleGroupByDay = async () => {
         const newValue = !state.groupByDay;
+        setWorkspaceViewState(selected, { groupByDay: newValue });
         try {
             await AsyncStorage.setItem(`workspace-group-${selected}`, newValue ? "day" : "none");
             workspaceStateEvents.emit(selected);
@@ -152,10 +165,24 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         }
     };
 
-    const scrollViewRef = useRef<ScrollView>(null);
-    const scrollOffsetRef = useRef(0);
-    const drag = useDragOptional();
-    const isDragging = drag?.isDragging ?? false;
+    const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+    const dragActions = useDragActionsOptional();
+    const scrollY = dragActions?.scrollY;
+    const isDragging = useIsDragging();
+    // Scroll offset is only needed for drag hit-testing, so track it on the UI
+    // thread instead of a JS onScroll every 16ms.
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (e) => {
+            if (scrollY) scrollY.value = e.contentOffset.y;
+        },
+    });
+    const [initialOffset] = useState(() => ({ x: 0, y: scrollPositions.get(selected) ?? 0 }));
+    useEffect(() => {
+        if (scrollY) scrollY.value = scrollPositions.get(selected) ?? 0;
+        return () => {
+            if (scrollY) scrollPositions.set(selected, scrollY.value);
+        };
+    }, [selected, scrollY]);
     const noCategories = categories.filter((category) => category.name !== "!-proxy-!").length == 0;
 
     useEffect(() => {
@@ -163,13 +190,49 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     }, [selected]);
 
     const upcomingCategory = categories.find((c) => c.id.startsWith("upcoming-"));
-    const visibleCategories = useMemo(
-        () =>
-            categories
-                .filter((category) => category.name !== "!-proxy-!" && !category.id.startsWith("upcoming-"))
-                .sort((a, b) => b.tasks.length - a.tasks.length),
-        [categories]
-    );
+    const visibleCategories = useMemo(() => {
+        const visible = categories.filter(
+            (category) => category.name !== "!-proxy-!" && !category.id.startsWith("upcoming-")
+        );
+        // Apply the chosen workspace sort; with none chosen, keep the default
+        // task-count (descending) order.
+        return state.sort
+            ? sortCategories(visible, state.sort, state.sortDirection ?? "descending")
+            : visible.sort((a, b) => b.tasks.length - a.tasks.length);
+    }, [categories, state.sort, state.sortDirection]);
+
+    // Filtered tasks per category, computed once per categories/filters change.
+    // Reuses the previous filtered array for categories whose tasks didn't change
+    // so memoized Category rows can bail out.
+    const filterCacheRef = useRef<{ applyFilters: typeof applyFilters; byTasks: WeakMap<Task[], Task[]> }>({
+        applyFilters,
+        byTasks: new WeakMap(),
+    });
+    const filteredTasksById = useMemo(() => {
+        if (filterCacheRef.current.applyFilters !== applyFilters) {
+            filterCacheRef.current = { applyFilters, byTasks: new WeakMap() };
+        }
+        const { byTasks } = filterCacheRef.current;
+        const result = new Map<string, Task[]>();
+        visibleCategories.forEach((category) => {
+            let filtered = byTasks.get(category.tasks);
+            if (!filtered) {
+                filtered = applyFilters(category.tasks);
+                byTasks.set(category.tasks, filtered);
+            }
+            result.set(category.id, filtered);
+        });
+        return result;
+    }, [visibleCategories, applyFilters]);
+
+    const handleCategoryLongPress = useCallback((categoryId: string) => {
+        setEditing(true);
+        setFocusedCategory(categoryId);
+    }, []);
+    const handleCategoryPress = useCallback((categoryId: string) => {
+        setFocusedCategory(categoryId);
+        openModalRef.current({ categoryId });
+    }, []);
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
     const groupByDay = state.groupByDay;
@@ -211,7 +274,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         };
 
         visibleCategories.forEach((category) => {
-            const filteredTasks = applyFilters(category.tasks);
+            const filteredTasks = filteredTasksById.get(category.id) ?? category.tasks;
             filteredTasks.forEach((task) => {
                 const dateValue = task.startDate || task.deadline;
                 let key = "no-date";
@@ -250,7 +313,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         });
 
         return result;
-    }, [applyFilters, groupByDay, visibleCategories]);
+    }, [filteredTasksById, groupByDay, visibleCategories]);
 
     return (
         <>
@@ -275,7 +338,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
             {/* Transparent so the single glow behind the pager shows through (Home paints the bg) */}
             <View style={{ flex: 1 }}>
                 {/* Workspace color trim — 3px bar pinned to the very bottom edge. */}
-                {currentWorkspace?.color && (
+                {workspaceColor && (
                     <View
                         style={{
                             position: "absolute",
@@ -283,22 +346,20 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                             left: 0,
                             right: 0,
                             height: 3,
-                            backgroundColor: currentWorkspace.color,
+                            backgroundColor: workspaceColor,
                             zIndex: 10,
                         }}
                     />
                 )}
 
                 {/* Scrollable Content */}
-                <ScrollView
+                <Animated.ScrollView
                     ref={scrollViewRef}
                     style={{ flex: 1 }}
                     showsVerticalScrollIndicator={false}
-                    onScroll={(e) => {
-                        scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
-                        drag?.setScrollOffset(e.nativeEvent.contentOffset.y);
-                    }}
+                    onScroll={scrollHandler}
                     scrollEventThrottle={16}
+                    contentOffset={initialOffset}
                     scrollEnabled={!isDragging}
                     contentContainerStyle={{ paddingBottom: Dimensions.get("screen").height * 0.12 }}>
                     {/* Header Section - Scrolls with content initially */}
@@ -317,7 +378,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         {/* Icon — tap to open the picker and update the workspace's icon/color. */}
                                         <TouchableOpacity onPress={() => setShowIconPicker(true)} activeOpacity={0.7} hitSlop={8}>
                                             {WorkspaceIconComponent ? (
-                                                <WorkspaceIconComponent size={28} color={currentWorkspace?.color ?? ThemedColor.primary} weight="regular" />
+                                                <WorkspaceIconComponent size={28} color={workspaceColor ?? ThemedColor.primary} weight="regular" />
                                             ) : (
                                                 <Feather name="grid" size={24} color={ThemedColor.caption} />
                                             )}
@@ -441,13 +502,14 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             <View key={group.key} style={styles.groupSection}>
                                                 <ThemedText type="subtitle">{group.label}</ThemedText>
                                                 <View style={{ gap: 12 }}>
-                                                    {group.tasks.map(({ task, categoryId, categoryName }) => (
+                                                    {group.tasks.map(({ task, categoryId, categoryName }, index) => (
                                                         <SwipableTaskCard
                                                             key={`${task.id}-${categoryId}`}
                                                             redirect={true}
                                                             categoryId={categoryId}
                                                             categoryName={categoryName}
                                                             task={task}
+                                                            showSwipeHint={group === groupedByDay[0] && index === 0}
                                                         />
                                                     ))}
                                                 </View>
@@ -466,7 +528,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                     {visibleCategories.map((category) => {
                                             const isFirstCategory = firstCategory?.id === category.id;
                                             const isFirstCategoryWithTasks = firstCategoryWithTasks?.id === category.id;
-                                            const filteredTasks = applyFilters(category.tasks);
+                                            const filteredTasks = filteredTasksById.get(category.id) ?? category.tasks;
 
                                             return (
                                                 <Category
@@ -475,16 +537,11 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                     name={category.name}
                                                     tasks={filteredTasks}
                                                     tags={category.tags}
-                                                    onLongPress={(categoryId) => {
-                                                        setEditing(true);
-                                                        setFocusedCategory(categoryId);
-                                                    }}
-                                                    onPress={(categoryId) => {
-                                                        setFocusedCategory(categoryId);
-                                                        openModal({ categoryId });
-                                                    }}
+                                                    onLongPress={handleCategoryLongPress}
+                                                    onPress={handleCategoryPress}
                                                     highlightFirstTask={isFirstCategoryWithTasks}
                                                     highlightCategoryHeader={isFirstCategory}
+                                                    showSwipeHint={isFirstCategoryWithTasks}
                                                 />
                                             );
                                         })}
@@ -512,9 +569,9 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                             )}
                         </ConditionalView>
                     </View>
-                </ScrollView>
+                </Animated.ScrollView>
             </View>
-            <DragAutoScroll scrollViewRef={scrollViewRef} scrollOffsetRef={scrollOffsetRef} />
+            <DragAutoScroll scrollViewRef={scrollViewRef} />
         </>
     );
 };

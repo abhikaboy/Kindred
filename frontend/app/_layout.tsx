@@ -29,6 +29,7 @@ import { DrawerProvider } from "@/contexts/drawerContext";
 import { FocusModeProvider } from "@/contexts/focusModeContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
+import DefaultToast from "@/components/ui/DefaultToast";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider, focusManager, onlineManager } from "@tanstack/react-query";
 import { AnimatePresence } from "moti";
@@ -103,7 +104,7 @@ const queryClient = new QueryClient({
             // should surface immediately rather than being tried again.
             retry: (failureCount, error) => isNetworkError(error) && failureCount < 1,
             retryDelay: 1000,
-            staleTime: 1000 * 30, // 30 seconds - data considered fresh
+            staleTime: 1000 * 60 * 2, // 2 minutes - data considered fresh
             gcTime: 1000 * 60 * 5, // 5 minutes - garbage collect unused data
         },
     },
@@ -217,6 +218,7 @@ export default Sentry.wrap(function RootLayout() {
                                                                             info: ThemedColor.primary,
                                                                         }}
                                                                         offset={top}
+                                                                        renderContent={(props) => <DefaultToast {...props} />}
                                                                     />
                                                                     <Slot />
                                                                     <RingUpdateOverlay />

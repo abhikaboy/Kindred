@@ -347,7 +347,7 @@ func (s *Service) UpdatePartialPost(ctx context.Context, id primitive.ObjectID, 
 			}
 			content := fmt.Sprintf("%s tagged you in a post", existing.User.DisplayName)
 			_ = s.NotificationService.CreateNotification(existing.User.ID, t.ID, content, notifications.NotificationTypePostTag, existing.ID, thumbnail)
-			_ = s.sendTagPushNotification(t.ID, existing.ID, existing.User.DisplayName)
+			_ = s.sendTagPushNotification(t.ID, existing.ID, &existing.User)
 		}
 	}
 
@@ -866,7 +866,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		fsDelta = s.Friendship.Bump(ctx, comment.User.ID, post.User.ID, friendship.PointsComment)
 
 		// Send push notification
-		err = s.sendCommentNotification(post.User.ID, post.ID, comment.User.DisplayName, comment.Content)
+		err = s.sendCommentNotification(post.User.ID, post.ID, comment.User, comment.Content)
 		if err != nil {
 			// Log error but don't fail the operation since comment was already created
 			slog.Error("Failed to send comment notification", "error", err, "post_owner_id", post.User.ID)
@@ -907,7 +907,7 @@ func (s *Service) AddComment(postID primitive.ObjectID, comment types.CommentDoc
 		}
 
 		// Send push notification
-		err = s.sendCommentNotification(mention.ID, post.ID, comment.User.DisplayName, comment.Content)
+		err = s.sendCommentNotification(mention.ID, post.ID, comment.User, comment.Content)
 		if err != nil {
 			slog.Error("Failed to send mention push notification", "error", err, "mentioned_user_id", mention.ID)
 		}
@@ -1020,7 +1020,12 @@ func (s *Service) DeleteComment(postID primitive.ObjectID, commentID primitive.O
 }
 
 // sendCommentNotification sends a push notification when a comment is added to a post
-func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID, commenterName, commentText string) error {
+func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID, commenter *types.UserExtendedReferenceInternal, commentText string) error {
+	var commenterName string
+	if commenter != nil {
+		commenterName = commenter.DisplayName
+	}
+
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -1056,12 +1061,22 @@ func (s *Service) sendCommentNotification(postOwnerID, postID primitive.ObjectID
 		Message: message,
 		Data:    data,
 	}
+	if commenter != nil {
+		notification.SenderName = commenter.DisplayName
+		notification.SenderAvatar = commenter.ProfilePicture
+		notification.SenderID = commenter.ID.Hex()
+	}
 
 	return xutils.SendNotification(notification)
 }
 
 // sendTagPushNotification sends a push notification when a user is tagged in a post.
-func (s *Service) sendTagPushNotification(taggedUserID, postID primitive.ObjectID, taggerName string) error {
+func (s *Service) sendTagPushNotification(taggedUserID, postID primitive.ObjectID, tagger *types.UserExtendedReferenceInternal) error {
+	var taggerName string
+	if tagger != nil {
+		taggerName = tagger.DisplayName
+	}
+
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -1092,6 +1107,11 @@ func (s *Service) sendTagPushNotification(taggedUserID, postID primitive.ObjectI
 		Title:   "You were tagged in a post",
 		Message: fmt.Sprintf("%s tagged you in a post", taggerName),
 		Data:    data,
+	}
+	if tagger != nil {
+		notification.SenderName = tagger.DisplayName
+		notification.SenderAvatar = tagger.ProfilePicture
+		notification.SenderID = tagger.ID.Hex()
 	}
 
 	return xutils.SendNotification(notification)
@@ -1210,7 +1230,8 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 
 	// Audience: the poster's friends.
 	var posterUser struct {
-		Friends []primitive.ObjectID `bson:"friends"`
+		Friends        []primitive.ObjectID `bson:"friends"`
+		ProfilePicture string               `bson:"profile_picture"`
 	}
 	if err := s.Users.FindOne(ctx, bson.M{"_id": posterID}).Decode(&posterUser); err != nil {
 		return fmt.Errorf("failed to get poster's friends: %w", err)
@@ -1326,6 +1347,11 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 				"poster_name": posterName,
 				"poster_id":   posterID.Hex(),
 			},
+			// ImageURL above is the post's own media; the avatar drives the
+			// leading icon and so travels separately.
+			SenderName:   posterName,
+			SenderAvatar: posterUser.ProfilePicture,
+			SenderID:     posterID.Hex(),
 		})
 	}
 	if len(pushes) > 0 {

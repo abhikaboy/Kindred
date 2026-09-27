@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Reanimated, {
@@ -8,14 +8,16 @@ import Reanimated, {
 } from "react-native-reanimated";
 import { Task } from "@/api/types";
 import { CategoryRect, categoryAtPoint } from "@/utils/dragHitTest";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import TaskCard from "@/components/cards/TaskCard";
 
-type DragContextValue = {
+// Stable for the provider's lifetime — consumers of only these never re-render
+// because of drag state (important for the per-task cards).
+export type DragActions = {
     fingerX: SharedValue<number>;
     fingerY: SharedValue<number>;
-    hoveredCategoryId: string | null;
-    isDragging: boolean;
+    /** Scroll offset of the drag host's list, written from a UI-thread scroll handler. */
+    scrollY: SharedValue<number>;
     setCategoryRect: (rect: CategoryRect) => void;
     removeCategoryRect: (categoryId: string) => void;
     setScrollOffset: (y: number) => void;
@@ -23,9 +25,16 @@ type DragContextValue = {
     updateDrag: (x: number, y: number) => void;
     endDrag: () => void;
     cancelDrag: () => void;
+    subscribeHover: (listener: () => void) => () => void;
+    getHoveredCategoryId: () => string | null;
 };
 
-const DragContext = createContext<DragContextValue | null>(null);
+type DragContextValue = DragActions & {
+    isDragging: boolean;
+};
+
+const DragActionsContext = createContext<DragActions | null>(null);
+const DragStateContext = createContext<boolean>(false);
 
 // Flip to true to surface drag hit-test logs while debugging.
 const DRAG_DEBUG = false;
@@ -33,8 +42,8 @@ const dlog = (...args: unknown[]) => {
     if (DRAG_DEBUG) console.log("[drag]", ...args);
 };
 
-export const useDrag = () => {
-    const ctx = useContext(DragContext);
+export const useDrag = (): DragContextValue => {
+    const ctx = useDragOptional();
     if (!ctx) throw new Error("useDrag must be used within DragProvider");
     return ctx;
 };
@@ -44,70 +53,108 @@ export const useDrag = () => {
  * Category or TaskCard rendered in a view-only / encourage / congratulate
  * context). Lets drag-aware components degrade gracefully instead of throwing.
  */
-export const useDragOptional = (): DragContextValue | null => useContext(DragContext);
+export const useDragOptional = (): DragContextValue | null => {
+    const actions = useContext(DragActionsContext);
+    const isDragging = useContext(DragStateContext);
+    return useMemo(() => (actions ? { ...actions, isDragging } : null), [actions, isDragging]);
+};
+
+/** Stable drag functions only; never re-renders on drag start/hover/end. */
+export const useDragActionsOptional = (): DragActions | null => useContext(DragActionsContext);
+
+/** Only re-renders when drag starts/ends. */
+export const useIsDragging = (): boolean => useContext(DragStateContext);
+
+const noopSubscribe = () => () => {};
+
+/** True while `categoryId` is the hovered drop target; re-renders only when that flips. */
+export const useIsDropTarget = (categoryId: string): boolean => {
+    const actions = useContext(DragActionsContext);
+    return useSyncExternalStore(
+        actions?.subscribeHover ?? noopSubscribe,
+        () => (actions ? actions.getHoveredCategoryId() === categoryId : false)
+    );
+};
 
 export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { moveTask } = useTasks();
+    const { moveTask } = useTaskActions();
 
     const fingerX = useSharedValue(0);
     const fingerY = useSharedValue(0);
+    const scrollY = useSharedValue(0);
 
     const rectsRef = useRef<Map<string, CategoryRect>>(new Map());
     const draggingRef = useRef<{ task: Task; sourceCategoryId: string } | null>(null);
-    const scrollYRef = useRef(0);
     const hoveredRef = useRef<string | null>(null);
+    const hoverListenersRef = useRef<Set<() => void>>(new Set());
 
     const [isDragging, setIsDragging] = useState(false);
-    const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+    const subscribeHover = useCallback((listener: () => void) => {
+        hoverListenersRef.current.add(listener);
+        return () => {
+            hoverListenersRef.current.delete(listener);
+        };
+    }, []);
+
+    const getHoveredCategoryId = useCallback(() => hoveredRef.current, []);
+
+    const setHovered = useCallback((id: string | null) => {
+        if (hoveredRef.current === id) return;
+        hoveredRef.current = id;
+        hoverListenersRef.current.forEach((fn) => fn());
+    }, []);
 
     const setCategoryRect = useCallback((rect: CategoryRect) => {
         // Stamp the scroll offset at measure time so hit-testing can correct
         // for any scrolling that happens before/while a drag is in flight.
-        rectsRef.current.set(rect.categoryId, { ...rect, scrollYAtMeasure: scrollYRef.current });
-        dlog("rect set", rect.categoryId, `y=${Math.round(rect.y)} h=${Math.round(rect.height)} scrollY=${Math.round(scrollYRef.current)}`, `(total ${rectsRef.current.size})`);
-    }, []);
+        const scrollYAtMeasure = scrollY.value;
+        rectsRef.current.set(rect.categoryId, { ...rect, scrollYAtMeasure });
+        dlog("rect set", rect.categoryId, `y=${Math.round(rect.y)} h=${Math.round(rect.height)} scrollY=${Math.round(scrollYAtMeasure)}`, `(total ${rectsRef.current.size})`);
+    }, [scrollY]);
 
     const removeCategoryRect = useCallback((categoryId: string) => {
         rectsRef.current.delete(categoryId);
     }, []);
 
     const setScrollOffset = useCallback((y: number) => {
-        scrollYRef.current = y;
-    }, []);
+        scrollY.value = y;
+    }, [scrollY]);
 
     // Rects shifted by however far the list has scrolled since each was measured.
-    const currentRects = useCallback((): CategoryRect[] =>
-        Array.from(rectsRef.current.values()).map((r) => ({
+    const currentRects = useCallback((): CategoryRect[] => {
+        const y = scrollY.value;
+        return Array.from(rectsRef.current.values()).map((r) => ({
             ...r,
-            y: r.y - (scrollYRef.current - (r.scrollYAtMeasure ?? 0)),
-        })), []);
+            y: r.y - (y - (r.scrollYAtMeasure ?? 0)),
+        }));
+    }, [scrollY]);
 
     const beginDrag = useCallback((task: Task, sourceCategoryId: string, startX: number, startY: number) => {
         draggingRef.current = { task, sourceCategoryId };
-        hoveredRef.current = null;
+        setHovered(null);
         fingerX.value = startX;
         fingerY.value = startY;
         setDraggedTask(task);
         setIsDragging(true);
         dlog("lift", `task=${task.id}`, `from=${sourceCategoryId}`, `at=(${Math.round(startX)},${Math.round(startY)})`, `rects=${rectsRef.current.size}`);
-    }, [fingerX, fingerY]);
+    }, [fingerX, fingerY, setHovered]);
 
     const updateDrag = useCallback((x: number, y: number) => {
         fingerX.value = x;
         fingerY.value = y;
         const hit = categoryAtPoint(currentRects(), x, y);
         if (hit !== hoveredRef.current) {
-            dlog("hover →", hit ?? "(none)", `finger=(${Math.round(x)},${Math.round(y)})`, `scrollY=${Math.round(scrollYRef.current)}`);
-            hoveredRef.current = hit;
-            setHoveredCategoryId(hit);
+            dlog("hover →", hit ?? "(none)", `finger=(${Math.round(x)},${Math.round(y)})`, `scrollY=${Math.round(scrollY.value)}`);
+            setHovered(hit);
             // Light tick when the finger crosses into a new drop zone (not the
             // source it's already in — that would just buzz right after lift).
             if (hit && hit !== draggingRef.current?.sourceCategoryId && Platform.OS === "ios") {
                 Haptics.selectionAsync();
             }
         }
-    }, [fingerX, fingerY, currentRects]);
+    }, [fingerX, fingerY, scrollY, currentRects, setHovered]);
 
     const endDrag = useCallback(() => {
         const dragging = draggingRef.current;
@@ -120,21 +167,19 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
             void moveTask(dragging.sourceCategoryId, dragging.task.id, target);
         }
         draggingRef.current = null;
-        hoveredRef.current = null;
+        setHovered(null);
         setDraggedTask(null);
-        setHoveredCategoryId(null);
         setIsDragging(false);
-    }, [fingerX, fingerY, moveTask, currentRects]);
+    }, [fingerX, fingerY, moveTask, currentRects, setHovered]);
 
     // Clear the lifted/dragging state WITHOUT performing a move (e.g. the user
     // held and released in place, or the drag was cancelled).
     const cancelDrag = useCallback(() => {
         draggingRef.current = null;
-        hoveredRef.current = null;
+        setHovered(null);
         setDraggedTask(null);
-        setHoveredCategoryId(null);
         setIsDragging(false);
-    }, []);
+    }, [setHovered]);
 
     // Ghost is horizontally fixed/centered and tracks the finger on the Y axis
     // only (Notion-style). Hit-testing still uses the real finger X/Y.
@@ -147,12 +192,11 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
         opacity: 0.95,
     }));
 
-    const value = useMemo(
+    const actions = useMemo<DragActions>(
         () => ({
             fingerX,
             fingerY,
-            hoveredCategoryId,
-            isDragging,
+            scrollY,
             setCategoryRect,
             removeCategoryRect,
             setScrollOffset,
@@ -160,17 +204,22 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
             updateDrag,
             endDrag,
             cancelDrag,
+            subscribeHover,
+            getHoveredCategoryId,
         }),
         [
-            fingerX, fingerY, hoveredCategoryId, isDragging,
+            fingerX, fingerY, scrollY,
             setCategoryRect, removeCategoryRect, setScrollOffset,
             beginDrag, updateDrag, endDrag, cancelDrag,
+            subscribeHover, getHoveredCategoryId,
         ]
     );
 
     return (
-        <DragContext.Provider value={value}>
-            {children}
+        <DragActionsContext.Provider value={actions}>
+            <DragStateContext.Provider value={isDragging}>
+                {children}
+            </DragStateContext.Provider>
             {isDragging && draggedTask && (
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
                     <Reanimated.View style={[styles.ghost, ghostStyle]}>
@@ -180,12 +229,12 @@ export const DragProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             priority={draggedTask.priority as 0 | 1 | 2 | 3}
                             id={draggedTask.id}
                             categoryId={draggedTask.categoryID ?? ""}
-                            task={{ ...draggedTask }}
+                            task={draggedTask}
                         />
                     </Reanimated.View>
                 </View>
             )}
-        </DragContext.Provider>
+        </DragActionsContext.Provider>
     );
 };
 

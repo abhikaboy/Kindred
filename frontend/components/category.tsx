@@ -1,12 +1,12 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { useDragOptional } from "@/contexts/dragContext";
+import { useDragActionsOptional, useIsDragging, useIsDropTarget } from "@/contexts/dragContext";
 import { ThemedText } from "./ThemedText";
 import TaskCard from "./cards/TaskCard";
 import { Task } from "../api/types";
 import SwipableTaskCard from "./cards/SwipableTaskCard";
-import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
+import { useSetCreateCategory } from "@/contexts/selectedCategoryContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
@@ -22,9 +22,11 @@ interface CategoryProps {
     viewOnly?: boolean;
     highlightFirstTask?: boolean;
     highlightCategoryHeader?: boolean;
+    // First task hosts the one-time swipe demo (see SwipableTaskCard.showSwipeHint).
+    showSwipeHint?: boolean;
 }
 
-export const Category: React.FC<CategoryProps> = ({
+const CategoryComponent: React.FC<CategoryProps> = ({
     id,
     name,
     tasks,
@@ -33,15 +35,20 @@ export const Category: React.FC<CategoryProps> = ({
     onPress,
     viewOnly = false,
     highlightFirstTask = false,
-    highlightCategoryHeader = false
+    highlightCategoryHeader = false,
+    showSwipeHint,
 }) => {
-    const { setCreateCategory } = useSelectedCategory();
+    const setCreateCategory = useSetCreateCategory();
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
-    const drag = useDragOptional();
+    // Stable actions + narrow drag subscriptions: this re-renders when a drag
+    // starts/ends and when this category's own drop-target state flips, not on
+    // every hover change elsewhere.
+    const drag = useDragActionsOptional();
+    const isDragging = useIsDragging();
     const containerRef = useRef<View>(null);
-    const isDropTarget = drag?.hoveredCategoryId === id;
+    const isDropTarget = useIsDropTarget(id);
 
     // Fade the drop-target highlight in/out instead of snapping it on/off.
     const highlight = useSharedValue(0);
@@ -68,8 +75,8 @@ export const Category: React.FC<CategoryProps> = ({
     // this category's hit-rect stale or unregistered (rects=0). Re-measure the
     // moment a drag starts so the hit-test runs against fresh coordinates.
     useEffect(() => {
-        if (drag?.isDragging) measure();
-    }, [drag?.isDragging, measure]);
+        if (isDragging) measure();
+    }, [isDragging, measure]);
 
     const categoryNameText = (
         <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
@@ -145,6 +152,7 @@ export const Category: React.FC<CategoryProps> = ({
                         categoryName={name}
                         task={task}
                         highlightContent={isFirstTask}
+                        showSwipeHint={showSwipeHint === undefined ? undefined : showSwipeHint && index === 0}
                     />
                 ) : (
                     <TaskCard
@@ -179,6 +187,8 @@ export const Category: React.FC<CategoryProps> = ({
         </View>
     );
 };
+
+export const Category = React.memo(CategoryComponent);
 
 const styles = StyleSheet.create({
     container: {

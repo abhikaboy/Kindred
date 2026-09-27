@@ -604,10 +604,11 @@ func (j *KudosSuggesterJob) processMoment(ctx context.Context, m KudosMoment, no
 	}
 
 	recipient := KudosRecipient{
-		ID:          recipientUser.ID,
-		DisplayName: recipientUser.DisplayName,
-		Settings:    recipientUser.Settings,
-		Location:    loadLocation(recipientUser.Timezone),
+		ID:             recipientUser.ID,
+		DisplayName:    recipientUser.DisplayName,
+		ProfilePicture: recipientUser.ProfilePicture,
+		Settings:       recipientUser.Settings,
+		Location:       loadLocation(recipientUser.Timezone),
 		EncouragementWorthwhile: gemini.DecodeEncouragementEffect(
 			factPtr(facts, gemini.FactKeyEncouragementEffect),
 		).Worthwhile(),
@@ -769,6 +770,9 @@ func (j *KudosSuggesterJob) dispatch(m KudosMoment, recipient KudosRecipient, se
 			"user_id": recipient.ID.Hex(),
 			"url":     "/feed?page=notifications",
 		},
+		SenderName:   recipient.DisplayName,
+		SenderAvatar: recipient.ProfilePicture,
+		SenderID:     recipient.ID.Hex(),
 	}); err != nil {
 		return fmt.Errorf("send kudos prompt push: %w", err)
 	}

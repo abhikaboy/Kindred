@@ -10,7 +10,7 @@ import { useBlueprints } from "@/contexts/blueprintContext";
 import type { components } from "@/api/generated/types";
 import CachedImage from "../CachedImage";
 import * as Haptics from "expo-haptics";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import { Clock, Users } from "phosphor-react-native";
 import { FlatList } from "react-native";
 
@@ -41,7 +41,7 @@ const BlueprintCard = ({
     const router = useRouter();
     const { setSelectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount, handleSubscribe } =
         useBlueprints();
-    const { fetchWorkspaces } = useTasks();
+    const { fetchWorkspaces } = useTaskActions();
 
     // Local state for subscription status and loading
     const [localIsSubscribed, setLocalIsSubscribed] = useState(getIsSubscribed(id, subscribers));
@@ -87,7 +87,8 @@ const BlueprintCard = ({
 
             // Call the actual API
             await handleSubscribe(id, subscribers);
-            await fetchWorkspaces();
+            // Subscribing clones categories server-side, so the tree has to be refetched
+            fetchWorkspaces(true).catch((error) => console.error("Workspace refresh failed:", error));
         } catch (error) {
             // Revert optimistic update on error
             console.error("Error updating subscription:", error);

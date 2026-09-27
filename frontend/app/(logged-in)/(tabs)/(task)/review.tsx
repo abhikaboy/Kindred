@@ -8,12 +8,11 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { Task } from "@/api/types";
 import ConditionalView from "@/components/ui/ConditionalView";
 import { markAsCompletedAPI, markInProgressAPI } from "@/api/task";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
-import { useDebounce } from "@/hooks/useDebounce";
 import ReviewCardStack from "@/components/cards/ReviewCardStack";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
 import { useQueryClient } from "@tanstack/react-query";
@@ -107,18 +106,14 @@ const ReviewActions = ({ onSkip, onDelete, onInProgress, onDone, ThemedColor }: 
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { fetchWorkspaces, unnestedTasks, addToCategory, updateTask } = useTasks();
+    const unnestedTasks = useTasksSelector((s) => s.unnestedTasks);
+    const { addToCategory, updateTask, removeFromCategory } = useTaskActions();
     const queryClient = useQueryClient();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const [isLoading, setIsLoading] = useState(false);
     const childRefs = useRef<{ [key: number]: any }>({});
     const [removedTasks, setRemovedTasks] = useState<string[]>([]);
     const [processingTasks, setProcessingTasks] = useState<Set<string>>(new Set());
-
-    // Debounce fetchWorkspaces with 8 second delay
-    const debouncedFetchWorkspaces = useDebounce(() => {
-        fetchWorkspaces();
-    }, 5000);
 
     // Filter out removed tasks and update cards when unnestedTasks or removedTasks change
     const cards = useMemo(() => {
@@ -279,8 +274,9 @@ const Review = (props: Props) => {
             } as Task);
         }
 
-        // Debounced refresh tasks after completion
-        debouncedFetchWorkspaces();
+        // Drop it from the tree once the card's exit fade (removeTaskFromUI) finishes
+        const categoryId = task.categoryID;
+        setTimeout(() => removeFromCategory(categoryId, task.id), 300);
     };
 
     const handleDelete = async (task: Task): Promise<void> => {

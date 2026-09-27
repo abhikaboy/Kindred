@@ -20,6 +20,13 @@ export function endOfDayDismissKey(now: Date): string {
     return `eod-dismissed-${anchor.getFullYear()}-${month}-${day}`;
 }
 
+// Per calendar day (local time): the Home quick log hides once it's been completed today.
+export function quickLogDoneKey(now: Date): string {
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `quicklog-done-${now.getFullYear()}-${month}-${day}`;
+}
+
 // Open tasks worth reviewing tonight: starting today, due today, or overdue.
 // Synthetic "Upcoming" categories aren't real categories and can't be completed.
 export function todaysOpenTasks(allTasks: Task[], now: Date = new Date()): Task[] {

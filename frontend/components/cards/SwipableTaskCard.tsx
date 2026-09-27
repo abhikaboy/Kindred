@@ -1,20 +1,20 @@
 // Wrapper for TaskCard that allows for swiping to delete
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 import TaskCard from "./TaskCard";
 
 import { Task } from "@/api/types";
 import ReanimatedSwipeable, { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
-import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import { useFirstTouchHint, isHintKnownDone } from "@/hooks/useFirstTouchHint";
 import Reanimated, { SharedValue, useAnimatedStyle, useAnimatedReaction, runOnJS, interpolate, Extrapolation } from "react-native-reanimated";
 import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { ThemedText } from "@/components/ThemedText";
 import { markAsCompletedAPI, activateTaskAPI, setWorkingAPI } from "@/api/task";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
-import { useTasks } from "@/contexts/tasksContext";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
@@ -36,10 +36,48 @@ type Props = {
     categoryName?: string;
     highlightContent?: boolean;
     tutorial?: boolean; // suppress real completion overlays — the tutorial fakes them
+    // Whether this card may host the one-time swipe demo. Lists that know their
+    // first card pass true for it and false for the rest; undefined keeps the
+    // legacy "first mounted card claims it" behavior.
+    showSwipeHint?: boolean;
 };
 
 // Module-level claim so only the first mounted card plays the swipe demo
 let peekClaimed = false;
+
+const SWIPE_HINT_KEY = "swipe_actions";
+
+// Mounted by at most the cards that might play the demo, so the hint hook
+// (and its storage lookup) doesn't run once per card.
+const SwipeHintPeek = ({ swipeableRef }: { swipeableRef: React.RefObject<SwipeableMethods | null> }) => {
+    const { ready, done } = useFirstTouchHint(SWIPE_HINT_KEY);
+    useEffect(() => {
+        if (!ready || peekClaimed) return;
+        peekClaimed = true;
+        done();
+        const timers = [
+            setTimeout(() => swipeableRef.current?.openLeft(), 600),
+            setTimeout(() => swipeableRef.current?.close(), 1500),
+            setTimeout(() => swipeableRef.current?.openRight(), 2100),
+            setTimeout(() => swipeableRef.current?.close(), 3000),
+        ];
+        return () => timers.forEach(clearTimeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready]);
+    return null;
+};
+
+// Constant icons, hoisted so the action renderers don't re-create them.
+const BELL_ICON = <Bell size={24} color="white" weight="regular" />;
+const FLAG_ICON = <Flag size={24} color="white" weight="regular" />;
+const TRASH_ICON = <Trash size={24} color="white" weight="regular" />;
+
+// Returns a referentially stable function that always calls the latest `fn`.
+function useLatestCallback<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
+    const ref = useRef(fn);
+    ref.current = fn;
+    return useCallback((...args: A) => ref.current(...args), []);
+}
 
 const SwipableTaskCard = ({
     redirect = false,
@@ -48,9 +86,15 @@ const SwipableTaskCard = ({
     categoryName,
     highlightContent = false,
     tutorial = false,
+    showSwipeHint,
 }: Props) => {
-    const { removeFromCategory, addToCategory, setShowConfetti, categories, updateTask } = useTasks();
-    const { loadTaskData } = useTaskCreation();
+    const { removeFromCategory, addToCategory, setShowConfetti, updateTask } = useTaskActions();
+    // Only subscribes when no name was passed in; otherwise the selector is a
+    // constant null and workspace/category changes never re-render this card.
+    const fallbackCategoryName = useTasksSelector((s) =>
+        categoryName || task.categoryName ? null : (s.categories?.find((cat) => cat.id === categoryId)?.name ?? null)
+    );
+    const { loadTaskData } = useTaskCreationActions();
     const ThemedColor = useThemeColor();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const { capture } = useAnalytics();
@@ -61,19 +105,7 @@ const SwipableTaskCard = ({
 
     // First-touch demo: exactly one card app-wide peeks both swipe sides open
     const swipeableRef = useRef<SwipeableMethods>(null);
-    const { ready: swipeHintReady, done: swipeHintDone } = useFirstTouchHint("swipe_actions");
-    useEffect(() => {
-        if (!swipeHintReady || tutorial || peekClaimed) return;
-        peekClaimed = true;
-        swipeHintDone();
-        const timers = [
-            setTimeout(() => swipeableRef.current?.openLeft(), 600),
-            setTimeout(() => swipeableRef.current?.close(), 1500),
-            setTimeout(() => swipeableRef.current?.openRight(), 2100),
-            setTimeout(() => swipeableRef.current?.close(), 3000),
-        ];
-        return () => timers.forEach(clearTimeout);
-    }, [swipeHintReady]);
+    const mountSwipeHint = showSwipeHint !== false && !tutorial && !peekClaimed && !isHintKnownDone(SWIPE_HINT_KEY);
 
     const openDeadline = () => {
         loadTaskData(task);
@@ -92,7 +124,7 @@ const SwipableTaskCard = ({
     const finalCategoryName =
         categoryName ||
         task.categoryName ||
-        categories?.find((cat) => cat.id === categoryId)?.name ||
+        fallbackCategoryName ||
         "Unknown Category";
 
 
@@ -191,6 +223,29 @@ const SwipableTaskCard = ({
     const activateTask = async (categoryId: string, taskId: string) => {
         await activateTaskAPI(categoryId, taskId);
     };
+
+    // Stable action callbacks (always see the latest task/props) so the swipe
+    // action renderers keep their identity across re-renders.
+    const onComplete = useLatestCallback(() => markAsCompleted(categoryId, task.id));
+    const onReminder = useLatestCallback(openReminder);
+    const onDeadline = useLatestCallback(openDeadline);
+    const onDelete = useLatestCallback(() => deleteWithUndo(task, categoryId));
+
+    const renderLeftActions = useCallback(
+        (_prog: SharedValue<number>, drag: SharedValue<number>) => <LeftAction drag={drag} onComplete={onComplete} />,
+        [onComplete]
+    );
+
+    const renderRightActions = useCallback(
+        (_prog: SharedValue<number>, drag: SharedValue<number>) => (
+            <View style={{ flexDirection: "row" }}>
+                <RightAction drag={drag} callback={onReminder} index={3} icon={BELL_ICON} color={ThemedColor.primary} />
+                <RightAction drag={drag} callback={onDeadline} index={3} icon={FLAG_ICON} color={ThemedColor.primary} />
+                <RightAction drag={drag} callback={onDelete} index={3} icon={TRASH_ICON} color={ThemedColor.error} />
+            </View>
+        ),
+        [onReminder, onDeadline, onDelete, ThemedColor.primary, ThemedColor.error]
+    );
     const taskCard = (
         <TaskCard
             content={task.content}
@@ -199,7 +254,7 @@ const SwipableTaskCard = ({
             redirect={redirect}
             id={task.id}
             categoryId={categoryId}
-            task={{ ...task }}
+            task={task}
             highlightContent={false}
         />
     );
@@ -235,38 +290,13 @@ const SwipableTaskCard = ({
                 leftThreshold={Dimensions.get("window").width / 3}
                 overshootLeft={true}
                 overshootFriction={2.7}
-                renderLeftActions={(prog, drag) => (
-                    <LeftAction drag={drag} onComplete={() => markAsCompleted(categoryId, task.id)} />
-                )}
+                renderLeftActions={renderLeftActions}
                 rightThreshold={100}
                 overshootRight={true}
-                renderRightActions={(prog, drag) => (
-                    <View style={{ flexDirection: "row" }}>
-                        <RightAction
-                            drag={drag}
-                            callback={openReminder}
-                            index={3}
-                            icon={<Bell size={24} color="white" weight="regular" />}
-                            color={ThemedColor.primary}
-                        />
-                        <RightAction
-                            drag={drag}
-                            callback={openDeadline}
-                            index={3}
-                            icon={<Flag size={24} color="white" weight="regular" />}
-                            color={ThemedColor.primary}
-                        />
-                        <RightAction
-                            drag={drag}
-                            callback={() => deleteWithUndo(task, categoryId)}
-                            index={3}
-                            icon={<Trash size={24} color="white" weight="regular" />}
-                            color={ThemedColor.error}
-                        />
-                    </View>
-                )}>
+                renderRightActions={renderRightActions}>
                 {taskCard}
             </ReanimatedSwipeable>
+            {mountSwipeHint && <SwipeHintPeek swipeableRef={swipeableRef} />}
 
             {showDeadlineModal && (
                 <DeadlineBottomSheetModal
@@ -436,6 +466,9 @@ export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
     return (
         prevProps.redirect === nextProps.redirect &&
         prevProps.categoryId === nextProps.categoryId &&
+        prevProps.categoryName === nextProps.categoryName &&
+        prevProps.tutorial === nextProps.tutorial &&
+        prevProps.showSwipeHint === nextProps.showSwipeHint &&
         prevProps.task.id === nextProps.task.id &&
         prevProps.task.content === nextProps.task.content &&
         prevProps.task.priority === nextProps.task.priority &&
@@ -451,7 +484,12 @@ export default React.memo(SwipableTaskCard, (prevProps, nextProps) => {
         prevProps.task.recurring === nextProps.task.recurring &&
         prevProps.task.flexInfo?.instanceNumber === nextProps.task.flexInfo?.instanceNumber &&
         prevProps.task.flexInfo?.target === nextProps.task.flexInfo?.target &&
-        prevProps.task.integration === nextProps.task.integration
+        prevProps.task.integration === nextProps.task.integration &&
+        prevProps.task.public === nextProps.task.public &&
+        prevProps.task.templateID === nextProps.task.templateID &&
+        prevProps.task.categoryName === nextProps.task.categoryName &&
+        prevProps.task.encouragements === nextProps.task.encouragements &&
+        prevProps.task.taggedUsers === nextProps.task.taggedUsers
     );
 });
 

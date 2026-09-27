@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Redirect, Slot, Stack, router, usePathname, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, ActivityIndicator, Animated, AppState, InteractionManager, LogBox } from "react-native";
+import { ScrollView, View, AppState, InteractionManager, LogBox, StyleSheet } from "react-native";
 import { updateStreakWidget } from "@/widgets/updateStreakWidget";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
@@ -36,9 +36,10 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
 import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
-import { useTasks } from '@/contexts/tasksContext';
+import { useTaskActions, useTasksSelector } from '@/contexts/tasksContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
+import { getNotificationRefreshPlan } from '@/utils/notificationInvalidation';
 import { logger } from '@/utils/logger';
 
 export const unstable_settings = {
@@ -65,7 +66,10 @@ type NotificationType =
     | "RELATIVE"
     | "FOLLOW_UP"
     | "live_activity"
-    | "contact_joined";
+    | "contact_joined"
+    | "kudos_reaction"
+    | "kudos_suggestion"
+    | "checkin";
 
 interface NotificationData {
     type?: NotificationType;
@@ -202,9 +206,9 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 const layout = ({ children }: { children: React.ReactNode }) => {
     const { user, fetchAuthData } = useAuth();
     const { fetchKudosData } = useKudos();
-    const { fetchWorkspaces } = useTasks();
+    const { fetchWorkspaces } = useTaskActions();
     const queryClient = useQueryClient();
-    const lastCacheRefresh = useRef(0);
+    const lastCacheRefresh = useRef<Record<string, number>>({});
     const { identify, capture } = useAnalytics();
     const [isLoading, setIsLoading] = useState(true);
     const [redirectPath, setRedirectPath] = useState<Href | null>(null);
@@ -212,7 +216,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
     const authInitialized = useRef(false);
-    const [canTransition, setCanTransition] = useState(false);
+    const [splashDone, setSplashDone] = useState(false);
     const ThemedColor = useThemeColor();
     const pathname = usePathname();
     const pathnameRef = useRef(pathname);
@@ -265,7 +269,9 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         const userTimezone = (userData as any).timezone;
 
                         if (deviceTimezone && userTimezone !== deviceTimezone) {
-                            await updateTimezone(deviceTimezone);
+                            updateTimezone(deviceTimezone).catch((tzError) => {
+                                console.error("Failed to update timezone:", tzError);
+                            });
                         }
                     } catch (tzError) {
                         console.error("Failed to update timezone:", tzError);
@@ -335,17 +341,33 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         registerBackgroundFetch();
         initNotificationHandler();
 
-        // Any push means server state changed — invalidate everything so the new
-        // state shows without an app restart (friend requests, encouragements, …).
-        // ponytail: throttled blanket refetch; per-type targeted invalidation if traffic grows
-        const refreshAllCaches = () => {
+        // A push means server state changed — refresh what that notification type
+        // could have touched so it shows without an app restart. Unknown types
+        // refresh everything. Throttled per type.
+        const refreshCachesFor = (data: NotificationData | undefined) => {
+            const type = data?.type ?? "unknown";
             const now = Date.now();
-            if (now - lastCacheRefresh.current < 2000) return;
-            lastCacheRefresh.current = now;
-            queryClient.invalidateQueries();
-            fetchKudosData();
-            fetchWorkspaces(true);
-            notificationRefreshEvents.emit();
+            if (now - (lastCacheRefresh.current[type] ?? 0) < 2000) return;
+            lastCacheRefresh.current[type] = now;
+
+            const plan = getNotificationRefreshPlan(data?.type);
+            if (plan.all) {
+                queryClient.invalidateQueries();
+                fetchKudosData();
+                fetchWorkspaces(true);
+                notificationRefreshEvents.emit();
+                return;
+            }
+            if (plan.queryRoots.length > 0) {
+                queryClient.invalidateQueries({
+                    predicate: (query) => plan.queryRoots.includes(String(query.queryKey[0])),
+                });
+            }
+            if (plan.kudos) {
+                fetchKudosData();
+                notificationRefreshEvents.emit();
+            }
+            if (plan.workspaces) fetchWorkspaces(true);
         };
 
         const startActiveTaskActivityFromPush = (data: NotificationData) => {
@@ -376,7 +398,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         notificationListener.current = addNotificationListener((notification) => {
             const data = notification.request.content.data as NotificationData | undefined;
 
-            refreshAllCaches();
+            refreshCachesFor(data);
 
             // Handle live activity triggers from push notifications
             if (data?.type === 'live_activity') {
@@ -410,7 +432,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
             // Tapped pushes can arrive with the app backgrounded, where the
             // received-listener never fired — refresh here too.
-            refreshAllCaches();
+            refreshCachesFor(data);
 
             // Start live activity when user taps the notification
             if (data?.type === 'live_activity') {
@@ -457,53 +479,56 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    const handleAnimationComplete = () => {
-        setCanTransition(true);
-    };
-
-    // Show splash while loading or waiting for animation
-    if (isLoading || !canTransition) {
-        return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
-    }
+    const handleAnimationComplete = useCallback(() => {
+        setSplashDone(true);
+    }, []);
 
     // If no user after loading, redirect based on onboarding status
-    if (!user) {
-        if (redirectPath) {
-            return <Redirect href={redirectPath} />;
-        }
-        // Still determining redirect path (shouldn't happen, but fallback)
-        return <EnhancedSplashScreen onAnimationComplete={handleAnimationComplete} />;
+    if (!isLoading && !user && redirectPath) {
+        return <Redirect href={redirectPath} />;
+    }
+
+    const showContent = !isLoading && !!user;
+
+    // No user and nowhere to go (offline without a cached profile, or mid-logout): hold the splash
+    if (!isLoading && !user && splashDone) {
+        return <EnhancedSplashScreen ready={false} />;
     }
 
     // CreateModalProvider is hoisted to app/_layout.tsx so the FAB in the tabs
     // layout keeps a valid context across auth-driven route transitions, when
     // this layout briefly renders a Redirect instead of its children.
-    return <LayoutContent />;
+    // The splash overlays the content and fades out once auth resolves, so the
+    // tabs mount underneath during the fade.
+    return (
+        <View style={{ flex: 1 }}>
+            {showContent && <LayoutContent />}
+            {!splashDone && (
+                <View style={StyleSheet.absoluteFill} pointerEvents={showContent ? "none" : "auto"}>
+                    <EnhancedSplashScreen ready={showContent} onAnimationComplete={handleAnimationComplete} />
+                </View>
+            )}
+        </View>
+    );
 };
 
 // Separate component to use the CreateModal context
 const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
     const ThemedColor = useThemeColor();
-    const fadeAnim = useRef(new Animated.Value(0)).current;
+    // Don't pay for the sheet until it's first opened; keep it mounted afterwards
+    const [createModalMounted, setCreateModalMounted] = useState(visible);
+    if (visible && !createModalMounted) setCreateModalMounted(true);
 
     // Auto-start live activities when task times arrive (foreground)
     useLiveActivityScheduler();
 
     // Sync task times to AsyncStorage for background fetch
-    const { allTasks } = useTasks();
+    const allTasks = useTasksSelector((s) => s.allTasks);
     useBackgroundTaskSync(allTasks);
 
-    useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-        }).start();
-    }, []);
-
     return (
-        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        <View style={{ flex: 1 }}>
                 <OfflineBanner />
                 <Stack
                     screenOptions={{
@@ -523,8 +548,8 @@ const LayoutContent = () => {
                         }}
                     /> */}
                 </Stack>
-                <CreateModal visible={visible} setVisible={setVisible} {...modalConfig} />
-        </Animated.View>
+                {createModalMounted && <CreateModal visible={visible} setVisible={setVisible} {...modalConfig} />}
+        </View>
     );
 };
 

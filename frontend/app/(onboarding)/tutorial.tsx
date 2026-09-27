@@ -30,8 +30,8 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
 import { useTasks } from "@/contexts/tasksContext";
-import { useSelectedCategory } from "@/contexts/selectedCategoryContext";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useSetCreateCategory } from "@/contexts/selectedCategoryContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import CongratulateModal from "@/components/modals/CongratulateModal";
@@ -165,8 +165,8 @@ export default function TutorialOnboarding() {
     const { capture } = useAnalytics();
     const { user } = useAuth();
     const { workspaces, fetchWorkspaces, categories, setSelected } = useTasks();
-    const { setCreateCategory } = useSelectedCategory();
-    const { setTaskName, resetTaskCreation } = useTaskCreation();
+    const setCreateCategory = useSetCreateCategory();
+    const { setTaskName, resetTaskCreation } = useTaskCreationActions();
     const { request } = useRequest();
 
     const [step, setStep] = useState(0);

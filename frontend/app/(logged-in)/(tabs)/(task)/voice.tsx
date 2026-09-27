@@ -14,7 +14,7 @@ import {
 } from "@/utils/speechRecognition";
 import { createTasksFromNaturalLanguageAPI } from "@/api/task";
 import { getUserCredits, UserCredits } from "@/api/profile";
-import { useTasks } from "@/contexts/tasksContext";
+import { useApplyCreatedTasks } from "@/hooks/useApplyCreatedTasks";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
 import { useQueryClient } from "@tanstack/react-query";
@@ -27,7 +27,7 @@ type Props = {};
 const VoiceDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { fetchWorkspaces } = useTasks();
+    const { applyNaturalLanguageResult } = useApplyCreatedTasks();
     const queryClient = useQueryClient();
     const { capture } = useAnalytics();
     const [recognizing, setRecognizing] = useState(false);
@@ -125,8 +125,8 @@ const VoiceDump = (props: Props) => {
                 input_length: transcription.trim().length,
             });
 
-            // Invalidate cache and trigger workspace refetch to get new tasks/categories
-            fetchWorkspaces(true);
+            // Insert the new tasks/categories locally; refetches only for what can't be built client-side
+            applyNaturalLanguageResult(result);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Refetch credits to update the count

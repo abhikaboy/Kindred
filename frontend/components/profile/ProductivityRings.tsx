@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     Animated as RNAnimated,
 } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, G } from "react-native-svg";
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 import { Check, LockSimple, Gift, Target, Fire, CalendarCheck } from "phosphor-react-native";
@@ -18,7 +18,6 @@ import { useRings } from "@/hooks/useRings";
 import { useAuth } from "@/hooks/useAuth";
 import { RingProgress, RingState, RingRewardResponse } from "@/api/types";
 import { RING_COLORS } from "@shared/rings";
-import ScoreArc from "./ScoreArc";
 import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -36,7 +35,7 @@ const SCORE_BREAKDOWN = [
     { Icon: CalendarCheck, label: "Show up daily", detail: "close at least one ring", points: "up to 8" },
 ];
 
-/** Score arc, tappable to (re-)explain how the productivity score works. */
+/** Productivity score number, tappable to (re-)explain how the score works. */
 function ScoreWithInfo({ score }: { score: number }) {
     const [showInfo, setShowInfo] = useState(false);
     const { ready, done } = useFirstTouchHint("productivity_score");
@@ -56,12 +55,12 @@ function ScoreWithInfo({ score }: { score: number }) {
 
     return (
         <>
-            <TouchableOpacity onPress={() => setShowInfo(true)} activeOpacity={0.8}>
-                <ScoreArc score={score} />
+            <TouchableOpacity onPress={() => setShowInfo(true)} activeOpacity={0.8} hitSlop={8}>
+                <ThemedText type="subtitle">{score}</ThemedText>
             </TouchableOpacity>
             <DefaultModal visible={showInfo} setVisible={closeInfo} enableDynamicSizing>
                 <View style={infoStyles.header}>
-                    <ScoreArc score={score} />
+                    <ThemedText type="hero">{score}</ThemedText>
                     <ThemedText type="title" style={infoStyles.title}>
                         Introducing your Productivity Score
                     </ThemedText>
@@ -149,21 +148,31 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 type RingKey = "plan" | "do" | "share";
 
-function RingCircle({
+const MIN_SLIVER = 0.03;
+
+function RingArc({
     progress,
     trackColor,
     color,
+    size,
+    radius,
+    strokeWidth,
     delay = 0,
 }: {
     progress: RingProgress;
     trackColor: string;
     color: string;
+    size: number;
+    radius: number;
+    strokeWidth: number;
     delay?: number; // one-time entrance delay (staggered tutorial reveal)
 }) {
-    const fraction =
-        progress.target > 0
-            ? Math.min(progress.current / progress.target, 1)
-            : 0;
+    // Floor at a small sliver so an empty ring still shows its color.
+    const fraction = Math.max(
+        progress.target > 0 ? Math.min(progress.current / progress.target, 1) : 0,
+        MIN_SLIVER
+    );
+    const circumference = 2 * Math.PI * radius;
     const animatedValue = useRef(new RNAnimated.Value(0)).current;
     const firstRun = useRef(true);
 
@@ -183,36 +192,79 @@ function RingCircle({
 
     const strokeDashoffset = animatedValue.interpolate({
         inputRange: [0, 1],
-        outputRange: [CIRCUMFERENCE, 0],
+        outputRange: [circumference, 0],
     });
+    const c = size / 2;
 
     return (
-        <Svg width={RING_SIZE} height={RING_SIZE}>
-            <Circle
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={RADIUS}
-                stroke={trackColor}
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-            />
+        <>
+            <Circle cx={c} cy={c} r={radius} stroke={trackColor} strokeWidth={strokeWidth} fill="none" />
             <AnimatedCircle
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={RADIUS}
+                cx={c}
+                cy={c}
+                r={radius}
                 stroke={color}
-                strokeWidth={STROKE_WIDTH}
+                strokeWidth={strokeWidth}
                 fill="none"
-                strokeDasharray={`${CIRCUMFERENCE}`}
+                strokeDasharray={`${circumference}`}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
                 rotation={-90}
-                origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+                origin={`${c}, ${c}`}
             />
+        </>
+    );
+}
+
+function RingCircle(props: { progress: RingProgress; trackColor: string; color: string }) {
+    return (
+        <Svg width={RING_SIZE} height={RING_SIZE}>
+            <RingArc {...props} size={RING_SIZE} radius={RADIUS} strokeWidth={STROKE_WIDTH} />
         </Svg>
     );
 }
 
+const RING_ORDER: RingKey[] = ["plan", "do", "share"];
+
+/** Plan / Do / Share drawn as one concentric set, outer to inner, with optional center content. */
+function ConcentricRings({
+    rings,
+    size = 132,
+    strokeWidth = 12,
+    gap = 4,
+    dimmedExcept,
+    staggerMs = 0,
+    center,
+}: {
+    rings: Record<RingKey, RingProgress>;
+    size?: number;
+    strokeWidth?: number;
+    gap?: number;
+    dimmedExcept?: RingKey | null;
+    staggerMs?: number;
+    center?: React.ReactNode;
+}) {
+    return (
+        <View style={{ width: size, height: size }}>
+            <Svg width={size} height={size}>
+                {RING_ORDER.map((key, index) => (
+                    <G key={key} opacity={dimmedExcept && dimmedExcept !== key ? 0.3 : 1}>
+                        <RingArc
+                            progress={rings[key]}
+                            trackColor={RING_COLORS[key] + "1A"}
+                            color={RING_COLORS[key]}
+                            size={size}
+                            radius={(size - strokeWidth) / 2 - index * (strokeWidth + gap)}
+                            strokeWidth={strokeWidth}
+                            delay={staggerMs ? index * staggerMs : 0}
+                        />
+                    </G>
+                ))}
+            </Svg>
+            {center && <View style={styles.stackCenter}>{center}</View>}
+        </View>
+    );
+}
 
 interface ProductivityRingsCardProps {
     expanded?: boolean;
@@ -334,65 +386,48 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             {/* Rings Row */}
             {showRings && (
             <>
-            <View style={styles.ringsRow}>
-                {ringEntries.map(({ key, label, progress }, index) => {
-                    const ev = entranceValues[index];
-                    return (
-                    <RNAnimated.View
-                        key={key}
-                        style={{
-                            opacity: ev,
-                            transform: [{ scale: ev.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
-                        }}
-                    >
-                    <TouchableOpacity
-                        style={[
-                            styles.ringItem,
-                            isExpanded &&
-                                expandedRing !== key && { opacity: 0.3 },
-                        ]}
-                        onPress={() => handleRingPress(key)}
-                        disabled={!!ringsOverride}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.ringWrapper}>
-                            <RingCircle
-                                progress={progress}
-                                trackColor={trackColor}
-                                color={RING_COLORS[key]}
-                                delay={staggerMs ? index * staggerMs : 0}
-                            />
-                            <View style={styles.ringCenter}>
-                                {progress.closed ? (
-                                    <Check
-                                        size={24}
-                                        color={RING_COLORS[key]}
-                                        weight="bold"
-                                    />
-                                ) : (
-                                    <ThemedText
-                                        style={[
-                                            styles.ringText,
-                                            { color: ThemedColor.text },
-                                        ]}
-                                    >
-                                        {progress.current}/{progress.target}
+            <View style={styles.stackRow}>
+                <RNAnimated.View
+                    style={{
+                        opacity: entranceValues[0],
+                        transform: [{ scale: entranceValues[0].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
+                    }}
+                >
+                    <ConcentricRings
+                        rings={effectiveRings}
+                        dimmedExcept={expandedRing}
+                        staggerMs={staggerMs}
+                        center={!ringsOverride && <ScoreWithInfo score={score} />}
+                    />
+                </RNAnimated.View>
+
+                <View style={styles.legend}>
+                    {ringEntries.map(({ key, label, progress }, index) => {
+                        const ev = entranceValues[index];
+                        return (
+                            <RNAnimated.View key={key} style={{ opacity: ev }}>
+                                <TouchableOpacity
+                                    style={[styles.legendRow, isExpanded && expandedRing !== key && { opacity: 0.3 }]}
+                                    onPress={() => handleRingPress(key)}
+                                    disabled={!!ringsOverride}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={[styles.legendDot, { backgroundColor: RING_COLORS[key] }]} />
+                                    <ThemedText type="default" style={styles.legendLabel}>
+                                        {label}
                                     </ThemedText>
-                                )}
-                            </View>
-                        </View>
-                        <ThemedText
-                            style={[
-                                styles.ringLabel,
-                                { color: ThemedColor.caption },
-                            ]}
-                        >
-                            {label.toUpperCase()}
-                        </ThemedText>
-                    </TouchableOpacity>
-                    </RNAnimated.View>
-                    );
-                })}
+                                    {progress.closed ? (
+                                        <Check size={16} color={RING_COLORS[key]} weight="bold" />
+                                    ) : (
+                                        <ThemedText style={[styles.ringText, { color: ThemedColor.text }]}>
+                                            {progress.current}/{progress.target}
+                                        </ThemedText>
+                                    )}
+                                </TouchableOpacity>
+                            </RNAnimated.View>
+                        );
+                    })}
+                </View>
             </View>
 
             {/* Expanded detail */}
@@ -469,6 +504,34 @@ const styles = StyleSheet.create({
     ringsRow: {
         flexDirection: "row",
         justifyContent: "space-between",
+    },
+    stackRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 24,
+    },
+    stackCenter: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    legend: {
+        flex: 1,
+        gap: 12,
+    },
+    legendRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingVertical: 4,
+    },
+    legendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+    },
+    legendLabel: {
+        flex: 1,
     },
     ringItem: {
         alignItems: "center",
@@ -581,5 +644,6 @@ const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle
     );
 };
 
-export { ProductivityRingsCard, FriendRings };
+export { ProductivityRingsCard, FriendRings, ConcentricRings, RING_ENCOURAGE_MESSAGES };
+export type { RingKey };
 export default ProductivityRingsCard;

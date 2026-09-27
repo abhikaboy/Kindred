@@ -25,14 +25,11 @@ export function computePhantomTasks(templates: TemplateLike[], workspaces: Works
         }
     }
 
-    console.log("[phantomTasks] templates:", templates.length, "activeTemplateIds:", activeTemplateIds.size);
-
     const map = new Map<string, Task[]>();
     const now = new Date().toISOString();
 
     for (const tpl of templates) {
         const hasActive = activeTemplateIds.has(tpl.id);
-        console.log("[phantomTasks] template", tpl.id, "content:", tpl.content, "hasActive:", hasActive, "nextGenerated:", tpl.nextGenerated, "categoryID:", tpl.categoryID);
         if (hasActive || !tpl.nextGenerated) continue;
 
         const phantom: Task = {

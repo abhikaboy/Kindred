@@ -91,6 +91,7 @@
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+		<string>INSendMessageIntent</string>
 	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>

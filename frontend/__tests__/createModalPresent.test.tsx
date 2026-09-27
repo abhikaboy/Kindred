@@ -34,6 +34,7 @@ jest.mock("@/hooks/useThemeColor", () => ({
 
 jest.mock("@/contexts/taskCreationContext", () => ({
     useTaskCreation: () => ({ setCopySourceTaskId: mockSetCopySource }),
+    useTaskCreationActions: () => ({ setCopySourceTaskId: mockSetCopySource }),
 }));
 
 jest.mock("@/hooks/useAnalytics", () => ({ useAnalytics: () => ({ capture: jest.fn() }) }));

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
 import { useReminder, Reminder } from "@/hooks/useReminder";
 import { FlexDetails, ChecklistItem } from "@/api/types";
 import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
@@ -62,7 +62,74 @@ type TaskCreationContextType = {
     setCopySourceTaskId: (id: string | null) => void;
 };
 
+type TaskCreationActions = Pick<
+    TaskCreationContextType,
+    | "setTaskName"
+    | "resetTaskCreation"
+    | "loadTaskData"
+    | "setShowAdvanced"
+    | "setReminders"
+    | "setIsPublic"
+    | "setIsBlueprint"
+    | "setFlexDetails"
+    | "setIntegration"
+    | "setPriority"
+    | "setValue"
+    | "setRecurring"
+    | "setRecurFrequency"
+    | "setRecurDetails"
+    | "setDeadline"
+    | "addSmartDeadlineReminders"
+    | "setStartTime"
+    | "setStartDate"
+    | "addSmartStartReminders"
+    | "setTaggedUsers"
+    | "setNotes"
+    | "setChecklist"
+    | "setCopySourceTaskId"
+>;
+
 const TaskCreationContext = createContext<TaskCreationContextType | undefined>(undefined);
+// Stable for the provider's lifetime, so components that only open/prefill the create
+// modal (task cards, daily, task detail) don't re-render on every keystroke in it.
+const TaskCreationActionsContext = createContext<TaskCreationActions | undefined>(undefined);
+
+// Helper function to create a unique key for a reminder
+const getReminderKey = (reminder: Reminder): string => {
+    return `${reminder.triggerTime.getTime()}-${reminder.type}-${reminder.beforeDeadline}-${reminder.beforeStart}`;
+};
+
+// Helper function to add reminders without duplicates
+const addRemindersUnique = (existingReminders: Reminder[], newReminders: Reminder[]): Reminder[] => {
+    // Create a Map using unique keys
+    const reminderMap = new Map<string, Reminder>();
+
+    // Add existing reminders
+    existingReminders.forEach(reminder => {
+        const key = getReminderKey(reminder);
+        reminderMap.set(key, reminder);
+    });
+
+    // Add new reminders (will overwrite if key exists, ensuring no duplicates)
+    newReminders.forEach(reminder => {
+        const key = getReminderKey(reminder);
+        reminderMap.set(key, reminder);
+    });
+
+    // Convert back to array
+    return Array.from(reminderMap.values());
+};
+
+// Function to get default start date based on blueprint mode
+const getDefaultStartDate = (isBlueprintMode: boolean | undefined): Date | null => {
+    if (isBlueprintMode === true) {
+        // Return January 1, 1970 for blueprint mode
+        const defaultDate = new Date(1970, 0, 1); // Month is 0-indexed, so 0 = January
+        return defaultDate;
+    }
+    // Return null for normal mode (no default date) or undefined
+    return null;
+};
 
 export const TaskCreationProvider = ({ children }: { children: React.ReactNode }) => {
     const [taskName, setTaskName] = useState("");
@@ -90,70 +157,30 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [copySourceTaskId, setCopySourceTaskId] = useState<string | null>(null);
 
     const { getDeadlineReminder, getStartDateReminder, getStartTimeReminder } = useReminder();
-
-    // Helper function to create a unique key for a reminder
-    const getReminderKey = (reminder: Reminder): string => {
-        return `${reminder.triggerTime.getTime()}-${reminder.type}-${reminder.beforeDeadline}-${reminder.beforeStart}`;
-    };
-
-    // Helper function to add reminders without duplicates
-    const addRemindersUnique = (existingReminders: Reminder[], newReminders: Reminder[]): Reminder[] => {
-        // Create a Map using unique keys
-        const reminderMap = new Map<string, Reminder>();
-
-        // Add existing reminders
-        existingReminders.forEach(reminder => {
-            const key = getReminderKey(reminder);
-            reminderMap.set(key, reminder);
-        });
-
-        // Add new reminders (will overwrite if key exists, ensuring no duplicates)
-        newReminders.forEach(reminder => {
-            const key = getReminderKey(reminder);
-            reminderMap.set(key, reminder);
-        });
-
-        // Convert back to array
-        return Array.from(reminderMap.values());
-    };
-
-    // Function to get default start date based on blueprint mode
-    const getDefaultStartDate = (isBlueprintMode: boolean | undefined): Date | null => {
-        if (isBlueprintMode === true) {
-            // Return January 1, 1970 for blueprint mode
-            const defaultDate = new Date(1970, 0, 1); // Month is 0-indexed, so 0 = January
-            return defaultDate;
-        }
-        // Return null for normal mode (no default date) or undefined
-        return null;
-    };
-
-    // Internal function to set blueprint state without triggering start date logic
-    const setBlueprintStateInternal = (isBlueprintMode: boolean) => {
-        setIsBlueprint(isBlueprintMode);
-    };
+    const isBlueprintRef = useRef(isBlueprint);
+    isBlueprintRef.current = isBlueprint;
 
     // Custom setIsBlueprint function that also sets the start date
-    const setIsBlueprintWithStartDate = (isBlueprintMode: boolean) => {
+    const setIsBlueprintWithStartDate = useCallback((isBlueprintMode: boolean) => {
         // Only update start date if blueprint mode is actually changing
-        if (isBlueprint !== isBlueprintMode) {
-            setBlueprintStateInternal(isBlueprintMode);
+        if (isBlueprintRef.current !== isBlueprintMode) {
+            setIsBlueprint(isBlueprintMode);
             // Set the start date based on blueprint mode
             const defaultStartDate = getDefaultStartDate(isBlueprintMode);
             setStartDate(defaultStartDate);
         }
-    };
+    }, []);
 
     // Add smart deadline reminders — call only at final submission, not during intermediate changes
-    const addSmartDeadlineReminders = (dl: Date) => {
+    const addSmartDeadlineReminders = useCallback((dl: Date) => {
         const reminder = getDeadlineReminder(dl);
         if (reminder) {
             setReminders((prev) => addRemindersUnique(prev, [reminder]));
         }
-    };
+    }, [getDeadlineReminder]);
 
     // Add smart start reminders — call only at final submission, not during intermediate changes
-    const addSmartStartReminders = (sd: Date, st: Date | null) => {
+    const addSmartStartReminders = useCallback((sd: Date, st: Date | null) => {
         const atStartReminder = getStartDateReminder(sd, st);
         const beforeStartReminder = getStartTimeReminder(sd, st);
 
@@ -171,9 +198,9 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
 
             return addRemindersUnique(filtered, newReminders);
         });
-    };
+    }, [getStartDateReminder, getStartTimeReminder]);
 
-    const resetTaskCreation = () => {
+    const resetTaskCreation = useCallback(() => {
         setTaskName("");
         setPriority(1);
         setValue(1);
@@ -187,7 +214,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setDeadline(null);
         setStartTime(null);
         // Set start date based on current blueprint mode
-        const defaultStartDate = getDefaultStartDate(isBlueprint);
+        const defaultStartDate = getDefaultStartDate(isBlueprintRef.current);
         setStartDate(defaultStartDate);
         setReminders([]);
         setIsPublic(true);
@@ -199,7 +226,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setCopySourceTaskId(null);
         // Don't reset isBlueprint here as it should persist
         setShowAdvanced(false);
-    };
+    }, []);
 
     const loadTaskData = useCallback((taskData: any) => {
         setTaskName(taskData.content || "");
@@ -240,7 +267,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         );
 
         setIsPublic(taskData.public !== undefined ? taskData.public : true);
-        setBlueprintStateInternal(taskData.isBlueprint || false);
+        setIsBlueprint(taskData.isBlueprint || false);
         setIntegration(taskData.integration || "");
         setFlexDetails(taskData.recurDetails?.flex || null);
         setNotes(taskData.notes || "");
@@ -248,13 +275,36 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setTaggedUsers([]);
     }, []);
 
-    const contextValue = useMemo(() => ({
-        taskName,
+    const actions = useMemo<TaskCreationActions>(() => ({
         setTaskName,
         resetTaskCreation,
         loadTaskData,
-        showAdvanced,
         setShowAdvanced,
+        setReminders,
+        setIsPublic,
+        setIsBlueprint: setIsBlueprintWithStartDate,
+        setFlexDetails,
+        setIntegration,
+        setPriority,
+        setValue,
+        setRecurring,
+        setRecurFrequency,
+        setRecurDetails,
+        setDeadline,
+        addSmartDeadlineReminders,
+        setStartTime,
+        setStartDate,
+        addSmartStartReminders,
+        setTaggedUsers,
+        setNotes,
+        setChecklist,
+        setCopySourceTaskId,
+    }), [resetTaskCreation, loadTaskData, setIsBlueprintWithStartDate, addSmartDeadlineReminders, addSmartStartReminders]);
+
+    const contextValue = useMemo(() => ({
+        ...actions,
+        taskName,
+        showAdvanced,
         priority,
         value,
         recurring,
@@ -264,45 +314,27 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         startTime,
         startDate,
         reminders,
-        setReminders,
         isPublic,
-        setIsPublic,
         isBlueprint,
-        setIsBlueprint: setIsBlueprintWithStartDate,
         flexDetails,
-        setFlexDetails,
         integration,
-        setIntegration,
-        setPriority,
-        setValue,
-        setRecurring,
-        setRecurFrequency,
-        setRecurDetails,
-        setDeadline,
-        addSmartDeadlineReminders,
-        setStartDate,
-        setStartTime,
-        addSmartStartReminders,
         taggedUsers,
-        setTaggedUsers,
         notes,
-        setNotes,
         checklist,
-        setChecklist,
         copySourceTaskId,
-        setCopySourceTaskId,
     }), [
-        taskName, showAdvanced, priority, value,
+        actions, taskName, showAdvanced, priority, value,
         recurring, recurFrequency, recurDetails, deadline,
         startTime, startDate, reminders, isPublic, isBlueprint,
-        integration, flexDetails, loadTaskData,
-        taggedUsers, notes, checklist, copySourceTaskId,
+        integration, flexDetails, taggedUsers, notes, checklist, copySourceTaskId,
     ]);
 
     return (
-        <TaskCreationContext.Provider value={contextValue}>
-            {children}
-        </TaskCreationContext.Provider>
+        <TaskCreationActionsContext.Provider value={actions}>
+            <TaskCreationContext.Provider value={contextValue}>
+                {children}
+            </TaskCreationContext.Provider>
+        </TaskCreationActionsContext.Provider>
     );
 };
 
@@ -310,6 +342,15 @@ export const useTaskCreation = () => {
     const context = useContext(TaskCreationContext);
     if (context === undefined) {
         throw new Error("useTaskCreation must be used within a TaskCreationProvider");
+    }
+    return context;
+};
+
+/** Setters/actions only — never re-renders when the draft task changes. */
+export const useTaskCreationActions = () => {
+    const context = useContext(TaskCreationActionsContext);
+    if (context === undefined) {
+        throw new Error("useTaskCreationActions must be used within a TaskCreationProvider");
     }
     return context;
 };

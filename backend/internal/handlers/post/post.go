@@ -172,7 +172,7 @@ func (h *Handler) CreatePostHuma(ctx context.Context, input *CreatePostInput) (*
 		if err := h.service.NotificationService.CreateNotification(userObjID, tagged.ID, content, notifications.NotificationTypePostTag, createdPost.ID, thumbnail); err != nil {
 			slog.Error("Failed to create tag notification", "tagged_user_id", tagged.ID, "err", err)
 		}
-		if err := h.service.sendTagPushNotification(tagged.ID, createdPost.ID, createdPost.User.DisplayName); err != nil {
+		if err := h.service.sendTagPushNotification(tagged.ID, createdPost.ID, &createdPost.User); err != nil {
 			slog.Error("Failed to send tag push notification", "tagged_user_id", tagged.ID, "err", err)
 		}
 	}

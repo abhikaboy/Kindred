@@ -51,6 +51,9 @@ func (s *Service) NotifyTaggedUsers(task *TaskDocument, taggerID primitive.Objec
 				"user_id":   taggerID.Hex(),
 				"task_name": task.Content,
 			},
+			SenderName:   tagger.DisplayName,
+			SenderAvatar: tagger.ProfilePicture,
+			SenderID:     taggerID.Hex(),
 		}
 		if err := xutils.SendNotification(notification); err != nil {
 			slog.Error("Failed to send task_tagged push", "receiver", tu.ID, "error", err)
@@ -86,6 +89,9 @@ func (s *Service) NotifyTagWatchersOfCompletion(task *TaskDocument, ownerID prim
 				"user_id": ownerID.Hex(),
 				"task_id": task.ID.Hex(),
 			},
+			SenderName:   owner.DisplayName,
+			SenderAvatar: owner.ProfilePicture,
+			SenderID:     ownerID.Hex(),
 		}
 		if err := xutils.SendNotification(notification); err != nil {
 			slog.Error("Failed to send watcher completion push", "receiver", tu.ID, "error", err)
@@ -124,5 +130,8 @@ func (s *Service) notifyTaskCopied(taskID, ownerID, copierID primitive.ObjectID,
 			"task_id": taskID.Hex(),
 			"user_id": copierID.Hex(),
 		},
+		SenderName:   copier.DisplayName,
+		SenderAvatar: copier.ProfilePicture,
+		SenderID:     copierID.Hex(),
 	})
 }

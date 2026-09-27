@@ -9,7 +9,7 @@ import { useRouter } from "expo-router";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { createTasksFromNaturalLanguageAPI } from "@/api/task";
 import { getUserCredits, UserCredits } from "@/api/profile";
-import { useTasks } from "@/contexts/tasksContext";
+import { useApplyCreatedTasks } from "@/hooks/useApplyCreatedTasks";
 import { TaskGenerationLoading } from "@/components/TaskGenerationLoading";
 import { TaskGenerationError } from "@/components/TaskGenerationError";
 import { CreditsInfoSheet } from "@/components/CreditsInfoSheet";
@@ -20,7 +20,7 @@ type Props = {};
 const TextDump = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
-    const { fetchWorkspaces } = useTasks();
+    const { applyNaturalLanguageResult } = useApplyCreatedTasks();
     const queryClient = useQueryClient();
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -58,8 +58,8 @@ const TextDump = (props: Props) => {
         try {
             const result = await createTasksFromNaturalLanguageAPI(text.trim());
 
-            // Invalidate cache and trigger workspace refetch to get new tasks/categories
-            fetchWorkspaces(true);
+            // Insert the new tasks/categories locally; refetches only for what can't be built client-side
+            applyNaturalLanguageResult(result);
             queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
 
             // Refetch credits to update the count

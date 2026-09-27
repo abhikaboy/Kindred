@@ -12,7 +12,6 @@ import type { PostKudos } from "@/api/types";
 import ReportedPostCard from "@/components/cards/ReportedPostCard";
 import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
-import EndOfDayCard from "@/components/cards/EndOfDayCard";
 import ComposePostCard from "@/components/cards/ComposePostCard";
 import { Icons } from "@/constants/Icons";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,7 +44,6 @@ import { Handshake } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
-import { useEndOfDayCard } from "@/hooks/useEndOfDayCard";
 const HORIZONTAL_PADDING = 16;
 
 type PostData = {
@@ -112,7 +110,6 @@ export default function Feed() {
     const styles = useMemo(() => stylesheet(ThemedColor, insets), [ThemedColor, insets]);
     const { user, updateUser } = useAuth();
     const { capture } = useAnalytics();
-    const { visible: endOfDayVisible } = useEndOfDayCard();
     const [showAnimatedHeader, setShowAnimatedHeader] = useState(false);
     // First-touch: the notifications pager page is invisible until swiped; visiting it dismisses
     const { ready: notifHintReady, done: notifHintDone } = useFirstTouchHint("feed_notifications");
@@ -641,10 +638,10 @@ export default function Feed() {
                     </TouchableOpacity>
                 </View>
 
-                {endOfDayVisible ? <EndOfDayCard /> : <ComposePostCard />}
+                <ComposePostCard />
             </View>
         );
-    }, [ThemedColor.text, router, availableFeeds, renderFeedTab, endOfDayVisible]);
+    }, [ThemedColor.text, router, availableFeeds, renderFeedTab]);
 
     const renderEmptyComponent = useCallback(() => {
         if (posts.length === 0 && !loading) {

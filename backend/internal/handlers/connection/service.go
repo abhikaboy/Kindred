@@ -140,7 +140,7 @@ func (s *Service) CreateConnection(r *ConnectionDocumentInternal) (*ConnectionDo
 	r.ID = id
 
 	// Send push notification to receiver (no database notification)
-	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.ID, r.Requester.Name)
+	err = s.sendFriendRequestNotification(r.ReceiverID, r.Requester.ID, r.Requester.Name, derefString(r.Requester.Picture))
 	if err != nil {
 		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", r.ReceiverID)
 		// Don't fail the request if notification fails
@@ -272,7 +272,8 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 
 	// Get accepter's details for the notification
 	var accepterUser struct {
-		Name string `bson:"display_name"`
+		Name    string `bson:"display_name"`
+		Picture string `bson:"profile_picture"`
 	}
 	err = s.Users.FindOne(ctx, bson.M{"_id": userID}).Decode(&accepterUser)
 	if err != nil {
@@ -280,7 +281,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 		// Don't fail the request if we can't get user details for notification
 	} else {
 		// Send push notification to requester (no database notification)
-		err = s.sendFriendRequestAcceptedNotification(otherUserID, userID, accepterUser.Name)
+		err = s.sendFriendRequestAcceptedNotification(otherUserID, userID, accepterUser.Name, accepterUser.Picture)
 		if err != nil {
 			slog.Error("Failed to send friend request accepted notification", "error", err, "requester_id", otherUserID)
 			// Don't fail the request if notification fails
@@ -291,7 +292,7 @@ func (s *Service) AcceptConnection(connectionID, userID primitive.ObjectID) erro
 }
 
 // sendFriendRequestNotification sends a push notification to the receiver when a friend request is sent
-func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, requesterID primitive.ObjectID, requesterName string) error {
+func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, requesterID primitive.ObjectID, requesterName, requesterAvatar string) error {
 	ctx := context.Background()
 
 	// Get receiver's push token
@@ -317,6 +318,9 @@ func (s *Service) sendFriendRequestNotification(receiverID primitive.ObjectID, r
 			"requester_name": requesterName,
 			"requester_id":   requesterID.Hex(),
 		},
+		SenderName:   requesterName,
+		SenderAvatar: requesterAvatar,
+		SenderID:     requesterID.Hex(),
 	}
 
 	return xutils.SendNotification(notification)
@@ -393,7 +397,7 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, erro
 }
 
 // sendFriendRequestAcceptedNotification sends a push notification to the requester when their friend request is accepted
-func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterID primitive.ObjectID, accepterName string) error {
+func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.ObjectID, accepterID primitive.ObjectID, accepterName, accepterAvatar string) error {
 	ctx := context.Background()
 
 	// Get requester's push token
@@ -419,6 +423,9 @@ func (s *Service) sendFriendRequestAcceptedNotification(requesterID primitive.Ob
 			"accepter_name": accepterName,
 			"accepter_id":   accepterID.Hex(),
 		},
+		SenderName:   accepterName,
+		SenderAvatar: accepterAvatar,
+		SenderID:     accepterID.Hex(),
 	}
 
 	return xutils.SendNotification(notification)
@@ -515,7 +522,7 @@ func (s *Service) CreateConnectionRequest(requesterID, receiverID primitive.Obje
 	}
 
 	// Send push notification to receiver (no database notification)
-	err = s.sendFriendRequestNotification(receiverID, requester.ID, requester.Name)
+	err = s.sendFriendRequestNotification(receiverID, requester.ID, requester.Name, derefString(requester.Picture))
 	if err != nil {
 		slog.Error("Failed to send friend request notification", "error", err, "receiver_id", receiverID)
 		// Don't fail the request if notification fails
@@ -726,4 +733,14 @@ func (s *Service) IsBlocked(ctx context.Context, userA, userB primitive.ObjectID
 	}
 
 	return true, nil
+}
+
+// derefString returns the pointed-to string, or "" when the pointer is nil.
+// ConnectionUserInternal.Picture is optional, and an empty avatar simply means
+// the push renders with the app icon instead of the sender's face.
+func derefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }

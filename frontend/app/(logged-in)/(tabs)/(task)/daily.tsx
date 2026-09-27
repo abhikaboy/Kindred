@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import { DrawerLayout } from "react-native-gesture-handler";
 import { Drawer } from "@/components/home/Drawer";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
@@ -65,7 +65,7 @@ const Daily = ({ embedded }: Props) => {
 
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { loadTaskData, resetTaskCreation, setStartDate, setStartTime, setDeadline } = useTaskCreation();
+    const { loadTaskData, resetTaskCreation, setStartDate, setStartTime, setDeadline } = useTaskCreationActions();
     const { fetchWorkspaces, updateTask } = useTasks();
     const { openModal } = useCreateModal();
     const { setIsDrawerOpen } = useDrawer();
@@ -178,7 +178,7 @@ const Daily = ({ embedded }: Props) => {
         try {
             await updateTaskDeadlineAPI(task.categoryID, task.id, date);
             dragHintDone();
-            fetchWorkspaces();
+            fetchWorkspaces(true);
         } catch (e) {
             setHiddenIds((prev) => {
                 const n = new Set(prev);
@@ -407,6 +407,9 @@ const Daily = ({ embedded }: Props) => {
 };
 
 export default Daily;
+
+// Memoized for the task-tab pager so a swipe elsewhere doesn't re-render the planner
+export const MemoDaily = React.memo(Daily);
 
 const styles = StyleSheet.create({
     container: {

@@ -314,6 +314,10 @@ func (s *Service) sendReactionNotification(con *CongratulationDocumentInternal, 
 			"reaction":   emoji,
 			"url":        "/feed?page=notifications",
 		},
+		// The person who reacted is the actor here, not the kudos author.
+		SenderName:   receiver.DisplayName,
+		SenderAvatar: receiver.ProfilePicture,
+		SenderID:     receiver.ID.Hex(),
 	})
 }
 

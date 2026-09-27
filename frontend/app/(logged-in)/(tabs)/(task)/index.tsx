@@ -1,49 +1,53 @@
-import { StyleSheet, View, TouchableOpacity, Animated } from "react-native";
-import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, View, Animated, InteractionManager } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { Drawer } from "@/components/home/Drawer";
 import { DrawerLayout } from "react-native-gesture-handler";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import ConditionalView from "@/components/ui/ConditionalView";
 import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
-import { useSafeAsync } from "@/hooks/useSafeAsync";
-import { TodayContent } from "@/components/task/TodayContent";
+import { useSharedValue } from "react-native-reanimated";
+import CaptureBlur from "@/components/dashboard/CaptureBlur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
-import { getEncouragementsAPI } from "@/api/encouragement";
-import { getCongratulationsAPI } from "@/api/congratulation";
-import { notificationRefreshEvents } from "@/utils/notificationRefreshEvents";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
-import HintBubble from "@/components/ui/HintBubble";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
 import { IntroTourOverlay } from "@/components/dashboard/IntroTourOverlay";
 import { useIntroTour } from "@/hooks/useIntroTour";
 import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
-import { ThemedText } from "@/components/ThemedText";
-import { AnimatedView } from "@/components/ui/AnimatedView";
 import { WorkspaceContent } from "@/components/task/WorkspaceContent";
-import { PagerDots } from "@/components/task/PagerDots";
+import { PagerDots, type PagerKind } from "@/components/task/PagerDots";
 import PagerView from "react-native-pager-view";
 import Confetti from "@/components/ui/Confetti";
-import Daily from "./daily";
+import { MemoDaily } from "./daily";
 import WorkspaceGlow from "@/components/task/WorkspaceGlow";
-import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
 import FriendsContent from "@/components/dashboard/FriendsContent";
-import { List } from "phosphor-react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useKudos } from "@/contexts/kudosContext";
+import { hapticSelect } from "@/utils/haptics";
+
+// Memoized at the usage site so a swipe (which re-renders the pager) doesn't
+// re-render every mounted workspace page.
+const MemoWorkspaceContent = React.memo(WorkspaceContent);
+
+type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string };
+const HOME_INDEX = 1;
+const FRIENDS_INDEX = 2;
+// Besides the active page ±1, keep this many recently active pages mounted so
+// jumping back (drawer → workspace → home) doesn't pay a full remount.
+const EXTRA_RECENT_PAGES = 2;
+const pageKeyOf = (page: Page) => (page.key === "workspace" ? `ws-${page.name}` : page.key);
 
 type Props = {};
 
@@ -51,19 +55,13 @@ const Home = (props: Props) => {
     const { user, refresh } = useAuth();
     let ThemedColor = useThemeColor();
 
-    const {
-        fetchWorkspaces,
-        selected,
-        workspaces,
-        setSelected,
-        dueTodayTasks,
-        fetchingWorkspaces,
-        getRecentWorkspaces,
-    } = useTasks();
+    const { fetchWorkspaces, setSelected } = useTaskActions();
+    const workspaces = useTasksSelector((s) => s.workspaces);
+    const fetchingWorkspaces = useTasksSelector((s) => s.fetchingWorkspaces);
+    const recentWorkspaceNames = useTasksSelector((s) => s.recentWorkspaces);
+    const selectedIsEmpty = useTasksSelector((s) => s.selected === "");
 
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
-    const [encouragementCount, setEncouragementCount] = useState(0);
-    const [congratulationCount, setCongratulationCount] = useState(0);
     const [showWorkspaceSelection, setShowWorkspaceSelection] = useState(false);
     const { focusMode, toggleFocusMode } = useFocusMode();
     const [refreshing, setRefreshing] = useState(false);
@@ -72,15 +70,7 @@ const Home = (props: Props) => {
     const { fetchKudosData } = useKudos();
 
     const insets = useSafeAreaInsets();
-    const safeAsync = useSafeAsync();
     const { setIsDrawerOpen } = useDrawer();
-
-    // Cache keys and duration
-    const KUDOS_CACHE_KEY = `kudos_cache_${user?._id || 'default'}`;
-    const CACHE_DURATION = 1 * 60 * 1000; // 1 minute
-
-    // Get recent workspaces and create a display list
-    const recentWorkspaceNames = getRecentWorkspaces();
 
     // Create a display list: recent workspaces first, then other workspaces up to 6 total
     const displayWorkspaces = React.useMemo(() => {
@@ -104,9 +94,9 @@ const Home = (props: Props) => {
                 const key = `${user._id}-quicksetup`;
                 const hasCompletedSetup = await AsyncStorage.getItem(key);
 
-                if (!hasCompletedSetup && selected === "") {
+                if (!hasCompletedSetup && selectedIsEmpty) {
                     setShowWorkspaceSelection(true);
-                } else if (selected !== "") {
+                } else if (!selectedIsEmpty) {
                     setShowWorkspaceSelection(false);
                 }
             } catch (error) {
@@ -115,104 +105,9 @@ const Home = (props: Props) => {
         };
 
         checkQuickSetup();
-    }, [user?._id, selected]);
+    }, [user?._id, selectedIsEmpty]);
 
-    useEffect(() => {
-        if (!user || !workspaces) return;
-        if (user._id === "") return;
-        const loadWorkspaces = async () => {
-            const { error } = await safeAsync(async () => {
-                await fetchWorkspaces();
-            });
-
-            if (error) {
-                console.error("Error fetching workspaces:", error);
-            }
-        };
-        console.log("loading workspaces");
-        loadWorkspaces();
-        // Keyed to the id, not the object — user identity churns on every auth
-        // refresh and was re-fetching workspaces (and re-rendering home) while idle
-    }, [user?._id]);
-
-    // Fetch encouragement and congratulation counts with caching
-    const fetchKudosCounts = React.useCallback(async (forceRefresh: boolean = false) => {
-        if (!user?._id) return;
-
-        // Check cache first if not forcing refresh
-        if (!forceRefresh) {
-            try {
-                const cached = await AsyncStorage.getItem(KUDOS_CACHE_KEY);
-                if (cached) {
-                    const { data, timestamp } = JSON.parse(cached);
-                    const now = Date.now();
-
-                    // Use cache if it's less than 5 minutes old
-                    if ((now - timestamp) < CACHE_DURATION) {
-                        console.log("Using cached kudos (age: " + Math.floor((now - timestamp) / 1000) + "s)");
-                        setEncouragementCount(data.encouragementCount);
-                        setCongratulationCount(data.congratulationCount);
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.error("Error reading kudos cache:", error);
-            }
-        }
-
-        // Fetch fresh data
-        try {
-            console.log("Fetching kudos via API");
-            const [encouragements, congratulations] = await Promise.all([
-                getEncouragementsAPI(),
-                getCongratulationsAPI(),
-            ]);
-
-            const unreadEncouragements = encouragements.filter((item) => !item.read).length;
-            const unreadCongratulations = congratulations.filter((item) => !item.read).length;
-
-            setEncouragementCount(unreadEncouragements);
-            setCongratulationCount(unreadCongratulations);
-
-            // Save to cache
-            try {
-                await AsyncStorage.setItem(KUDOS_CACHE_KEY, JSON.stringify({
-                    data: {
-                        encouragementCount: unreadEncouragements,
-                        congratulationCount: unreadCongratulations,
-                    },
-                    timestamp: Date.now()
-                }));
-                console.log("Kudos cached successfully");
-            } catch (error) {
-                console.error("Error caching kudos:", error);
-            }
-        } catch (error) {
-            console.error("Error fetching encouragement/congratulation counts:", error);
-        }
-    }, [user?._id, KUDOS_CACHE_KEY, CACHE_DURATION]);
-
-    // Invalidate kudos cache and trigger a fresh fetch
-    const invalidateKudosCache = React.useCallback(async () => {
-        try {
-            console.log("Invalidating kudos cache...");
-            await AsyncStorage.removeItem(KUDOS_CACHE_KEY);
-            // Immediately fetch fresh data after invalidation
-            await fetchKudosCounts(true);
-        } catch (error) {
-            console.error("Error invalidating kudos cache:", error);
-        }
-    }, [KUDOS_CACHE_KEY, fetchKudosCounts]);
-
-    useEffect(() => {
-        fetchKudosCounts();
-    }, [fetchKudosCounts]);
-
-    // Push notifications force-refresh these counts past the AsyncStorage TTL.
-    useEffect(
-        () => notificationRefreshEvents.subscribe(() => fetchKudosCounts(true)),
-        [fetchKudosCounts]
-    );
+    // Initial workspace load is kicked off by TasksProvider once the user id is known.
 
     // Refresh all data (for pull-to-refresh)
     const handleRefresh = React.useCallback(async () => {
@@ -223,7 +118,6 @@ const Home = (props: Props) => {
         try {
             await Promise.all([
                 fetchWorkspaces(true),
-                fetchKudosCounts(true),
                 fetchKudosData(),
                 // refresh() re-pulls the user so friends/kudos/rings counts (and the
                 // onboarding checks that read them) reflect actions taken elsewhere.
@@ -235,7 +129,7 @@ const Home = (props: Props) => {
         } finally {
             setRefreshing(false);
         }
-    }, [fetchWorkspaces, fetchKudosCounts, fetchKudosData, refresh, queryClient, capture]);
+    }, [fetchWorkspaces, fetchKudosData, refresh, queryClient, capture]);
 
     const drawerRef = useRef<DrawerLayout>(null);
 
@@ -247,13 +141,11 @@ const Home = (props: Props) => {
             setCreatingWorkspace={setCreatingWorkspace}
             showWorkspaceSelection={showWorkspaceSelection}
             setShowWorkspaceSelection={setShowWorkspaceSelection}
-            user={user}
+            userName={user?.display_name}
             ThemedColor={ThemedColor}
             insets={insets}
             focusMode={focusMode}
             toggleFocusMode={toggleFocusMode}
-            encouragementCount={encouragementCount}
-            congratulationCount={congratulationCount}
             displayWorkspaces={displayWorkspaces}
             fetchingWorkspaces={fetchingWorkspaces}
             workspaces={workspaces}
@@ -264,30 +156,31 @@ const Home = (props: Props) => {
     );
 };
 
-const HomeContent = ({
+const HomeContent = React.memo(function HomeContent({
     drawerRef,
     setIsDrawerOpen,
     creatingWorkspace,
     setCreatingWorkspace,
     showWorkspaceSelection,
     setShowWorkspaceSelection,
-    user,
+    userName,
     ThemedColor,
     insets,
     focusMode,
     toggleFocusMode,
-    encouragementCount,
-    congratulationCount,
     displayWorkspaces,
     fetchingWorkspaces,
     workspaces,
     setSelected,
     refreshing,
     onRefresh,
-}: any) => {
-    const { selected, showConfetti } = useTasks();
+}: any) {
+    const selected = useTasksSelector((s) => s.selected);
+    const showConfetti = useTasksSelector((s) => s.showConfetti);
     const [statsExpanded, setStatsExpanded] = useState(false);
     const headerDimAnim = useRef(new Animated.Value(1)).current;
+    // Shared with QuickCapture so focusing it blurs the header and dashboard on the UI thread
+    const captureFocus = useSharedValue(0);
     // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
     const { ready: drawerHintReady, done: drawerHintDone } = useFirstTouchHint("drawer_workspaces");
 
@@ -301,24 +194,40 @@ const HomeContent = ({
 
     const homeScrollRef = useRef<any>(null);
     const kudosRef = useRef<View>(null);
-    const menuRef = useRef<View>(null);
     const kudosOffsetRef = useRef<number>(0);
 
     // Guided first-touch home tour. Lives here (not in HomeScrollContent) so the
     // overlay can cover the whole home view — header included — and so the tabs
     // layout can hide the tab bar + FAB while it runs.
-    const tour = useHomeTour(homeScrollRef);
+    const rawTour = useHomeTour(homeScrollRef);
+    // useHomeTour returns a fresh object every render; pin it so the memoized home page can bail out
+    const tour = useMemo(
+        () => rawTour,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [
+            rawTour.active,
+            rawTour.stepIndex,
+            rawTour.activeSectionTop,
+            rawTour.start,
+            rawTour.next,
+            rawTour.skip,
+            rawTour.visibleUpTo,
+            rawTour.registerSection,
+            rawTour.onScroll,
+        ]
+    );
 
     // ── Unified pager: [Today, Home, Friends, ...workspaces] ──────────────
     // Page index is the source of truth; `selected` is kept in sync as the
     // external API. Home + Friends both map to selected "" (Friends is swipe-only).
-    type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string };
-    const HOME_INDEX = 1;
     const wsPages = React.useMemo(() => (workspaces as any[]).filter((w) => !w.isBlueprint), [workspaces]);
     const pages = React.useMemo<Page[]>(
         () => [{ key: "today" }, { key: "home" }, { key: "friends" }, ...wsPages.map((w) => ({ key: "workspace" as const, name: w.name }))],
         [wsPages]
     );
+    const pageKeys = React.useMemo(() => pages.map(pageKeyOf), [pages]);
+    const pageKinds = React.useMemo<PagerKind[]>(() => pages.map((p) => p.key), [pages]);
+    const pageColors = React.useMemo(() => [undefined, undefined, undefined, ...wsPages.map((w) => w.color)], [wsPages]);
     const selectedToIndex = React.useCallback(
         (sel: string) => {
             if (sel === "Today") return 0;
@@ -334,46 +243,84 @@ const HomeContent = ({
     );
 
     const pagerRef = useRef<PagerView>(null);
-    const isExternalChange = useRef(false);
     const [activeIndex, setActiveIndex] = useState(() => selectedToIndex(selected));
-    const [mountedIndices, setMountedIndices] = useState<Set<number>>(() => {
-        const idx = selectedToIndex(selected);
-        const s = new Set<number>();
-        for (let i = Math.max(0, idx - 1); i <= idx + 1; i++) s.add(i);
-        return s;
-    });
+    const activeKey = pageKeys[activeIndex];
 
-    // Keep adjacent pages mounted once visited.
+    // Mount window, tracked by page key so adding/removing workspaces doesn't shift it:
+    // the active page ±1 plus a couple of recently active pages. On first launch only
+    // the active page mounts; neighbours follow once the launch interactions settle.
+    const [neighboursReady, setNeighboursReady] = useState(false);
     useEffect(() => {
-        setMountedIndices((prev) => {
-            const next = new Set(prev);
-            for (let i = Math.max(0, activeIndex - 1); i <= Math.min(pages.length - 1, activeIndex + 1); i++) next.add(i);
-            return next.size !== prev.size ? next : prev;
-        });
-    }, [activeIndex, pages.length]);
+        const task = InteractionManager.runAfterInteractions(() => setNeighboursReady(true));
+        return () => task.cancel();
+    }, []);
+    const [recentKeys, setRecentKeys] = useState<string[]>(() => (activeKey ? [activeKey] : []));
+    useEffect(() => {
+        if (!activeKey) return;
+        setRecentKeys((prev) =>
+            prev[0] === activeKey ? prev : [activeKey, ...prev.filter((k) => k !== activeKey)].slice(0, 1 + EXTRA_RECENT_PAGES)
+        );
+    }, [activeKey]);
+    const mountedKeys = useMemo(() => {
+        const keys = new Set(recentKeys);
+        if (activeKey) keys.add(activeKey);
+        if (neighboursReady) {
+            if (activeIndex > 0) keys.add(pageKeys[activeIndex - 1]);
+            if (activeIndex < pageKeys.length - 1) keys.add(pageKeys[activeIndex + 1]);
+        }
+        return keys;
+    }, [recentKeys, activeKey, activeIndex, pageKeys, neighboursReady]);
 
-    // External setSelected → move the pager. Skip when the current page already
-    // represents `selected` (home + friends both are ""), so friends isn't yanked.
+    const activeIndexRef = useRef(activeIndex);
+    activeIndexRef.current = activeIndex;
+
+    // External setSelected → move the pager. Compares against getSelected(), not the
+    // `selected` snapshot: the store publishes a render late, so right after a swipe or
+    // tap the snapshot still holds the old workspace and would drag the pager back to
+    // it (and, since Home + Friends share "", land a Friends tap on Home).
+    const { getSelected } = useTaskActions();
     useEffect(() => {
-        if (indexToSelected(activeIndex) === selected) return;
-        const target = selectedToIndex(selected);
-        isExternalChange.current = true;
+        const latest = getSelected();
+        // Home + Friends both are "", so friends isn't yanked.
+        if (indexToSelected(activeIndex) === latest) return;
+        const target = selectedToIndex(latest);
+        if (target === activeIndex) return;
+        activeIndexRef.current = target;
         setActiveIndex(target);
         pagerRef.current?.setPage(target);
-    }, [selected, activeIndex, indexToSelected, selectedToIndex]);
+    }, [selected, activeIndex, indexToSelected, selectedToIndex, getSelected]);
 
+    const goToPage = useCallback(
+        (pos: number) => {
+            activeIndexRef.current = pos;
+            setActiveIndex(pos);
+            const sel = indexToSelected(pos);
+            if (sel !== getSelected()) setSelected(sel);
+        },
+        [indexToSelected, getSelected, setSelected]
+    );
+
+    // The native page is the source of truth: follow it immediately.
     const onPageSelected = React.useCallback(
         (e: { nativeEvent: { position: number } }) => {
             const pos = e.nativeEvent.position;
-            setActiveIndex(pos);
-            if (isExternalChange.current) {
-                isExternalChange.current = false;
-                return;
-            }
-            const sel = indexToSelected(pos);
-            if (sel !== selected) setSelected(sel);
+            if (pos === activeIndexRef.current) return;
+            // Dot taps and external changes set the index up front, so this only ticks on swipes.
+            hapticSelect();
+            goToPage(pos);
         },
-        [indexToSelected, selected, setSelected]
+        [goToPage]
+    );
+
+    // Update the index + selection directly rather than waiting on onPageSelected:
+    // setPage alone didn't always emit it, so a first tap could be dropped.
+    const onDotPress = useCallback(
+        (i: number) => {
+            if (i === activeIndexRef.current) return;
+            goToPage(i);
+            pagerRef.current?.setPage(i);
+        },
+        [goToPage]
     );
 
     // Full-screen swipe + focus-mode intro tour. Waits out both the scroll
@@ -391,7 +338,93 @@ const HomeContent = ({
     useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
 
     const isHome = activeIndex === HOME_INDEX;
-    const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === 2;
+    const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === FRIENDS_INDEX;
+
+    // Drawer content only tracks the selection while it's being shown, so it doesn't
+    // re-render on every swipe while closed.
+    const [drawerLive, setDrawerLive] = useState(false);
+    const closeDrawer = useCallback(() => drawerRef.current?.closeDrawer(), [drawerRef]);
+    const renderNavigationView = useCallback(
+        () => <Drawer close={closeDrawer} live={drawerLive} />,
+        [closeDrawer, drawerLive]
+    );
+    const onDrawerStateChanged = useCallback((state: string) => {
+        if (state !== "Idle") setDrawerLive(true);
+    }, []);
+    const onDrawerOpen = useCallback(() => {
+        setIsDrawerOpen(true);
+        drawerHintDone();
+    }, [setIsDrawerOpen, drawerHintDone]);
+    const onDrawerClose = useCallback(() => {
+        setIsDrawerOpen(false);
+        setDrawerLive(false);
+    }, [setIsDrawerOpen]);
+    const closeWorkspaceSelection = useCallback(() => setShowWorkspaceSelection(false), [setShowWorkspaceSelection]);
+
+    const onSettingsPress = useCallback(() => router.push("/(logged-in)/(tabs)/(profile)/settings"), []);
+    const onCreateWorkspace = useCallback(() => setCreatingWorkspace(true), [setCreatingWorkspace]);
+    const onKudosLayout = useCallback((layout: { y: number }) => {
+        kudosOffsetRef.current = layout.y;
+    }, []);
+
+    const homePage = useMemo(
+        () => (
+            <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
+                <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
+                    <WelcomeHeader
+                        userName={userName}
+                        ThemedColor={ThemedColor}
+                        onSettingsPress={onSettingsPress}
+                        focusMode={focusMode}
+                        onToggleFocusMode={toggleFocusMode}
+                    />
+                    {/* Reaches up under the status bar and out to the screen edges */}
+                    <CaptureBlur
+                        progress={captureFocus}
+                        style={{ top: -insets.top, left: -HORIZONTAL_PADDING, right: -HORIZONTAL_PADDING }}
+                    />
+                </Animated.View>
+                <HomeScrollContent
+                    workspaces={workspaces}
+                    displayWorkspaces={displayWorkspaces}
+                    fetchingWorkspaces={fetchingWorkspaces}
+                    onWorkspaceSelect={setSelected}
+                    onCreateWorkspace={onCreateWorkspace}
+                    drawerRef={drawerRef}
+                    ThemedColor={ThemedColor}
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    scrollRef={homeScrollRef}
+                    tour={tour}
+                    captureFocus={captureFocus}
+                    kudosRef={kudosRef}
+                    kudosOffsetRef={kudosOffsetRef}
+                    onKudosLayout={onKudosLayout}
+                    onStatsExpandChange={setStatsExpanded}
+                />
+            </View>
+        ),
+        [
+            insets.top,
+            headerDimAnim,
+            userName,
+            ThemedColor,
+            onSettingsPress,
+            focusMode,
+            toggleFocusMode,
+            workspaces,
+            displayWorkspaces,
+            fetchingWorkspaces,
+            setSelected,
+            onCreateWorkspace,
+            drawerRef,
+            refreshing,
+            onRefresh,
+            tour,
+            onKudosLayout,
+            captureFocus,
+        ]
+    );
 
     return (
         <DrawerLayout
@@ -399,20 +432,18 @@ const HomeContent = ({
             hideStatusBar
             edgeWidth={50}
             drawerWidth={DRAWER_WIDTH}
-            renderNavigationView={() => <Drawer close={drawerRef.current?.closeDrawer} />}
+            renderNavigationView={renderNavigationView}
             drawerPosition="left"
             drawerType="front"
-            onDrawerOpen={() => {
-                setIsDrawerOpen(true);
-                drawerHintDone();
-            }}
-            onDrawerClose={() => setIsDrawerOpen(false)}>
+            onDrawerStateChanged={onDrawerStateChanged}
+            onDrawerOpen={onDrawerOpen}
+            onDrawerClose={onDrawerClose}>
             {/* Shared modals */}
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
             <WorkspaceSelectionBottomSheet
                 isVisible={showWorkspaceSelection}
-                onClose={() => setShowWorkspaceSelection(false)}
-                onComplete={() => setShowWorkspaceSelection(false)}
+                onClose={closeWorkspaceSelection}
+                onComplete={closeWorkspaceSelection}
             />
 
             <ThemedView style={styles.container}>
@@ -435,57 +466,25 @@ const HomeContent = ({
                         scrollEnabled={!tour.active}
                         onPageSelected={onPageSelected}>
                         {pages.map((page, index) => {
-                            const key = page.key === "workspace" ? `ws-${page.name}` : page.key;
-                            const mounted = mountedIndices.has(index);
+                            const key = pageKeys[index];
+                            const mounted = mountedKeys.has(key);
                             return (
                                 <View key={key} style={{ flex: 1 }} collapsable={false}>
                                     {!mounted ? null : page.key === "home" ? (
-                                        <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
-                                            <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
-                                                <WelcomeHeader
-                                                    userName={user?.display_name}
-                                                    ThemedColor={ThemedColor}
-                                                    onSettingsPress={() => router.push("/(logged-in)/(tabs)/(profile)/settings")}
-                                                    focusMode={focusMode}
-                                                    onToggleFocusMode={toggleFocusMode}
-                                                />
-                                            </Animated.View>
-                                            <View style={{ height: 8 }} />
-                                            <HomeScrollContent
-                                                encouragementCount={encouragementCount}
-                                                congratulationCount={congratulationCount}
-                                                workspaces={workspaces}
-                                                displayWorkspaces={displayWorkspaces}
-                                                fetchingWorkspaces={fetchingWorkspaces}
-                                                onWorkspaceSelect={setSelected}
-                                                onCreateWorkspace={() => setCreatingWorkspace(true)}
-                                                drawerRef={drawerRef}
-                                                ThemedColor={ThemedColor}
-                                                refreshing={refreshing}
-                                                onRefresh={onRefresh}
-                                                scrollRef={homeScrollRef}
-                                                tour={tour}
-                                                kudosRef={kudosRef}
-                                                kudosOffsetRef={kudosOffsetRef}
-                                                onKudosLayout={(layout) => {
-                                                    kudosOffsetRef.current = layout.y;
-                                                }}
-                                                onStatsExpandChange={setStatsExpanded}
-                                            />
-                                        </View>
+                                        homePage
                                     ) : page.key === "today" ? (
-                                        <Daily embedded />
+                                        <MemoDaily embedded />
                                     ) : page.key === "friends" ? (
-                                        <FriendsContent />
+                                        <FriendsContent isActive={index === activeIndex} />
                                     ) : (
-                                        <WorkspaceContent workspaceName={page.name} />
+                                        <MemoWorkspaceContent workspaceName={page.name} />
                                     )}
                                 </View>
                             );
                         })}
                     </PagerView>
 
-                    <PagerDots count={pages.length} activeIndex={activeIndex} onDotPress={(i) => pagerRef.current?.setPage(i)} />
+                    <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} />
 
                     {/* Guided tour overlay — covers the whole home view (header included) */}
                     {isHome && (
@@ -514,7 +513,7 @@ const HomeContent = ({
             </ThemedView>
         </DrawerLayout>
     );
-};
+});
 
 export default Home;
 

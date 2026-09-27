@@ -281,6 +281,11 @@ func (s *Service) notifiableRecipients(ctx context.Context, ownerIDs []primitive
 	filter := bson.M{
 		"_id":        bson.M{"$in": ownerIDs},
 		"push_token": bson.M{"$gt": ""},
+		// Contact-joins notifications are on by default, so only an explicit
+		// false opts a user out. Matching on $ne: false keeps accounts whose
+		// documents predate the preference — decoding those into the bool
+		// field would yield false and silently exclude them.
+		"settings.notifications.contact_joins": bson.M{"$ne": false},
 	}
 	// Only what the filter and the push itself need — this runs over hundreds
 	// of users and there is no reason to pull password/refresh_token along.
@@ -304,9 +309,6 @@ func (s *Service) notifiableRecipients(ctx context.Context, ownerIDs []primitive
 	eligible := make(map[primitive.ObjectID]types.User, len(users))
 	for _, user := range users {
 		if connected[user.ID] {
-			continue
-		}
-		if !user.Settings.Notifications.ContactJoins {
 			continue
 		}
 		eligible[user.ID] = user
@@ -358,6 +360,9 @@ func (s *Service) sendJoinNotifications(ctx context.Context, joiner types.User, 
 				"type":    "contact_joined",
 				"user_id": joiner.ID.Hex(),
 			},
+			SenderName:   joiner.DisplayName,
+			SenderAvatar: joiner.ProfilePicture,
+			SenderID:     joiner.ID.Hex(),
 		})
 	}
 

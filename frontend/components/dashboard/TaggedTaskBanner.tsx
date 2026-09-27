@@ -3,7 +3,7 @@ import { View, TouchableOpacity } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { Screen } from "@/components/modals/CreateModal";
 import { respondToTaskTagAPI } from "@/api/task";
@@ -29,7 +29,7 @@ const AVATAR_SIZE = 32;
 const TaggedTaskBannerRow = ({ tag }: { tag: PendingTaggedTask }) => {
     const ThemedColor = useThemeColor();
     const queryClient = useQueryClient();
-    const { loadTaskData, setCopySourceTaskId } = useTaskCreation();
+    const { loadTaskData, setCopySourceTaskId } = useTaskCreationActions();
     const { openModal } = useCreateModal();
 
     const respond = useMutation({

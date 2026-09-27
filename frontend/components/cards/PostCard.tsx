@@ -21,7 +21,6 @@ import { toggleReaction, updatePost, deletePost, reportPost } from "@/api/post";
 import { blockUser } from "@/api/connection";
 import { useAlert } from "@/contexts/AlertContext";
 import { useQueryClient } from '@tanstack/react-query';
-import { useTasks } from "@/contexts/tasksContext";
 import type { components } from "@/api/generated/types";
 import { showToast } from "@/utils/showToast";
 import * as Clipboard from 'expo-clipboard';
@@ -120,7 +119,6 @@ const PostCard = React.memo(({
     const queryClient = useQueryClient();
     const router = useRouter();
     const screenWidth = useMemo(() => Dimensions.get("window").width, []);
-    const { fetchWorkspaces } = useTasks();
     const { user } = useAuth();
 
     // Alert state

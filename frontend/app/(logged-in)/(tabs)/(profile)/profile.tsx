@@ -19,7 +19,6 @@ import ParallaxBanner from "@/components/ui/ParallaxBanner";
 import ProfileEdit from "@/components/profile/ProfileEdit";
 import ProfileGlow from "@/components/profile/ProfileGlow";
 import CompleteProfileCard from "@/components/profile/CompleteProfileCard";
-import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import ProfileSongWidget from "@/components/profile/song/ProfileSongWidget";
 import { components } from "@/api/generated/types";
 import { useTasks } from "@/contexts/tasksContext";
@@ -123,9 +122,6 @@ export default function Profile() {
                 <ProfileSongWidget />
 
                 <CompleteProfileCard />
-
-                {/* Productivity score lives on the profile; rings moved to home */}
-                <ProductivityRingsCard variant="score" />
 
                 <MemoriesCalendar userId={user?._id} />
 

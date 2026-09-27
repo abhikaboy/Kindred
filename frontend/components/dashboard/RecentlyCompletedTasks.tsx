@@ -1,25 +1,21 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getCompletedTasksAPI } from "@/api/task";
 import { Camera, CheckCircle, Confetti } from "phosphor-react-native";
 import { formatDistanceToNow } from "date-fns";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTasksSelector } from "@/contexts/tasksContext";
+import { useRecentCompletedTasks } from "@/hooks/useCompletedThisWeek";
 import SectionHeader from "./SectionHeader";
 
 const RecentlyCompletedTasks = ({ onToggleVisibility }: { onToggleVisibility?: () => void }) => {
     const router = useRouter();
     const ThemedColor = useThemeColor();
     const styles = useStyles(ThemedColor);
-    const { workspaces } = useTasks();
+    const workspaces = useTasksSelector((s) => s.workspaces);
 
-    const { data, isLoading } = useQuery({
-        queryKey: ["completedTasks", "recent"],
-        queryFn: () => getCompletedTasksAPI(1, 10),
-    });
+    const { data, isLoading } = useRecentCompletedTasks();
 
     const getCategoryInfo = (categoryId: string) => {
         if (!categoryId) return { name: "Unknown Category" };
@@ -34,7 +30,7 @@ const RecentlyCompletedTasks = ({ onToggleVisibility }: { onToggleVisibility?: (
 
     // Filter out tasks that have already been posted and enrich with category names
     const recentTasks = React.useMemo(() => {
-        const filtered = data?.tasks?.filter((task: any) => !task.posted).slice(0, 3) || [];
+        const filtered = data?.tasks?.slice(0, 10).filter((task: any) => !task.posted).slice(0, 3) || [];
         return filtered.map((task: any) => ({
             ...task,
             categoryName: task.categoryName || getCategoryInfo(task.categoryID).name,

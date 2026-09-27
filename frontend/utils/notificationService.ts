@@ -26,6 +26,19 @@ export async function registerForPushNotificationsAsync() {
     let token;
 
     if (!Device.isDevice) {
+        // A simulator cannot register with APNs, so there is no Expo push token
+        // to fetch and the caller still gets null. Permission itself can be
+        // granted though, and `xcrun simctl push` delivers payloads locally —
+        // which is the only way to exercise notification rendering (including
+        // the communication-notification extension) without a device. Ask in
+        // development so that testing is possible, then stop before the token
+        // call that would fail.
+        if (__DEV__) {
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status !== "granted") {
+                await Notifications.requestPermissionsAsync();
+            }
+        }
         console.log("Must use physical device for Push Notifications");
         return null;
     }

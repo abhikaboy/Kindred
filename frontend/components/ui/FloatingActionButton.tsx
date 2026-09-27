@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, Animated, Keyboard, Modal, TouchableOpacity } from "react-native";
-import { House } from "phosphor-react-native";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { StyleSheet, Animated, Keyboard, Modal } from "react-native";
 import * as Haptics from "expo-haptics";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSegments, router } from "expo-router";
@@ -17,11 +16,15 @@ import { FABBackdrop } from "./fab/FABBackdrop";
 import { TaskSelectionView } from "./fab/TaskSelectionView";
 import { WorkspaceSelectionView } from "./fab/WorkspaceSelectionView";
 import { PostTaskSelectionView } from "./fab/PostTaskSelectionView";
-import { VoiceInputOverlay } from "./fab/VoiceInputOverlay";
 import { useFABAnimations } from "./fab/useFABAnimations";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+
+// Only loaded the first time voice input is opened
+const VoiceInputOverlay = React.lazy(() =>
+    import("./fab/VoiceInputOverlay").then((m) => ({ default: m.VoiceInputOverlay }))
+);
 
 // Clears the floating glass pill: paddingBottom (insets.bottom + 8) + 64px pill + 8px gap.
 const TAB_BAR_HEIGHT = 80;
@@ -36,7 +39,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const segments = useSegments();
-    const { workspaces, selected, setSelected } = useTasks();
+    const workspaces = useTasksSelector((s) => s.workspaces);
+    const selected = useTasksSelector((s) => s.selected);
+    const { setSelected } = useTaskActions();
     const { openModal } = useCreateModal();
     const { capture } = useAnalytics();
 
@@ -66,6 +71,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
     // State
     const [fabState, setFabState] = useState<FABState>("collapsed");
     const [workspaceModalVisible, setWorkspaceModalVisible] = useState(false);
+    // Mount the sheet on first open and keep it mounted so its dismiss animation can run
+    const [workspaceModalMounted, setWorkspaceModalMounted] = useState(false);
+    if (workspaceModalVisible && !workspaceModalMounted) setWorkspaceModalMounted(true);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [voiceOverlayVisible, setVoiceOverlayVisible] = useState(false);
     const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
@@ -76,7 +84,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 
     // Detect if we're on the feed tab
     const isOnFeedTab = segments?.some(segment => segment === "(feed)");
-    const isOnTaskTab = segments?.some(segment => segment === "(task)");
 
     // Animations
     const animations = useFABAnimations();
@@ -342,16 +349,20 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 
     return (
         <>
-            <CreateWorkspaceBottomSheetModal
-                visible={workspaceModalVisible}
-                setVisible={setWorkspaceModalVisible}
-            />
+            {workspaceModalMounted && (
+                <CreateWorkspaceBottomSheetModal
+                    visible={workspaceModalVisible}
+                    setVisible={setWorkspaceModalVisible}
+                />
+            )}
 
             {voiceOverlayVisible && (
                 <Modal transparent animationType="none" statusBarTranslucent>
-                    <VoiceInputOverlay
-                        onClose={() => setVoiceOverlayVisible(false)}
-                    />
+                    <Suspense fallback={null}>
+                        <VoiceInputOverlay
+                            onClose={() => setVoiceOverlayVisible(false)}
+                        />
+                    </Suspense>
                 </Modal>
             )}
 
@@ -486,23 +497,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
                         style={{ position: "absolute", right: 16, bottom: bottomOffset + 76 }}
                     />
                 )}
-                {/* Outlined home button above the FAB — returns to the home dashboard
-                    from a workspace/Today view (replaces the old hamburger). */}
-                {visible &&
-                    fabState === "collapsed" &&
-                    !keyboardVisible &&
-                    isOnTaskTab &&
-                    selected !== "" && (
-                        <TouchableOpacity
-                            onPress={() => setSelected("")}
-                            activeOpacity={0.85}
-                            style={[
-                                styles.homeButton,
-                                { bottom: bottomOffset + 68, borderColor: ThemedColor.tertiary, backgroundColor: ThemedColor.background },
-                            ]}>
-                            <House size={24} color={ThemedColor.text} weight="bold" />
-                        </TouchableOpacity>
-                    )}
                 <FABButton
                     isOpen={fabState !== "collapsed"}
                     onPress={handleFABPress}
@@ -519,22 +513,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ visi
 };
 
 const styles = StyleSheet.create({
-    homeButton: {
-        position: "absolute",
-        right: 16,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        borderWidth: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 4,
-    },
     menuContainer: {
         position: "absolute",
         left: 16,

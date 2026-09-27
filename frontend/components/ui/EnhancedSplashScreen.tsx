@@ -6,11 +6,14 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 interface EnhancedSplashScreenProps {
     onAnimationComplete?: () => void;
     minDisplayTime?: number;
+    /** Hold the splash until true (e.g. auth resolved), then fade out. */
+    ready?: boolean;
 }
 
 export default function EnhancedSplashScreen({
     onAnimationComplete,
-    minDisplayTime = 1200
+    minDisplayTime = 0,
+    ready = true,
 }: EnhancedSplashScreenProps) {
     const ThemedColor = useThemeColor();
     const [animationComplete, setAnimationComplete] = useState(false);
@@ -18,6 +21,7 @@ export default function EnhancedSplashScreen({
     const scaleAnim = useRef(new Animated.Value(0.5)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const fadeOutAnim = useRef(new Animated.Value(1)).current;
+    const mountedAt = useRef(Date.now()).current;
 
     useEffect(() => {
         // Logo entrance
@@ -35,8 +39,12 @@ export default function EnhancedSplashScreen({
                 useNativeDriver: true,
             }),
         ]).start();
+    }, []);
 
-        // Fade out the whole screen after minDisplayTime
+    // Fade out the whole screen once ready (and after minDisplayTime, if set)
+    useEffect(() => {
+        if (!ready) return;
+        const remaining = Math.max(0, minDisplayTime - (Date.now() - mountedAt));
         const timer = setTimeout(() => {
             Animated.timing(fadeOutAnim, {
                 toValue: 0,
@@ -46,10 +54,10 @@ export default function EnhancedSplashScreen({
             }).start(() => {
                 setAnimationComplete(true);
             });
-        }, minDisplayTime);
+        }, remaining);
 
         return () => clearTimeout(timer);
-    }, [minDisplayTime]);
+    }, [ready, minDisplayTime]);
 
     useEffect(() => {
         if (animationComplete && onAnimationComplete) {

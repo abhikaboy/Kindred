@@ -14,6 +14,12 @@ const HOME_GLOW: GlowBlob[] = [
 ];
 
 /** Static two-hue ambient glow behind the task tab. known-app inspired; deliberately faint. */
-export default function WorkspaceGlow({ variant = "workspace" }: { variant?: "workspace" | "home" }) {
-    return <GlowBackground blobs={variant === "home" ? HOME_GLOW : WORKSPACE_GLOW} />;
+function WorkspaceGlow({ variant = "workspace" }: { variant?: "workspace" | "home" }) {
+    return variant === "home" ? (
+        <GlowBackground blobs={HOME_GLOW} light="blobs" />
+    ) : (
+        <GlowBackground blobs={WORKSPACE_GLOW} light="blobs" />
+    );
 }
+
+export default React.memo(WorkspaceGlow);

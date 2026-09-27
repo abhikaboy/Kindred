@@ -15,6 +15,8 @@ type Props = {
     enableDynamicSizing?: boolean;
     enableContentPanningGesture?: boolean;
     keyboardBehavior?: "interactive" | "extend" | "fillParent";
+    /** Keeps the sheet below this offset (e.g. the status bar) when it grows for the keyboard. */
+    topInset?: number;
     footerComponent?: React.FC<BottomSheetFooterProps>;
 };
 
@@ -81,6 +83,7 @@ const DefaultModal = memo((props: Props) => {
             handleIndicatorStyle={{ backgroundColor: ThemedColor.text }}
             backgroundStyle={{ backgroundColor: ThemedColor.background }}
             keyboardBehavior={props.keyboardBehavior ?? "interactive"}
+            topInset={props.topInset}
             keyboardBlurBehavior="restore"
             android_keyboardInputMode="adjustResize"
             enableContentPanningGesture={props.enableContentPanningGesture}

@@ -18,7 +18,7 @@ import { Category } from "@/components/category";
 import Entypo from "@expo/vector-icons/Entypo";
 import * as SMS from "expo-sms";
 import { getBlueprintById, deleteBlueprintToBackend } from "@/api/blueprint";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useAlert } from "@/contexts/AlertContext";
 import AnimatedTabs, { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
@@ -250,7 +250,7 @@ export default function BlueprintDetailScreen() {
         handleSubscribe,
         setSelectedBlueprint,
     } = useBlueprints();
-    const { fetchWorkspaces } = useTasks();
+    const { fetchWorkspaces } = useTaskActions();
     const { user } = useAuth();
     const { showAlert } = useAlert();
 
@@ -318,7 +318,8 @@ export default function BlueprintDetailScreen() {
     const onSubscribePress = async () => {
         setIsLoading(true);
         await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
-        await fetchWorkspaces();
+        // Subscribing clones categories server-side, so the tree has to be refetched
+        fetchWorkspaces(true).catch((error) => console.error("Workspace refresh failed:", error));
         setIsSubscribed(true);
         setIsLoading(false);
     };

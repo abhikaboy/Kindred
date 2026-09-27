@@ -1,61 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
+import { useCallback, useSyncExternalStore } from "react";
+import {
+    getWorkspaceViewState,
+    subscribeWorkspaceViewState,
+    WorkspaceFilters,
+    WorkspaceSortOption,
+    WorkspaceState,
+} from "@/hooks/workspaceViewStateStore";
 
-export type WorkspaceFilters = {
-    priorities: { low: boolean; medium: boolean; high: boolean };
-    deadlines: { overdue: boolean; today: boolean; thisWeek: boolean; future: boolean; none: boolean };
-};
-
-export type WorkspaceSortOption = "task-count" | "alphabetical" | "due-date" | "start-date" | "priority" | null;
-
-export type WorkspaceState = {
-    filters: WorkspaceFilters | null;
-    sort: WorkspaceSortOption;
-    sortDirection: "ascending" | "descending" | null;
-    isPublic: boolean;
-    groupByDay: boolean;
-};
+export type { WorkspaceFilters, WorkspaceSortOption, WorkspaceState };
 
 export const useWorkspaceState = (workspaceName: string) => {
-    const [state, setState] = useState<WorkspaceState>({
-        filters: null,
-        sort: null,
-        sortDirection: null,
-        isPublic: true,
-        groupByDay: false,
-    });
-
-    const loadState = useCallback(async () => {
-        try {
-            const [filtersData, sortData, sortDirectionData, visibilityData, groupData] = await Promise.all([
-                AsyncStorage.getItem(`workspace-filters-${workspaceName}`),
-                AsyncStorage.getItem(`workspace-sort-${workspaceName}`),
-                AsyncStorage.getItem(`workspace-sort-direction-${workspaceName}`),
-                AsyncStorage.getItem(`workspace-visibility-${workspaceName}`),
-                AsyncStorage.getItem(`workspace-group-${workspaceName}`),
-            ]);
-
-            const filters = filtersData ? JSON.parse(filtersData) : null;
-            const sort = sortData ? (sortData as WorkspaceSortOption) : null;
-            const sortDirection = sortDirectionData ? (sortDirectionData as "ascending" | "descending") : null;
-            const isPublic = visibilityData !== null ? visibilityData === "public" : true;
-            const groupByDay = groupData === "day";
-
-            setState({ filters, sort, sortDirection, isPublic, groupByDay });
-        } catch (error) {
-            console.error("Error loading workspace state:", error);
-        }
-    }, [workspaceName]);
-
-    useEffect(() => {
-        loadState();
-
-        const unsubscribe = workspaceStateEvents.subscribe((changed) => {
-            if (changed === workspaceName) loadState();
-        });
-        return unsubscribe;
-    }, [workspaceName, loadState]);
+    // Keyed by name, so the first frame after a workspace switch already shows
+    // that workspace's settings (never the previous one's).
+    const state = useSyncExternalStore(subscribeWorkspaceViewState, () => getWorkspaceViewState(workspaceName));
 
     const getFilterDescription = (): string | null => {
         if (!state.filters) return null;
@@ -112,7 +69,7 @@ export const useWorkspaceState = (workspaceName: string) => {
         return sortLabel;
     };
 
-    const getStateDescription = (): string => {
+    const getStateDescription = useCallback((): string => {
         const parts: string[] = [];
 
         // Always include visibility status
@@ -136,7 +93,8 @@ export const useWorkspaceState = (workspaceName: string) => {
 
 
         return parts.join(" • ");
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state]);
 
     return {
         state,

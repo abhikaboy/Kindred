@@ -18,7 +18,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import DataCard from "@/components/task/DataCard";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useTasks } from "@/contexts/tasksContext";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import ConditionalView from "@/components/ui/ConditionalView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -74,7 +74,7 @@ export default function Task() {
     const { name, id, categoryId, action } = useLocalSearchParams();
     let ThemedColor = useThemeColor();
     const { getTaskById, updateTask, removeFromCategory } = useTasks();
-    const { loadTaskData } = useTaskCreation();
+    const { loadTaskData } = useTaskCreationActions();
     const { openModal, visible: modalVisible, modalConfig } = useCreateModal();
     const [isRunning, setIsRunning] = useState(false);
     const [time, setTime] = useState(new Date());

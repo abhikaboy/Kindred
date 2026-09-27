@@ -1,14 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { getCompletedTasksAPI, PaginatedCompletedTasksResponse } from "@/api/task";
+import { getCompletedTasksAPI } from "@/api/task";
 import { useMemo } from "react";
 import { Task } from "@/api/types";
 import { startOfWeek } from "date-fns";
 
-export function useCompletedThisWeek() {
-    const { data, isLoading, refetch } = useQuery({
-        queryKey: ["completedTasks", "thisWeek"],
+// Server returns completed tasks newest-first, so one page of 100 also covers
+// any smaller "most recent N" view — share it instead of fetching twice.
+export const COMPLETED_TASKS_KEY = ["completedTasks", "recent", 100] as const;
+
+export function useRecentCompletedTasks() {
+    return useQuery({
+        queryKey: COMPLETED_TASKS_KEY,
         queryFn: () => getCompletedTasksAPI(1, 100),
     });
+}
+
+export function useCompletedThisWeek() {
+    const { data, isLoading, refetch } = useRecentCompletedTasks();
 
     const completedThisWeek = useMemo(() => {
         if (!data?.tasks) return [];

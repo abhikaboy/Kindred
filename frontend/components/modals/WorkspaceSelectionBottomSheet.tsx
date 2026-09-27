@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { createWorkspace } from "@/api/workspace";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import * as PhosphorIcons from "phosphor-react-native";
 import { showToast } from "@/utils/showToast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -36,7 +36,7 @@ export default function WorkspaceSelectionBottomSheet({
 }: WorkspaceSelectionBottomSheetProps) {
     const ThemedColor = useThemeColor();
     const styles = stylesheet(ThemedColor);
-    const { addWorkspace, fetchWorkspaces } = useTasks();
+    const { addWorkspace, addToWorkspace, doesWorkspaceExist } = useTaskActions();
     const { user } = useAuth();
 
     const [selectedWorkspaces, setSelectedWorkspaces] = useState<string[]>([]);
@@ -95,12 +95,17 @@ export default function WorkspaceSelectionBottomSheet({
                     const categoryForWorkspace = {
                         id: response.id,
                         name: response.name,
+                        tags: response.tags ?? [],
                         tasks: (response.tasks ?? []).map(task => ({
                             ...task,
                             recurDetails: task.recurDetails || { every: 0 }
                         }))
                     };
-                    addWorkspace(workspaceName, categoryForWorkspace as any, opt?.icon, opt?.color);
+                    if (doesWorkspaceExist(workspaceName)) {
+                        addToWorkspace(workspaceName, categoryForWorkspace as any);
+                    } else {
+                        addWorkspace(workspaceName, categoryForWorkspace as any, opt?.icon, opt?.color);
+                    }
                     return { success: true, workspaceName };
                 } catch (error) {
                     console.error(`Failed to create workspace ${workspaceName}:`, error);
@@ -122,9 +127,6 @@ export default function WorkspaceSelectionBottomSheet({
                 showToast(`Failed to create ${failCount} workspace${failCount > 1 ? 's' : ''}`, "danger");
             }
 
-            // Refresh workspaces list
-            await fetchWorkspaces();
-
             // Mark quick setup as complete
             await markQuickSetupComplete();
 
@@ -137,7 +139,7 @@ export default function WorkspaceSelectionBottomSheet({
         } finally {
             setIsCreating(false);
         }
-    }, [selectedWorkspaces, addWorkspace, fetchWorkspaces, handleDismiss, onComplete, markQuickSetupComplete]);
+    }, [selectedWorkspaces, addWorkspace, addToWorkspace, doesWorkspaceExist, handleDismiss, onComplete, markQuickSetupComplete]);
 
     const handleSkip = useCallback(async () => {
         // Mark quick setup as complete even when skipping

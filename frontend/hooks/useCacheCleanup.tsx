@@ -1,12 +1,18 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
-import { cleanupOldCaches, getStorageStats } from '@/utils/cacheCleanup';
+import { AppState, AppStateStatus, InteractionManager } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cleanupOldCaches } from '@/utils/cacheCleanup';
+import { getCachedUser } from '@/hooks/useAuth';
 import { createLogger } from '@/utils/logger';
 
 const logger = createLogger('CacheCleanup');
 
 const DEFAULT_PATTERNS = ['cache_', 'workspaces_cache_', 'temp_'];
 const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+const STARTUP_DELAY_MS = 10 * 1000;
+// Deliberately doesn't match any cleanup pattern
+export const LAST_CLEANUP_KEY = 'lastCacheCleanupAt';
 
 export function useCacheCleanup(options?: {
     maxAgeMs?: number;
@@ -17,31 +23,50 @@ export function useCacheCleanup(options?: {
     const patterns = options?.patterns ?? DEFAULT_PATTERNS;
     const enableLogging = options?.enableLogging ?? false;
 
-    const lastCleanupRef = useRef<number>(0);
-    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+    // In-memory mirror of the persisted last-run time; null until read from storage
+    const lastCleanupRef = useRef<number | null>(null);
+    const runningRef = useRef(false);
 
     const stablePatterns = useMemo(() => patterns, [patterns.join(',')]);
 
     useEffect(() => {
         const runCleanup = async () => {
-            const now = Date.now();
-            if (now - lastCleanupRef.current < CLEANUP_INTERVAL) return;
+            if (runningRef.current) return;
+            runningRef.current = true;
+            try {
+                if (lastCleanupRef.current === null) {
+                    const stored = await AsyncStorage.getItem(LAST_CLEANUP_KEY);
+                    lastCleanupRef.current = stored ? Number(stored) || 0 : 0;
+                }
+                const now = Date.now();
+                if (now - lastCleanupRef.current < CLEANUP_INTERVAL) return;
 
-            if (enableLogging) {
-                const statsBefore = await getStorageStats();
-                logger.info('Cache cleanup - Before:', statsBefore);
-            }
+                // The active user's caches are kept fresh by the app; skip them rather than parse them
+                const userId = (await getCachedUser())?._id;
+                const skipKeys = userId ? stablePatterns.map((pattern) => `${pattern}${userId}`) : [];
+                if (userId) skipKeys.push(`kudos_cache_${userId}`);
 
-            await cleanupOldCaches(maxAgeMs, stablePatterns);
-            lastCleanupRef.current = now;
+                const removed = await cleanupOldCaches(maxAgeMs, stablePatterns, skipKeys);
+                lastCleanupRef.current = now;
+                await AsyncStorage.setItem(LAST_CLEANUP_KEY, String(now));
 
-            if (enableLogging) {
-                const statsAfter = await getStorageStats();
-                logger.info('Cache cleanup - After:', statsAfter);
+                if (enableLogging) {
+                    logger.info('Cache cleanup complete', { removed });
+                }
+            } catch (error) {
+                logger.error('Cache cleanup failed', error);
+            } finally {
+                runningRef.current = false;
             }
         };
 
-        runCleanup();
+        // Keep it off the startup path
+        let interaction: { cancel: () => void } | null = null;
+        const timer = setTimeout(() => {
+            interaction = InteractionManager.runAfterInteractions(() => {
+                runCleanup();
+            });
+        }, STARTUP_DELAY_MS);
 
         const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
             if (nextAppState === 'active') {
@@ -50,6 +75,8 @@ export function useCacheCleanup(options?: {
         });
 
         return () => {
+            clearTimeout(timer);
+            interaction?.cancel();
             subscription.remove();
         };
     }, [maxAgeMs, stablePatterns, enableLogging]);

@@ -17,7 +17,7 @@ import {
     BottomSheetScrollView,
     useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 
 type Props = {
     visible: boolean;
@@ -69,7 +69,7 @@ const CreateModal = (props: Props) => {
 
     // Only the setter: subscribing to taskName here re-rendered the whole sheet on
     // every keystroke. Each screen reads what it needs from the context directly.
-    const { setCopySourceTaskId } = useTaskCreation();
+    const { setCopySourceTaskId } = useTaskCreationActions();
 
     // Reference to the bottom sheet modal
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);

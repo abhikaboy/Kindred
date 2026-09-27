@@ -1,5 +1,5 @@
-import { useTasks } from "@/contexts/tasksContext";
-import React, { useCallback, useRef } from "react";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
+import React, { useCallback, useMemo, useRef } from "react";
 import { View, TouchableOpacity, ScrollView, Keyboard, Platform, Image, StyleProp, ViewStyle } from "react-native";
 import SelectedIndicator from "../SelectedIndicator";
 import { ThemedText } from "../ThemedText";
@@ -31,19 +31,32 @@ import {
     CheckCircle
 } from "phosphor-react-native";
 
-export const Drawer = ({ close }) => {
+type DrawerProps = {
+    close?: () => void;
+    // False while the drawer is fully closed: the (heavy) content then keeps showing the
+    // last selection instead of re-rendering on every pager swipe.
+    live?: boolean;
+};
+
+export const Drawer = React.memo(({ close: closeProp, live = true }: DrawerProps) => {
+    const close = useCallback(() => closeProp?.(), [closeProp]);
     const ThemedColor = useThemeColor();
-    const { workspaces, selected, setSelected } = useTasks();
+    const workspaces = useTasksSelector((s) => s.workspaces);
+    const liveSelected = useTasksSelector((s) => s.selected);
+    const { setSelected } = useTaskActions();
+    const shownSelectedRef = useRef(liveSelected);
+    if (live) shownSelectedRef.current = liveSelected;
+    const selected = shownSelectedRef.current;
     const pathname = usePathname();
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
     const [focusedWorkspace, setFocusedWorkspace] = React.useState("");
     const [showQuickImport, setShowQuickImport] = React.useState(false);
 
-    const handleCreateBlueprint = () => {
+    const handleCreateBlueprint = useCallback(() => {
         close();
         router.push("/blueprint/create");
-    };
+    }, [close]);
 
     return (
         <DrawerContent
@@ -64,9 +77,9 @@ export const Drawer = ({ close }) => {
             handleCreateBlueprint={handleCreateBlueprint}
         />
     );
-};
+});
 
-const DrawerContent = ({
+const DrawerContent = React.memo(({
     close,
     ThemedColor,
     workspaces,
@@ -129,6 +142,17 @@ const DrawerContent = ({
     }, [close]);
 
     const currentSelected = getSelectedItem();
+
+    const { personalWorkspaces, blueprintWorkspaces } = useMemo(() => {
+        const personal = workspaces
+            .filter((workspace) => !workspace.isBlueprint)
+            .map((workspace) => ({ workspace, taskCount: pendingWorkspaceTaskCount(workspace.categories) }))
+            .sort((a, b) => b.taskCount - a.taskCount);
+        return {
+            personalWorkspaces: personal,
+            blueprintWorkspaces: workspaces.filter((workspace) => workspace.isBlueprint),
+        };
+    }, [workspaces]);
 
     return (
         <View style={styles(ThemedColor).drawerContainer}>
@@ -250,15 +274,7 @@ const DrawerContent = ({
                         <User size={16} color={ThemedColor.caption} weight="regular" />
                         <ThemedText type="subtitle_subtle">PERSONAL WORKSPACES</ThemedText>
                     </View>
-                    {workspaces
-                        .filter((workspace) => !workspace.isBlueprint)
-                        .slice()
-                        .sort(
-                            (a, b) =>
-                                pendingWorkspaceTaskCount(b.categories) - pendingWorkspaceTaskCount(a.categories)
-                        )
-                        .map((workspace) => {
-                            const taskCount = pendingWorkspaceTaskCount(workspace.categories);
+                    {personalWorkspaces.map(({ workspace, taskCount }) => {
                             return (
                                 <WorkspaceDrawerItem
                                     onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)", workspace.name)}
@@ -290,9 +306,7 @@ const DrawerContent = ({
                         </View>
                     </View>
                 </TouchableOpacity>
-                {workspaces
-                    .filter((workspace) => workspace.isBlueprint)
-                    .map((workspace) => (
+                {blueprintWorkspaces.map((workspace) => (
                         <DrawerItem
                             title={workspace.name}
                             selected={currentSelected}
@@ -335,7 +349,7 @@ const DrawerContent = ({
             </ScrollView>
         </View>
     );
-};
+});
 
 type DrawerItemProps = {
     title: string;

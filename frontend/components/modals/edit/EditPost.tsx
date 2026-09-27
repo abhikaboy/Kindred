@@ -6,7 +6,7 @@ import Modal from "react-native-modal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { useCreateModal } from "@/contexts/createModalContext";
-import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { Screen } from "../CreateModal";
 import { Task } from "@/api/types";
 import BottomMenuModal from "../BottomMenuModal";
@@ -29,7 +29,7 @@ const EditPost = (props: Props) => {
 
     const { categories, removeFromCategory } = useTasks();
     const { openModal } = useCreateModal();
-    const { loadTaskData } = useTaskCreation();
+    const { loadTaskData } = useTaskCreationActions();
 
     const editPost = async () => {
         if (!props.task) return;

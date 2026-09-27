@@ -136,8 +136,12 @@ func DefaultKudosPolicy() KudosPolicy {
 type KudosRecipient struct {
 	ID          primitive.ObjectID
 	DisplayName string
-	Settings    types.UserSettings
-	Location    *time.Location
+	// ProfilePicture is the avatar shown on the prompt. The actor on a kudos
+	// suggestion is the friend the kudos would be FOR, not the person being
+	// prompted, so this is the recipient's picture rather than the sender's.
+	ProfilePicture string
+	Settings       types.UserSettings
+	Location       *time.Location
 	// PeakStartHour is the local hour their peak window opens, from the
 	// `peak-hours` fact. Nil when we do not know, which must not block anything.
 	PeakStartHour *int

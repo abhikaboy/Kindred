@@ -1,12 +1,13 @@
 import { Tabs, useRouter, useSegments } from "expo-router";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { usePathname } from "expo-router";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { useFriendRequestCount } from "@/hooks/useFriendRequests";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 import { LiquidGlassTabBar } from "@/components/ui/LiquidGlassTabBar";
@@ -38,7 +39,12 @@ export default function TabLayout() {
     const segments = useSegments();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
-    const { startTodayTasks, dueTodayTasks, windowTasks, setSelected, selected } = useTasks();
+    const { setSelected } = useTaskActions();
+    // Narrow subscriptions: a swipe between workspaces shouldn't re-render the tab layout
+    const isSelectedToday = useTasksSelector((s) => s.selected === "Today");
+    const todayTaskCount = useTasksSelector(
+        (s) => s.startTodayTasks.length + s.dueTodayTasks.length + s.windowTasks.length
+    );
     const currentIndex = useTabIndex();
     const { capture } = useAnalytics();
     const isOnFeedTab = segments?.some((segment) => segment === "(feed)");
@@ -66,11 +72,6 @@ export default function TabLayout() {
         }
     }, [currentIndex]);
 
-    // Calculate total tasks for today (shown as a badge on the Tasks tab)
-    const todayTaskCount = useMemo(() => {
-        return startTodayTasks.length + dueTodayTasks.length + windowTasks.length;
-    }, [startTodayTasks, dueTodayTasks, windowTasks]);
-
     // Pending friend requests (red badge on the Search tab)
     const friendRequestCount = useFriendRequestCount();
 
@@ -80,7 +81,7 @@ export default function TabLayout() {
     const hideFABScreens = ["/daily", "/review", "/settings"];
     // Reached the calendar/list page by swiping the home pager (not a route change,
     // so pathname stays put) — hide the tab bar but keep the FAB + home button up.
-    const isSwipedToToday = isOnTaskTab && selected === "Today";
+    const isSwipedToToday = isOnTaskTab && isSelectedToday;
 
     const baseHideTabBar =
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
@@ -95,29 +96,43 @@ export default function TabLayout() {
     const shouldHideFAB =
         baseHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
 
+    const badges = useMemo(
+        () => ({
+            "(task)": todayTaskCount > 0 ? todayTaskCount : undefined,
+            "(search)": friendRequestCount > 0 ? friendRequestCount : undefined,
+        }),
+        [todayTaskCount, friendRequestCount]
+    );
+    const badgeColors = useMemo(() => ({ "(search)": ThemedColor.error }), [ThemedColor.error]);
+    const renderTabBar = useCallback(
+        (props: BottomTabBarProps) => (
+            <LiquidGlassTabBar
+                {...props}
+                badges={badges}
+                badgeColors={badgeColors}
+                visible={!shouldHideTabBar}
+                switcherTabName="(task)"
+            />
+        ),
+        [badges, badgeColors, shouldHideTabBar]
+    );
+    const screenOptions = useMemo(
+        () => ({
+            headerShown: false,
+            tabBarHideOnKeyboard: true,
+            animation: "fade" as const,
+            sceneStyle: {
+                backgroundColor: ThemedColor.background,
+            },
+        }),
+        [ThemedColor.background]
+    );
+
     return (
         <>
             <Tabs
-                tabBar={(props) => (
-                    <LiquidGlassTabBar
-                        {...props}
-                        badges={{
-                            "(task)": todayTaskCount > 0 ? todayTaskCount : undefined,
-                            "(search)": friendRequestCount > 0 ? friendRequestCount : undefined,
-                        }}
-                        badgeColors={{ "(search)": ThemedColor.error }}
-                        visible={!shouldHideTabBar}
-                        switcherTabName="(task)"
-                    />
-                )}
-                screenOptions={{
-                    headerShown: false,
-                    tabBarHideOnKeyboard: true,
-                    animation: "fade",
-                    sceneStyle: {
-                        backgroundColor: ThemedColor.background,
-                    },
-                }}>
+                tabBar={renderTabBar}
+                screenOptions={screenOptions}>
                 <Tabs.Screen
                     name="(task)"
                     // Re-tapping the Tasks tab while already on it drops back to home.

@@ -13,6 +13,7 @@ import {
     reactToCongratulationAPI,
 } from "@/api/congratulation";
 import { createLogger } from "@/utils/logger";
+import { useOptionalAuth } from "@/hooks/useAuth";
 
 const logger = createLogger('KudosContext');
 
@@ -97,6 +98,7 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [sentLoading, setSentLoading] = useState(false);
     const seenKudosIds = useRef<Set<string>>(new Set());
+    const userId = useOptionalAuth()?.user?._id;
 
     const unreadEncouragementCount = useMemo(
         () => encouragements.filter((e) => !e.read).length,
@@ -213,18 +215,21 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
         }
     }, [congratulations]);
 
+    // Wait for a signed-in user; these endpoints are authenticated
     useEffect(() => {
+        if (!userId) return;
         fetchKudosData();
-    }, [fetchKudosData]);
+    }, [fetchKudosData, userId]);
 
     // Refresh kudos when the app returns to the foreground so unread badges
     // stay current. Silent: no loading flip, so consumers never flash spinners.
     useEffect(() => {
+        if (!userId) return;
         const sub = AppState.addEventListener("change", (status) => {
             if (status === "active") fetchKudosData({ silent: true });
         });
         return () => sub.remove();
-    }, [fetchKudosData]);
+    }, [fetchKudosData, userId]);
 
     const value = useMemo<KudosContextType>(() => ({
         encouragements,

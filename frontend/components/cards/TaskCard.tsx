@@ -9,8 +9,7 @@ import { Task } from "@/api/types";
 import { isTaskEncouraged, isTaskWatched, encouragedCardColors } from "./encouragedTask";
 import EncouragerAvatars from "./EncouragerAvatars";
 import Svg, { Circle, Rect, Path } from "react-native-svg";
-import ConditionalView from "../ui/ConditionalView";
-import { useTasks } from "@/contexts/tasksContext";
+import { useTaskActions } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
@@ -28,7 +27,7 @@ import { setWorkingAPI, markInProgressAPI } from "@/api/task";
 import * as Haptics from "expo-haptics";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
-import { useDragOptional } from "@/contexts/dragContext";
+import { useDragActionsOptional } from "@/contexts/dragContext";
 
 export const PRIORITY_MAP = {
     0: "none",
@@ -98,8 +97,9 @@ const TaskCard = ({
     const [showCongratulateModal, setShowCongratulateModal] = useState(false);
     const ThemedColor = useThemeColor();
     const encouraged = isTaskEncouraged(task) || isTaskWatched(task);
-    const encColors = encouragedCardColors(ThemedColor.primary);
-    const { setTask, updateTask } = useTasks();
+    const encColors = useMemo(() => encouragedCardColors(ThemedColor.primary), [ThemedColor.primary]);
+    // Actions only — subscribing to task state here would re-render every card on any change.
+    const { setTask, updateTask } = useTaskActions();
     const isMounted = useRef(true);
     const lastTapRef = useRef<number>(0);
     const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,11 +108,11 @@ const TaskCard = ({
     const movedRef = useRef(false);
     const { capture } = useAnalytics();
 
-    // Alert state
-    const [alertVisible, setAlertVisible] = useState(false);
-    const [alertTitle, setAlertTitle] = useState("");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
+    // Alert state (null = closed)
+    const [alert, setAlert] = useState<{ title: string; message: string; buttons: AlertButton[] } | null>(null);
+    const setAlertVisible = useCallback((visible: boolean) => {
+        if (!visible) setAlert(null);
+    }, []);
 
     // Block a second tap from stacking a duplicate detail screen (the bug that
     // forced two back-swipes). Cleared on focus so the card reopens after return.
@@ -206,10 +206,11 @@ const TaskCard = ({
         if (encourage) {
             if (!encouragementConfig?.receiverId || encouragementConfig.receiverId.trim() === "") {
                 console.error("Cannot show encourage modal: missing receiverId");
-                setAlertTitle("Error");
-                setAlertMessage("Unable to send encouragement at this time. Please try again later.");
-                setAlertButtons([{ text: "OK", style: "default" }]);
-                setAlertVisible(true);
+                setAlert({
+                    title: "Error",
+                    message: "Unable to send encouragement at this time. Please try again later.",
+                    buttons: [{ text: "OK", style: "default" }],
+                });
                 return;
             }
             setShowEncourageModal(true);
@@ -217,10 +218,11 @@ const TaskCard = ({
         if (congratulate) {
             if (!congratulationConfig?.receiverId || congratulationConfig.receiverId.trim() === "") {
                 console.error("Cannot show congratulate modal: missing receiverId");
-                setAlertTitle("Error");
-                setAlertMessage("Unable to send congratulation at this time. Please try again later.");
-                setAlertButtons([{ text: "OK", style: "default" }]);
-                setAlertVisible(true);
+                setAlert({
+                    title: "Error",
+                    message: "Unable to send congratulation at this time. Please try again later.",
+                    buttons: [{ text: "OK", style: "default" }],
+                });
                 return;
             }
             setShowCongratulateModal(true);
@@ -263,7 +265,7 @@ const TaskCard = ({
     };
 
     // ── Drag-and-drop gesture (only active when DragProvider is present) ──
-    const drag = useDragOptional();
+    const drag = useDragActionsOptional();
     const draggable = Boolean(drag) && Boolean(redirect) && !task?.isPhantom && Boolean(task);
 
     const onLift = useCallback((absX: number, absY: number) => {
@@ -384,14 +386,14 @@ const TaskCard = ({
                     {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                 </View>
                 <View style={styles.indicatorRow}>
-                    <ConditionalView condition={encouraged}>
+                    {encouraged && (
                         <EncouragerAvatars
                             encouragements={task?.encouragements ?? []}
                             taggedUsers={task?.taggedUsers ?? []}
                             ringColor={ThemedColor.background}
                             placeholderColor={ThemedColor.primary}
                         />
-                    </ConditionalView>
+                    )}
                     {onPostPress && (
                         <TouchableOpacity
                             testID="task-card-post-button"
@@ -403,37 +405,37 @@ const TaskCard = ({
                             <Camera size={20} color={ThemedColor.caption} weight="regular" />
                         </TouchableOpacity>
                     )}
-                    <ConditionalView condition={!encourage}>
-                        <ConditionalView condition={!!task?.integration}>
-                            {getIntegrationIcon(task?.integration, ThemedColor.caption)}
-                        </ConditionalView>
-                        {/* Encouraged tasks show a sparkle in place of the priority dot */}
-                        {encouraged ? (
-                            <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
-                        ) : (
-                            <View
-                                style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
-                            />
-                        )}
-                    </ConditionalView>
-                    <ConditionalView condition={encourage}>
+                    {!encourage && (
+                        <>
+                            {!!task?.integration && getIntegrationIcon(task?.integration, ThemedColor.caption)}
+                            {/* Encouraged tasks show a sparkle in place of the priority dot */}
+                            {encouraged ? (
+                                <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
+                            ) : (
+                                <View
+                                    style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                />
+                            )}
+                        </>
+                    )}
+                    {encourage && (
                         <Sparkle
                             size={24}
                             color="#9333EA"
                             weight="regular"
                         />
-                    </ConditionalView>
-                    <ConditionalView condition={congratulate}>
+                    )}
+                    {congratulate && (
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <Path
                                 d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z"
                                 fill="#FFD700"
                             />
                         </Svg>
-                    </ConditionalView>
+                    )}
                 </View>
             </View>
-            <ConditionalView condition={!encourage && !!(timeChip || task?.recurring)}>
+            {!encourage && !!(timeChip || task?.recurring) && (
                 <View style={styles.chipRow}>
                     {timeChip && (
                         <TaskChip
@@ -444,7 +446,7 @@ const TaskCard = ({
                             backgroundColor={encouraged ? "transparent" : undefined}
                         />
                     )}
-                    <ConditionalView condition={task?.recurring}>
+                    {!!task?.recurring && (
                         <TaskChip
                             Icon={Repeat}
                             label={
@@ -455,9 +457,9 @@ const TaskCard = ({
                             color={encouraged ? encColors.secondaryText : undefined}
                             backgroundColor={encouraged ? "transparent" : undefined}
                         />
-                    </ConditionalView>
+                    )}
                 </View>
-            </ConditionalView>
+            )}
         </TouchableOpacity>
     );
 
@@ -500,13 +502,13 @@ const TaskCard = ({
                 />
             )}
 
-            {alertVisible && (
+            {alert && (
                 <CustomAlert
-                    visible={alertVisible}
+                    visible={true}
                     setVisible={setAlertVisible}
-                    title={alertTitle}
-                    message={alertMessage}
-                    buttons={alertButtons}
+                    title={alert.title}
+                    message={alert.message}
+                    buttons={alert.buttons}
                 />
             )}
         </>
@@ -519,6 +521,7 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
     return (
         prevProps.content === nextProps.content &&
         prevProps.id === nextProps.id &&
+        prevProps.categoryId === nextProps.categoryId &&
         prevProps.priority === nextProps.priority &&
         prevProps.value === nextProps.value &&
         prevProps.redirect === nextProps.redirect &&
@@ -536,7 +539,10 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.task?.integration === nextProps.task?.integration &&
         prevProps.task?.isPhantom === nextProps.task?.isPhantom &&
         prevProps.task?.nextGenerated === nextProps.task?.nextGenerated &&
-        prevProps.task?.workingOnSince === nextProps.task?.workingOnSince
+        prevProps.task?.workingOnSince === nextProps.task?.workingOnSince &&
+        // Drive the encouraged/watched styling and avatars
+        prevProps.task?.encouragements === nextProps.task?.encouragements &&
+        prevProps.task?.taggedUsers === nextProps.task?.taggedUsers
     );
 });
 

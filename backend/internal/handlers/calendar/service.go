@@ -2,9 +2,11 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/config"
@@ -1226,6 +1228,37 @@ type HealthCheckResult struct {
 	Status       HealthStatus
 	Message      string
 	Duration     time.Duration
+	// AccountDeleted is set when the provider reports that the upstream account
+	// no longer exists. Such a connection can never recover — re-authenticating
+	// is impossible — so the caller should remove it rather than keep retrying.
+	AccountDeleted bool
+}
+
+// IsAccountDeletedError reports whether an OAuth error means the upstream
+// account is gone for good, as opposed to a token that merely needs re-auth.
+// Google signals this as an "invalid_grant" with an "Account has been deleted"
+// description; the same code is also used for revoked or expired grants, which
+// ARE recoverable, so the description has to be checked too.
+func IsAccountDeletedError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var retrieveErr *oauth2.RetrieveError
+	if errors.As(err, &retrieveErr) {
+		if retrieveErr.ErrorCode != "invalid_grant" {
+			return false
+		}
+		if strings.Contains(strings.ToLower(retrieveErr.ErrorDescription), "account has been deleted") {
+			return true
+		}
+		// Some responses carry the description only in the raw body.
+		return strings.Contains(strings.ToLower(string(retrieveErr.Body)), "account has been deleted")
+	}
+
+	// Fallback for errors that reached us already flattened to text.
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "invalid_grant") && strings.Contains(msg, "account has been deleted")
 }
 
 // CheckConnectionHealth verifies a single calendar connection is still functional.
@@ -1260,11 +1293,13 @@ func (s *Service) CheckConnectionHealth(ctx context.Context, connection *Calenda
 		result.Status = HealthStatusBroken
 		result.Message = fmt.Sprintf("token refresh failed: %v", err)
 		result.Duration = time.Since(start)
+		result.AccountDeleted = IsAccountDeletedError(err)
 
 		slog.Error("Heartbeat: token refresh failed",
 			"connection_id", connection.ID,
 			"account", connection.ProviderAccountID,
 			"error", err,
+			"account_deleted", result.AccountDeleted,
 			"duration_ms", result.Duration.Milliseconds())
 		return result
 	}
