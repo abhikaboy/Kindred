@@ -1,13 +1,14 @@
-import { View, Text, Dimensions, Image, TouchableOpacity, Animated } from "react-native";
+import { View, Dimensions, Animated } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Colors } from "@/constants/Colors";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { ErrorBoundaryProps, useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { OnboardModal } from "@/components/modals/OnboardModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { AuthHeroCard } from "@/components/auth/AuthHeroCard";
+import { AuthCtaBlock } from "@/components/auth/AuthCtaBlock";
 
 type Props = {};
 
@@ -67,10 +68,6 @@ const login = (props: Props) => {
         ]).start();
     }, []);
 
-    // Landing page is always light mode
-    const heroCardBg = Colors.dark.background;
-    const heroCardText = Colors.dark.text;
-
     return (
         <View
             style={{
@@ -79,59 +76,7 @@ const login = (props: Props) => {
                 flex: 1,
                 flexDirection: "column",
             }}>
-            <View
-                style={{
-                    backgroundColor: heroCardBg,
-                    height: Dimensions.get("screen").height * 0.4,
-                    width: "95%",
-                    alignSelf: "center",
-                    borderRadius: 56,
-                    marginTop: 12,
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: Dimensions.get("screen").height * 0.06,
-                }}>
-                <ThemedText
-                    type="titleFraunces"
-                    style={{
-                        color: heroCardText,
-                        fontWeight: 600,
-                        letterSpacing: -2,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        textAlign: "center",
-                        marginTop: Dimensions.get("screen").height * 0.02,
-                        fontSize: 64,
-                    }}>
-                    kindred
-                </ThemedText>
-                <View style={{
-                    paddingHorizontal: 48,
-                    marginTop: 8,
-                }}>
-                    <ThemedText
-                        type="lightBody"
-                        style={{
-                            color: heroCardText,
-                            fontFamily: "Outfit",
-                            fontSize: 16,
-                            textAlign: "center",
-                            lineHeight: 22,
-                            opacity: 0.8,
-                        }}>
-                        Get more done with the people who keep you going.
-                    </ThemedText>
-                </View>
-                <View style={{ marginTop: 12 }}>
-                    <Image
-                        source={require("../assets/images/Checkmark.png")}
-                        style={{
-                            width: 50,
-                            resizeMode: "contain",
-                        }}
-                    />
-                </View>
-            </View>
+            <AuthHeroCard />
             <View
                 style={{
                     paddingHorizontal: HORIZONTAL_PADDING,
@@ -172,50 +117,20 @@ const login = (props: Props) => {
                             setTimeout(() => setVisible(true), 300);
                         }}
                     />
-                    <PrimaryButton
-                        testID="join-kindred-btn"
-                        title="Join Kindred"
-                        onPress={() => {
+                    <AuthCtaBlock
+                        onJoin={() => {
                             setMode("register");
                             // Force a state cycle so the useEffect always fires,
                             // even if visible is stuck true from a stale dismiss
                             setVisible(false);
                             setTimeout(() => setVisible(true), 50);
                         }}
-                        style={{
-                            shadowColor: ThemedColor.primary,
-                            shadowOffset: { width: 0, height: 6 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 10,
-                            elevation: 6,
+                        onLogin={() => {
+                            setMode("login");
+                            setVisible(false);
+                            setTimeout(() => setVisible(true), 50);
                         }}
                     />
-                    <ThemedText style={{ textAlign: "center", alignItems: "center" }}>
-                        <Text style={{ color: Colors.light.text }}>
-                            Already have an account?{" "}
-                        </Text>
-
-                        <TouchableOpacity
-                            testID="login-link"
-                            style={{
-                                alignSelf: "center",
-                                alignItems: "center",
-                            }}
-                            onPress={() => {
-                                setMode("login");
-                                setVisible(false);
-                                setTimeout(() => setVisible(true), 50);
-                            }}>
-                            <Text
-                                style={{
-                                    fontWeight: 800,
-                                    color: ThemedColor.primary,
-                                    marginBottom: -3,
-                                }}>
-                                Log in
-                            </Text>
-                        </TouchableOpacity>
-                    </ThemedText>
                 </Animated.View>
             </View>
         </View>

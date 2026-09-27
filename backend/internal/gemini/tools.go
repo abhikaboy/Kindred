@@ -347,6 +347,14 @@ func InitTools(g *genkit.Genkit, collections map[string]*mongo.Collection, unspl
 			totalTasks := len(output.Tasks) + len(output.SlimTasks)
 			totalTemplates := len(output.Templates) + len(output.SlimTemplates)
 			output.Total = totalTasks + totalTemplates
+			// Newer Gemini models keep re-querying an ambiguous empty result instead of moving on
+			if output.Total == 0 {
+				if hasQuery {
+					output.Message = "No active tasks match this query. Do not call getUserActiveTasks again for it; treat the task as not found."
+				} else {
+					output.Message = "This user has no active tasks. Do not call getUserActiveTasks again."
+				}
+			}
 			fmt.Printf("🔍 getUserActiveTasks called for user: %s (query=%q), found %d tasks + %d templates\n",
 				input.UserID, input.Query, totalTasks, totalTemplates)
 			return output, nil

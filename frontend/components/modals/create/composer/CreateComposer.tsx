@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+    Animated,
     Keyboard,
     KeyboardAvoidingView,
     Modal,
@@ -48,6 +49,7 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { SectionTitle } from "@/components/dashboard/SectionHeader";
 import CachedImage from "@/components/CachedImage";
 import { VoiceWaveform } from "@/components/ui/VoiceWaveform";
+import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import { CaptureBackdrop, ON_DARK, ON_DARK_MUTED, SOFT_ENTER, STAGE } from "@/components/capture/CaptureStage";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
@@ -88,7 +90,18 @@ interface Props {
     setVisible: (visible: boolean) => void;
     /** Opens filed here; AUTO_CATEGORY_ID or nothing opens on Auto Sort. */
     categoryId?: string;
+    /**
+     * Onboarding: the caller types the title in, so it's read-only with no
+     * keyboard, no "@", mic, suggestions or picker; the category stays on
+     * categoryId, and a cursor points at Add once the title settles.
+     */
+    tutorial?: boolean;
+    /** Tutorial only: workspace name shown on the locked destination card. */
+    tutorialWorkspaceLabel?: string;
 }
+
+// The caller's typewriter ticks faster than this, so a pause means it's done
+const TUTORIAL_TITLE_SETTLE_MS = 600;
 
 /**
  * Full-screen create stage, built from quick capture's parts. Bottom up: the
@@ -100,7 +113,7 @@ interface Props {
  * Task fields live in the task-creation context, so the old sheet's
  * screens drop straight into the panels.
  */
-export default function CreateComposer({ visible, setVisible, categoryId }: Props) {
+export default function CreateComposer({ visible, setVisible, categoryId, tutorial = false, tutorialWorkspaceLabel }: Props) {
     const ThemedColor = useThemeColor();
     // Follows the app's theme setting (applied through Appearance)
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
@@ -173,13 +186,16 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
         "Personal";
 
     const {
-        token,
+        token: typedToken,
         onChangeText,
         onSelectionChange,
         replace: replaceToken,
     } = useInlineTrigger(taskName, setTaskName, ["@"]);
+    // The tutorial title is typed for the user, so it never opens "@"
+    const token = tutorial ? null : typedToken;
 
-    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(taskName);
+    // An empty title keeps the tutorial free of guesses: no schedule, priority or category
+    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(tutorial ? "" : taskName);
     const guess = fuzzy?.categoryId ? options.find((o) => o.id === fuzzy.categoryId) : undefined;
 
     const { listening, volume, toggleMic, cancelListening, voiceModeRef } = useVoiceCapture({
@@ -262,6 +278,8 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
         });
         const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () => {
             setKeyboardUp(false);
+            // The tutorial never raises the keyboard, so a hide there is never "never mind"
+            if (tutorial) return;
             if (!shown || voiceModeRef.current || panelRef.current || pickingRef.current) return;
             if (nameRef.current.trim() === "") close();
         });
@@ -299,7 +317,10 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
 
     // ─── Actions ─────────────────────────────────────────────────────────────
 
-    const focusTitle = () => inputRef.current?.focus();
+    // The tutorial title is read-only; focusing it would only raise a keyboard
+    const focusTitle = () => {
+        if (!tutorial) inputRef.current?.focus();
+    };
 
     const openPanel = (next: Panel) => {
         if (panelRef.current === next) {
@@ -519,22 +540,24 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
                 }}
                 accessibilityLabel="Difficulty"
             />
-            <PropertyChip
-                tier="extra"
-                Icon={UsersThree}
-                state={state(taggedUsers.length > 0)}
-                label={
-                    taggedUsers.length === 1
-                        ? formatHandle(taggedUsers[0].handle)
-                        : taggedUsers.length > 1
-                          ? `${taggedUsers.length} friends`
-                          : undefined
-                }
-                active={panel === "tag"}
-                onPress={() => openPanel("tag")}
-                onClear={() => setTaggedUsers([])}
-                accessibilityLabel="Tag friends"
-            />
+            {!tutorial && (
+                <PropertyChip
+                    tier="extra"
+                    Icon={UsersThree}
+                    state={state(taggedUsers.length > 0)}
+                    label={
+                        taggedUsers.length === 1
+                            ? formatHandle(taggedUsers[0].handle)
+                            : taggedUsers.length > 1
+                              ? `${taggedUsers.length} friends`
+                              : undefined
+                    }
+                    active={panel === "tag"}
+                    onPress={() => openPanel("tag")}
+                    onClear={() => setTaggedUsers([])}
+                    accessibilityLabel="Tag friends"
+                />
+            )}
             <PropertyChip
                 tier="extra"
                 Icon={Plugs}
@@ -589,7 +612,28 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
     // Second only to Add: a full-width card rather than a chip
     const destinationSurface = [styles.destination, { backgroundColor: STAGE.fillRaised }];
     const destination = category ?? guess;
-    const destinationRow = picking ? (
+    const destinationRow = tutorial ? (
+        // Locked to the category the tutorial just made: shown, not pickable
+        <View
+            style={destinationSurface}
+            accessible
+            accessibilityLabel={category ? `Category: ${category.name}` : "Category"}>
+            <View
+                style={[
+                    styles.destinationBar,
+                    { backgroundColor: category ? categoryColor(category, "dark") : STAGE.muted },
+                ]}
+            />
+            <View style={styles.fill}>
+                <ThemedText type="default" numberOfLines={1} style={styles.destinationName}>
+                    {category ? category.name : "Category"}
+                </ThemedText>
+                <ThemedText type="caption" numberOfLines={1} style={styles.pillCaption}>
+                    {tutorialWorkspaceLabel ?? (category?.workspace || "Category")}
+                </ThemedText>
+            </View>
+        </View>
+    ) : picking ? (
         <View style={[destinationSurface, { borderColor: STAGE.faint }]}>
             <MagnifyingGlass size={16} color={STAGE.muted} />
             <TextInput
@@ -747,6 +791,34 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
         }
     })();
 
+    // ─── Tutorial cursor ─────────────────────────────────────────────────────
+
+    // Points at Add once the typed-in title stops changing, with a gentle pulse
+    const [showCursor, setShowCursor] = useState(false);
+    const cursorPulse = useRef(new Animated.Value(1)).current;
+    useEffect(() => {
+        if (!tutorial || !mounted || !hasTitle) {
+            setShowCursor(false);
+            return;
+        }
+        const t = setTimeout(() => setShowCursor(true), TUTORIAL_TITLE_SETTLE_MS);
+        return () => clearTimeout(t);
+    }, [tutorial, mounted, hasTitle, taskName]);
+    useEffect(() => {
+        if (!showCursor) return;
+        const pulse = Animated.loop(
+            Animated.sequence([
+                Animated.timing(cursorPulse, { toValue: 0.84, duration: 700, useNativeDriver: true }),
+                Animated.timing(cursorPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+            ])
+        );
+        pulse.start();
+        return () => {
+            pulse.stop();
+            cursorPulse.setValue(1);
+        };
+    }, [showCursor, cursorPulse]);
+
     const stackStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
         transform: [{ translateY: (1 - opacity.value) * 16 }],
@@ -757,9 +829,23 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
     const bottomGap = keyboardUp ? 12 : insets.bottom + 16;
     // What the space above the title holds right now; its key drives the soft fade
     const topBusy = picking || !!token || listening;
-    const topKey = topBusy ? null : (panel ?? "quickset");
+    // The tutorial skips the one-question prompts: nothing competes with Add
+    const topKey = topBusy ? null : (panel ?? (tutorial ? null : "quickset"));
 
     const rail = token?.char === "@" ? friendRail : chips;
+
+    const addButton = (
+        <PrimaryButton
+            title="Add"
+            onPress={submit}
+            disabled={!hasTitle}
+            style={{
+                ...styles.confirm,
+                shadowColor: ThemedColor.primary,
+                opacity: hasTitle ? 1 : 0.4,
+            }}
+        />
+    );
 
     return (
         <Modal
@@ -769,7 +855,7 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
             statusBarTranslucent
             onRequestClose={onRequestClose}
             // Focus once presented; autoFocus fires before the modal is on screen
-            onShow={() => inputRef.current?.focus()}>
+            onShow={focusTitle}>
             <CaptureBackdrop opacity={opacity} />
 
             <Pressable
@@ -845,7 +931,7 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
                             <CaretDown size={10} color={ON_DARK_MUTED} weight="bold" />
                         </TouchableOpacity>
 
-                        <Reanimated.View layout={ROW_TRANSITION}>
+                        <Reanimated.View layout={ROW_TRANSITION} pointerEvents={tutorial ? "none" : undefined}>
                             <TextInput
                                 ref={inputRef}
                                 multiline
@@ -858,7 +944,7 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
                                     if (panelRef.current) setPanel(null);
                                     if (pickingRef.current) setPicking(false);
                                 }}
-                                editable={!listening}
+                                editable={!listening && !tutorial}
                                 placeholder={listening ? "Listening..." : "Add a task"}
                                 placeholderTextColor={ON_DARK_MUTED}
                                 returnKeyType="done"
@@ -901,31 +987,42 @@ export default function CreateComposer({ visible, setVisible, categoryId }: Prop
                             )}
                             {!picking && (
                                 <>
-                                    <TouchableOpacity
-                                        onPress={toggleMic}
-                                        hitSlop={8}
-                                        accessibilityLabel={listening ? "Stop listening" : "Add by voice"}
-                                        style={[
-                                            styles.iconButton,
-                                            { backgroundColor: STAGE.fillRaised },
-                                            listening && { backgroundColor: STAGE.selected },
-                                        ]}>
-                                        {listening ? (
-                                            <Stop size={16} color={STAGE.onSelected} weight="fill" />
-                                        ) : (
-                                            <Microphone size={18} color={STAGE.text} weight="bold" />
-                                        )}
-                                    </TouchableOpacity>
-                                    <PrimaryButton
-                                        title="Add"
-                                        onPress={submit}
-                                        disabled={!hasTitle}
-                                        style={{
-                                            ...styles.confirm,
-                                            shadowColor: ThemedColor.primary,
-                                            opacity: hasTitle ? 1 : 0.4,
-                                        }}
-                                    />
+                                    {!tutorial && (
+                                        <TouchableOpacity
+                                            onPress={toggleMic}
+                                            hitSlop={8}
+                                            accessibilityLabel={listening ? "Stop listening" : "Add by voice"}
+                                            style={[
+                                                styles.iconButton,
+                                                { backgroundColor: STAGE.fillRaised },
+                                                listening && { backgroundColor: STAGE.selected },
+                                            ]}>
+                                            {listening ? (
+                                                <Stop size={16} color={STAGE.onSelected} weight="fill" />
+                                            ) : (
+                                                <Microphone size={18} color={STAGE.text} weight="bold" />
+                                            )}
+                                        </TouchableOpacity>
+                                    )}
+                                    {tutorial ? (
+                                        <View>
+                                            {addButton}
+                                            {showCursor && (
+                                                // Sits under Add, tip up at it; never takes a touch
+                                                <View pointerEvents="none" style={styles.tutorialCursor}>
+                                                    <TutorialCursor
+                                                        size={28}
+                                                        label="Tap add"
+                                                        bubbleLeft
+                                                        arrowScale={cursorPulse}
+                                                        labelStartDelay={200}
+                                                    />
+                                                </View>
+                                            )}
+                                        </View>
+                                    ) : (
+                                        addButton
+                                    )}
                                 </>
                             )}
                         </Reanimated.View>
@@ -1054,4 +1151,6 @@ const makeStyles = (C: ReturnType<typeof useThemeColor>) =>
             overflow: "hidden",
         },
         panelBlock: { gap: 12 },
+        // Just below Add's right edge, arrow tip up at the label
+        tutorialCursor: { position: "absolute", top: 28, right: -4, zIndex: 10 },
     });

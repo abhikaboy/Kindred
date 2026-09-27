@@ -213,6 +213,7 @@ type GetUserActiveTasksOutput struct {
 	SlimTasks     []SlimTaskInfo       `json:"slimTasks,omitempty"     jsonschema_description:"Slim tasks with minimal fields (populated when no query)"`
 	SlimTemplates []SlimTemplateInfo   `json:"slimTemplates,omitempty" jsonschema_description:"Slim templates with minimal fields (populated when no query)"`
 	Total         int                  `json:"total"`
+	Message       string               `json:"message,omitempty"       jsonschema_description:"Set when nothing was found, with guidance on what to do next"`
 }
 
 // ActiveTaskInfo is a Genkit-safe representation of a task with string IDs.

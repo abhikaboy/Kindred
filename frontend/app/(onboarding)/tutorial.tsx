@@ -9,6 +9,7 @@ import {
     Platform,
     TouchableOpacity,
     KeyboardAvoidingView,
+    Pressable,
 } from "react-native";
 
 // Shared smoothing curve so cursors glide between spots instead of jumping.
@@ -33,10 +34,10 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useSetCreateCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
-import CreateModal, { Screen } from "@/components/modals/CreateModal";
+import CreateComposer from "@/components/modals/create/composer/CreateComposer";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Images, Info, Plus } from "phosphor-react-native";
+import { Images, Plus } from "phosphor-react-native";
 import TutorialCursor from "@/components/onboarding/TutorialCursor";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { ConcentricRings, type RingKey } from "@/components/profile/ProductivityRings";
@@ -46,7 +47,6 @@ import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
 import CachedImage from "@/components/CachedImage";
 import TaskToast from "@/components/ui/TaskToast";
-import TaskChip from "@/components/cards/TaskChip";
 import { Task, RingState } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
@@ -104,13 +104,10 @@ function PhaseProgress({ label, current, total = 3 }: { label: string; current: 
                     />
                 ))}
             </View>
+            {/* "Demo" stays on every step, quietly, so the example tasks never read as the user's own */}
             <ThemedText type="caption" style={{ color: ThemedColor.caption, flexShrink: 1 }}>
-                {label} · Step {current + 1} of {total}
+                {label} · Step {current + 1} of {total} · Demo
             </ThemedText>
-            {/* Stays up on every step so the example tasks never read as the user's own */}
-            <View style={{ marginLeft: "auto" }}>
-                <TaskChip label="Demo · example tasks" tone="active" Icon={Info} />
-            </View>
         </View>
     );
 }
@@ -121,7 +118,7 @@ const BEAK = {
     picture:
         "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg",
 };
-const DISPLAY_WORKSPACE = "Example Workspace";
+const DISPLAY_WORKSPACE = "(Not Real) Workspace";
 const PREFILL_CATEGORY = "My Tasks";
 const PREFILL_TASK = "Go for a 15-minute walk";
 const CONGRATS_MESSAGE = "it's beak, one of kindred's founders; welcome! and congrats on finishing your first (of many!) tasks :)";
@@ -137,7 +134,7 @@ const KUDOS_DEFINITION = "Kudos are quick congrats you send when a friend finish
 // The photo the user "adds" to their post during the guided share step.
 const SHARE_PHOTO = "https://i.pinimg.com/736x/6e/6a/47/6e6a475d2f7967465952e2cbfde1c66e.jpg";
 
-const RINGS_HERO_SIZE = Math.min(screenWidth * 0.5, 200);
+const RINGS_HERO_SIZE = Math.min(screenWidth * 0.4, 160);
 
 const STEP_CATEGORY = 0;
 const STEP_TASK = 1;
@@ -151,10 +148,12 @@ const GUEST_TOTAL_STEPS = STEP_RINGS + 1;
 const GUEST_PHASE_LABEL = "Do your first task";
 
 // Rings explainer copy, revealed one at a time (tap to advance).
-const RING_INFO: { key: RingKey; label: string; desc: string }[] = [
-    { key: "plan", label: "Plan", desc: "Add tasks to your day" },
-    { key: "do", label: "Do", desc: "Complete them" },
-    { key: "share", label: "Share", desc: "Post a win or send kudos" },
+// Targets mirror the defaults in backend/internal/handlers/rings/types.go.
+// `progress` ties each ring back to what the user just did in the demo.
+const RING_INFO: { key: RingKey; label: string; short: string; goal: string; progress: string }[] = [
+    { key: "plan", label: "Plan", short: "Creating tasks", goal: "Put 2 tasks on today's list", progress: "Your walk counts as 1 of 2." },
+    { key: "do", label: "Do", short: "Completing tasks", goal: "Finish 3 tasks", progress: "Swiping your walk done made it 1 of 3." },
+    { key: "share", label: "Share", short: "Posting or kudos", goal: "Post a win or send a friend kudos", progress: "Still open. You'll close it next." },
 ];
 
 // Demo ring state for the explainer: plan + do closed (they just planned + did a
@@ -163,8 +162,8 @@ const DEMO_RINGS: RingState = {
     _id: "tutorial",
     user_id: "tutorial",
     date: new Date().toISOString(),
-    plan: { current: 1, target: 1, closed: true },
-    do: { current: 1, target: 1, closed: true },
+    plan: { current: 1, target: 2, closed: false },
+    do: { current: 1, target: 3, closed: false },
     share: { current: 0, target: 1, closed: false },
     all_closed: false,
     reward_claimed: false,
@@ -195,7 +194,6 @@ export default function TutorialOnboarding() {
     const friendCursorX = useRef(new Animated.Value(0)).current; // beak's red cursor fly-in
     const friendCursorY = useRef(new Animated.Value(0)).current;
     const [isCreatingCategory, setIsCreatingCategory] = useState(true); // start with creator open
-    const [demoIntroSeen, setDemoIntroSeen] = useState(false); // blocks the auto-play until the demo notice is dismissed
 
     // Data from tutorial actions
     const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -263,8 +261,15 @@ export default function TutorialOnboarding() {
     const introHeaderAnim = useRef(new Animated.Value(0)).current;
     const introCreatorAnim = useRef(new Animated.Value(0)).current;
     const [introCreatorReady, setIntroCreatorReady] = useState(false);
+    // The walkthrough opens on a single "Create workspace" button; one tap makes
+    // it (the Guide workspace is already seeded server-side) and the rest plays.
+    const [workspaceCreated, setWorkspaceCreated] = useState(false);
+    const handleCreateWorkspace = useCallback(() => {
+        if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setWorkspaceCreated(true);
+    }, []);
     useEffect(() => {
-        if (!demoIntroSeen) return;
+        if (!workspaceCreated) return;
         Animated.timing(introHeaderAnim, { toValue: 1, duration: 500, easing: CURSOR_EASE, useNativeDriver: true }).start();
         // Mount the creator late so its name-typewriter starts after the stagger
         const t = setTimeout(() => {
@@ -272,7 +277,7 @@ export default function TutorialOnboarding() {
             Animated.timing(introCreatorAnim, { toValue: 1, duration: 400, easing: CURSOR_EASE, useNativeDriver: true }).start();
         }, 1300);
         return () => clearTimeout(t);
-    }, [demoIntroSeen]);
+    }, [workspaceCreated]);
 
     // ─── Prompt card animation on step change ───────────────────────
     useEffect(() => {
@@ -288,7 +293,7 @@ export default function TutorialOnboarding() {
                 toValue: 0, duration: 500, delay, useNativeDriver: true,
             }),
         ]).start();
-    }, [step]);
+    }, [step, workspaceCreated]);
 
     // ─── Step 1: glide the cursor in to the category, then loop a tap hint ──
     useEffect(() => {
@@ -480,6 +485,18 @@ export default function TutorialOnboarding() {
         return () => clearTimeout(t1);
     }, [step]);
 
+    // Tap anywhere on the explainer to move to the next ring; after the last
+    // one, reveal the share guide (guests finish via the Continue button).
+    const handleRingsTap = useCallback(() => {
+        if (ringIndex < RING_INFO.length - 1) {
+            setRingIndex((i) => Math.min(i + 1, RING_INFO.length - 1));
+            return;
+        }
+        if (isGuest) return;
+        setShowRingCursor(true);
+        setShowShareToast(true);
+    }, [ringIndex, isGuest]);
+
     // Toast springs down from the top like a real toast
     const toastAnim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
@@ -618,7 +635,9 @@ export default function TutorialOnboarding() {
 
     // ─── Prompt text per step ───────────────────────────────────────
     const prompts: Record<number, { title: string; subtitle: string }> = {
-        0: { title: "Create a category", subtitle: "Workspaces hold categories, and categories hold tasks" },
+        0: workspaceCreated
+            ? { title: "Create a category", subtitle: "Categories group related tasks inside a workspace" }
+            : { title: "Create a workspace", subtitle: "A workspace holds one part of your life, like work, school, or home" },
         1: { title: "Add a task", subtitle: "Tap the category to create one" },
         2: { title: "Complete your task", subtitle: "Swipe right to mark it done" },
     };
@@ -637,12 +656,12 @@ export default function TutorialOnboarding() {
                 </View>
             )}
 
-            <CreateModal
+            <CreateComposer
                 visible={showCreateModal}
                 setVisible={handleCreateModalClose}
                 categoryId={categoryId ?? undefined}
-                screen={Screen.STANDARD}
                 tutorial
+                tutorialWorkspaceLabel={DISPLAY_WORKSPACE}
             />
 
             <CongratulateModal
@@ -657,27 +676,6 @@ export default function TutorialOnboarding() {
                 }}
             />
 
-            {/* Demo notice — blocks the auto-play walkthrough until dismissed, so
-                nobody mistakes the example task for their real workspace */}
-            {!demoIntroSeen && (
-                <View style={[StyleSheet.absoluteFill, { zIndex: 100 }]}>
-                    <BlurView intensity={40} tint="default" style={StyleSheet.absoluteFill} />
-                    <View style={styles.kudosOverlay}>
-                        <View style={[styles.spotlightCard, { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
-                            <ThemedText type="title" style={{ fontWeight: "600" }}>
-                                This is a demo
-                            </ThemedText>
-                            <ThemedText type="default" style={{ color: ThemedColor.caption }}>
-                                Not your real workspace — we'll add an example task for you. Nothing to type yet.
-                            </ThemedText>
-                        </View>
-                        <View style={{ marginTop: 24 }}>
-                            <PrimaryButton title="Got it" onPress={() => setDemoIntroSeen(true)} />
-                        </View>
-                    </View>
-                </View>
-            )}
-
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -686,7 +684,16 @@ export default function TutorialOnboarding() {
             <View style={[styles.workspaceArea, { paddingTop: insets.top + 40 }]}>
                 <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                     {/* Workspace header — same as WorkspaceContent (hidden once we leave the task steps) */}
-                    {step < STEP_RINGS && (
+                    {step === STEP_CATEGORY && !workspaceCreated && (
+                        <View style={styles.createWorkspace}>
+                            <PrimaryButton title="Create workspace" onPress={handleCreateWorkspace} />
+                            <View pointerEvents="none" style={styles.createWorkspaceCursor}>
+                                <TutorialCursor size={30} />
+                            </View>
+                        </View>
+                    )}
+
+                    {step < STEP_RINGS && workspaceCreated && (
                         <Animated.View
                             style={[
                                 styles.workspaceHeader,
@@ -706,7 +713,7 @@ export default function TutorialOnboarding() {
                     {/* Categories container — matches categoriesContainer gap: 16 */}
                     <View style={styles.categoriesContainer}>
                         {/* InlineCategoryCreator — wait for the Guide workspace to load + entrance stagger */}
-                        {isCreatingCategory && guideReady && introCreatorReady && (
+                        {isCreatingCategory && workspaceCreated && guideReady && introCreatorReady && (
                             <Animated.View
                                 style={{
                                     opacity: introCreatorAnim,
@@ -794,15 +801,8 @@ export default function TutorialOnboarding() {
                                 transform: [{ translateY: ringsStepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
                             },
                         ]}
-                        onTouchEnd={() => {
-                            if (ringIndex < RING_INFO.length - 1) {
-                                setRingIndex((i) => i + 1);
-                                return;
-                            }
-                            if (isGuest) return; // guests finish via the Continue button
-                            setShowRingCursor(true);
-                            setShowShareToast(true);
-                        }}>
+>
+                        <Pressable onPress={handleRingsTap}>
                         <View style={{ marginBottom: 16 }}>
                             {isGuest ? (
                                 <PhaseProgress label={GUEST_PHASE_LABEL} current={STEP_RINGS} total={GUEST_TOTAL_STEPS} />
@@ -810,39 +810,63 @@ export default function TutorialOnboarding() {
                                 <PhaseProgress label="Share it" current={0} />
                             )}
                         </View>
-                        <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
-                            Your daily rings
+                        <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 8 }}>
+                            Meet your daily rings
+                        </ThemedText>
+                        <ThemedText type="default">
+                            Three small goals that reset every morning. Close all three to earn a reward.
                         </ThemedText>
 
                         {/* Same concentric set as home; the ring being explained stays lit */}
-                        <View style={styles.ringsHero}>
+                        <View style={styles.ringsHeroRow}>
                             <ConcentricRings
                                 rings={DEMO_RINGS}
                                 size={RINGS_HERO_SIZE}
-                                strokeWidth={16}
+                                strokeWidth={14}
                                 staggerMs={600}
                                 dimmedExcept={RING_INFO[ringIndex].key}
                             />
+                            {/* Legend stays up the whole time; the ring being explained stays lit */}
+                            <View style={styles.ringsLegend}>
+                                {RING_INFO.map((r, i) => (
+                                    <View key={r.key} style={[styles.ringsLegendRow, { opacity: i === ringIndex ? 1 : 0.4 }]}>
+                                        <View style={[styles.ringDot, { backgroundColor: RING_COLORS[r.key] }]} />
+                                        <View style={{ flex: 1 }}>
+                                            <ThemedText type="defaultSemiBold">{r.label}</ThemedText>
+                                            <ThemedText type="caption">{r.short}</ThemedText>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
 
                         <View style={styles.ringCards}>
                             <Animated.View
                                 style={[styles.ringCard, { backgroundColor: ThemedColor.lightened, opacity: ringInfoFade }]}>
-                                <View style={[styles.ringDot, { backgroundColor: RING_COLORS[RING_INFO[ringIndex].key] }]} />
-                                <ThemedText type="defaultSemiBold">{RING_INFO[ringIndex].label}</ThemedText>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption, flex: 1 }}>
-                                    {RING_INFO[ringIndex].desc}
-                                </ThemedText>
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                    {RING_INFO[ringIndex].key === "share" ? "0/1" : "Done"}
-                                </ThemedText>
+                                <View style={styles.ringCardHeader}>
+                                    <View style={[styles.ringDot, { backgroundColor: RING_COLORS[RING_INFO[ringIndex].key] }]} />
+                                    <ThemedText type="defaultSemiBold" style={{ flex: 1 }}>
+                                        {RING_INFO[ringIndex].label}
+                                    </ThemedText>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {DEMO_RINGS[RING_INFO[ringIndex].key].current}/{DEMO_RINGS[RING_INFO[ringIndex].key].target}
+                                    </ThemedText>
+                                </View>
+                                <ThemedText type="default">{RING_INFO[ringIndex].goal}</ThemedText>
+                                {!(isGuest && RING_INFO[ringIndex].key === "share") && (
+                                    <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                        {RING_INFO[ringIndex].progress}
+                                    </ThemedText>
+                                )}
                             </Animated.View>
-                            {ringIndex < RING_INFO.length - 1 && (
-                                <ThemedText type="caption" style={{ color: ThemedColor.caption, textAlign: "center" }}>
-                                    Tap to see the next ring
-                                </ThemedText>
-                            )}
+                            <ThemedText type="caption" style={{ color: ThemedColor.caption, textAlign: "center" }}>
+                                {ringIndex < RING_INFO.length - 1
+                                    ? `Tap to continue · ${ringIndex + 1} of ${RING_INFO.length}`
+                                    : `${RING_INFO.length} of ${RING_INFO.length}`}
+                            </ThemedText>
                         </View>
+
+                        </Pressable>
 
                         {/* Guests end here: no share sequence, just continue to Home */}
                         {isGuest && (
@@ -868,6 +892,9 @@ export default function TutorialOnboarding() {
                     <View style={styles.ringsStep}>
                         <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Share ring closed!
+                        </ThemedText>
+                        <ThemedText type="default" style={{ color: ThemedColor.caption }}>
+                            One down. Plan and finish a few more tasks today to close the other two.
                         </ThemedText>
                         <View style={styles.ringsHero}>
                             <ConcentricRings
@@ -1148,6 +1175,14 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
     },
+    createWorkspace: {
+        paddingTop: 20,
+    },
+    createWorkspaceCursor: {
+        position: "absolute",
+        top: 36,
+        right: 64,
+    },
     tapCursor: {
         position: "absolute",
         top: 20,
@@ -1175,16 +1210,35 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingVertical: 24,
     },
+    ringsHeroRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 24,
+        paddingVertical: 24,
+    },
+    ringsLegend: {
+        flex: 1,
+        gap: 12,
+    },
+    ringsLegendRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
     ringCards: {
         gap: 8,
     },
     ringCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
+        gap: 4,
         borderRadius: 16,
         paddingVertical: 12,
         paddingHorizontal: 16,
+    },
+    ringCardHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 4,
     },
     ringDot: {
         width: 10,

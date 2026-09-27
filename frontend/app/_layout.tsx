@@ -38,6 +38,7 @@ import { SelectedGroupProvider } from "@/contexts/SelectedGroupContext";
 import { AlertProvider } from "@/contexts/AlertContext";
 import { useCacheCleanup } from "@/hooks/useCacheCleanup";
 import { logger } from "@/utils/logger";
+import { resetFirstLaunch } from "@/utils/resetFirstLaunch";
 import { AnalyticsProvider } from "@/hooks/useAnalytics";
 import { CreateModalProvider } from "@/contexts/createModalContext";
 import { RingUpdateProvider } from "@/contexts/ringUpdateContext";
@@ -108,6 +109,19 @@ const queryClient = new QueryClient({
         },
     },
 });
+
+// Dev only: "Reset to first launch" in the Expo dev menu (shake / Cmd+D), so the
+// guest flow can be re-run without reinstalling. Not available in Expo Go.
+if (__DEV__) {
+    try {
+        const { registerDevMenuItems } = require("expo-dev-menu");
+        registerDevMenuItems([
+            { name: "Reset to first launch", callback: () => void resetFirstLaunch({ queryClient }), shouldCollapse: true },
+        ]).catch(() => {});
+    } catch {
+        // expo-dev-menu isn't linked in this build
+    }
+}
 
 export default Sentry.wrap(function RootLayout() {
     const colorScheme = useColorScheme();

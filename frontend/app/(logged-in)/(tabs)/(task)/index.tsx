@@ -18,6 +18,7 @@ import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
 import { useIsGuest } from "@/hooks/useIsGuest";
+import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
@@ -341,6 +342,13 @@ const HomeContent = React.memo(function HomeContent({
         homeTourVisibilityEvents.emit(tour.active || introTour.active);
     }, [tour.active, introTour.active]);
     useEffect(() => () => homeTourVisibilityEvents.emit(false), []);
+
+    // Friends needs an account. The first time per session a guest lands there,
+    // show the account overlay over it; "Not now" settles them back on Home.
+    useEffect(() => {
+        if (activeIndex !== FRIENDS_INDEX || !isGuest || tour.active || introTour.active) return;
+        promptAccountForSocial("friends", () => onDotPress(HOME_INDEX));
+    }, [activeIndex, isGuest, tour.active, introTour.active, onDotPress]);
 
     const isHome = activeIndex === HOME_INDEX;
     const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === FRIENDS_INDEX;

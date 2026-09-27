@@ -11,3 +11,11 @@ export const GUEST_DEVICE_ID_KEY = "guestDeviceId";
 
 /** "true" once the given guest user has finished the tutorial. */
 export const guestTutorialDoneKey = (userId: string) => `${userId}-guest-tutorial-done`;
+
+/** "true" once this install has started a guest session, so the guest's own
+ * cached state is never mistaken for a pre-existing account. */
+export const GUEST_INSTALL_KEY = "guestInstall";
+
+/** "true" once the given guest has been shown the account prompt after their
+ * first self-created task. */
+export const accountPromptFirstTaskKey = (userId: string) => `${userId}-account-prompt-first-task`;

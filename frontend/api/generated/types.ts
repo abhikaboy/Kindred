@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create guest account
+         * @description Creates a credential-less guest account so the app is usable before sign up. Returns tokens in the access_token and refresh_token headers and the user in the body, exactly like register.
+         */
+        post: operations["login-guest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -6361,6 +6381,18 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        GuestLoginRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GuestLoginRequest.json
+             */
+            readonly $schema?: string;
+            /** @description Stable per-install identifier, stored for cleanup and analytics */
+            deviceId?: string;
+            /** @description IANA timezone, defaults to UTC */
+            timezone?: string;
+        };
         HealthOutputBody: {
             /**
              * Format: uri
@@ -7508,6 +7540,7 @@ export interface components {
             first_all_rings_closed_at?: string;
             friends: string[];
             handle: string;
+            isGuest: boolean;
             kudosRewards: components["schemas"]["KudosRewards"];
             /** Format: int64 */
             points: number;
@@ -9207,6 +9240,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "login-guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GuestLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeUser"];
                 };
             };
             /** @description Error */

@@ -30,6 +30,7 @@ import { useCreateModal } from "@/contexts/createModalContext";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import CreateComposer from "@/components/modals/create/composer/CreateComposer";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { AccountOverlay } from "@/components/guest/AccountOverlay";
 import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
 import * as Localization from 'expo-localization';
@@ -594,6 +595,8 @@ const LayoutContent = () => {
                         categoryId={modalConfig.categoryId}
                     />
                 )}
+                {/* Guest account prompt: above the tabs and the composer */}
+                <AccountOverlay />
         </View>
     );
 };

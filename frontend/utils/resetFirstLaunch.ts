@@ -15,6 +15,7 @@ const EXACT_KEYS = [
     "auth_user_cache",
     "hasEverSignedIn",
     "guestDeviceId",
+    "guestInstall",
     "hasSeenIntroVideo",
 ];
 
@@ -23,6 +24,7 @@ const KEY_SUFFIXES = [
     "-home-tour-seen",
     "-intro-tour-seen",
     "-guest-tutorial-done",
+    "-account-prompt-first-task",
     "-onboarding-checklist-dismissed",
     "-onboarding-checklist-snapshot",
     "-onboarding-checklist-complete",
@@ -47,7 +49,9 @@ type Options = {
     logout?: () => void;
 };
 
-export async function resetFirstLaunch({ queryClient, logout }: Options = {}) {
+// Wipes the local state only, without reloading. Used by the reset tool and by
+// the dev-only EXPO_PUBLIC_FORCE_FIRST_LAUNCH flag at app entry.
+export async function clearFirstLaunchState() {
     try {
         await SecureStore.deleteItemAsync("auth_data");
     } catch (e) {
@@ -61,7 +65,10 @@ export async function resetFirstLaunch({ queryClient, logout }: Options = {}) {
     } catch (e) {
         logger.warn("resetFirstLaunch: failed to clear AsyncStorage keys", e);
     }
+}
 
+export async function resetFirstLaunch({ queryClient, logout }: Options = {}) {
+    await clearFirstLaunchState();
     queryClient?.clear();
 
     // A full JS reload drops every in-memory context (auth, tasks, tours) so the
@@ -74,4 +81,14 @@ export async function resetFirstLaunch({ queryClient, logout }: Options = {}) {
     }
     logout?.();
     router.replace("/");
+}
+
+// Dev only: EXPO_PUBLIC_FORCE_FIRST_LAUNCH=true makes every JS load (cold start
+// or `r` reload) begin as a brand-new install. Module state resets on reload, so
+// this runs once per load rather than on every visit to "/".
+let forcedThisLoad = false;
+export async function maybeForceFirstLaunch() {
+    if (!__DEV__ || forcedThisLoad || process.env.EXPO_PUBLIC_FORCE_FIRST_LAUNCH !== "true") return;
+    forcedThisLoad = true;
+    await clearFirstLaunchState();
 }

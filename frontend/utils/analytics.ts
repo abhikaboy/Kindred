@@ -26,6 +26,10 @@ export const AnalyticsEvents = {
     REGISTER_STARTED: "register_started",
     REGISTER_COMPLETED: "register_completed",
 
+    // --- Guest ---
+    GUEST_PROMPT_SHOWN: "guest_prompt_shown",
+    GUEST_PROMPT_DISMISSED: "guest_prompt_dismissed",
+
     // --- Onboarding ---
     ONBOARDING_STEP_VIEWED: "onboarding_step_viewed",
     ONBOARDING_STEP_COMPLETED: "onboarding_step_completed",

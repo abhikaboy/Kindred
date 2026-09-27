@@ -14,9 +14,9 @@ import { ERROR_MESSAGES } from "@/utils/errorParser";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import * as Crypto from "expo-crypto";
-import { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY } from "@/constants/authStorageKeys";
+import { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY, GUEST_INSTALL_KEY } from "@/constants/authStorageKeys";
 
-export { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY, guestTutorialDoneKey } from "@/constants/authStorageKeys";
+export { HAS_EVER_SIGNED_IN_KEY, GUEST_DEVICE_ID_KEY, GUEST_INSTALL_KEY, guestTutorialDoneKey } from "@/constants/authStorageKeys";
 
 const logger = createLogger('AuthHook');
 
@@ -94,6 +94,8 @@ export async function clearCachedUser(): Promise<void> {
 export async function getHasEverSignedIn(): Promise<boolean> {
     try {
         if ((await AsyncStorage.getItem(HAS_EVER_SIGNED_IN_KEY)) === "true") return true;
+        // This install began as a guest, so any leftover state below is the guest's own.
+        if ((await AsyncStorage.getItem(GUEST_INSTALL_KEY)) === "true") return false;
         // Installs from before the flag existed: any leftover app state means a
         // real account was used here, so send them to login instead of a guest.
         const keys = await AsyncStorage.getAllKeys();
@@ -192,8 +194,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Whether a session existed this launch — a stray 401 with no session must
     // not hijack entry routing (e.g. stomping the intro screen at cold start).
     const hadSessionRef = useRef(false);
+    const wasGuestRef = useRef(false);
     useEffect(() => {
         if (user) hadSessionRef.current = true;
+        if (user) wasGuestRef.current = !!user.isGuest;
     }, [user]);
 
     // Single in-flight guest creation, so double mounts never make two guests.
@@ -222,7 +226,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             guestPromiseRef.current = null;
             SecureStore.deleteItemAsync("auth_data");
             queryClient.clear();
-            if (hadSessionRef.current) router.replace("/login");
+            // A rejected guest has no account to log back into; "/" starts a new guest instead
+            if (hadSessionRef.current) router.replace(wasGuestRef.current ? "/" : "/login");
         });
         return () => clearUnauthorizedHandler();
     }, [queryClient]);
@@ -553,12 +558,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // as the caller routes there.
                 const accessToken = result.response?.headers?.get('access_token');
                 const refreshToken = result.response?.headers?.get('refresh_token');
-                if (accessToken && refreshToken) {
-                    await saveAuthData({
-                        access_token: accessToken,
-                        refresh_token: refreshToken
-                    });
+                // Without tokens every call after this 401s and bounces the guest,
+                // so fail here and let the caller fall back instead.
+                if (!accessToken || !refreshToken) {
+                    throw new Error("Guest session response had no tokens");
                 }
+                await saveAuthData({
+                    access_token: accessToken,
+                    refresh_token: refreshToken
+                });
+                await AsyncStorage.setItem(GUEST_INSTALL_KEY, "true").catch(() => {});
 
                 setUser(userData);
                 void saveCachedUser(userData);

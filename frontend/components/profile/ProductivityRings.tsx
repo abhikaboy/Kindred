@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
     View,
     StyleSheet,
@@ -151,7 +151,9 @@ type RingKey = "plan" | "do" | "share";
 
 const MIN_SLIVER = 0.03;
 
-function RingArc({
+// Memoized so a parent re-render (e.g. changing which ring is dimmed) doesn't
+// re-render the animated arc and reset its fill mid-animation.
+const RingArc = React.memo(function RingArc({
     progress,
     trackColor,
     color,
@@ -191,10 +193,10 @@ function RingArc({
         }).start();
     }, [fraction]);
 
-    const strokeDashoffset = animatedValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [circumference, 0],
-    });
+    const strokeDashoffset = useMemo(
+        () => animatedValue.interpolate({ inputRange: [0, 1], outputRange: [circumference, 0] }),
+        [animatedValue, circumference]
+    );
     const c = size / 2;
 
     return (
@@ -215,7 +217,7 @@ function RingArc({
             />
         </>
     );
-}
+});
 
 function RingCircle(props: { progress: RingProgress; trackColor: string; color: string }) {
     return (

@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOptionalAuth, getAuthData, getCachedUser, getHasEverSignedIn } from '@/hooks/useAuth';
 import { enterAsNewGuest, routeForGuest, TABS_ROUTE } from '@/utils/guestEntry';
 import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
+import { maybeForceFirstLaunch } from '@/utils/resetFirstLaunch';
 
 /**
  * Entry point that determines where to route the user:
@@ -28,6 +29,8 @@ export default function Index() {
 
     const checkInitialRoute = async () => {
         try {
+            await maybeForceFirstLaunch();
+
             // Already signed in this launch (e.g. just logged in from /login;
             // tokens may still be mid-write).
             if (user) {

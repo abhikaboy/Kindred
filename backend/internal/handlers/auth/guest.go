@@ -25,7 +25,7 @@ const (
 	guestProfilePicture = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg"
 
 	// Guest creation is unauthenticated, so it is capped per client IP.
-	guestRateLimitPerIP  = 10
+	guestRateLimitPerIP  = 100
 	guestRateLimitWindow = time.Hour
 
 	guestHandleAttempts   = 5
