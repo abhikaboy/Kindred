@@ -10,6 +10,10 @@ class AppDelegate: ExpoAppDelegate {
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
+  /// Retained for SceneDelegate, which starts React Native once its window
+  /// scene connects and needs the original launch options to do so.
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+
   public override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -20,14 +24,12 @@ class AppDelegate: ExpoAppDelegate {
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
+    self.launchOptions = launchOptions
 
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: launchOptions)
-#endif
+    // The window is deliberately NOT created here. Under the UIScene lifecycle
+    // (mandatory as of the iOS 26 SDK) window ownership belongs to
+    // SceneDelegate, which calls startReactNative when its scene connects.
+    // Creating a UIWindow from the app delegate traps at launch.
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

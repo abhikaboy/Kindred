@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		002A2ECB0D786825B67BCB2B /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1435D57750659DBA960602B5 /* SceneDelegate.swift */; };
+		02106372314F4EF8420B7003 /* NotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 367D564AE720F2ADCA69CEED /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		18AB85974FFC48EB92E076F3 /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4221DD81D94841FFB5B744BD /* index.swift */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
@@ -15,11 +17,13 @@
 		61F89489C5AE64C2744BD14C /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5981E8AA363AD47ED4AE5665 /* ExpoModulesProvider.swift */; };
 		69CE9BB1464E4C268844C2AC /* WorkspaceSnapshotWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0CD5907F494FC9A7F30ACE /* WorkspaceSnapshotWidget.swift */; };
 		77C415824DBE47FDABE094D9 /* LockScreenInlineWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 945E96DA121A4FCDACC81C69 /* LockScreenInlineWidget.swift */; };
+		7C8C49843E3910236B26A6E2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CB8D4CC424B2C16EC005274C /* Foundation.framework */; };
 		7CA49B771DB41427072B5FC7 /* libPods-Kindred.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */; };
 		A095DCD999A3407CB9D4750E /* LockScreenCircularWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F598528B68F844CDA0132559 /* LockScreenCircularWidget.swift */; };
 		BA302843886A403BBF93CBCB /* ActivityStreakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C57403AAC094F158CAD6795 /* ActivityStreakWidget.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A18EAC3634ACA5344BA1C45 /* ExpoModulesProvider.swift */; };
+		CD951F23FBC42A4EFB966780 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DAF7AC83A408E0DCFF8015 /* NotificationService.swift */; };
 		D071D52BEA44426781DD6547 /* LockScreenRectangularWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */; };
 		D74373A9CDAA45A6BC9E6FEA /* TodayTasksWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAEEB6D2826740899FE8FC0F /* TodayTasksWidget.swift */; };
 		F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */; };
@@ -34,6 +38,13 @@
 			remoteGlobalIDString = B1246A99F1364D26B7893B99;
 			remoteInfo = ExpoWidgetsTarget;
 		};
+		F26E55D47F6444FF0A791F11 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 49337A89BA237B159B93A34F;
+			remoteInfo = NotificationService;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +55,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				4997F28996684644B1610C65 /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */,
+				02106372314F4EF8420B7003 /* NotificationService.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,16 +63,20 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		06460054AEF7672B35150EAB /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0F0F2BDB9729433885C8708C /* LockScreenRectangularWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LockScreenRectangularWidget.swift; sourceTree = "<group>"; };
 		100B260B7478F5992BEF35A1 /* Pods-ExpoWidgetsTarget.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.release.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Kindred.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Kindred.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Kindred/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Kindred/Info.plist; sourceTree = "<group>"; };
+		1435D57750659DBA960602B5 /* SceneDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Kindred/SceneDelegate.swift; sourceTree = "<group>"; };
 		1D0CD5907F494FC9A7F30ACE /* WorkspaceSnapshotWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = WorkspaceSnapshotWidget.swift; sourceTree = "<group>"; };
 		214DC1F648BF4C5BB9CBECB4 /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ExpoWidgetsTarget.entitlements; sourceTree = "<group>"; };
 		22EDCB3528DE4183A7FD54C9 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2C4CB7690EEC4A9AA1F57DF2 /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 9; includeInIndex = 0; path = ExpoWidgetsTarget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2CB053368BA54E089B590CE9 /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = ExpoWidgetsTarget.entitlements; sourceTree = "<group>"; };
+		364830B085D037B8009E372E /* NotificationService.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
+		367D564AE720F2ADCA69CEED /* NotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4221DD81D94841FFB5B744BD /* index.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = index.swift; sourceTree = "<group>"; };
 		5981E8AA363AD47ED4AE5665 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ExpoWidgetsTarget/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Kindred/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -71,7 +87,9 @@
 		AE741A81E3084513FA9E4CBC /* Pods-Kindred.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.release.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		BC8AFFC0ACF2F3C634078726 /* Pods-ExpoWidgetsTarget.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.debug.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.debug.xcconfig"; sourceTree = "<group>"; };
+		CB8D4CC424B2C16EC005274C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Kindred.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D1DAF7AC83A408E0DCFF8015 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		EC63EF3DB59A23C0518BE203 /* Pods-Kindred.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Kindred.debug.xcconfig"; path = "Target Support Files/Pods-Kindred/Pods-Kindred.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Kindred/AppDelegate.swift; sourceTree = "<group>"; };
@@ -98,9 +116,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA6AA0B532FABA1775EAC780 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C8C49843E3910236B26A6E2 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0087551C906FF8C50996B835 /* NotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				D1DAF7AC83A408E0DCFF8015 /* NotificationService.swift */,
+				06460054AEF7672B35150EAB /* Info.plist */,
+				364830B085D037B8009E372E /* NotificationService.entitlements */,
+			);
+			name = NotificationService;
+			path = NotificationService;
+			sourceTree = SOURCE_ROOT;
+		};
 		13B07FAE1A68108700A75B9A /* Kindred */ = {
 			isa = PBXGroup;
 			children = (
@@ -111,6 +148,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				5C8B9CCED979661FDB3EDF24 /* PrivacyInfo.xcprivacy */,
+				1435D57750659DBA960602B5 /* SceneDelegate.swift */,
 			);
 			name = Kindred;
 			sourceTree = "<group>";
@@ -121,6 +159,7 @@
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				CCEA1CB41046CB86B98FD48E /* libPods-Kindred.a */,
 				FFE1203633A7A2BD75CC6D39 /* libPods-ExpoWidgetsTarget.a */,
+				82906581E89E605FA4A4854F /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -144,6 +183,14 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+		82906581E89E605FA4A4854F /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				CB8D4CC424B2C16EC005274C /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
@@ -161,6 +208,7 @@
 				6B68D1195F25FE5BD31B0DDD /* Pods */,
 				B9ADC3000E990FF8A6EDDD33 /* ExpoModulesProviders */,
 				8E6E143DF9D646B6BCC2A630 /* ExpoWidgetsTarget */,
+				0087551C906FF8C50996B835 /* NotificationService */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -172,6 +220,7 @@
 			children = (
 				13B07F961A680F5B00A75B9A /* Kindred.app */,
 				2C4CB7690EEC4A9AA1F57DF2 /* ExpoWidgetsTarget.appex */,
+				367D564AE720F2ADCA69CEED /* NotificationService.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -241,11 +290,29 @@
 			);
 			dependencies = (
 				1EBED24B94444D959BA69879 /* PBXTargetDependency */,
+				DBE4FE3B7C7209D6CF785236 /* PBXTargetDependency */,
 			);
 			name = Kindred;
 			productName = Kindred;
 			productReference = 13B07F961A680F5B00A75B9A /* Kindred.app */;
 			productType = "com.apple.product-type.application";
+		};
+		49337A89BA237B159B93A34F /* NotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 83B1D34FFB6EAFDDF5D65662 /* Build configuration list for PBXNativeTarget "NotificationService" */;
+			buildPhases = (
+				6C6B2EC3BFFA42AE5B30FD30 /* Sources */,
+				AA6AA0B532FABA1775EAC780 /* Frameworks */,
+				21D8566470950148AC5CF6C7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NotificationService;
+			productName = NotificationService;
+			productReference = 367D564AE720F2ADCA69CEED /* NotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */ = {
 			isa = PBXNativeTarget;
@@ -301,6 +368,7 @@
 			targets = (
 				13B07F861A680F5B00A75B9A /* Kindred */,
 				B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */,
+				49337A89BA237B159B93A34F /* NotificationService */,
 			);
 		};
 /* End PBXProject section */
@@ -314,6 +382,13 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				F0E942BC45F1101A16DA05B0 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		21D8566470950148AC5CF6C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -443,7 +518,6 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoLocalization/ExpoLocalization_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoNotifications/ExpoNotifications_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoWidgets/ExpoWidgets.bundle",
@@ -451,15 +525,11 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher_Core_Privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn/GoogleSignIn.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities_Privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/MCEmojiPicker/MCEmojiPicker.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises_Privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/PurchasesHybridCommon/PurchasesHybridCommon.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNCAsyncStorage/RNCAsyncStorage_resources.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/RevenueCat/RevenueCat.bundle",
-				"${PODS_CONFIGURATION_BUILD_DIR}/RevenueCatUI/RevenueCat_RevenueCatUI.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/SDWebImage/SDWebImage.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/Sentry/Sentry.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-launcher/EXDevLauncher.bundle",
@@ -474,7 +544,6 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoLocalization_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoMediaLibrary_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoWidgets.bundle",
@@ -482,15 +551,11 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GTMSessionFetcher_Core_Privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleSignIn.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleUtilities_Privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MCEmojiPicker.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FBLPromises_Privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/PurchasesHybridCommon.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNCAsyncStorage_resources.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RevenueCat.bundle",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RevenueCat_RevenueCatUI.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SDWebImage.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Sentry.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevLauncher.bundle",
@@ -568,6 +633,7 @@
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				CB2A83AAAB8CC45B9ADEF3CB /* ExpoModulesProvider.swift in Sources */,
+				002A2ECB0D786825B67BCB2B /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -586,6 +652,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6C6B2EC3BFFA42AE5B30FD30 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD951F23FBC42A4EFB966780 /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -593,6 +667,12 @@
 			isa = PBXTargetDependency;
 			target = B1246A99F1364D26B7893B99 /* ExpoWidgetsTarget */;
 			targetProxy = A2D133312AE7443296634D79 /* PBXContainerItemProxy */;
+		};
+		DBE4FE3B7C7209D6CF785236 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NotificationService;
+			target = 49337A89BA237B159B93A34F /* NotificationService */;
+			targetProxy = F26E55D47F6444FF0A791F11 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -614,7 +694,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = Kindred/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -648,7 +728,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JCSXY9MWTL;
 				INFOPLIST_FILE = Kindred/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -685,12 +765,47 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0.10;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		833A58BAAF5CF0008BF77C75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JCSXY9MWTL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl.notificationservice;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -741,7 +856,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -799,7 +914,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -815,6 +930,37 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		BD4B89E1009636B32F72B4DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JCSXY9MWTL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl.notificationservice;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
 		};
 		CF6EF781DF7A4E01A9A35E77 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -832,6 +978,10 @@
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0.10;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lc++",
+				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kindred.kindredtsl.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -849,6 +999,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83B1D34FFB6EAFDDF5D65662 /* Build configuration list for PBXNativeTarget "NotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				833A58BAAF5CF0008BF77C75 /* Release */,
+				BD4B89E1009636B32F72B4DD /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

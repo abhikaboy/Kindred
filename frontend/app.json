@@ -35,7 +35,10 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile and posts.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save photos to your photo library.",
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition to generate tasks.",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks."
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone to generate tasks.",
+        "NSUserActivityTypes": [
+          "INSendMessageIntent"
+        ]
       },
       "entitlements": {
         "aps-environment": "production",
@@ -44,7 +47,8 @@
         ],
         "com.apple.security.application-groups": [
           "group.com.kindred.kindredtsl"
-        ]
+        ],
+        "com.apple.developer.usernotifications.communication": true
       },
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.kindred.kindredtsl"
