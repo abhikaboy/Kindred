@@ -1,15 +1,33 @@
-# Parent repo (EAS archives from monorepo root)
-../.git
-../backend
-../docs
-../.claude
+# NOTE: EAS archives from the MONOREPO ROOT (the git root), not from frontend/.
+# Patterns are therefore matched against paths like "frontend/ios/Pods/", which
+# is why bare "ios/Pods/" or "../backend" entries silently match nothing. Every
+# pattern below is written with a leading **/ so it works regardless of which
+# directory EAS treats as the archive root.
+
+# Sibling projects - not needed to build the app
+**/backend/
+**/docs/
+**/.claude/
+**/.git/
+**/cli/
+
+# Dependencies and native build artifacts. Regenerated on the build worker.
+**/node_modules/
+**/Pods/
+**/ios/build/
+**/ios/DerivedData/
+**/xcuserdata/
+**/android/build/
+**/android/app/build/
+**/android/.gradle/
+**/.expo/
 
 # IDE
-.idea/
-.vscode/
+**/.idea/
+**/.vscode/
 
 # OS
-.DS_Store
+**/.DS_Store
 
 # Test coverage
-coverage/
+**/coverage/

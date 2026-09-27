@@ -63,6 +63,26 @@ target 'Kindred' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Xcode 27 rejects deployment targets below iOS 15.0 as hard errors rather
+    # than warnings. Several pods (and their generated *_Privacy resource
+    # bundles) still declare targets as low as 9.0 in their podspecs, which
+    # fails the build. Floor every pod target to the app's own deployment
+    # target so they stay in the supported range.
+    min_ios_version = podfile_properties['ios.deploymentTarget'] || '15.1'
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        # Only ever raise a target, never lower one. A nil value means the
+        # target inherits from the project, which may legitimately be higher
+        # than the floor (expo-router, for example, requires iOS 16), so leave
+        # those alone rather than pinning them down to the floor.
+        next if current.nil?
+        if Gem::Version.new(current) < Gem::Version.new(min_ios_version)
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version
+        end
+      end
+    end
   end
 
 end

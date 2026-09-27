@@ -42,3 +42,6 @@ yarn-error.*
 .env
 
 .env.local
+
+# EAS local build artifacts
+build-*.tar.gz

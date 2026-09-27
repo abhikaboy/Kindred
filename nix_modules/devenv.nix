@@ -2,7 +2,11 @@
   imports = [
     inputs.devenv.flakeModule
   ];
-  perSystem = {pkgs, ...}: {
+  perSystem = {
+    pkgs,
+    system,
+    ...
+  }: {
     devenv = {
       modules = [
         inputs.env-help.devenvModule
@@ -73,7 +77,7 @@
         packages = with pkgs; [
           nodePackages.eslint
           nodePackages.prettier
-          bun
+          inputs.nixpkgs-bun.legacyPackages.${system}.bun
           git
           go
           python3
@@ -178,10 +182,10 @@
               cd "$DEVENV_ROOT"/frontend
               if [ "$1" = "simulator" ]; then
                 echo "📱 Building for iOS Simulator..."
-                bunx eas build --profile development-simulator --platform ios --local
+                bunx eas-cli build --profile development-simulator --platform ios --local
               else
                 echo "📱 Building for physical device..."
-                bunx eas build --profile development --platform ios --local
+                bunx eas-cli build --profile development --platform ios --local
               fi
             '';
           };
