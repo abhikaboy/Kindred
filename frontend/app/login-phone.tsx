@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/hooks/useAuth";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import { useVerification } from "@/hooks/useVerification";
+import { normalizeE164 } from "@/utils/phone";
 import { OtpInput } from "react-native-otp-entry";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -24,6 +25,11 @@ const LoginPhone = () => {
     const { sendOTP, sendingOTP, sendOTPError } = useVerification();
 
     const [phoneNumber, setPhoneNumber] = useState("");
+
+    // The API expects E.164 ("+15551234567"); the input collects bare digits.
+    // Onboarding builds this from an explicit country-code picker, but this
+    // screen has none, so fall back to the shared helper's default region.
+    const normalizedPhone = normalizeE164(phoneNumber);
     const [otpCode, setOtpCode] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -52,6 +58,11 @@ const LoginPhone = () => {
             return;
         }
 
+        if (!normalizedPhone) {
+            setError("Please enter a valid phone number");
+            return;
+        }
+
         if (loginMode === "password") {
             setError("");
             setStep("password");
@@ -61,7 +72,7 @@ const LoginPhone = () => {
         setLoading(true);
         setError("");
         try {
-            await sendOTP(phoneNumber);
+            await sendOTP(normalizedPhone);
             setStep("otp");
             setResendTimer(30);
             setCanResend(false);
@@ -82,7 +93,7 @@ const LoginPhone = () => {
         setLoading(true);
         setError("");
         try {
-            await loginWithOTP(phoneNumber, otpCode);
+            await loginWithOTP(normalizedPhone ?? phoneNumber, otpCode);
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (err: any) {
             console.error("Login failed:", err);
@@ -111,7 +122,7 @@ const LoginPhone = () => {
         setLoading(true);
         setError("");
         try {
-            await loginWithPhone(phoneNumber, password);
+            await loginWithPhone(normalizedPhone ?? phoneNumber, password);
             router.push("/(logged-in)/(tabs)/(task)");
         } catch (err: any) {
             console.error("Login failed:", err);
@@ -130,13 +141,13 @@ const LoginPhone = () => {
     };
 
     const handleResend = async () => {
-        if (canResend) {
+        if (canResend && normalizedPhone) {
             setCanResend(false);
             setResendTimer(30);
             setOtpCode("");
             setError("");
             try {
-                await sendOTP(phoneNumber);
+                await sendOTP(normalizedPhone);
             } catch (err) {
                 console.error("Resend failed:", err);
                 setError("Failed to resend code. Please try again.");
