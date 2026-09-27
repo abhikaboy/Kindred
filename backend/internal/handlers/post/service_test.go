@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	Post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	Post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
 	"go.mongodb.org/mongo-driver/bson"

@@ -36,7 +36,7 @@ type CreateTaskParams struct {
 
 	Notes       string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist   []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
-	Links       []TaskLink      `bson:"links,omitempty" json:"links,omitempty"`
+	Links       []TaskLink      `bson:"links,omitempty" json:"links,omitempty" doc:"URLs to attach; links found in the notes are added automatically"`
 	Reminders   []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
 	Integration string          `bson:"integration,omitempty" json:"integration,omitempty"`
 
@@ -46,7 +46,7 @@ type CreateTaskParams struct {
 
 	// AutoCategorize lets the caller skip picking a category: the task is filed
 	// into the user's Inbox and a background job moves it once it has a guess.
-	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty"`
+	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty" doc:"File this task into the Inbox and let the background job choose its category"`
 
 	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
@@ -140,7 +140,7 @@ type UpdateTaskNotesDocument struct {
 // the list they want stored; notes-derived links are re-added on the next notes
 // edit regardless, so removing one here only sticks until the notes change.
 type UpdateTaskLinksDocument struct {
-	Links []TaskLink `bson:"links" json:"links"`
+	Links []TaskLink `bson:"links" json:"links" doc:"Full replacement link list"`
 }
 
 type UpdateTaskChecklistDocument struct {

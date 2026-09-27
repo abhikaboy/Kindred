@@ -160,7 +160,7 @@ func (s *Service) CreateCongratulation(r *CongratulationDocumentInternal) (*Cong
 	if r.Type == "video" && r.ThumbnailURL != nil {
 		videoThumb = *r.ThumbnailURL
 	}
-	err = s.sendCongratulationNotification(r.Receiver, r.Sender.Name, r.TaskName, r.Message, r.Type, r.PostID, videoThumb)
+	err = s.sendCongratulationNotification(r.Receiver, r.Sender, r.TaskName, r.Message, r.Type, r.PostID, videoThumb)
 	if err != nil {
 		// Log error but don't fail the operation since congratulation was already created
 		slog.Error("Failed to send congratulation notification", "error", err, "receiver_id", r.Receiver)
@@ -511,7 +511,9 @@ func (s *Service) GetSenderInfo(senderID primitive.ObjectID) (*CongratulationSen
 
 // sendCongratulationNotification sends a push notification when a congratulation is created.
 // postID may be nil — congratulations created outside the post flow (e.g. beak onboarding) won't carry one.
-func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, senderName, taskName, congratulationText, congratulationType string, postID *primitive.ObjectID, videoThumbnailURL string) error {
+func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, sender CongratulationSenderInternal, taskName, congratulationText, congratulationType string, postID *primitive.ObjectID, videoThumbnailURL string) error {
+	senderName := sender.Name
+
 	if s.Users == nil {
 		return fmt.Errorf("users collection not available")
 	}
@@ -547,20 +549,26 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 	if congratulationType == "video" {
 		message = fmt.Sprintf("%s sent you a video cheer for \"%s\"!", senderName, taskName)
 		notification = xutils.Notification{
-			Token:    receiver.PushToken,
-			Title:    "You're killing it!",
-			Message:  message,
-			ImageURL: videoThumbnailURL, // push can't play video; show its thumbnail
-			Data:     data,
+			Token:        receiver.PushToken,
+			Title:        "You're killing it!",
+			Message:      message,
+			ImageURL:     videoThumbnailURL, // push can't play video; show its thumbnail
+			Data:         data,
+			SenderName:   senderName,
+			SenderAvatar: sender.Picture,
+			SenderID:     sender.ID.Hex(),
 		}
 	} else if congratulationType == "image" {
 		message = fmt.Sprintf("%s is celebrating your work on \"%s\"!", senderName, taskName)
 		notification = xutils.Notification{
-			Token:    receiver.PushToken,
-			Title:    "You're killing it!",
-			Message:  message,
-			ImageURL: congratulationText, // The message field contains the image URL for type="image"
-			Data:     data,
+			Token:        receiver.PushToken,
+			Title:        "You're killing it!",
+			Message:      message,
+			ImageURL:     congratulationText, // The message field contains the image URL for type="image"
+			Data:         data,
+			SenderName:   senderName,
+			SenderAvatar: sender.Picture,
+			SenderID:     sender.ID.Hex(),
 		}
 	} else {
 		message = fmt.Sprintf("%s on \"%s\": \"%s\"", senderName, taskName, congratulationText)
@@ -569,7 +577,10 @@ func (s *Service) sendCongratulationNotification(receiverID primitive.ObjectID, 
 			Title:   "You're killing it!",
 			Message: message,
 			// No ImageURL for text congratulations
-			Data: data,
+			Data:         data,
+			SenderName:   senderName,
+			SenderAvatar: sender.Picture,
+			SenderID:     sender.ID.Hex(),
 		}
 	}
 
@@ -611,7 +622,7 @@ func (s *Service) SendBeakCongratulation(receiverID primitive.ObjectID, message,
 	}
 
 	// Send push notification
-	err = s.sendCongratulationNotification(receiverID, beakName, taskName, message, "message", nil, "")
+	err = s.sendCongratulationNotification(receiverID, CongratulationSenderInternal{Name: beakName, Picture: beakPicture, ID: beakID}, taskName, message, "message", nil, "")
 	if err != nil {
 		slog.Error("Failed to send beak congratulation notification", "error", err, "receiver_id", receiverID)
 	}

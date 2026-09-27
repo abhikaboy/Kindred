@@ -31,7 +31,7 @@ type CategoryDocument struct {
 
 	// IsInbox marks the per-user holding category that auto-categorized tasks
 	// land in before the background job files them. There is at most one.
-	IsInbox bool `bson:"isInbox,omitempty" json:"isInbox,omitempty"`
+	IsInbox bool `bson:"isInbox,omitempty" json:"isInbox,omitempty" doc:"Holding category for tasks awaiting automatic categorization"`
 }
 
 type WorkspaceDocument struct {
@@ -85,20 +85,20 @@ type TaskDocument struct {
 	// AutoCategorize marks a task the user chose not to file: it sits in their
 	// Inbox until the background categorization job finds it a home. Cleared
 	// once the job places the task, or gives up on it.
-	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty"`
+	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty" doc:"Task is waiting in the Inbox for the background categorization job"`
 
 	// AutoCategorizeAttempts counts classification runs, so a task the model
 	// can't place doesn't get retried forever.
-	AutoCategorizeAttempts int `bson:"autoCategorizeAttempts,omitempty" json:"autoCategorizeAttempts,omitempty"`
+	AutoCategorizeAttempts int `bson:"autoCategorizeAttempts,omitempty" json:"autoCategorizeAttempts,omitempty" doc:"How many times the classifier has tried to place this task"`
 
 	// AutoCategorizedAt is set when the job moved the task, so clients can flag
 	// a freshly auto-filed task for the user to double-check.
-	AutoCategorizedAt *time.Time `bson:"autoCategorizedAt,omitempty" json:"autoCategorizedAt,omitempty"`
+	AutoCategorizedAt *time.Time `bson:"autoCategorizedAt,omitempty" json:"autoCategorizedAt,omitempty" doc:"When the background job filed this task"`
 
 	// Links are URLs attached to the task. Entries with source "notes" are
 	// derived from the notes body and re-synced on every notes edit; entries
 	// with source "manual" were added by the user and are never auto-removed.
-	Links []TaskLink `bson:"links,omitempty" json:"links,omitempty"`
+	Links []TaskLink `bson:"links,omitempty" json:"links,omitempty" doc:"URLs attached to the task, from the notes or added by hand"`
 
 	BlueprintID *primitive.ObjectID `bson:"blueprintId,omitempty" json:"blueprintId,omitempty"`
 	Integration string              `bson:"integration,omitempty" json:"integration,omitempty"`
@@ -344,9 +344,9 @@ type Subscription struct {
 }
 
 type User struct {
-	ID             primitive.ObjectID   `bson:"_id" json:"_id"`
-	Email          string               `bson:"email" json:"email"`
-	Phone          string               `bson:"phone" json:"phone"`
+	ID    primitive.ObjectID `bson:"_id" json:"_id"`
+	Email string             `bson:"email" json:"email"`
+	Phone string             `bson:"phone" json:"phone"`
 	// PhoneE164 is Phone normalized to E.164, and PhoneHash is its salted
 	// SHA-256. Both are derived from Phone on write; PhoneHash is what contact
 	// matching joins against so we never need the raw number of a non-user.
@@ -505,7 +505,7 @@ type NotificationSettings struct {
 	Congratulations  bool   `bson:"congratulations" json:"congratulations"`
 	FriendRequests   bool   `bson:"friend_requests" json:"friend_requests"`
 	// ContactJoins controls the "someone in your contacts joined Kindred" push.
-	ContactJoins     bool   `bson:"contact_joins" json:"contact_joins"`
+	ContactJoins bool `bson:"contact_joins" json:"contact_joins"`
 }
 
 // DashboardConfiguration controls visibility of dashboard sections

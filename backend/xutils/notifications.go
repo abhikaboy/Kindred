@@ -7,6 +7,19 @@ type Notification struct {
 	Data     map[string]string
 	Title    string
 	ImageURL string // Optional image URL for notification thumbnail
+
+	// SenderName and SenderAvatar describe the person the notification is
+	// *from*. When both are set, iOS renders the push as a communication
+	// notification: the sender's avatar replaces the Kindred app icon in the
+	// leading slot and their name becomes the title, the way a text message
+	// looks. Leave them empty for notifications with no human actor (rings
+	// closed, kudos suggestions) to get the normal app-icon treatment.
+	//
+	// SenderID is optional; it groups repeat notifications from the same
+	// person into one thread in Notification Center.
+	SenderName   string
+	SenderAvatar string
+	SenderID     string
 }
 
 // DefaultPushSender is the global push notification sender used by the application
