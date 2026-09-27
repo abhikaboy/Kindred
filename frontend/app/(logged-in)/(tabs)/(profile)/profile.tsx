@@ -1,5 +1,6 @@
 import { StyleSheet, ScrollView, Image, Dimensions, View, TouchableOpacity } from "react-native";
 
+import { useGuestAccountWall } from "@/hooks/useGuestAccountWall";
 import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icons } from "@/constants/Icons";
@@ -28,6 +29,8 @@ import { getCompletedTasksAPI } from "@/api/task";
 
 
 export default function Profile() {
+    // Their own profile first, then the nudge; once per session
+    useGuestAccountWall("profile", { delayMs: 3000, everyVisit: false });
     const { user } = useAuth();
     const { startTodayTasks, dueTodayTasks, windowTasks } = useTasks();
     let ThemedColor = useThemeColor();

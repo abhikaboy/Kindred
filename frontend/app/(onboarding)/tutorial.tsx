@@ -14,6 +14,8 @@ import {
 
 // Shared smoothing curve so cursors glide between spots instead of jumping.
 const CURSOR_EASE = Easing.inOut(Easing.cubic);
+import { markGuestTutorialDone, promptAccountAfterSkippingTutorial } from "@/hooks/useAccountOverlay";
+import { guestTutorialDoneKey } from "@/constants/authStorageKeys";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -630,6 +632,27 @@ export default function TutorialOnboarding() {
         if (user?._id) {
             await AsyncStorage.setItem(`${user._id}-guest-tutorial-done`, "true").catch(() => {});
         }
+        markGuestTutorialDone();
+        router.replace("/(logged-in)/(tabs)/(task)");
+    };
+
+    // Guest skip: straight to Home with the tour marked seen, then the account overlay
+    const handleGuestSkip = async () => {
+        if (guestFinishedRef.current) return;
+        guestFinishedRef.current = true;
+        capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+            step_name: OnboardingSteps.TUTORIAL.name,
+            step_index: OnboardingSteps.TUTORIAL.index,
+            skipped: true,
+        });
+        setSelected("");
+        if (user?._id) {
+            await AsyncStorage.multiSet([
+                [guestTutorialDoneKey(user._id), "true"],
+                [`${user._id}-home-tour-seen`, "true"],
+            ]).catch(() => {});
+        }
+        promptAccountAfterSkippingTutorial();
         router.replace("/(logged-in)/(tabs)/(task)");
     };
 
@@ -645,7 +668,16 @@ export default function TutorialOnboarding() {
     return (
         <ThemedView style={styles.mainContainer}>
             {isGuest ? (
-                <OnboardingProgressBar currentStep={Math.min(step, STEP_RINGS) + 1} totalSteps={GUEST_TOTAL_STEPS} />
+                <>
+                    <OnboardingProgressBar currentStep={Math.min(step, STEP_RINGS) + 1} totalSteps={GUEST_TOTAL_STEPS} />
+                    <TouchableOpacity
+                        onPress={handleGuestSkip}
+                        hitSlop={12}
+                        accessibilityRole="button"
+                        style={[styles.skip, { top: insets.top + 16 }]}>
+                        <ThemedText type="caption">Skip</ThemedText>
+                    </TouchableOpacity>
+                </>
             ) : (
                 <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
             )}
@@ -1141,6 +1173,7 @@ export default function TutorialOnboarding() {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+    skip: { position: "absolute", right: 16, zIndex: 3 },
     mainContainer: {
         flex: 1,
     },

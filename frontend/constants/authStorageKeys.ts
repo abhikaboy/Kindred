@@ -16,6 +16,5 @@ export const guestTutorialDoneKey = (userId: string) => `${userId}-guest-tutoria
  * cached state is never mistaken for a pre-existing account. */
 export const GUEST_INSTALL_KEY = "guestInstall";
 
-/** "true" once the given guest has been shown the account prompt after their
- * first self-created task. */
-export const accountPromptFirstTaskKey = (userId: string) => `${userId}-account-prompt-first-task`;
+/** How many tasks the given guest has created since finishing the tutorial. */
+export const guestTaskCountKey = (userId: string) => `${userId}-guest-task-count`;

@@ -4,13 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFocusMode } from "@/contexts/focusModeContext";
 
 // Full-screen, gesture-driven first-touch tour: teaches the pager swipe
-// (right → workspaces, left → calendar/list), the home button, then chains
-// into a one-step intro for focus mode. Separate from useHomeTour (the
+// (right → workspaces, left → calendar/list), then chains into a one-step
+// intro for focus mode. Separate from useHomeTour (the
 // scroll-guided dashboard reveal) since it spans pages instead of sections
 // and needs real swipes, not taps, to advance.
 
-export type IntroStep = "swipeRight" | "swipeLeft" | "homeButton" | "focusMode";
-const STEPS: IntroStep[] = ["swipeRight", "swipeLeft", "homeButton", "focusMode"];
+export type IntroStep = "swipeRight" | "swipeLeft" | "focusMode";
+const STEPS: IntroStep[] = ["swipeRight", "swipeLeft", "focusMode"];
 const START_DELAY_MS = 900;
 
 type Args = {
@@ -78,14 +78,15 @@ export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, 
             setSelected("");
             setStepIndex(1);
         } else if (step === "swipeLeft" && activeIndex === todayIndex) {
-            setStepIndex(2);
+            // Let the Today page register, then bring them home where the
+            // focus-mode button lives for the last step.
+            const t = setTimeout(() => {
+                setSelected("");
+                setStepIndex(2);
+            }, 700);
+            return () => clearTimeout(t);
         }
     }, [active, activeIndex, stepIndex, homeIndex, todayIndex, setSelected]);
-
-    const onHomeButtonPress = useCallback(() => {
-        setSelected("");
-        setStepIndex(3);
-    }, [setSelected]);
 
     const onFocusModePress = useCallback(() => {
         toggleFocusMode();
@@ -99,7 +100,6 @@ export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, 
         step: active ? STEPS[stepIndex] : null,
         stepIndex,
         totalSteps: STEPS.length,
-        onHomeButtonPress,
         onFocusModePress,
         skip,
     };

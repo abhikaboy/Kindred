@@ -19,6 +19,7 @@ import {
     dismissAccountOverlay,
     registerAccountOverlayHost,
     setAccountOverlayEligible,
+    setAccountOverlayGuest,
     useAccountOverlay,
     type AccountOverlayDismissMethod,
 } from "@/hooks/useAccountOverlay";
@@ -53,6 +54,7 @@ export function AccountOverlay() {
     // Only a guest who has finished the tutorial is ever prompted.
     const userId = user?._id;
     useEffect(() => {
+        setAccountOverlayGuest(userId && isGuest ? userId : null);
         if (!userId || !isGuest) {
             setAccountOverlayEligible(false);
             setSheetVisible(false);
@@ -179,6 +181,11 @@ export function AccountOverlay() {
                             paddingBottom: insets.bottom + 16,
                         },
                     ]}>
+                    {request?.reason === "task-limit" && (
+                        <ThemedText type="subtitle" style={{ marginBottom: 24 }}>
+                            Please make an account to continue!
+                        </ThemedText>
+                    )}
                     <AuthCtaBlock
                         promptColor={ThemedColor.text}
                         onJoin={() => openSheet("register")}

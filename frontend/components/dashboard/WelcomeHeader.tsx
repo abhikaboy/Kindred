@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { GearSix, Moon } from "phosphor-react-native";
+import { setFocusButtonRect } from "@/hooks/useFocusButtonRect";
 
 interface WelcomeHeaderProps {
     userName?: string;
@@ -19,6 +20,13 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     onToggleFocusMode,
 }) => {
     const currentHour = new Date().getHours();
+    const focusBtnRef = useRef<View>(null);
+    // Publish where the moon button sits so the intro tour can point at it
+    const publishFocusRect = () => {
+        focusBtnRef.current?.measureInWindow((x, y, width, height) => {
+            if (width > 0) setFocusButtonRect({ x, y, width, height });
+        });
+    };
 
     let greeting;
     if (currentHour < 12) {
@@ -43,7 +51,13 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
                 </View>
 
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={onToggleFocusMode} hitSlop={8} activeOpacity={0.7} style={styles.gearBtn}>
+                    <TouchableOpacity
+                        ref={focusBtnRef}
+                        onLayout={publishFocusRect}
+                        onPress={onToggleFocusMode}
+                        hitSlop={8}
+                        activeOpacity={0.7}
+                        style={styles.gearBtn}>
                         <Moon
                             size={22}
                             color={focusMode ? ThemedColor.primary : ThemedColor.caption}

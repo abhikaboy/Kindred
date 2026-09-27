@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { accountPromptFirstTaskKey, guestTutorialDoneKey } from "@/constants/authStorageKeys";
+import { guestTaskCountKey, guestTutorialDoneKey } from "@/constants/authStorageKeys";
 import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
 
 /**
@@ -13,8 +13,8 @@ import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
  * lives in the (logged-in) layout.
  */
 
-export type AccountOverlayReason = "first-task" | "social" | "login-link";
-export type SocialSurface = "feed" | "search" | "friends";
+export type AccountOverlayReason = "task-limit" | "social" | "login-link" | "skipped-tutorial";
+export type SocialSurface = "feed" | "search" | "friends" | "profile";
 export type AccountOverlayDismissMethod = "scrim" | "not_now" | "back";
 
 export type AccountOverlayRequest = {
@@ -30,7 +30,9 @@ type State = {
 };
 
 // Long enough to see the new task land before the overlay fades in.
-export const FIRST_TASK_PROMPT_DELAY_MS = 1500;
+export const TASK_PROMPT_DELAY_MS = 1500;
+// From this many self-made tasks on, every new one asks for an account.
+export const GUEST_TASK_LIMIT = 3;
 
 let state: State = { visible: false, request: null };
 const listeners = new Set<() => void>();
@@ -41,10 +43,14 @@ let eligible = false;
 // A request made while the home tour is running waits for the tour to end.
 let pending: AccountOverlayRequest | null = null;
 let tourActive = false;
+// The signed-in guest, so eligibility can be re-read from storage when stale.
+let guestId: string | null = null;
+// Set by skipping the tutorial: open as soon as the host confirms eligibility.
+let openWhenEligible = false;
 // Social surfaces already prompted this app session.
 const promptedSurfaces = new Set<SocialSurface>();
-// Guests whose first-task prompt is already scheduled or done in this session.
-const firstTaskHandled = new Set<string>();
+// Serializes the persisted task count so tasks created together all count.
+let taskCountChain: Promise<unknown> = Promise.resolve();
 
 const setState = (next: State) => {
     state = next;
@@ -117,53 +123,93 @@ export function registerAccountOverlayHost() {
 export function setAccountOverlayEligible(value: boolean) {
     eligible = value;
     if (!value) closeAccountOverlay();
+    else if (openWhenEligible) {
+        openWhenEligible = false;
+        openAccountOverlay("skipped-tutorial");
+    }
+}
+
+/** Set by the host so the store can re-check the tutorial flag itself. */
+export function setAccountOverlayGuest(id: string | null) {
+    guestId = id;
 }
 
 /**
- * Social surfaces need an account. The first time per session a guest reaches
- * one, show the overlay instead. Returns true when it did, so the caller can
- * hold the navigation back.
+ * The host reads the tutorial flag once on mount, which misses a tutorial
+ * finished while it was already mounted. Re-read before giving up.
  */
-export function promptAccountForSocial(surface: SocialSurface, onDismiss?: () => void): boolean {
-    if (!eligible || hostCount === 0 || state.visible || tourActive) return false;
-    if (promptedSurfaces.has(surface)) return false;
+async function refreshEligible(): Promise<boolean> {
+    if (eligible) return true;
+    const id = guestId;
+    if (!id) return false;
+    try {
+        if ((await AsyncStorage.getItem(guestTutorialDoneKey(id))) !== "true") return false;
+    } catch {
+        return false;
+    }
+    if (guestId !== id) return false;
+    setAccountOverlayEligible(true);
+    return true;
+}
+
+/** The guest finished the tutorial; triggers can fire from now on. */
+export function markGuestTutorialDone() {
+    setAccountOverlayEligible(true);
+}
+
+/** The guest skipped the tutorial: prompt as soon as they land in the app. */
+export function promptAccountAfterSkippingTutorial() {
+    eligible = true;
+    if (hostCount > 0) openAccountOverlay("skipped-tutorial");
+    else openWhenEligible = true;
+}
+
+/**
+ * Social surfaces need an account, so a guest reaching one gets the overlay.
+ * Once per session unless `everyVisit`. Returns true when it showed.
+ */
+export function promptAccountForSocial(
+    surface: SocialSurface,
+    onDismiss?: () => void,
+    { everyVisit = false }: { everyVisit?: boolean } = {}
+): boolean {
+    if (!eligible) {
+        void refreshEligible().then((ok) => ok && promptAccountForSocial(surface, onDismiss, { everyVisit }));
+        return false;
+    }
+    if (hostCount === 0 || state.visible || tourActive) return false;
+    if (!everyVisit && promptedSurfaces.has(surface)) return false;
     promptedSurfaces.add(surface);
     openAccountOverlay("social", { surface, onDismiss });
     return true;
 }
 
 /**
- * After a guest's first self-created task. Only once per guest (persisted), and
- * never for the tutorial's own task: the tutorial-done flag isn't set until the
- * tutorial finishes, and no host is mounted while it runs.
+ * After each task a guest creates. From their GUEST_TASK_LIMIT-th on, ask for an
+ * account. The tutorial's own task never counts: its done flag isn't set yet.
  */
-export async function promptAccountAfterFirstTask(user?: { _id?: string; isGuest?: boolean } | null) {
+export function promptAccountAfterTask(user?: { _id?: string; isGuest?: boolean } | null): Promise<void> {
     const userId = user?._id;
-    if (!userId || !user?.isGuest || hostCount === 0) return;
-    if (firstTaskHandled.has(userId)) return;
-    firstTaskHandled.add(userId);
-    try {
-        const [done, prompted] = await Promise.all([
-            AsyncStorage.getItem(guestTutorialDoneKey(userId)),
-            AsyncStorage.getItem(accountPromptFirstTaskKey(userId)),
-        ]);
-        if (done !== "true" || prompted === "true") {
-            // Tutorial not finished yet: let a later task try again.
-            if (done !== "true") firstTaskHandled.delete(userId);
+    if (!userId || !user?.isGuest || hostCount === 0) return Promise.resolve();
+    const run = taskCountChain.then(async () => {
+        let count: number;
+        try {
+            if ((await AsyncStorage.getItem(guestTutorialDoneKey(userId))) !== "true") return;
+            count = (Number(await AsyncStorage.getItem(guestTaskCountKey(userId))) || 0) + 1;
+            await AsyncStorage.setItem(guestTaskCountKey(userId), String(count));
+        } catch {
             return;
         }
-    } catch {
-        firstTaskHandled.delete(userId);
-        return;
-    }
-    setTimeout(() => {
-        if (hostCount === 0 || !eligible || state.visible) {
-            firstTaskHandled.delete(userId);
-            return;
-        }
-        AsyncStorage.setItem(accountPromptFirstTaskKey(userId), "true").catch(() => {});
-        openAccountOverlay("first-task");
-    }, FIRST_TASK_PROMPT_DELAY_MS);
+        if (count < GUEST_TASK_LIMIT) return;
+        // The flag was just read as done, so the host's view may be stale
+        if (!eligible) setAccountOverlayEligible(true);
+        setTimeout(() => {
+            if (hostCount === 0 || !eligible) return;
+            openAccountOverlay("task-limit");
+        }, TASK_PROMPT_DELAY_MS);
+    });
+    taskCountChain = run.catch(() => {});
+    return run;
 }
 
 export function useAccountOverlay() {
@@ -184,7 +230,9 @@ export function __resetAccountOverlayStore() {
     eligible = false;
     pending = null;
     tourActive = false;
+    openWhenEligible = false;
+    guestId = null;
     promptedSurfaces.clear();
-    firstTaskHandled.clear();
+    taskCountChain = Promise.resolve();
     listeners.forEach((fn) => fn());
 }

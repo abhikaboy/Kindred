@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { View } from "react-native";
 import { useTasks } from "@/contexts/tasksContext";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
-import { ThemedText } from "@/components/ThemedText";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { SectionTitle } from "@/components/dashboard/SectionHeader";
 
 // Home "In Progress" list: every task marked in progress (durable `active`) or
 // with a live focus session, so you can see what you're in the middle of.
@@ -19,7 +19,7 @@ const WorkingOnRow: React.FC = () => {
 
     return (
         <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginTop: 6, marginBottom: 12, gap: 8 }}>
-            <ThemedText type="subtitle">In Progress</ThemedText>
+            <SectionTitle title="In Progress" />
             {inProgress.map((task) => (
                 <SwipableTaskCard key={task.id} redirect={true} categoryId={task.categoryID!} task={task} />
             ))}

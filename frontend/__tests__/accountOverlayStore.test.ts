@@ -8,18 +8,19 @@ import {
     __resetAccountOverlayStore,
     dismissAccountOverlay,
     closeAccountOverlay,
-    FIRST_TASK_PROMPT_DELAY_MS,
+    TASK_PROMPT_DELAY_MS,
     openAccountOverlay,
-    promptAccountAfterFirstTask,
+    promptAccountAfterTask,
     promptAccountForSocial,
+    promptAccountAfterSkippingTutorial,
     registerAccountOverlayHost,
     setAccountOverlayEligible,
+    setAccountOverlayGuest,
     useAccountOverlay,
 } from "@/hooks/useAccountOverlay";
 import { renderHook, act } from "@testing-library/react-native";
 
 const guest = { _id: "g1", isGuest: true };
-const flush = () => new Promise((r) => jest.requireActual("timers").setImmediate(r));
 
 describe("account overlay store", () => {
     beforeEach(async () => {
@@ -58,44 +59,70 @@ describe("account overlay store", () => {
         expect(promptAccountForSocial("search")).toBe(true);
     });
 
+    it("can prompt a surface on every visit", () => {
+        registerAccountOverlayHost();
+        setAccountOverlayEligible(true);
+        expect(promptAccountForSocial("feed", undefined, { everyVisit: true })).toBe(true);
+        act(() => dismissAccountOverlay());
+        expect(promptAccountForSocial("feed", undefined, { everyVisit: true })).toBe(true);
+    });
+
+    it("opens once eligible after the tutorial is skipped", () => {
+        const { result } = renderHook(() => useAccountOverlay());
+        act(() => promptAccountAfterSkippingTutorial());
+        expect(result.current.visible).toBe(false);
+        registerAccountOverlayHost();
+        act(() => setAccountOverlayEligible(true));
+        expect(result.current.request?.reason).toBe("skipped-tutorial");
+    });
+
+    it("re-reads the tutorial flag when the host's view is stale", async () => {
+        registerAccountOverlayHost();
+        setAccountOverlayGuest("g1");
+        setAccountOverlayEligible(false);
+        const { result } = renderHook(() => useAccountOverlay());
+        await AsyncStorage.setItem("g1-guest-tutorial-done", "true");
+        expect(promptAccountForSocial("feed", undefined, { everyVisit: true })).toBe(false);
+        await act(() => new Promise((r) => jest.requireActual("timers").setImmediate(r)));
+        expect(result.current.request?.surface).toBe("feed");
+    });
+
     it("waits for the home tour to finish", () => {
         registerAccountOverlayHost();
         const { result } = renderHook(() => useAccountOverlay());
         act(() => homeTourVisibilityEvents.emit(true));
-        act(() => openAccountOverlay("first-task"));
+        act(() => openAccountOverlay("task-limit"));
         expect(result.current.visible).toBe(false);
         act(() => homeTourVisibilityEvents.emit(false));
         expect(result.current.visible).toBe(true);
     });
 
-    it("prompts after the first task only once the tutorial is done, and only once", async () => {
+    it("asks for an account from the third post-tutorial task on", async () => {
         jest.useFakeTimers();
         try {
             registerAccountOverlayHost();
             setAccountOverlayEligible(true);
             const { result } = renderHook(() => useAccountOverlay());
+            const settle = () => act(() => jest.advanceTimersByTime(TASK_PROMPT_DELAY_MS));
 
-            // The tutorial's own task: flag not set yet
-            await act(() => promptAccountAfterFirstTask(guest));
-            act(() => jest.advanceTimersByTime(FIRST_TASK_PROMPT_DELAY_MS));
-            expect(result.current.visible).toBe(false);
-
+            // The tutorial's own task: flag not set yet, so it doesn't count
+            await act(() => promptAccountAfterTask(guest));
             await AsyncStorage.setItem("g1-guest-tutorial-done", "true");
-            await act(() => promptAccountAfterFirstTask(guest));
+            await act(() => promptAccountAfterTask(guest));
+            await act(() => promptAccountAfterTask(guest));
+            settle();
             expect(result.current.visible).toBe(false);
-            act(() => jest.advanceTimersByTime(FIRST_TASK_PROMPT_DELAY_MS));
-            expect(result.current.visible).toBe(true);
-            expect(result.current.request?.reason).toBe("first-task");
-            await act(flush);
-            expect(await AsyncStorage.getItem("g1-account-prompt-first-task")).toBe("true");
 
+            await act(() => promptAccountAfterTask(guest));
+            settle();
+            expect(result.current.request?.reason).toBe("task-limit");
+            expect(await AsyncStorage.getItem("g1-guest-task-count")).toBe("3");
+
+            // Dismissed, it comes back with the next task
             act(() => dismissAccountOverlay());
-            act(() => __resetAccountOverlayStore());
-            registerAccountOverlayHost();
-            setAccountOverlayEligible(true);
-            await act(() => promptAccountAfterFirstTask(guest));
-            act(() => jest.advanceTimersByTime(FIRST_TASK_PROMPT_DELAY_MS));
-            expect(result.current.visible).toBe(false);
+            await act(() => promptAccountAfterTask(guest));
+            settle();
+            expect(result.current.visible).toBe(true);
         } finally {
             jest.useRealTimers();
         }
@@ -105,7 +132,7 @@ describe("account overlay store", () => {
         registerAccountOverlayHost();
         setAccountOverlayEligible(true);
         await AsyncStorage.setItem("u1-guest-tutorial-done", "true");
-        await promptAccountAfterFirstTask({ _id: "u1", isGuest: false });
-        expect(await AsyncStorage.getItem("u1-account-prompt-first-task")).toBeNull();
+        await promptAccountAfterTask({ _id: "u1", isGuest: false });
+        expect(await AsyncStorage.getItem("u1-guest-task-count")).toBeNull();
     });
 });

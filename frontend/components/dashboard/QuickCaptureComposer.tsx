@@ -51,7 +51,7 @@ import { logger } from "@/utils/logger";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useAuth } from "@/hooks/useAuth";
-import { promptAccountAfterFirstTask } from "@/hooks/useAccountOverlay";
+import { promptAccountAfterTask } from "@/hooks/useAccountOverlay";
 
 export type Receipt = { content: string; details: string };
 
@@ -285,7 +285,8 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         const created = all.filter((_, i) => results[i].status === "fulfilled");
         const failed = all.filter((_, i) => results[i].status === "rejected");
         if (created.length > 0) {
-            void promptAccountAfterFirstTask(user);
+            // Each created task counts toward the guest limit
+            created.forEach(() => void promptAccountAfterTask(user));
             receiptRef.current =
                 created.length === 1
                     ? { content: created[0].content, details: draftDetails(created[0]) }

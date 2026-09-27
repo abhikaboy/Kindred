@@ -16,7 +16,7 @@ type Props = {
 };
 
 /**
- * "Join Kindred" plus the "Already have an account? Log in" line from the
+ * "Create my Account" plus the "Already have an account? Log in" line from the
  * landing screen. Shared by the login screen and the guest account overlay.
  */
 export function AuthCtaBlock({ onJoin, onLogin, promptColor = Colors.light.text, style, children }: Props) {
@@ -25,7 +25,7 @@ export function AuthCtaBlock({ onJoin, onLogin, promptColor = Colors.light.text,
         <View style={[{ gap: 24, width: "100%" }, style]}>
             <PrimaryButton
                 testID="join-kindred-btn"
-                title="Join Kindred"
+                title="Create my Account"
                 onPress={onJoin}
                 style={{
                     shadowColor: ThemedColor.primary,

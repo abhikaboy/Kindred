@@ -10,7 +10,7 @@ import { useApplyCreatedTasks } from "@/hooks/useApplyCreatedTasks";
 import { useRequest } from "@/hooks/useRequest";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/hooks/useAuth";
-import { promptAccountAfterFirstTask } from "@/hooks/useAccountOverlay";
+import { promptAccountAfterTask } from "@/hooks/useAccountOverlay";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { combineDateAndTime } from "@/utils/timeUtils";
 
@@ -141,7 +141,7 @@ export function useSubmitNewTask() {
                     has_deadline: !!deadline,
                     has_checklist: false,
                 });
-                void promptAccountAfterFirstTask(user);
+                void promptAccountAfterTask(user);
                 const { showToastable } = await import("react-native-toastable");
                 showToastable({
                     message: "Added to your Inbox — we'll file it shortly.",
@@ -172,7 +172,7 @@ export function useSubmitNewTask() {
                 has_deadline: !!deadline,
                 has_checklist: false,
             });
-            void promptAccountAfterFirstTask(user);
+            void promptAccountAfterTask(user);
         } catch (error) {
             console.error("Failed to create task:", error);
             removeFromCategory(categoryId, tempId);

@@ -16,7 +16,6 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
 import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
-import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
 
 // Import Phosphor icons
 import {
@@ -29,7 +28,6 @@ import {
 
 // LiquidGlassTabBar emits tabPress with canPreventDefault, but the Tabs listener
 // type doesn't carry that, so preventDefault isn't on the declared event.
-const preventTabPress = (e: unknown) => (e as { preventDefault: () => void }).preventDefault();
 
 // Narrow selector: only subscribe to the index, return -1 if state isn't ready yet
 const useTabIndex = () => useNavigationState((state) => state?.index ?? -1);
@@ -159,12 +157,6 @@ export default function TabLayout() {
                 />
                 <Tabs.Screen
                     name="(feed)"
-                    // Guests get the account overlay over where they are, once per session.
-                    listeners={({ navigation }) => ({
-                        tabPress: (e) => {
-                            if (!navigation.isFocused() && promptAccountForSocial("feed")) preventTabPress(e);
-                        },
-                    })}
                     options={{
                         title: "Feed",
                         tabBarIcon: ({ color, focused }) => (
@@ -175,12 +167,6 @@ export default function TabLayout() {
                 />
                 <Tabs.Screen
                     name="(search)"
-                    // Guests get the account overlay over where they are, once per session.
-                    listeners={({ navigation }) => ({
-                        tabPress: (e) => {
-                            if (!navigation.isFocused() && promptAccountForSocial("search")) preventTabPress(e);
-                        },
-                    })}
                     options={{
                         title: "Search",
                         tabBarIcon: ({ color, focused }) => (

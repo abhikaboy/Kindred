@@ -1,18 +1,18 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, useColorScheme, View } from "react-native";
 import { BlurView } from "expo-blur";
-import { CaretLeft, CaretRight, House, Moon } from "phosphor-react-native";
+import { ArrowUp, CaretLeft, CaretRight, Moon } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import type { IntroStep } from "@/hooks/useIntroTour";
+import { useFocusButtonRect } from "@/hooks/useFocusButtonRect";
 
 type Props = {
     active: boolean;
     step: IntroStep | null;
     stepIndex: number;
     totalSteps: number;
-    onHomeButtonPress: () => void;
     onFocusModePress: () => void;
     onSkip: () => void;
 };
@@ -20,8 +20,7 @@ type Props = {
 const COPY: Record<IntroStep, string> = {
     swipeRight: "Swipe right for your workspaces",
     swipeLeft: "Swipe left for your calendar & list view",
-    homeButton: "Tap here to jump back home anytime",
-    focusMode: "See just today's tasks — nothing else",
+    focusMode: "Tap the moon for Focus mode: just today's tasks, nothing else",
 };
 
 export const IntroTourOverlay: React.FC<Props> = ({
@@ -29,13 +28,15 @@ export const IntroTourOverlay: React.FC<Props> = ({
     step,
     stepIndex,
     totalSteps,
-    onHomeButtonPress,
     onFocusModePress,
     onSkip,
 }) => {
     const tint = useColorScheme() === "dark" ? "dark" : "light";
     const insets = useSafeAreaInsets();
     const bounce = useRef(new Animated.Value(0)).current;
+    const pulse = useRef(new Animated.Value(0)).current;
+    const focusRect = useFocusButtonRect();
+    const arrowNudge = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -4, 0] });
 
     const isSwipeStep = step === "swipeRight" || step === "swipeLeft";
 
@@ -51,6 +52,17 @@ export const IntroTourOverlay: React.FC<Props> = ({
         loop.start();
         return () => loop.stop();
     }, [isSwipeStep, step, bounce]);
+
+    // Focus step: a halo breathes out from the real moon button
+    useEffect(() => {
+        if (step !== "focusMode") return;
+        pulse.setValue(0);
+        const loop = Animated.loop(
+            Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true })
+        );
+        loop.start();
+        return () => loop.stop();
+    }, [step, pulse]);
 
     if (!active || !step) return null;
 
@@ -89,25 +101,44 @@ export const IntroTourOverlay: React.FC<Props> = ({
                 </View>
             )}
 
-            {step === "homeButton" && (
-                <Pressable onPress={onHomeButtonPress} style={[styles.callout, { bottom: insets.bottom + 96, right: 16 }]}>
-                    <House size={20} color="#fff" weight="regular" />
-                    <ThemedText type="defaultSemiBold" style={styles.calloutCopy}>
-                        {COPY.homeButton}
-                    </ThemedText>
-                </Pressable>
-            )}
-
-            {step === "focusMode" && (
-                <Pressable
-                    onPress={onFocusModePress}
-                    style={[styles.callout, { top: insets.top + 56, right: HORIZONTAL_PADDING }]}>
-                    <Moon size={20} color="#fff" weight="regular" />
-                    <ThemedText type="defaultSemiBold" style={styles.calloutCopy}>
-                        {COPY.focusMode}
-                    </ThemedText>
-                </Pressable>
-            )}
+            {step === "focusMode" && focusRect && (() => {
+                const size = Math.max(focusRect.width, focusRect.height) + 16;
+                const cx = focusRect.x + focusRect.width / 2;
+                const cy = focusRect.y + focusRect.height / 2;
+                const ring = { left: cx - size / 2, top: cy - size / 2, width: size, height: size, borderRadius: size / 2 };
+                return (
+                    <>
+                        {/* Halo + ring sit exactly on the real button, above the blur */}
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                styles.focusHalo,
+                                ring,
+                                {
+                                    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
+                                    transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }],
+                                },
+                            ]}
+                        />
+                        <Pressable onPress={onFocusModePress} hitSlop={12} style={[styles.focusRing, ring]}>
+                            <Moon size={22} color="#fff" weight="fill" />
+                        </Pressable>
+                        {/* Arrow centered under the button, callout just below it */}
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[styles.focusArrow, { left: cx - 10, top: ring.top + size + 4, transform: [{ translateY: arrowNudge }] }]}>
+                            <ArrowUp size={20} color="#fff" weight="bold" />
+                        </Animated.View>
+                        <Pressable
+                            onPress={onFocusModePress}
+                            style={[styles.callout, styles.focusCallout, { top: ring.top + size + 32, right: HORIZONTAL_PADDING }]}>
+                            <ThemedText type="defaultSemiBold" style={styles.calloutCopy}>
+                                {COPY.focusMode}
+                            </ThemedText>
+                        </Pressable>
+                    </>
+                );
+            })()}
 
             <View style={[styles.dots, { bottom: insets.bottom + 32 }]} pointerEvents="none">
                 {Array.from({ length: totalSteps }).map((_, i) => (
@@ -139,9 +170,34 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: "center",
     },
-    callout: {
+    focusHalo: {
         position: "absolute",
-        maxWidth: 220,
+        backgroundColor: "rgba(255,255,255,0.5)",
+        zIndex: 10,
+        elevation: 10,
+    },
+    focusRing: {
+        position: "absolute",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 2,
+        borderColor: "#fff",
+        backgroundColor: "rgba(255,255,255,0.16)",
+        zIndex: 11,
+        elevation: 11,
+    },
+    focusCallout: {
+        position: "absolute",
+        zIndex: 11,
+        elevation: 11,
+    },
+    focusArrow: {
+        position: "absolute",
+        zIndex: 11,
+        elevation: 11,
+    },
+    callout: {
+        maxWidth: 240,
         flexDirection: "row",
         alignItems: "center",
         gap: 10,

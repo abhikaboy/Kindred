@@ -8,6 +8,7 @@ import {
     useColorScheme,
     InteractionManager,
 } from "react-native";
+import { useGuestAccountWall } from "@/hooks/useGuestAccountWall";
 import React, { useEffect, useCallback, useMemo, useRef, useReducer, useState } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -122,6 +123,7 @@ const searchReducer = (state: SearchState, action: SearchAction): SearchState =>
 };
 
 const Search = (props: Props) => {
+    useGuestAccountWall("search");
     const [categoryGroups, setCategoryGroups] = React.useState<BlueprintCategoryGroup[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);

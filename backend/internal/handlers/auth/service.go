@@ -339,23 +339,10 @@ func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.Ob
 			tasks: []types.TaskDocument{
 				{
 					ID:         primitive.NewObjectID(),
-					Content:    "Explore the home page",
-					Priority:   1,
-					Value:      1,
-					Active:     true,
-					Public:     false,
-					Recurring:  false,
-					Timestamp:  now,
-					LastEdited: now,
-					StartDate:  &now,
-					UserID:     userID,
-				},
-				{
-					ID:         primitive.NewObjectID(),
 					Content:    "Tap to view details about a task",
 					Priority:   1,
 					Value:      1,
-					Active:     true,
+					Active:     false, // starter tasks start as to-do, not In Progress
 					Public:     false,
 					Recurring:  false,
 					Timestamp:  now,

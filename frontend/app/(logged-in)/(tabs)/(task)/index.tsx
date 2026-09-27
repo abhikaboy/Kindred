@@ -515,7 +515,6 @@ const HomeContent = React.memo(function HomeContent({
                         step={introTour.step}
                         stepIndex={introTour.stepIndex}
                         totalSteps={introTour.totalSteps}
-                        onHomeButtonPress={introTour.onHomeButtonPress}
                         onFocusModePress={introTour.onFocusModePress}
                         onSkip={introTour.skip}
                     />

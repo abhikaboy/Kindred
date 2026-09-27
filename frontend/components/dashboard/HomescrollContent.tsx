@@ -1,4 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import { openAccountOverlay } from "@/hooks/useAccountOverlay";
 import {
     ScrollView,
     View,
@@ -192,6 +195,7 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         setStatsExpanded(expanded);
         onStatsExpandChange?.(expanded);
     }, [onStatsExpandChange]);
+    const isGuest = useIsGuest();
     const [showGoogleCalendarCard, setShowGoogleCalendarCard] = React.useState(true);
     const [calendarLoading, setCalendarLoading] = React.useState(false);
     const [isCalendarLinked, setIsCalendarLinked] = React.useState(false);
@@ -468,13 +472,14 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 {/* Unwrapped so it leaves no gap once hidden for the day */}
                 {!tour.active && <QuickLogDay />}
 
+                {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
+
                 {!tour.active && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, zIndex: 997 }}>
                         <QuickCapture />
                     </View>
                 )}
 
-                {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
                 {!tour.active && <WorkingOnRow />}
 
                 <Animated.View style={{ opacity: dimAnim }}>
@@ -499,13 +504,20 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                     </View>
                 )}
 
+                {/* Guests can't link a calendar; the slot asks them to make an account instead */}
+                {!tour.active && isGuest && (
+                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
+                        <PrimaryButton title="Create my Account" onPress={() => openAccountOverlay("login-link")} />
+                    </View>
+                )}
+
                 {/* Google Calendar Connection Card */}
                 {/* Once Google Calendar is linked, the whole section is hidden from the
                     home page — there's nothing left to prompt. (Sync still lives elsewhere.) */}
-                {!tour.active && showGoogleCalendarCard && !isCalendarLinked && (
+                {!tour.active && !isGuest && showGoogleCalendarCard && !isCalendarLinked && (
                     <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
                         <View style={{ marginBottom: 8 }}>
-                            <SectionHeader title="GOOGLE CALENDAR" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
+                            <SectionHeader title="Google Calendar" variant="prominent" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
                         </View>
                         {dashboardConfig.google_calendar && (
                             <GoogleCalendarCard

@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useGuestAccountWall } from "@/hooks/useGuestAccountWall";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
@@ -85,6 +86,7 @@ type PostData = {
 };
 
 export default function Feed() {
+    useGuestAccountWall("feed");
     const router = useRouter();
     // Deep links (e.g. kudos reaction pushes) open straight onto the notifications page.
     const { page } = useLocalSearchParams<{ page?: string }>();

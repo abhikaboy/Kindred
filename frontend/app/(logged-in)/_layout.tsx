@@ -511,6 +511,14 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         setSplashDone(true);
     }, []);
 
+    // A guest's redirect (to the tutorial) is one-shot. Left set, it fires again
+    // on the next re-render of this layout, e.g. any route change, which bounced
+    // guests from Home back to the start of the tutorial once they finished it.
+    const guestRedirectPending = !isLoading && !!redirectPath && !!user?.isGuest;
+    useEffect(() => {
+        if (guestRedirectPending) setRedirectPath(null);
+    }, [guestRedirectPending]);
+
     // If no user after loading, redirect based on onboarding status. A just-created
     // guest has a user but still needs to leave for the tutorial.
     if (!isLoading && redirectPath && (!user || user.isGuest)) {
