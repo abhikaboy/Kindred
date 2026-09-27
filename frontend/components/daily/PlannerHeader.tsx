@@ -1,79 +1,146 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { CaretLeft, CaretRight } from "phosphor-react-native";
+import { CalendarBlank, CaretLeft, CaretRight, Clock, ListBullets } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 
+export type PlannerView = "day" | "week" | "month";
+
+const VIEW_LABELS: Record<PlannerView, string> = { day: "Day", week: "Week", month: "Month" };
+const VIEWS = Object.keys(VIEW_LABELS) as PlannerView[];
+
+const VIEW_ICONS = {
+    Day: (color: string) => <Clock size={16} color={color} weight="bold" />,
+    Week: (color: string) => <ListBullets size={16} color={color} weight="bold" />,
+    Month: (color: string) => <CalendarBlank size={16} color={color} weight="bold" />,
+};
+
 type Props = {
-    anchorDate: Date;
-    mode: "week" | "month";
+    /** "September 27", "September 21 – 27", "September"; the year is appended when it isn't this year. */
+    title: string;
+    year: number;
+    view: PlannerView;
+    onViewChange: (view: PlannerView) => void;
     onStep: (delta: 1 | -1) => void;
-    onModeChange: (mode: "week" | "month") => void;
+    /** Shown only when today is off screen. */
+    onToday?: () => void;
     onBack?: () => void;
 };
 
-const PlannerHeader = ({ anchorDate, mode, onStep, onModeChange, onBack }: Props) => {
+const PlannerHeader = ({ title, year, view, onViewChange, onStep, onToday, onBack }: Props) => {
     const ThemedColor = useThemeColor();
-    const label = anchorDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const stepLabel = view;
 
     return (
-        <View style={styles.row}>
-            {onBack && (
+        <View style={styles.wrap}>
+            <View style={styles.row}>
+                {onBack && (
+                    <TouchableOpacity
+                        onPress={onBack}
+                        style={[styles.backButton, { backgroundColor: ThemedColor.lightened }]}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Go back"
+                    >
+                        <CaretLeft size={20} color={ThemedColor.text} weight="bold" />
+                    </TouchableOpacity>
+                )}
+                <View style={styles.title}>
+                    <ThemedText
+                        type="fancyFrauncesSubheading"
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.8}
+                        style={{ flexShrink: 1 }}
+                    >
+                        {title}
+                    </ThemedText>
+                    {year !== new Date().getFullYear() && (
+                        <ThemedText type="subtitle_subtle">{year}</ThemedText>
+                    )}
+                </View>
+                {onToday && (
+                    <TouchableOpacity
+                        onPress={onToday}
+                        style={[styles.todayButton, { borderColor: ThemedColor.tertiary }]}
+                        hitSlop={6}
+                        accessibilityRole="button"
+                    >
+                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                            Today
+                        </ThemedText>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                    onPress={onBack}
-                    style={[styles.backButton, { backgroundColor: ThemedColor.lightened }]}
+                    onPress={() => onStep(-1)}
                     hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Go back"
+                    style={[styles.stepButton, { backgroundColor: ThemedColor.lightened }]}
+                    accessibilityLabel={`Previous ${stepLabel}`}
                 >
-                    <CaretLeft size={20} color={ThemedColor.text} weight="bold" />
+                    <CaretLeft size={16} color={ThemedColor.text} weight="bold" />
                 </TouchableOpacity>
-            )}
-            <ThemedText type="fancyFrauncesSubheading" style={{ flex: 1 }}>
-                {label}
-            </ThemedText>
-            <TouchableOpacity onPress={() => onStep(-1)} hitSlop={10} style={styles.stepButton}>
-                <CaretLeft size={16} color={ThemedColor.caption} weight="bold" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onStep(1)} hitSlop={10} style={styles.stepButton}>
-                <CaretRight size={16} color={ThemedColor.caption} weight="bold" />
-            </TouchableOpacity>
-            {/* Single flip button labeled with the mode it switches to */}
-            <TouchableOpacity
-                onPress={() => onModeChange(mode === "week" ? "month" : "week")}
-                style={[styles.modeButton, { backgroundColor: ThemedColor.lightened }]}
-                hitSlop={6}
-            >
-                <ThemedText type="caption">{mode === "week" ? "Month" : "Week"}</ThemedText>
-            </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => onStep(1)}
+                    hitSlop={8}
+                    style={[styles.stepButton, { backgroundColor: ThemedColor.lightened }]}
+                    accessibilityLabel={`Next ${stepLabel}`}
+                >
+                    <CaretRight size={16} color={ThemedColor.text} weight="bold" />
+                </TouchableOpacity>
+            </View>
+            <SegmentedControl
+                options={VIEWS.map((v) => VIEW_LABELS[v])}
+                selectedOption={VIEW_LABELS[view]}
+                onOptionPress={(label) => onViewChange(VIEWS.find((v) => VIEW_LABELS[v] === label) ?? "week")}
+                icons={VIEW_ICONS}
+                size="small"
+                accent
+                compact
+            />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    wrap: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingTop: 4,
+        paddingBottom: 4,
+    },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: HORIZONTAL_PADDING,
-        paddingVertical: 8,
-        gap: 12,
+        gap: 8,
+        marginBottom: 8,
     },
-    stepButton: { padding: 4 },
-    modeButton: {
-        paddingHorizontal: 14,
-        paddingVertical: 7,
+    title: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "baseline",
+        gap: 8,
+    },
+    todayButton: {
+        borderWidth: 1,
         borderRadius: 16,
-        marginLeft: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
     },
-    backButton: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+    stepButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         alignItems: "center",
         justifyContent: "center",
-        marginRight: 10,
+    },
+    backButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 4,
     },
 });
 

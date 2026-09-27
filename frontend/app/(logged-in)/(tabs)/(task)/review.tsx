@@ -106,6 +106,12 @@ const ReviewActions = ({ onSkip, onDelete, onInProgress, onDone, ThemedColor }: 
 const Review = (props: Props) => {
     const ThemedColor = useThemeColor();
     const router = useRouter();
+    const { setSelected } = useTaskActions();
+    // Always land on the home dashboard, however the review was reached.
+    const goHome = () => {
+        setSelected("");
+        router.dismissTo("/(logged-in)/(tabs)/(task)");
+    };
     const unnestedTasks = useTasksSelector((s) => s.unnestedTasks);
     const { addToCategory, updateTask, removeFromCategory } = useTaskActions();
     const queryClient = useQueryClient();
@@ -401,7 +407,7 @@ const Review = (props: Props) => {
             <View style={[styles.container, { flex: 1 }]}>
                 {/* Back button + count */}
                 <View style={styles.topRow}>
-                    <TouchableOpacity onPress={() => router.back()}>
+                    <TouchableOpacity onPress={goHome}>
                         <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     {!emptyStack && currentTask != null && (

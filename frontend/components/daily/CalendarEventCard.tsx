@@ -75,7 +75,7 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     const isDeadline = task.deadline && !task.startTime && !task.startDate;
 
     // Get category colors for duotone effect
-    const scheme = useColorScheme() ?? "light";
+    const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const categoryColors = getCategoryDuotoneColors(task.categoryID, task.categoryName, scheme);
 
     // Calculate time display
@@ -111,7 +111,7 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
         styles.content,
         isDeadline
             ? { borderColor: ThemedColor.error, backgroundColor: ThemedColor.error }
-            : { backgroundColor: categoryColors.background, borderLeftWidth: 6, borderLeftColor: categoryColors.dark },
+            : { backgroundColor: categoryColors.background, paddingLeft: 16 },
     ];
 
     const textColor = isDeadline ? ThemedColor.background : categoryColors.dark;
@@ -125,6 +125,8 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
                 onPress={() => onLongPress(task)}
                 onLongPress={() => onLongPress(task)}>
                 <View style={contentStyle}>
+                    {/* Straight accent inset from the edge so the card's rounded corners don't bend it */}
+                    {!isDeadline && <View style={[styles.accent, { backgroundColor: categoryColors.dark }]} />}
                     {sizeCategory === "normal" && (
                         <>
                             {fullTimeDisplay !== '' && (
@@ -193,6 +195,13 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 12,
         justifyContent: "center",
+    },
+    accent: {
+        position: "absolute",
+        left: 6,
+        top: 4,
+        bottom: 4,
+        width: 4,
     },
     rowLayout: {
         flexDirection: "row",

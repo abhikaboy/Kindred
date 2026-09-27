@@ -98,7 +98,7 @@ export const TimeSelectionPeek = ({
                 style={[
                     styles.peek,
                     slideIn,
-                    { backgroundColor: ThemedColor.lightened, borderTopColor: ThemedColor.tertiary },
+                    { backgroundColor: ThemedColor.lightened, borderColor: ThemedColor.tertiary },
                 ]}
             >
                 <View style={styles.header}>
@@ -143,10 +143,18 @@ export const TimeSelectionPeek = ({
 
 const styles = StyleSheet.create({
     peek: {
-        borderTopWidth: StyleSheet.hairlineWidth,
-        paddingHorizontal: HORIZONTAL_PADDING,
-        paddingTop: 10,
-        paddingBottom: 14,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: 20,
+        marginHorizontal: HORIZONTAL_PADDING / 2,
+        marginBottom: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.16,
+        shadowRadius: 12,
+        elevation: 6,
+        paddingHorizontal: 12,
+        paddingTop: 12,
+        paddingBottom: 12,
         gap: 8,
     },
     header: {
@@ -154,7 +162,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 6,
     },
-    cards: { gap: 8, paddingRight: 24 },
+    cards: { gap: 8, paddingRight: 12 },
     card: {
         flexDirection: "row",
         alignItems: "center",

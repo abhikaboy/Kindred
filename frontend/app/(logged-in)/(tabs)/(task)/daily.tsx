@@ -1,4 +1,5 @@
-import { StyleSheet, View, TouchableOpacity, InteractionManager } from "react-native";
+import { StyleSheet, View, InteractionManager } from "react-native";
+import * as Haptics from "expo-haptics";
 import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { DrawerLayout } from "react-native-gesture-handler";
@@ -9,15 +10,13 @@ import { useTasks } from "@/contexts/tasksContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
 import { Screen } from "@/components/modals/CreateModal";
+import { AUTO_CATEGORY_ID } from "@/components/modals/create/Standard";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, {
     useSharedValue,
-    useAnimatedScrollHandler,
     useAnimatedRef,
-    useAnimatedStyle,
-    interpolate,
-    Extrapolation,
+    useAnimatedScrollHandler,
 } from "react-native-reanimated";
 
 // Components
@@ -25,9 +24,11 @@ import { ThemedText } from "@/components/ThemedText";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
 import { TimeSelectionPeek } from "@/components/daily/TimeSelectionPeek";
-import PlannerHeader from "@/components/daily/PlannerHeader";
-import WeekStrip, { mondayOf, DropRectValue } from "@/components/daily/WeekStrip";
+import PlannerHeader, { PlannerView } from "@/components/daily/PlannerHeader";
+import { mondayOf, DropTarget } from "@/components/daily/dayCells";
 import MonthGrid from "@/components/daily/MonthGrid";
+import WeekAgenda from "@/components/daily/WeekAgenda";
+import DayOverdueSection from "@/components/daily/DayOverdueSection";
 import UnscheduledTray from "@/components/daily/UnscheduledTray";
 import HintBubble from "@/components/ui/HintBubble";
 
@@ -36,10 +37,16 @@ import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { useTaskCountsByDay } from "@/hooks/useTaskCountsByDay";
 import { fromDayKey } from "@/utils/taskCountsByDay";
-import { rectAtPoint } from "@/utils/dragHitTest";
+import { rectAtPoint, DropRect } from "@/utils/dragHitTest";
 import { updateTaskDeadlineAPI, updateTaskStartAPI } from "@/api/task";
 import { showToast } from "@/utils/showToast";
 import { minutesToDate } from "@/utils/timeUtils";
+import { dayKey } from "@/utils/taskCountsByDay";
+
+// Bottom chrome the planner has to clear: the floating tab bar pill, plus the
+// pager dots row when embedded in the task-tab pager (see PagerDots).
+const TAB_BAR_CLEARANCE = 80;
+const PAGER_DOTS_CLEARANCE = 64;
 
 const dayLabel = (date: Date): string => {
     const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -71,11 +78,8 @@ const Daily = ({ embedded }: Props) => {
     const { setIsDrawerOpen } = useDrawer();
     const params = useLocalSearchParams();
 
-    // View state — week-first; deep link workspace===Calendar lands on the timeline
-    const [viewMode, setViewMode] = useState<"week" | "month">("week");
-    const [dayDetail, setDayDetail] = useState<"agenda" | "timeline">(
-        params.workspace === "Calendar" ? "timeline" : "agenda"
-    );
+    // One switcher for the whole planner; deep link workspace===Calendar lands on the day timeline
+    const [view, setView] = useState<PlannerView>(params.workspace === "Calendar" ? "day" : "week");
     const [selectedDate, setSelectedDate] = useState(() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -83,7 +87,7 @@ const Daily = ({ embedded }: Props) => {
     });
     const weekStart = useMemo(() => mondayOf(selectedDate), [selectedDate]);
     const [monthAnchor, setMonthAnchor] = useState(() => new Date());
-    const [shouldRenderCalendar, setShouldRenderCalendar] = useState(dayDetail === "timeline");
+    const [shouldRenderCalendar, setShouldRenderCalendar] = useState(view === "day");
 
     // Scheduling state (kept from previous version)
     const [selectedTaskForScheduling, setSelectedTaskForScheduling] = useState<any>(null);
@@ -95,83 +99,160 @@ const Daily = ({ embedded }: Props) => {
 
     // Defer heavy CalendarView rendering until after interactions complete
     useEffect(() => {
-        if (dayDetail === "timeline") {
+        if (view === "day") {
             const handle = InteractionManager.runAfterInteractions(() => {
                 setShouldRenderCalendar(true);
             });
             return () => handle.cancel();
         }
-    }, [dayDetail]);
+    }, [view]);
 
     const animatedScrollY = useSharedValue(0);
     const calendarAnimatedScrollY = useSharedValue(0);
     const calendarScrollViewRef = useAnimatedRef<Animated.ScrollView>();
 
-    // Sticky header that minimizes on scroll: the week strip collapses (height +
-    // opacity) as the active list scrolls down, giving the timeline/list more room.
-    const weekStripH = useSharedValue(0);
-    const weekStripStyle = useAnimatedStyle(() => {
-        const y = dayDetail === "timeline" ? calendarAnimatedScrollY.value : animatedScrollY.value;
-        if (weekStripH.value === 0) return {};
-        return {
-            height: interpolate(y, [0, 90], [weekStripH.value, 0], Extrapolation.CLAMP),
-            opacity: interpolate(y, [0, 60], [1, 0], Extrapolation.CLAMP),
-        };
-    });
 
     const {
         tasksForSelectedDate,
-        tasksUnscheduled,
+        tasksForTodayNoTime,
         listUnscheduledTasks,
-        upcomingTasks,
         openTasks,
         overdueTasks,
     } = useDailyTasks(selectedDate);
 
-    // Density for whichever range is on screen (month range padded to cover grid edges)
-    const rangeStart = viewMode === "week"
-        ? weekStart
-        : new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() - 1, 20);
-    const rangeEnd = viewMode === "week"
-        ? (() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d; })()
-        : new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 10);
+    // A blocked-out time slot can take any of the day's untimed tasks or the backlog
+    const peekTasks = useMemo(
+        () => [...tasksForTodayNoTime, ...listUnscheduledTasks],
+        [tasksForTodayNoTime, listUnscheduledTasks]
+    );
+
+    // Per-day dots for the month grid (padded to cover the leading/trailing weeks)
+    const rangeStart = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() - 1, 20);
+    const rangeEnd = new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 10);
     const density = useTaskCountsByDay(rangeStart, rangeEnd);
 
+    const isDayView = view === "day";
+    const today = new Date();
+    const showingToday =
+        view === "day"
+            ? dayKey(selectedDate) === dayKey(today)
+            : view === "week"
+              ? weekStart.getTime() === mondayOf(today).getTime()
+              : monthAnchor.getMonth() === today.getMonth() && monthAnchor.getFullYear() === today.getFullYear();
+
+    // Header title carries the day too: "September 27", "September 21 – 27"
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const longMonth = (d: Date) => d.toLocaleDateString("en-US", { month: "long" });
+    const shortMonth = (d: Date) => d.toLocaleDateString("en-US", { month: "short" });
+    const title =
+        view === "day"
+            ? `${longMonth(selectedDate)} ${selectedDate.getDate()}`
+            : view === "week"
+              ? weekStart.getMonth() === weekEnd.getMonth()
+                  ? `${longMonth(weekStart)} ${weekStart.getDate()} – ${weekEnd.getDate()}`
+                  : `${shortMonth(weekStart)} ${weekStart.getDate()} – ${shortMonth(weekEnd)} ${weekEnd.getDate()}`
+              : longMonth(monthAnchor);
+    const titleYear = (view === "month" ? monthAnchor : view === "week" ? weekStart : selectedDate).getFullYear();
+
+    const goToToday = () => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        setSelectedDate(d);
+        setMonthAnchor(d);
+    };
+
+    const handleViewChange = (next: PlannerView) => {
+        if (next === "month") setMonthAnchor(selectedDate);
+        setView(next);
+    };
+
+    // Tasks made from the calendar are auto-sorted into a category; the date/time
+    // the user picked still rides along on the task
+    const handleAddTask = useCallback((date: Date = selectedDate) => {
+        resetTaskCreation();
+        setStartDate(date);
+        openModal({ screen: Screen.STANDARD, categoryId: AUTO_CATEGORY_ID });
+    }, [selectedDate, resetTaskCreation, setStartDate, openModal]);
+
+    // Week agenda: the current week opens at today (other weeks open at Monday)
+    const dayOffsets = useRef<Map<string, number>>(new Map());
+    const landedOnToday = useRef(false);
+    const scrollAgendaTo = (y: number) => scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: false });
+    useEffect(() => {
+        // Layout can land before or after this runs, so both paths try to settle it
+        const isCurrentWeek = weekStart.getTime() === mondayOf(new Date()).getTime();
+        landedOnToday.current = !isCurrentWeek;
+        const raf = requestAnimationFrame(() => {
+            const y = isCurrentWeek ? dayOffsets.current.get(dayKey(new Date())) : 0;
+            if (y !== undefined) {
+                landedOnToday.current = true;
+                scrollAgendaTo(y);
+            }
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [view, weekStart.getTime()]);
+    const handleDayLayout = useCallback((key: string, y: number) => {
+        dayOffsets.current.set(key, y);
+        if (key === dayKey(new Date()) && !landedOnToday.current) {
+            landedOnToday.current = true;
+            scrollAgendaTo(y);
+        }
+    }, []);
+
+    // Arrows move by the view's own unit: a day, a week, or a month
     const handleStep = (delta: 1 | -1) => {
-        if (viewMode === "week") {
+        if (view !== "month") {
             const d = new Date(selectedDate);
-            d.setDate(d.getDate() + 7 * delta);
+            d.setDate(d.getDate() + (view === "day" ? 1 : 7) * delta);
             setSelectedDate(d);
         } else {
             setMonthAnchor((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
         }
     };
 
-    // Drag-to-schedule
-    const dropRects = useRef<Map<string, DropRectValue>>(new Map());
-    const registerDropRect = useCallback((key: string, rect: DropRectValue | null) => {
-        rect ? dropRects.current.set(key, rect) : dropRects.current.delete(key);
+    // Drag-to-schedule. Day cells/sections register live targets; they're measured
+    // when a drag starts, since the pager and scrolling both move them.
+    const dropTargets = useRef<Map<string, DropTarget>>(new Map());
+    const dropRects = useRef<DropRect[]>([]);
+    const registerDropTarget = useCallback((key: string, target: DropTarget | null) => {
+        target ? dropTargets.current.set(key, target) : dropTargets.current.delete(key);
     }, []);
-    useEffect(() => {
-        dropRects.current.clear();
-    }, [viewMode, weekStart.getTime(), monthAnchor.getTime()]);
 
     const [hoverKey, setHoverKey] = useState<string | null>(null);
     const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+    // Chip that follows the finger, in the planner's coordinates
+    const containerRef = useRef<View>(null);
+    const containerOrigin = useRef({ x: 0, y: 0 });
+    const [dragPreview, setDragPreview] = useState<{ task: any; x: number; y: number } | null>(null);
     // Dismissed by the first successful drag-schedule, not by timeout
     const { ready: dragHintReady, done: dragHintDone } = useFirstTouchHint("planner_drag");
-    // Timeline's drag-to-create gesture is invisible; first real drag-create dismisses
+    // Timeline's tap-to-block gesture is invisible; first real selection dismisses
     const { ready: timelineHintReady, done: timelineHintDone } = useFirstTouchHint("timeline_drag_create");
 
-    const rectsArray = () => Array.from(dropRects.current, ([key, r]) => ({ key, ...r }));
+    const handleDragStart = useCallback((task: any) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        dropRects.current = [];
+        dropTargets.current.forEach((target, key) =>
+            target.measureInWindow((x, y, width, height) => dropRects.current.push({ key, x, y, width, height }))
+        );
+        containerRef.current?.measureInWindow((x, y) => (containerOrigin.current = { x, y }));
+        setDragPreview({ task, x: -1000, y: -1000 });
+    }, []);
 
     const handleDragMove = useCallback((x: number, y: number) => {
-        setHoverKey(rectAtPoint(rectsArray(), x, y));
+        const key = rectAtPoint(dropRects.current, x, y);
+        setHoverKey((prev) => {
+            if (key && key !== prev) Haptics.selectionAsync();
+            return key;
+        });
+        setDragPreview((p) => p && { ...p, x: x - containerOrigin.current.x, y: y - containerOrigin.current.y });
     }, []);
 
     const handleDragEnd = useCallback(async (task: any, x: number, y: number) => {
-        const key = rectAtPoint(rectsArray(), x, y);
+        const key = rectAtPoint(dropRects.current, x, y);
         setHoverKey(null);
+        setDragPreview(null);
         if (!key) return;
         const date = fromDayKey(key);
         setHiddenIds((prev) => new Set(prev).add(task.id)); // optimistic
@@ -242,7 +323,7 @@ const Daily = ({ embedded }: Props) => {
         setStartDate(selectedDate);
         setStartTime(minutesToDate(selectedDate, ghostRange.startMinutes));
         setDeadline(minutesToDate(selectedDate, ghostRange.endMinutes));
-        openModal({ screen: Screen.STANDARD });
+        openModal({ screen: Screen.STANDARD, categoryId: AUTO_CATEGORY_ID });
         calendarViewRef.current?.clearGhost();
     }, [ghostRange, selectedDate, resetTaskCreation, setStartDate, setStartTime, setDeadline, openModal]);
 
@@ -256,134 +337,159 @@ const Daily = ({ embedded }: Props) => {
         },
     });
 
+    const bottomClearance = insets.bottom + TAB_BAR_CLEARANCE + (embedded ? PAGER_DOTS_CLEARANCE : 0);
+    // The tray/peek float above the tab bar; scroll content pads past whichever is showing
+    const [trayH, setTrayH] = useState(0);
+    const contentBottom = bottomClearance + trayH + 16;
+
+    const dayCount = tasksForSelectedDate.length;
+
     const content = (
-            <View style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}>
+            <View
+                ref={containerRef}
+                style={[styles.container, { flex: 1, paddingTop: insets.top, backgroundColor: ThemedColor.background }]}
+            >
                 <PlannerHeader
-                    anchorDate={viewMode === "week" ? selectedDate : monthAnchor}
-                    mode={viewMode}
+                    title={title}
+                    year={titleYear}
+                    view={view}
+                    onViewChange={handleViewChange}
                     onStep={handleStep}
-                    onModeChange={setViewMode}
+                    onToday={showingToday ? undefined : goToToday}
                     onBack={embedded ? undefined : () => router.back()}
                 />
 
-                {viewMode === "week" ? (
-                    <>
-                        <Animated.View style={[{ overflow: "hidden" }, weekStripStyle]}>
-                            <View onLayout={(e) => { if (weekStripH.value === 0) weekStripH.value = e.nativeEvent.layout.height; }}>
-                                <WeekStrip
-                                    weekStart={weekStart}
-                                    selectedDate={selectedDate}
-                                    onSelectDate={setSelectedDate}
-                                    density={density}
-                                    registerDropRect={registerDropRect}
-                                    hoverKey={hoverKey}
-                                />
-                            </View>
-                        </Animated.View>
-                        <View style={styles.dayHeader}>
-                            {/* Off-today the label tints primary and taps back to today */}
-                            <TouchableOpacity
-                                onPress={() => {
-                                    const d = new Date();
-                                    d.setHours(0, 0, 0, 0);
-                                    setSelectedDate(d);
-                                }}
-                                disabled={dayLabel(selectedDate) === "Today"}
-                                hitSlop={8}
-                            >
-                                <ThemedText
-                                    type="subtitle"
-                                    style={dayLabel(selectedDate) !== "Today" && { color: ThemedColor.primary }}
-                                >
-                                    {dayLabel(selectedDate)}
-                                </ThemedText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => setDayDetail(dayDetail === "agenda" ? "timeline" : "agenda")}
-                                hitSlop={8}
-                            >
-                                <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                    {dayDetail === "agenda" ? "◷ Timeline" : "☰ Agenda"}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </View>
-                        {dayDetail === "agenda" ? (
-                            <Animated.ScrollView
-                                ref={scrollViewRef}
-                                style={{ flex: 1 }}
-                                showsVerticalScrollIndicator={false}
-                                onScroll={listScrollHandler}
-                                scrollEventThrottle={16}
-                                removeClippedSubviews={true}
-                                contentContainerStyle={{ paddingTop: 8, paddingBottom: 32 }}>
-                                <TaskListView
-                                    selectedDate={selectedDate}
-                                    tasksForSelectedDate={tasksForSelectedDate}
-                                    overdueTasks={overdueTasks}
-                                    upcomingTasks={upcomingTasks}
-                                    openTasks={openTasks}
-                                    unscheduledTasks={listUnscheduledTasks}
-                                    onQuickSchedule={handleQuickSchedule}
-                                />
-                            </Animated.ScrollView>
-                        ) : (
-                            <View style={{ flex: 1 }}>
-                                {timelineHintReady && (
-                                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 6 }}>
-                                        <HintBubble
-                                            text="Press and drag on the grid to block out time"
-                                            onDone={timelineHintDone}
-                                            autoDismissMs={7000}
-                                        />
-                                    </View>
-                                )}
-                                {shouldRenderCalendar && (
-                                    <CalendarView
-                                        ref={calendarViewRef}
-                                        selectedDate={selectedDate}
-                                        animatedScrollY={calendarAnimatedScrollY}
-                                        scrollViewRef={calendarScrollViewRef}
-                                        onGhostRangeChange={handleGhostRangeChange}
-                                    />
-                                )}
-                            </View>
-                        )}
-                    </>
-                ) : (
-                    <View style={{ flex: 1 }}>
+                {view === "month" && (
+                    <Animated.ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingTop: 8, paddingBottom: contentBottom }}>
                         <MonthGrid
                             monthAnchor={monthAnchor}
+                            selectedDate={selectedDate}
                             density={density}
-                            onSelectDay={(d) => {
-                                setSelectedDate(d);
-                                setViewMode("week");
-                            }}
-                            registerDropRect={registerDropRect}
+                            onSelectDay={setSelectedDate}
+                            registerDropTarget={registerDropTarget}
                             hoverKey={hoverKey}
                         />
-                    </View>
+                        <View style={styles.dayHeader}>
+                            <ThemedText type="subtitle">{dayLabel(selectedDate)}</ThemedText>
+                            {dayCount > 0 && (
+                                <ThemedText type="caption">{`${dayCount} ${dayCount === 1 ? "task" : "tasks"}`}</ThemedText>
+                            )}
+                        </View>
+                        <TaskListView
+                            selectedDate={selectedDate}
+                            tasksForSelectedDate={tasksForSelectedDate}
+                            overdueTasks={overdueTasks}
+                            openTasks={openTasks}
+                            onAddTask={handleAddTask}
+                        />
+                    </Animated.ScrollView>
                 )}
 
-                {ghostRange ? (
-                    <TimeSelectionPeek
-                        range={ghostRange}
-                        selectedDate={selectedDate}
-                        tasks={tasksUnscheduled}
-                        assigningTaskId={assigningTaskId}
-                        onAssign={handleAssignToRange}
-                        onCreateNew={handleCreateNewFromRange}
-                        onCancel={handleCancelSelection}
-                    />
-                ) : (
-                    <UnscheduledTray
-                        tasks={tasksUnscheduled}
-                        hiddenIds={hiddenIds}
-                        onDragStart={() => {}}
-                        onDragMove={handleDragMove}
-                        onDragEnd={handleDragEnd}
-                        onPressChip={(t) => handleQuickSchedule(t, "deadline")}
-                        hintVisible={dragHintReady}
-                    />
+                {view === "week" && (
+                    <>
+                        <Animated.ScrollView
+                            ref={scrollViewRef}
+                            style={{ flex: 1 }}
+                            showsVerticalScrollIndicator={false}
+                            onScroll={listScrollHandler}
+                            scrollEventThrottle={16}
+                            contentContainerStyle={{ paddingTop: 8, paddingBottom: contentBottom }}>
+                            <WeekAgenda
+                                weekStart={weekStart}
+                                overdueTasks={overdueTasks}
+                                onAddTask={handleAddTask}
+                                onDayLayout={handleDayLayout}
+                                registerDropTarget={registerDropTarget}
+                                hoverKey={hoverKey}
+                            />
+                        </Animated.ScrollView>
+                    </>
+                )}
+
+                {view === "day" && (
+                    <>
+                        <View style={{ flex: 1 }}>
+                            {timelineHintReady && (
+                                <View style={{ paddingHorizontal: HORIZONTAL_PADDING, paddingBottom: 8 }}>
+                                    <HintBubble
+                                        text="Tap an empty slot to block out time"
+                                        onDone={timelineHintDone}
+                                        autoDismissMs={7000}
+                                    />
+                                </View>
+                            )}
+                            {shouldRenderCalendar && (
+                                <CalendarView
+                                    ref={calendarViewRef}
+                                    selectedDate={selectedDate}
+                                    animatedScrollY={calendarAnimatedScrollY}
+                                    scrollViewRef={calendarScrollViewRef}
+                                    onGhostRangeChange={handleGhostRangeChange}
+                                    bottomInset={contentBottom}
+                                    onAddAllDay={() => handleAddTask(selectedDate)}
+                                    headerContent={
+                                        dayKey(selectedDate) === dayKey(today) && overdueTasks.length > 0 ? (
+                                            <DayOverdueSection tasks={overdueTasks} />
+                                        ) : undefined
+                                    }
+                                />
+                            )}
+                        </View>
+                    </>
+                )}
+
+                <View
+                    style={[styles.bottomSheet, { bottom: bottomClearance }]}
+                    onLayout={(e) => setTrayH(e.nativeEvent.layout.height)}
+                    pointerEvents="box-none"
+                >
+                    {ghostRange ? (
+                        <TimeSelectionPeek
+                            range={ghostRange}
+                            selectedDate={selectedDate}
+                            tasks={peekTasks}
+                            assigningTaskId={assigningTaskId}
+                            onAssign={handleAssignToRange}
+                            onCreateNew={handleCreateNewFromRange}
+                            onCancel={handleCancelSelection}
+                        />
+                    ) : (
+                        // Day view skips the tray: tapping a slot offers the same backlog
+                        !isDayView && (
+                            <UnscheduledTray
+                                tasks={listUnscheduledTasks}
+                                hiddenIds={hiddenIds}
+                                onDragStart={handleDragStart}
+                                onDragMove={handleDragMove}
+                                onDragEnd={handleDragEnd}
+                                onPressChip={(t) => handleQuickSchedule(t, "deadline")}
+                                hintVisible={dragHintReady}
+                                onHintDone={dragHintDone}
+                            />
+                        )
+                    )}
+                </View>
+
+                {dragPreview && (
+                    <View
+                        pointerEvents="none"
+                        style={[
+                            styles.dragPreview,
+                            {
+                                left: dragPreview.x - 64,
+                                top: dragPreview.y - 48,
+                                backgroundColor: ThemedColor.lightened,
+                                borderColor: ThemedColor.primary,
+                            },
+                        ]}
+                    >
+                        <ThemedText type="smallerDefault" numberOfLines={1}>
+                            {dragPreview.task.content}
+                        </ThemedText>
+                    </View>
                 )}
             </View>
     );
@@ -417,10 +523,28 @@ const styles = StyleSheet.create({
     },
     dayHeader: {
         flexDirection: "row",
-        alignItems: "center",
+        alignItems: "baseline",
         justifyContent: "space-between",
         paddingHorizontal: HORIZONTAL_PADDING,
-        paddingTop: 10,
-        paddingBottom: 4,
+        paddingTop: 12,
+        paddingBottom: 8,
+    },
+    bottomSheet: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+    },
+    dragPreview: {
+        position: "absolute",
+        maxWidth: 180,
+        borderWidth: 1,
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+        elevation: 8,
     },
 });

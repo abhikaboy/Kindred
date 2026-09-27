@@ -13,9 +13,11 @@ interface SegmentedControlProps {
     icons?: Record<string, (color: string, focused: boolean) => React.ReactNode>;
     /** Light-purple active segment with primary-colored label/icon (vs. the default gray segment). */
     accent?: boolean;
+    /** Shorter bar with no top margin, for toolbars where vertical space is tight. */
+    compact?: boolean;
 }
 
-const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress, size = 'default', icons, accent = false }) => {
+const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOption, onOptionPress, size = 'default', icons, accent = false, compact = false }) => {
     const ThemedColor = useThemeColor() as any;
     const styles = stylesheet(ThemedColor);
     const [containerWidth, setContainerWidth] = useState(0);
@@ -64,7 +66,8 @@ const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, selectedOp
             style={[
                 styles.container,
                 { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary, borderWidth: 1 },
-                isSmall && styles.containerSmall
+                isSmall && styles.containerSmall,
+                compact && styles.containerCompact,
             ]}
             onLayout={onLayout}
         >
@@ -117,6 +120,10 @@ const stylesheet = (ThemedColor: any) => StyleSheet.create({
     },
     containerSmall: {
         borderRadius: 24,
+    },
+    containerCompact: {
+        marginTop: 0,
+        paddingVertical: 12,
     },
     activeBox: {
         position: "absolute",

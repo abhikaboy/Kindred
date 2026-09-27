@@ -6,7 +6,7 @@ import React, {
     forwardRef,
     useImperativeHandle,
 } from "react";
-import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { View, TouchableOpacity, StyleSheet, ScrollView, useColorScheme } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
@@ -27,11 +27,10 @@ import * as Haptics from "expo-haptics";
 import { hapticCompletionBurst } from "@/utils/haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import UnscheduledTasksSection from "@/components/task/UnscheduledTasksSection";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { Ionicons } from "@expo/vector-icons";
+import { Plus } from "phosphor-react-native";
 import { useTasks } from "@/contexts/tasksContext";
-import { useCreateModal } from "@/contexts/createModalContext";
 import { updateTaskAPI, markAsCompletedAPI } from "@/api/task";
 import { Task } from "@/api/types";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
@@ -39,6 +38,7 @@ import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
 import { formatMinutesToTime } from "@/utils/timeUtils";
+import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 import { logger } from "@/utils/logger";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -60,6 +60,10 @@ interface CalendarViewProps {
     scrollViewRef: AnimatedRef<Animated.ScrollView>;
     headerContent?: React.ReactNode;
     onGhostRangeChange?: (range: ScheduleTimeRange | null) => void;
+    /** Space to leave under the grid for floating chrome (tray, tab bar). */
+    bottomInset?: number;
+    /** Creates an untimed task on this day. */
+    onAddAllDay?: () => void;
 }
 
 const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(({
@@ -68,13 +72,14 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
     scrollViewRef,
     headerContent,
     onGhostRangeChange,
+    bottomInset = 128,
+    onAddAllDay,
 }, ref) => {
     const ThemedColor = useThemeColor();
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
-    const { openModal } = useCreateModal();
+    const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const queryClient = useQueryClient();
-    const { tasksWithSpecificTime, tasksForTodayNoTime, tasksUnscheduled } =
-        useDailyTasks(selectedDate);
+    const { tasksWithSpecificTime, tasksForTodayNoTime } = useDailyTasks(selectedDate);
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const currentTimeLineRef = useRef<View>(null);
     const hasScrolledToFirstEvent = useRef(false);
@@ -112,6 +117,11 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
     const [isPinching, setIsPinching] = useState(false);
 
     const scrollEnabled = !ghostBlockVisible;
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            animatedScrollY.value = event.contentOffset.y;
+        },
+    });
 
     useAnimatedReaction(
         () => hourHeightShared.value,
@@ -251,25 +261,19 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
             position: "absolute",
             left: 0,
             right: 0,
-            height: 3,
-            backgroundColor: "#ef4444",
+            height: 2,
+            backgroundColor: ThemedColor.error,
             zIndex: 10,
-            shadowColor: "#ef4444",
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.5,
-            shadowRadius: 3,
         },
         currentTimeIndicator: {
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            backgroundColor: "#ef4444",
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: ThemedColor.error,
             position: "absolute",
-            top: -6,
-            left: -7,
+            top: -4,
+            left: -5,
             zIndex: 11,
-            borderWidth: 2,
-            borderColor: "#ffffff",
         },
         hourLine: {
             position: "absolute",
@@ -337,51 +341,31 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
         };
     });
 
-    // Auto-scroll to first event
+    // Open at the first timed task; an empty day opens near now (today) or 8 AM
     useEffect(() => {
-        if (
-            tasksWithSpecificTime.length === 0 ||
-            hasScrolledToFirstEvent.current
-        ) {
-            return;
-        }
+        if (hasScrolledToFirstEvent.current) return;
 
-        let earliestHour = 24;
+        let targetHour = isSameDay(selectedDate, new Date()) ? new Date().getHours() : 8;
         tasksWithSpecificTime.forEach((task) => {
-            let taskTime;
-            if (task.startTime) taskTime = new Date(task.startTime);
-            else if (task.startDate) taskTime = new Date(task.startDate);
-            else if (task.deadline) taskTime = new Date(task.deadline);
-
-            if (taskTime) {
-                const hour = taskTime.getHours();
-                if (hour < earliestHour) earliestHour = hour;
-            }
+            const t = task.startTime ?? task.startDate ?? task.deadline;
+            if (t) targetHour = Math.min(targetHour, new Date(t).getHours());
         });
 
-        if (earliestHour < 24) {
-            const scrollPosition = Math.max(0, earliestHour - 1) * hourHeight;
-            let rafId1: number;
-            let rafId2: number;
-
-            rafId1 = requestAnimationFrame(() => {
-                rafId2 = requestAnimationFrame(() => {
-                    if (scrollViewRef.current) {
-                        scrollViewRef.current.scrollTo({
-                            y: scrollPosition,
-                            animated: true,
-                        });
-                        hasScrolledToFirstEvent.current = true;
-                    }
-                });
+        const scrollPosition = Math.max(0, targetHour - 1) * hourHeight;
+        let rafId2: number;
+        const rafId1 = requestAnimationFrame(() => {
+            rafId2 = requestAnimationFrame(() => {
+                if (scrollViewRef.current) {
+                    scrollViewRef.current.scrollTo({ y: scrollPosition, animated: true });
+                    hasScrolledToFirstEvent.current = true;
+                }
             });
-
-            return () => {
-                if (rafId1) cancelAnimationFrame(rafId1);
-                if (rafId2) cancelAnimationFrame(rafId2);
-            };
-        }
-    }, [tasksWithSpecificTime.length, scrollViewRef]);
+        });
+        return () => {
+            cancelAnimationFrame(rafId1);
+            if (rafId2) cancelAnimationFrame(rafId2);
+        };
+    }, [tasksWithSpecificTime.length, selectedDate, scrollViewRef]);
 
     useEffect(() => {
         hasScrolledToFirstEvent.current = false;
@@ -494,38 +478,67 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                 style={{ flex: 1 }}
                 scrollEnabled={scrollEnabled}
                 showsVerticalScrollIndicator={false}
-                onScroll={useAnimatedScrollHandler({
-                    onScroll: (event) => {
-                        animatedScrollY.value = event.contentOffset.y;
-                    },
-                })}
+                onScroll={scrollHandler}
                 scrollEventThrottle={1}
-                stickyHeaderIndices={[1]}
-                contentContainerStyle={{ paddingBottom: 128 }}
+                stickyHeaderIndices={[0]}
+                contentContainerStyle={{ paddingBottom: bottomInset }}
             >
-                <View>{headerContent}</View>
-
-                <View style={{ paddingBottom: 16,backgroundColor: ThemedColor.background }}>
-                    {tasksForTodayNoTime.length === 0 ? (
-                        <TouchableOpacity
-                            onPress={() => openModal()}
-                            style={{ paddingHorizontal: HORIZONTAL_PADDING }}
-                            activeOpacity={0.7}>
-                            <ThemedText type="lightBody" style={{ color: ThemedColor.primary }}>
-                                Tap on a time slot to create a task
+                {/* Pinned above the grid: header content (e.g. overdue) and the day's untimed
+                    tasks, so the open-at-first-task scroll can't push them out of sight */}
+                <View style={{ backgroundColor: ThemedColor.background }}>
+                    {headerContent}
+                    {(tasksForTodayNoTime.length > 0 || onAddAllDay) && (
+                        <View style={[styles.allDay, { borderBottomColor: ThemedColor.tertiary }]}>
+                            <ThemedText type="caption" numberOfLines={1} style={styles.allDayLabel}>
+                                All day
                             </ThemedText>
-                        </TouchableOpacity>
-                    ) : (
-                        <View style={{ paddingBottom: 16, paddingHorizontal: HORIZONTAL_PADDING }}>
-                            <UnscheduledTasksSection
-                                tasks={tasksForTodayNoTime}
-                                title="Tasks"
-                                description=""
-                                collapsible
-                                useSchedulable={false}
-                                emptyMessage="No tasks with specific times"
-                                onEmptyPress={() => openModal()}
-                            />
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.allDayChips}
+                            >
+                                {tasksForTodayNoTime.map((task) => {
+                                    const colors = getCategoryDuotoneColors(task.categoryID, task.categoryName, scheme);
+                                    const due = task.deadline && isSameDay(new Date(task.deadline), selectedDate)
+                                        ? new Date(task.deadline)
+                                        : null;
+                                    const dueLabel = due && (due.getHours() || due.getMinutes())
+                                        ? ` · due ${formatMinutesToTime(due.getHours() * 60 + due.getMinutes())}`
+                                        : "";
+                                    return (
+                                        <TouchableOpacity
+                                            key={task.id}
+                                            onPress={() => handleLongPress(task)}
+                                            activeOpacity={0.7}
+                                            style={[styles.allDayChip, { backgroundColor: colors.background }]}
+                                        >
+                                            <View style={[styles.allDayDot, { backgroundColor: colors.dark }]} />
+                                            <ThemedText
+                                                type="smallerDefault"
+                                                numberOfLines={1}
+                                                style={{ color: colors.dark, flexShrink: 1 }}
+                                            >
+                                                {task.content + dueLabel}
+                                            </ThemedText>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                                {tasksForTodayNoTime.length === 0 && (
+                                    <ThemedText type="caption" style={styles.allDayEmpty}>
+                                        Nothing yet
+                                    </ThemedText>
+                                )}
+                            </ScrollView>
+                            {onAddAllDay && (
+                                <TouchableOpacity
+                                    onPress={onAddAllDay}
+                                    hitSlop={10}
+                                    style={styles.allDayAdd}
+                                    accessibilityLabel="Add an all-day task"
+                                >
+                                    <Plus size={16} color={ThemedColor.caption} weight="bold" />
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
                 </View>
@@ -536,30 +549,6 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                 >
                     <GestureDetector gesture={composedGesture}>
                         <Animated.View style={animatedScheduleContentStyle}>
-                            <View
-                                style={{
-                                    position: "absolute",
-                                    top: 10,
-                                    right: 10,
-                                    backgroundColor: ThemedColor.primary,
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 4,
-                                    borderRadius: 12,
-                                    opacity: isPinching ? 1 : 0,
-                                    zIndex: 1000,
-                                }}
-                            >
-                                <ThemedText
-                                    type="caption"
-                                    style={{
-                                        color: ThemedColor.background,
-                                        fontSize: 10,
-                                    }}
-                                >
-                                    {hourHeight}px
-                                </ThemedText>
-                            </View>
-
                             <View style={styles.timeLabels}>
                                 {Array.from({ length: 24 }, (_, i) => (
                                     <Animated.View
@@ -664,6 +653,12 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                                                     />
                                                 </Animated.View>
                                             )}
+                                            {/* Faint cue that an empty hour is tappable; the grid's tap gesture does the work */}
+                                            {tasksInThisHour.length === 0 && !ghostBlockVisible && (
+                                                <View pointerEvents="none" style={styles.emptyHourCue}>
+                                                    <Plus size={12} color={ThemedColor.caption} weight="bold" />
+                                                </View>
+                                            )}
                                             {tasksInThisHour.map(
                                                 (task, index, array) => {
                                                     if (!task) return null;
@@ -766,22 +761,6 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                     </GestureDetector>
                 </View>
 
-                <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
-                    <UnscheduledTasksSection
-                        tasks={tasksUnscheduled}
-                        title="Unscheduled Tasks"
-                        description="These are tasks that don't have a start date or deadline. Swipe right to schedule for this day."
-                        useSchedulable={true}
-                        onScheduleTask={(task, type) =>
-                            logger.debug("Scheduling task", {
-                                taskContent: task.content,
-                                type,
-                            })
-                        }
-                        schedulingType="startDate"
-                        emptyMessage="No unscheduled tasks"
-                    />
-                </View>
             </Animated.ScrollView>
 
             <DefaultModal
@@ -937,8 +916,51 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
 CalendarViewComponent.displayName = "CalendarView";
 
 const styles = StyleSheet.create({
+    emptyHourCue: {
+        position: "absolute",
+        right: 8,
+        top: 8,
+        opacity: 0.35,
+    },
     scheduleSection: {
-        marginBottom: 24,
+        paddingTop: 8,
+    },
+    allDay: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingLeft: HORIZONTAL_PADDING,
+        paddingRight: HORIZONTAL_PADDING,
+        paddingBottom: 8,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    allDayLabel: {
+        width: TIME_LABEL_WIDTH + 8,
+        marginRight: -8,
+    },
+    allDayChips: {
+        gap: 8,
+        paddingRight: 8,
+    },
+    allDayChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        maxWidth: 240,
+    },
+    allDayEmpty: {
+        paddingVertical: 4,
+    },
+    allDayAdd: {
+        paddingHorizontal: 4,
+    },
+    allDayDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
     timeLabels: {
         width: TIME_LABEL_WIDTH,

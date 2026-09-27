@@ -51,7 +51,8 @@ type Props = {
 
 // Sentinel id for the "Auto" dropdown option: the user declines to pick a
 // category and the backend files the task from its Inbox in the background.
-const AUTO_CATEGORY_ID = "__auto__";
+// Callers can pass it as `categoryId` to open with Auto Sort preselected.
+export const AUTO_CATEGORY_ID = "__auto__";
 
 const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = false, tutorial = false }: Props) => {
     // First-touch: deadlines/reminders/repeats hide behind the Advanced expander
@@ -210,6 +211,10 @@ const Standard = ({ hide, goTo, edit = false, categoryId, screen, isBlueprint = 
     useEffect(() => {
         const resolvedId = categoryId || task?.categoryID;
         if (!resolvedId) return;
+        if (resolvedId === AUTO_CATEGORY_ID) {
+            setCreateCategory({ label: "Auto Sort", id: AUTO_CATEGORY_ID, special: false });
+            return;
+        }
 
         const taskCategory =
             availableCategories?.find((cat) => cat.id === resolvedId) ??

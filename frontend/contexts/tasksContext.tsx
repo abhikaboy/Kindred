@@ -323,6 +323,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         }
+        res.push(...require("@/__scratch_mockTasks").default); // SCRATCH-MOCK remove
         return res;
     }, [workspaces]);
 

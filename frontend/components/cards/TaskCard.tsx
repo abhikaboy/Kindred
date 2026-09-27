@@ -375,15 +375,42 @@ const TaskCard = ({
             )}
 
             <View style={styles.row}>
-                <View style={styles.contentContainer}>
-                    <ThemedText
-                        numberOfLines={2}
-                        ellipsizeMode="tail"
-                        style={[styles.content, encouraged ? { color: encColors.text } : null]}
-                        type="default">
-                        {content}
-                    </ThemedText>
-                    {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
+                <View style={styles.textColumn}>
+                    <View style={styles.contentContainer}>
+                        <ThemedText
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                            style={[styles.content, encouraged ? { color: encColors.text } : null]}
+                            type="default">
+                            {content}
+                        </ThemedText>
+                        {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
+                    </View>
+                    {!encourage && !!(timeChip || task?.recurring) && (
+                        <View style={styles.metaRow}>
+                            {timeChip && (
+                                <TaskChip
+                                    inline
+                                    label={timeChip.label}
+                                    tone={timeChip.tone}
+                                    Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
+                                    color={encouraged ? encColors.secondaryText : undefined}
+                                />
+                            )}
+                            {!!task?.recurring && (
+                                <TaskChip
+                                    inline
+                                    Icon={Repeat}
+                                    label={
+                                        task?.flexInfo
+                                            ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
+                                            : undefined
+                                    }
+                                    color={encouraged ? encColors.secondaryText : undefined}
+                                />
+                            )}
+                        </View>
+                    )}
                 </View>
                 <View style={styles.indicatorRow}>
                     {encouraged && (
@@ -435,31 +462,6 @@ const TaskCard = ({
                     )}
                 </View>
             </View>
-            {!encourage && !!(timeChip || task?.recurring) && (
-                <View style={styles.chipRow}>
-                    {timeChip && (
-                        <TaskChip
-                            label={timeChip.label}
-                            tone={timeChip.tone}
-                            Icon={timeChip.icon === "clock" ? Clock : CalendarBlank}
-                            color={encouraged ? encColors.secondaryText : undefined}
-                            backgroundColor={encouraged ? "transparent" : undefined}
-                        />
-                    )}
-                    {!!task?.recurring && (
-                        <TaskChip
-                            Icon={Repeat}
-                            label={
-                                task?.flexInfo
-                                    ? `${task.flexInfo.instanceNumber}/${task.flexInfo.target}`
-                                    : undefined
-                            }
-                            color={encouraged ? encColors.secondaryText : undefined}
-                            backgroundColor={encouraged ? "transparent" : undefined}
-                        />
-                    )}
-                </View>
-            )}
         </TouchableOpacity>
     );
 
@@ -549,16 +551,27 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
-        paddingVertical: 16,
+        paddingVertical: 12,
         borderRadius: 16,
         justifyContent: "center",
     },
+    // Title with a quiet metadata line under it; indicators sit centered on the right
     row: {
         flexDirection: "row",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "space-between",
-        gap: 6,
+        gap: 12,
         minHeight: 20,
+    },
+    textColumn: {
+        flex: 1,
+        gap: 2,
+    },
+    metaRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 12,
     },
     circle: {
         width: 10,
@@ -566,7 +579,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     contentContainer: {
-        flex: 1,
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
@@ -585,13 +597,5 @@ const styles = StyleSheet.create({
         flexShrink: 0,
         gap: 6,
         minHeight: 20,
-    },
-    chipRow: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        gap: 6,
-        marginTop: 8,
     },
 });

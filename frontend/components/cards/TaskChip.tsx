@@ -12,9 +12,11 @@ interface Props {
     Icon?: React.ComponentType<IconProps>;
     color?: string;
     backgroundColor?: string;
+    /** Bare icon + label with no pill, for quiet metadata lines under a title. */
+    inline?: boolean;
 }
 
-const TaskChip = ({ label, tone = "neutral", Icon, color: colorOverride, backgroundColor: bgOverride }: Props) => {
+const TaskChip = ({ label, tone = "neutral", Icon, color: colorOverride, backgroundColor: bgOverride, inline = false }: Props) => {
     const ThemedColor = useThemeColor();
     if (!label && !Icon) return null;
 
@@ -24,7 +26,7 @@ const TaskChip = ({ label, tone = "neutral", Icon, color: colorOverride, backgro
     const bg = bgOverride ?? ThemedColor.lightened;
 
     return (
-        <View style={[styles.chip, { backgroundColor: bg }]}>
+        <View style={inline ? styles.inline : [styles.chip, { backgroundColor: bg }]}>
             {Icon && <Icon size={12} color={color} weight="regular" />}
             {label ? (
                 <ThemedText type="caption" style={{ color, fontSize: 12.5, lineHeight: 16, letterSpacing: 0.1 }}>
@@ -45,5 +47,10 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         paddingHorizontal: 10,
         borderRadius: 999,
+    },
+    inline: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
     },
 });

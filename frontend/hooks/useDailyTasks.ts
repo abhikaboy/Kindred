@@ -1,41 +1,27 @@
 import { useMemo } from "react";
 import { useTasks } from "@/contexts/tasksContext";
-import { isSameDay, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { isSameDay, isWithinInterval } from "date-fns";
+
+/** True when the task starts, is due, or spans across `date`. */
+export const isTaskOnDay = (task: { startDate?: string | null; deadline?: string | null }, date: Date): boolean => {
+    if (task.startDate && isSameDay(new Date(task.startDate), date)) return true;
+    if (task.deadline && isSameDay(new Date(task.deadline), date)) return true;
+    if (task.startDate && task.deadline) {
+        const start = new Date(task.startDate);
+        const end = new Date(task.deadline);
+        if (start <= end && isWithinInterval(date, { start, end })) return true;
+    }
+    return false;
+};
 
 export const useDailyTasks = (selectedDate: Date) => {
     const { allTasks } = useTasks();
 
     // Filter tasks based on selected date
-    const tasksForSelectedDate = useMemo(() => {
-        const selectedDateStart = startOfDay(selectedDate);
-        const selectedDateEnd = endOfDay(selectedDate);
-
-        return allTasks.filter((task) => {
-            if (task.startDate) {
-                const taskStartDate = new Date(task.startDate);
-                if (isSameDay(taskStartDate, selectedDate)) {
-                    return true;
-                }
-            }
-
-            if (task.deadline) {
-                const taskDeadline = new Date(task.deadline);
-                if (isSameDay(taskDeadline, selectedDate)) {
-                    return true;
-                }
-            }
-
-            if (task.startDate && task.deadline) {
-                const taskStartDate = new Date(task.startDate);
-                const taskDeadline = new Date(task.deadline);
-                if (isWithinInterval(selectedDate, { start: taskStartDate, end: taskDeadline })) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-    }, [allTasks, selectedDate]);
+    const tasksForSelectedDate = useMemo(
+        () => allTasks.filter((task) => isTaskOnDay(task, selectedDate)),
+        [allTasks, selectedDate]
+    );
 
     // Filter for Calendar View
     const tasksWithSpecificTime = useMemo(() => {
