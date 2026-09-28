@@ -10,6 +10,7 @@ Productivity + social app. **Go backend** (Huma v2 + Fiber + MongoDB Atlas) and 
 - `docs/`, `nix_modules/` — docs and Nix env.
 
 ## Global conventions
+- **Design:** read [DESIGN.md](DESIGN.md) before building or restyling UI, especially its anti-pattern list (no nested cards, no eyebrow labels, no filler subtitles, soft shadows over borders).
 - **Use `bun`, never `npx`** for JS/TS tooling in this repo.
 - **Typed routes only** — expo-router `Href`, never `as any` for navigation targets.
 - **Phosphor icons** (`phosphor-react-native`), not Ionicons/vector-icons, in app UI.
