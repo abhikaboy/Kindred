@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
-  CalendarBlank,
   Fire,
   ListChecks,
   type Icon as PhosphorIcon,
@@ -83,12 +82,6 @@ function WeekStrip() {
       className="group flex flex-1 flex-col gap-3 rounded-xl p-3 transition-colors hover:bg-muted/60"
       aria-label="Open calendar"
     >
-      <div className="flex items-center gap-2">
-        <CalendarBlank size={14} className="text-muted-foreground" />
-        <ThemedText type="caption" className="uppercase tracking-wider text-muted-foreground">
-          This week
-        </ThemedText>
-      </div>
       <div className="flex items-end justify-between gap-2">
         {days.map((day) => {
           const key = dayKey(day);
@@ -108,7 +101,7 @@ function WeekStrip() {
                   count === 0 && "bg-muted text-muted-foreground",
                   count > 0 && count <= 2 && "bg-primary/20 text-primary",
                   count > 2 && "bg-primary/45 text-primary",
-                  isToday && "ring-2 ring-primary ring-offset-2 ring-offset-card"
+                  isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                 )}
               >
                 {count || ""}
@@ -138,7 +131,7 @@ export function TodayHero() {
   const streak = data?.current_streak;
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.08)]">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
         <ProductivityRings />
 

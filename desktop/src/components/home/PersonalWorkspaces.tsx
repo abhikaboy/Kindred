@@ -61,7 +61,7 @@ export function PersonalWorkspaces() {
 
   return (
     <div className="flex flex-col gap-4">
-      <SectionHeader title="Personal Workspaces" variant="prominent" />
+      <SectionHeader title="Personal Workspaces" />
       {isLoading ? (
         <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (

@@ -185,7 +185,7 @@ export function CreatePostModal({
 
         {/* Compact, capped task picker so the caption + image get the room. */}
         <div className="mt-4 shrink-0">
-          <ThemedText type="caption" className="mb-2 block uppercase tracking-wide">
+          <ThemedText type="larger_default" className="mb-2 block">
             Which task?
           </ThemedText>
           {completed.isLoading ? (

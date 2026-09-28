@@ -74,7 +74,7 @@ export function FriendActivityRow({
           <span className="relative shrink-0">
             <img src={friend.profile_picture} alt={friend.display_name} className="size-9 rounded-full bg-muted object-cover" />
             {activity.kind === "working" ? (
-              <span className="absolute -bottom-px -right-px size-3 rounded-full border-2 border-card bg-emerald-500" />
+              <span className="absolute -bottom-px -right-px size-3 rounded-full border-2 border-background bg-emerald-500" />
             ) : null}
           </span>
           <span className="flex min-w-0 flex-1 flex-col">

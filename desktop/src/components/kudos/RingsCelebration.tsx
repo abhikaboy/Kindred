@@ -38,7 +38,7 @@ export function RingsCelebration() {
               <Check size={22} weight="bold" style={{ color: r.color }} />
             </div>
           </div>
-          <ThemedText type="caption" className="text-[11px] uppercase tracking-widest">
+          <ThemedText type="caption">
             {r.label}
           </ThemedText>
         </div>

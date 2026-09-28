@@ -22,11 +22,11 @@ export function FriendActivityRail(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-3">
-      <ThemedText type="defaultSemiBold" className="px-1 text-sm uppercase tracking-wide text-muted-foreground">
+      <ThemedText type="larger_default" className="px-2">
         Friends
       </ThemedText>
 
-      <div className="rounded-2xl bg-muted/40 p-2">
+      <div>
         {friends.isLoading ? (
           <div className="flex flex-col">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -52,7 +52,7 @@ export function FriendActivityRail(): JSX.Element {
               <div key={section.kind} className="flex flex-col">
                 {section.title ? (
                   <div className="flex items-center gap-2 px-2 pt-2">
-                    <ThemedText type="caption" className="text-xs tracking-wide">
+                    <ThemedText type="caption">
                       {section.title}
                     </ThemedText>
                     {section.kind === "working" ? (
@@ -61,7 +61,7 @@ export function FriendActivityRail(): JSX.Element {
                   </div>
                 ) : null}
                 {section.data.map(({ friend, profile, activity }) => (
-                  <div key={friend._id} className="rounded-xl px-2 transition-colors hover:bg-background/60">
+                  <div key={friend._id} className="rounded-xl px-2 transition-colors hover:bg-muted/60">
                     <FriendActivityRow friend={friend} profile={profile} activity={activity} />
                   </div>
                 ))}

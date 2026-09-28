@@ -30,7 +30,7 @@ export function PeopleViewer({ open, onClose, title, groups }: PeopleViewerProps
           {groups.map((group, gi) => (
             <div key={group.label ?? gi} className="flex flex-col gap-2">
               {group.label ? (
-                <ThemedText type="caption" as="p" className="uppercase tracking-wide">
+                <ThemedText type="larger_default" as="p">
                   {group.label}
                 </ThemedText>
               ) : null}

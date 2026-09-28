@@ -1,26 +1,11 @@
 import type { ReactNode } from "react";
 import { ThemedText } from "@/components/ThemedText";
 
-// Home section label (mirrors mobile SectionHeader, minus the hide-toggle for now).
-export function SectionHeader({
-  title,
-  right,
-  variant = "caption",
-}: {
-  title: string;
-  right?: ReactNode;
-  /** "prominent" renders a body-size sentence-case title instead of the small caption. */
-  variant?: "caption" | "prominent";
-}) {
+// Section title: sentence case at 17px (mobile's prominent SectionHeader). No eyebrow captions.
+export function SectionHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <div className="flex items-center justify-between">
-      {variant === "prominent" ? (
-        <ThemedText type="larger_default">{title}</ThemedText>
-      ) : (
-        <ThemedText type="caption" className="uppercase tracking-wider">
-          {title}
-        </ThemedText>
-      )}
+      <ThemedText type="larger_default">{title}</ThemedText>
       {right}
     </div>
   );

@@ -17,7 +17,7 @@ export default function HomeScreen() {
       <WelcomeHeader />
 
       <section className="flex flex-col gap-4">
-        <SectionHeader title="Activity Rings" variant="prominent" />
+        <SectionHeader title="Activity Rings" />
         <TodayHero />
       </section>
 

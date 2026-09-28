@@ -98,7 +98,7 @@ export function RingUpdateOverlay(): JSX.Element | null {
           transition: "opacity 500ms ease, transform 520ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">{label}</span>
+        <span className="font-sans text-sm text-white/70">{label}</span>
         <div className="relative grid place-items-center" style={{ width: SIZE, height: SIZE }}>
           <svg width={SIZE} height={SIZE} className="-rotate-90">
             <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={TRACK} strokeWidth={STROKE} />
