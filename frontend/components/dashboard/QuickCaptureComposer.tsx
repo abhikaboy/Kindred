@@ -59,6 +59,7 @@ import { SectionTitle } from "@/components/dashboard/SectionHeader";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CaptureBackdrop, Glass, GLASS, ON_DARK, ON_DARK_MUTED } from "@/components/capture/CaptureStage";
 import { logger } from "@/utils/logger";
+import { Colors } from "@/constants/Colors";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useAuth } from "@/hooks/useAuth";
@@ -128,6 +129,20 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
     const [keyboardUp, setKeyboardUp] = useState(false);
     const inputRef = useRef<TextInput>(null);
     const closingRef = useRef(false);
+    // Set by any touch inside the composer content, so neither the backdrop nor
+    // the keyboard dropping for that tap reads as "done"
+    const holdOpenRef = useRef(false);
+    const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const holdOpen = () => {
+        holdOpenRef.current = true;
+        if (holdTimer.current) clearTimeout(holdTimer.current);
+        holdTimer.current = setTimeout(() => {
+            holdOpenRef.current = false;
+        }, 800);
+    };
+    const releaseHold = () => {
+        inputRef.current?.focus();
+    };
     const opacity = useSharedValue(0);
     // voiceModeRef is set while voice owns the screen, so the keyboard dropping for the mic doesn't close us.
     const { listening, volume, toggleMic, cancelListening, voiceModeRef } = useVoiceCapture({
@@ -169,6 +184,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         enabled: dismissed !== null,
     });
     const [refreshing, setRefreshing] = useState(false);
+    const [noNewSuggestions, setNoNewSuggestions] = useState(false);
     const refreshSeq = useRef(0);
     // Staged ones leave the list; the rest stay tappable
     const personal = (predictions ?? []).filter(
@@ -231,7 +247,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide", () => {
             setKeyboardUp(false);
             // With drafts staged, lowering the keyboard just reveals them; it isn't "done".
-            if (shown && !voiceModeRef.current && draftsRef.current.length === 0) close();
+            if (shown && !voiceModeRef.current && !holdOpenRef.current && draftsRef.current.length === 0) close();
         });
         return () => {
             willShow.remove();
@@ -272,12 +288,15 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
     const refreshPredictions = async () => {
         const seq = ++refreshSeq.current;
         setRefreshing(true);
+        setNoNewSuggestions(false);
         const shown = (queryClient.getQueryData<typeof predictions>(TASK_PREDICTIONS_KEY) ?? []).map((p) => p.content);
         try {
             const fresh = await getTaskPredictionsAPI({ refresh: true, exclude: [...dismissedRef.current, ...shown] });
             if (seq !== refreshSeq.current) return;
-            // Nothing new: keep the current set rather than blanking the list
-            if (fresh.length > 0) queryClient.setQueryData(TASK_PREDICTIONS_KEY, fresh);
+            const isNew = fresh.some((p) => !shown.includes(p.content));
+            // Nothing new: keep the current set and say so, rather than blanking the list
+            if (isNew) queryClient.setQueryData(TASK_PREDICTIONS_KEY, fresh);
+            setNoNewSuggestions(!isNew);
         } finally {
             if (seq === refreshSeq.current) setRefreshing(false);
         }
@@ -401,7 +420,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
             onShow={() => (startWithVoice ? toggleMic() : inputRef.current?.focus())}>
             <CaptureBackdrop opacity={opacity} />
 
-            <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close task input" />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => !holdOpenRef.current && close()} accessibilityLabel="Close task input" />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -409,6 +428,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                 pointerEvents="box-none">
                 <Reanimated.View
                     style={[styles.stack, { paddingBottom: bottomGap }, stackStyle]}
+                    onTouchStart={holdOpen}
                     pointerEvents="box-none">
                     {drafts.map((d) => (
                         <Reanimated.View
@@ -504,7 +524,10 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                                     <View style={styles.suggestionHeader}>
                                         <SectionTitle title="Suggested for you" style={{ color: ON_DARK }} />
                                         <TouchableOpacity
-                                            onPress={refreshPredictions}
+                                            onPress={() => {
+                                                releaseHold();
+                                                refreshPredictions();
+                                            }}
                                             hitSlop={8}
                                             accessibilityRole="button"
                                             accessibilityLabel="Refresh suggestions"
@@ -512,6 +535,11 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                                             <ArrowClockwise size={16} color={ON_DARK_MUTED} weight="bold" />
                                         </TouchableOpacity>
                                     </View>
+                                    {noNewSuggestions && (
+                                        <ThemedText type="caption" style={styles.suggestionReason}>
+                                            No new suggestions right now
+                                        </ThemedText>
+                                    )}
                                     {/* New tasks predicted from the user's own patterns, each saying why */}
                                     {personal.map((s) => (
                                         <Reanimated.View key={s.content} entering={FadeIn.duration(200)}>
@@ -522,7 +550,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                                                 accessibilityRole="button"
                                                 accessibilityLabel={`Add ${s.content}`}
                                                 accessibilityHint={s.reason}>
-                                                <Glass interactive style={styles.suggestionCard}>
+                                                <View style={styles.suggestionCard}>
                                                     <View style={styles.fill}>
                                                         <ThemedText type="default" style={styles.suggestion}>
                                                             {s.content}
@@ -533,12 +561,15 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                                                     </View>
                                                     <Plus size={16} color={ON_DARK} weight="bold" />
                                                     <TouchableOpacity
-                                                        onPress={() => dismissPrediction(s.content)}
+                                                                    onPress={() => {
+                                                            releaseHold();
+                                                            dismissPrediction(s.content);
+                                                        }}
                                                         hitSlop={8}
                                                         accessibilityLabel={`Dismiss ${s.content}`}>
                                                         <X size={16} color={ON_DARK_MUTED} weight="bold" />
                                                     </TouchableOpacity>
-                                                </Glass>
+                                                </View>
                                             </TouchableOpacity>
                                         </Reanimated.View>
                                     ))}
@@ -714,7 +745,12 @@ const styles = StyleSheet.create({
     chipText: { color: ON_DARK },
     starters: { gap: 12, paddingHorizontal: 4, paddingBottom: 4 },
     suggestionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    // Tinted with the dark theme background rather than live glass, which
+    // sometimes fails to render inside the modal
     suggestionCard: {
+        backgroundColor: Colors.dark.background + "CC",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.14)",
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
