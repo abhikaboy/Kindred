@@ -3180,6 +3180,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/enrich/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply auto enrichment
+         * @description Applies the previewed changes the user kept. Only schedule, due date, priority, difficulty and title can change.
+         */
+        post: operations["apply-enrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/enrich/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview auto enrichment
+         * @description Proposes schedules, due dates, priority, difficulty and title cleanups for unscheduled tasks, with a reason for each. Changes nothing.
+         */
+        post: operations["preview-enrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/enrich/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check whether auto enrichment is worth offering
+         * @description Counts open tasks with no schedule or a stale one. Does not call AI.
+         */
+        get: operations["get-enrich-status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/log": {
         parameters: {
             query?: never;
@@ -4110,6 +4170,26 @@ export interface components {
             onTimePct: number;
             status: string;
             workspace: string;
+        };
+        ApplyEnrichInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyEnrichInputBody.json
+             */
+            readonly $schema?: string;
+            changes: components["schemas"]["Item"][];
+        };
+        ApplyEnrichOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyEnrichOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            editedCount: number;
+            tasks: components["schemas"]["TaskDocument"][];
         };
         ApplyReferralCodeInputBody: {
             /**
@@ -5596,6 +5676,20 @@ export interface components {
             /** @description Edited recurring template tasks */
             templates: components["schemas"]["TemplateTaskDocument"][];
         };
+        EditTaskUpdatesLocal: {
+            active?: boolean;
+            content?: string;
+            deadline?: string;
+            notes?: string;
+            /** Format: int64 */
+            priority?: number;
+            recurFrequency?: string;
+            recurType?: string;
+            startDate?: string;
+            startTime?: string;
+            /** Format: double */
+            value?: number;
+        };
         EditTasksNaturalLanguageInputBody: {
             /**
              * Format: uri
@@ -5750,6 +5844,19 @@ export interface components {
         EnhancedBlueprintReference: {
             id: string;
             isPublic: boolean;
+        };
+        EnrichChange: {
+            categoryId: string;
+            categoryName: string;
+            /** @description Why the change is proposed */
+            reason: string;
+            /** @description Plain descriptions of each field change, e.g. 'Start Tue, Sep 29' */
+            summary: string[];
+            taskId: string;
+            /** @description The task's current title */
+            taskName: string;
+            /** @description Fields that would change; time fields are RFC3339 */
+            updates: components["schemas"]["EditTaskUpdatesLocal"];
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -6104,6 +6211,26 @@ export interface components {
             readonly $schema?: string;
             connections: components["schemas"]["CalendarConnection"][];
         };
+        GetEnrichStatusOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetEnrichStatusOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Open tasks with no schedule, or a stale one
+             */
+            candidateCount: number;
+            /** @description Whether enough tasks need attention to offer auto enrichment */
+            eligible: boolean;
+            /**
+             * Format: int64
+             * @description Candidates whose planned day passed without being done
+             */
+            staleCount: number;
+        };
         GetEventsOutputBody: {
             /**
              * Format: uri
@@ -6448,6 +6575,10 @@ export interface components {
             readonly $schema?: string;
             /** @description Ordered list of decomposed operations. Edits are already applied; deletes and creates need frontend confirmation. */
             ops: components["schemas"]["IntentOpResponse"][];
+        };
+        Item: {
+            taskId: string;
+            updates: components["schemas"]["EditTaskUpdatesLocal"];
         };
         KudosRewards: {
             /**
@@ -6943,6 +7074,27 @@ export interface components {
             content: string;
             id: string;
             status?: string;
+        };
+        PreviewEnrichInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewEnrichInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description User's timezone (IANA format) */
+            timezone?: string;
+        };
+        PreviewEnrichOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewEnrichOutputBody.json
+             */
+            readonly $schema?: string;
+            changes: components["schemas"]["EnrichChange"][];
+            /** @description Plain explanation of what applying would do */
+            overview: string;
         };
         PreviewTaskFromImageInputBody: {
             /**
@@ -15273,6 +15425,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "apply-enrich": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyEnrichInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyEnrichOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-enrich": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewEnrichInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewEnrichOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-enrich-status": {
+        parameters: {
+            query?: {
+                /**
+                 * @description User's timezone (IANA format)
+                 * @example America/New_York
+                 */
+                timezone?: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetEnrichStatusOutputBody"];
                 };
             };
             /** @description Error */

@@ -46,6 +46,7 @@ type FlowSet struct {
 	IntentRouterFlow                 *core.Flow[IntentRouterInput, IntentRouterOutput, struct{}]
 	SuggestTaskFieldsFlow            *core.Flow[SuggestTaskFieldsFlowInput, SuggestTaskFieldsFlowOutput, struct{}]
 	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
+	EnrichTasksFlow                  *core.Flow[EnrichTasksFlowInput, EnrichTasksFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -620,6 +621,37 @@ For the strongest signals, write ONE new task each (at most 5 in total, stronges
 			return *resp, nil
 		})
 
+	// Auto enrichment: proposes schedules and missing fields for existing tasks.
+	// The caller validates ids and turns drafts into a preview the user approves.
+	enrichTasksFlow := genkit.DefineFlow(g, "enrichTasksFlow",
+		func(ctx context.Context, input EnrichTasksFlowInput) (EnrichTasksFlowOutput, error) {
+			prompt := `You tidy up a user's to-do list. You are given their open tasks that are missing a schedule or details, plus how busy each of the next days already is.
+
+For each task, propose only the changes you are confident about:
+- Schedule it: pick a startDate in the next 14 days that fits its urgency. Spread work out; avoid days that are already busy. Overdue or stale tasks should land in the next few days.
+- Add a startTime only for tasks that are clearly time-bound (calls, appointments, meetings).
+- Add a deadline only when the title implies one ("by Friday", "before the trip", "renew", "pay"). Never invent a deadline otherwise.
+- Set priority and difficulty only when the title makes them obvious, and only when the task still has the default of 1.
+- Fix the title only for casing, typos or filler words. Keep the user's words.
+- Skip a task entirely when nothing useful can be said. Fewer good changes beat many weak ones.
+- Every change needs a short, plain reason. No emojis.
+
+` + input.Context
+
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.EnrichTasks")
+			defer span.End()
+			resp, _, err := genkit.GenerateData[EnrichTasksFlowOutput](ctx, g, ai.WithPrompt(prompt), lowThinking())
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return EnrichTasksFlowOutput{}, err
+			}
+			if resp == nil {
+				return EnrichTasksFlowOutput{}, nil
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -632,5 +664,6 @@ For the strongest signals, write ONE new task each (at most 5 in total, stronges
 		IntentRouterFlow:                 intentRouterFlow,
 		SuggestTaskFieldsFlow:            suggestTaskFieldsFlow,
 		PredictTasksFlow:                 predictTasksFlow,
+		EnrichTasksFlow:                  enrichTasksFlow,
 	}
 }

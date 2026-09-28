@@ -6564,6 +6564,109 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/enrich/apply:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Apply auto enrichment
+            description: Applies the previewed changes the user kept. Only schedule, due date, priority, difficulty and title can change.
+            operationId: apply-enrich
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ApplyEnrichInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApplyEnrichOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/enrich/preview:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Preview auto enrichment
+            description: Proposes schedules, due dates, priority, difficulty and title cleanups for unscheduled tasks, with a reason for each. Changes nothing.
+            operationId: preview-enrich
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewEnrichInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewEnrichOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/enrich/status:
+        get:
+            tags:
+                - tasks
+                - ai
+            summary: Check whether auto enrichment is worth offering
+            description: Counts open tasks with no schedule or a stale one. Does not call AI.
+            operationId: get-enrich-status
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: timezone
+                  in: query
+                  description: User's timezone (IANA format)
+                  explode: false
+                  schema:
+                    type: string
+                    description: User's timezone (IANA format)
+                    examples:
+                        - America/New_York
+                  example: America/New_York
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetEnrichStatusOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/log:
         post:
             tags:
@@ -8446,6 +8549,46 @@ components:
                 - onTimePct
                 - kudos
                 - status
+        ApplyEnrichInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ApplyEnrichInputBody.json
+                    readOnly: true
+                changes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Item'
+                    minItems: 1
+                    maxItems: 50
+            required:
+                - changes
+        ApplyEnrichOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ApplyEnrichOutputBody.json
+                    readOnly: true
+                editedCount:
+                    type: integer
+                    format: int64
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
+                - editedCount
         ApplyReferralCodeInputBody:
             type: object
             additionalProperties: false
@@ -10783,6 +10926,32 @@ components:
                 - tasks
                 - templates
                 - editedCount
+        EditTaskUpdatesLocal:
+            type: object
+            additionalProperties: false
+            properties:
+                active:
+                    type: boolean
+                content:
+                    type: string
+                deadline:
+                    type: string
+                notes:
+                    type: string
+                priority:
+                    type: integer
+                    format: int64
+                recurFrequency:
+                    type: string
+                recurType:
+                    type: string
+                startDate:
+                    type: string
+                startTime:
+                    type: string
+                value:
+                    type: number
+                    format: double
         EditTasksNaturalLanguageInputBody:
             type: object
             additionalProperties: false
@@ -10991,6 +11160,38 @@ components:
             required:
                 - id
                 - isPublic
+        EnrichChange:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                categoryName:
+                    type: string
+                reason:
+                    type: string
+                    description: Why the change is proposed
+                summary:
+                    type: array
+                    description: Plain descriptions of each field change, e.g. 'Start Tue, Sep 29'
+                    items:
+                        type: string
+                taskId:
+                    type: string
+                taskName:
+                    type: string
+                    description: The task's current title
+                updates:
+                    description: Fields that would change; time fields are RFC3339
+                    $ref: '#/components/schemas/EditTaskUpdatesLocal'
+            required:
+                - taskId
+                - categoryId
+                - taskName
+                - categoryName
+                - updates
+                - summary
+                - reason
         ErrorDetail:
             type: object
             additionalProperties: false
@@ -11604,6 +11805,32 @@ components:
                         $ref: '#/components/schemas/CalendarConnection'
             required:
                 - connections
+        GetEnrichStatusOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetEnrichStatusOutputBody.json
+                    readOnly: true
+                candidateCount:
+                    type: integer
+                    description: Open tasks with no schedule, or a stale one
+                    format: int64
+                eligible:
+                    type: boolean
+                    description: Whether enough tasks need attention to offer auto enrichment
+                staleCount:
+                    type: integer
+                    description: Candidates whose planned day passed without being done
+                    format: int64
+            required:
+                - eligible
+                - candidateCount
+                - staleCount
         GetEventsOutputBody:
             type: object
             additionalProperties: false
@@ -12209,6 +12436,17 @@ components:
                         $ref: '#/components/schemas/IntentOpResponse'
             required:
                 - ops
+        Item:
+            type: object
+            additionalProperties: false
+            properties:
+                taskId:
+                    type: string
+                updates:
+                    $ref: '#/components/schemas/EditTaskUpdatesLocal'
+            required:
+                - taskId
+                - updates
         KudosRewards:
             type: object
             additionalProperties: false
@@ -13143,6 +13381,41 @@ components:
                 - id
                 - content
                 - category
+        PreviewEnrichInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewEnrichInputBody.json
+                    readOnly: true
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format)
+        PreviewEnrichOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PreviewEnrichOutputBody.json
+                    readOnly: true
+                changes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/EnrichChange'
+                overview:
+                    type: string
+                    description: Plain explanation of what applying would do
+            required:
+                - overview
+                - changes
         PreviewTaskFromImageInputBody:
             type: object
             additionalProperties: false

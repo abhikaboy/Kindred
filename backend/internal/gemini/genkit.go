@@ -40,6 +40,7 @@ func InitGenkit(collections map[string]*mongo.Collection, unsplashClient *unspla
 		IntentRouterFlow:                 flows.IntentRouterFlow,
 		SuggestTaskFieldsFlow:            flows.SuggestTaskFieldsFlow,
 		PredictTasksFlow:                 flows.PredictTasksFlow,
+		EnrichTasksFlow:                  flows.EnrichTasksFlow,
 		Tools:                            tools,
 	}
 }

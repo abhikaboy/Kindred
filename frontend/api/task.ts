@@ -784,6 +784,41 @@ export const getTaskPredictionsAPI = async ({
     return data.predictions ?? [];
 };
 
+export type EnrichChange = components["schemas"]["EnrichChange"];
+export type EnrichStatus = Omit<components["schemas"]["GetEnrichStatusOutputBody"], "$schema">;
+export type EnrichPreview = Omit<components["schemas"]["PreviewEnrichOutputBody"], "$schema">;
+
+/** Cheap check (no AI) for whether auto enrichment is worth offering. */
+export const getEnrichStatusAPI = async (): Promise<EnrichStatus | null> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { data, error } = await client.GET("/v1/user/tasks/enrich/status", {
+        params: withAuthHeaders({ query: { timezone } }),
+    });
+    if (error || !data) return null;
+    return data;
+};
+
+/** Proposes changes to unscheduled tasks. Read-only on the server. */
+export const previewEnrichAPI = async (): Promise<EnrichPreview> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { data, error } = await client.POST("/v1/user/tasks/enrich/preview", {
+        params: withAuthHeaders({}),
+        body: { timezone },
+    });
+    if (error || !data) throw new Error((error as any)?.detail ?? "Couldn't look over your tasks");
+    return { overview: data.overview, changes: data.changes ?? [] };
+};
+
+/** Applies the previewed changes the user kept; returns the updated tasks. */
+export const applyEnrichAPI = async (changes: EnrichChange[]): Promise<TaskDocument[]> => {
+    const { data, error } = await client.POST("/v1/user/tasks/enrich/apply", {
+        params: withAuthHeaders({}),
+        body: { changes: changes.map((c) => ({ taskId: c.taskId, updates: c.updates })) },
+    });
+    if (error || !data) throw new Error("Couldn't apply changes");
+    return data.tasks ?? [];
+};
+
 export const previewTasksFromNaturalLanguageAPI = async (
     text: string
 ): Promise<PreviewTaskNaturalLanguageOutputBody> => {

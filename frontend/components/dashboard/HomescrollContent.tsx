@@ -54,6 +54,7 @@ import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
 import ProductivityRingsCard from "@/components/profile/ProductivityRings";
 import QuickCapture from "@/components/dashboard/QuickCapture";
 import QuickLogDay from "@/components/dashboard/QuickLogDay";
+import AutoEnrichCard from "@/components/dashboard/AutoEnrichCard";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 import type { HomeTour } from "@/hooks/useHomeTour";
 import { hapticLight } from "@/utils/haptics";
@@ -471,6 +472,8 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
 
                 {/* Unwrapped so it leaves no gap once hidden for the day */}
                 {!tour.active && <QuickLogDay />}
+
+                {!tour.active && !isGuest && <AutoEnrichCard />}
 
                 {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
 

@@ -367,6 +367,27 @@ type PredictTasksFlowOutput struct {
 	Predictions []PredictedTaskDraft `json:"predictions"`
 }
 
+// --- Enrich tasks flow types ---
+
+type EnrichTasksFlowInput struct {
+	Context string `json:"context"`
+}
+
+type EnrichTaskDraft struct {
+	TaskID    string   `json:"taskId" jsonschema_description:"Exact id of ONE listed task (e.g. T3)."`
+	Content   *string  `json:"content,omitempty" jsonschema_description:"Cleaned-up title. Only to fix casing, typos or filler words; keep the user's phrasing. Omit when the title is fine."`
+	Priority  *int     `json:"priority,omitempty" jsonschema_description:"1=low, 2=medium, 3=high. Omit unless the title or deadline clearly implies it."`
+	Value     *float64 `json:"value,omitempty" jsonschema_description:"Difficulty from 1 (trivial) to 5 (very hard). Omit unless effort is clear."`
+	StartDate *string  `json:"startDate,omitempty" jsonschema_description:"YYYY-MM-DD day to work on it. Omit to leave unchanged."`
+	StartTime *string  `json:"startTime,omitempty" jsonschema_description:"HH:MM 24h local time to start. Only for tasks that are clearly time-bound. Requires startDate."`
+	Deadline  *string  `json:"deadline,omitempty" jsonschema_description:"YYYY-MM-DD due day. Only when the title implies a due date. Omit otherwise."`
+	Reason    string   `json:"reason" jsonschema_description:"One short plain sentence, under 12 words, saying why. No emojis."`
+}
+
+type EnrichTasksFlowOutput struct {
+	Changes []EnrichTaskDraft `json:"changes"`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`
