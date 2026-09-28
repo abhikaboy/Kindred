@@ -11168,6 +11168,11 @@ components:
                     type: string
                 categoryName:
                     type: string
+                fields:
+                    type: array
+                    description: 'The field behind each summary entry, in the same order: content, start, deadline, priority or value. Lets the user drop one part of a change.'
+                    items:
+                        type: string
                 reason:
                     type: string
                     description: Why the change is proposed
@@ -11191,6 +11196,7 @@ components:
                 - categoryName
                 - updates
                 - summary
+                - fields
                 - reason
         ErrorDetail:
             type: object

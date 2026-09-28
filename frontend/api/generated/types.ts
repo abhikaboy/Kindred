@@ -5848,6 +5848,8 @@ export interface components {
         EnrichChange: {
             categoryId: string;
             categoryName: string;
+            /** @description The field behind each summary entry, in the same order: content, start, deadline, priority or value. Lets the user drop one part of a change. */
+            fields: string[];
             /** @description Why the change is proposed */
             reason: string;
             /** @description Plain descriptions of each field change, e.g. 'Start Tue, Sep 29' */

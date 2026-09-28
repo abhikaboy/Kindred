@@ -49,6 +49,7 @@ type EnrichChange struct {
 	CategoryName string               `json:"categoryName"`
 	Updates      EditTaskUpdatesLocal `json:"updates" doc:"Fields that would change; time fields are RFC3339"`
 	Summary      []string             `json:"summary" doc:"Plain descriptions of each field change, e.g. 'Start Tue, Sep 29'"`
+	Fields       []string             `json:"fields" doc:"The field behind each summary entry, in the same order: content, start, deadline, priority or value. Lets the user drop one part of a change."`
 	Reason       string               `json:"reason" doc:"Why the change is proposed"`
 }
 
@@ -178,13 +179,14 @@ func FinalizeEnrichment(drafts []enrichDraft, cands []EnrichCandidate, now time.
 		}
 		c := cands[idx-1]
 		var u EditTaskUpdatesLocal
-		var summary []string
+		var summary, fields []string
 
 		if d.Content != nil {
 			title := strings.TrimSpace(*d.Content)
 			if title != "" && title != c.Content && len(title) <= len(c.Content)+20 {
 				u.Content = &title
 				summary = append(summary, fmt.Sprintf("Rename to %q", title))
+				fields = append(fields, "content")
 			}
 		}
 
@@ -212,6 +214,7 @@ func FinalizeEnrichment(drafts []enrichDraft, cands []EnrichCandidate, now time.
 					label = "Move to " + strings.TrimPrefix(label, "Start ")
 				}
 				summary = append(summary, label)
+				fields = append(fields, "start")
 			}
 		}
 
@@ -220,6 +223,7 @@ func FinalizeEnrichment(drafts []enrichDraft, cands []EnrichCandidate, now time.
 				due := time.Date(day.Year(), day.Month(), day.Day(), 23, 59, 0, 0, loc).UTC().Format(time.RFC3339)
 				u.Deadline = &due
 				summary = append(summary, "Due "+friendlyDay(day, today))
+				fields = append(fields, "deadline")
 			}
 		}
 
@@ -227,12 +231,14 @@ func FinalizeEnrichment(drafts []enrichDraft, cands []EnrichCandidate, now time.
 			p := *d.Priority
 			u.Priority = &p
 			summary = append(summary, "Priority "+priorityNames[p])
+			fields = append(fields, "priority")
 		}
 
 		if d.Value != nil && *d.Value >= 1 && *d.Value <= 5 && *d.Value != c.Value {
 			v := float64(int(*d.Value))
 			u.Value = &v
 			summary = append(summary, fmt.Sprintf("Difficulty %g of 5", v))
+			fields = append(fields, "value")
 		}
 
 		if len(summary) == 0 {
@@ -241,7 +247,7 @@ func FinalizeEnrichment(drafts []enrichDraft, cands []EnrichCandidate, now time.
 		seen[idx] = true
 		out = append(out, EnrichChange{
 			TaskID: c.ID.Hex(), CategoryID: c.CategoryID.Hex(), TaskName: c.Content, CategoryName: c.CategoryName,
-			Updates: u, Summary: summary, Reason: strings.TrimSpace(d.Reason),
+			Updates: u, Summary: summary, Fields: fields, Reason: strings.TrimSpace(d.Reason),
 		})
 	}
 	if out == nil {

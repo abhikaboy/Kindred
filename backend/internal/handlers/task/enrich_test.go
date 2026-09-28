@@ -36,6 +36,9 @@ func TestFinalizeEnrichment(t *testing.T) {
 	if strings.Join(c.Summary, "; ") != `Rename to "Call dentist"; Start tomorrow at 9:30 AM` {
 		t.Fatalf("unexpected summary %v", c.Summary)
 	}
+	if strings.Join(c.Fields, ",") != "content,start" {
+		t.Fatalf("unexpected fields %v", c.Fields)
+	}
 	if !strings.HasPrefix(EnrichOverview(got), "This will schedule 1 task") {
 		t.Fatalf("unexpected overview %q", EnrichOverview(got))
 	}

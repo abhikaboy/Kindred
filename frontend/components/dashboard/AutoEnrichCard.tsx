@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomSheetFooter, BottomSheetScrollView, type BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
-import { CalendarCheckIcon, CheckCircleIcon, CircleIcon, MagicWandIcon, XIcon } from "phosphor-react-native";
+import { CalendarCheckIcon, MagicWandIcon, XIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DefaultModal from "@/components/modals/DefaultModal";
@@ -110,13 +110,33 @@ interface SheetProps {
     onApplied: () => void;
 }
 
+// Clearing a summary entry clears the update fields behind it, so the change
+// that gets applied always matches what the user sees.
+const FIELD_KEYS: Record<string, (keyof EnrichChange["updates"])[]> = {
+    content: ["content"],
+    start: ["startDate", "startTime"],
+    deadline: ["deadline"],
+    priority: ["priority"],
+    value: ["value"],
+};
+
+function dropPart(change: EnrichChange, index: number): EnrichChange | null {
+    const field = change.fields?.[index];
+    const updates = { ...change.updates };
+    (FIELD_KEYS[field ?? ""] ?? []).forEach((key) => delete updates[key]);
+    const summary = change.summary.filter((_, i) => i !== index);
+    if (summary.length === 0) return null;
+    return { ...change, updates, summary, fields: change.fields?.filter((_, i) => i !== index) };
+}
+
 function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps) {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const { updateTask } = useTaskActions();
     const [stage, setStage] = useState<Stage>("intro");
     const [preview, setPreview] = useState<EnrichPreview | null>(null);
-    const [kept, setKept] = useState<Set<string>>(new Set());
+    // Working copy the user trims down; the preview stays intact for "bring back"
+    const [changes, setChanges] = useState<EnrichChange[]>([]);
     const [applying, setApplying] = useState(false);
 
     const lookOver = useCallback(async () => {
@@ -124,26 +144,33 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
         try {
             const next = await previewEnrichAPI();
             setPreview(next);
-            setKept(new Set(next.changes.map((c) => c.taskId)));
+            setChanges(next.changes);
             setStage("review");
         } catch {
             setStage("error");
         }
     }, []);
 
-    const toggle = (taskId: string) => {
+    const dismissTask = (taskId: string) => {
         hapticLight();
-        setKept((prev) => {
-            const next = new Set(prev);
-            if (next.has(taskId)) next.delete(taskId);
-            else next.add(taskId);
-            return next;
-        });
+        setChanges((prev) => prev.filter((c) => c.taskId !== taskId));
     };
 
+    const dismissPart = (taskId: string, index: number) => {
+        hapticLight();
+        setChanges((prev) =>
+            prev.flatMap((c) => {
+                if (c.taskId !== taskId) return [c];
+                const next = dropPart(c, index);
+                return next ? [next] : [];
+            })
+        );
+    };
+
+    const dismissedCount = (preview?.changes.length ?? 0) - changes.length;
+    const editedCount = changes.filter((c) => preview?.changes.find((p) => p.taskId === c.taskId)?.summary.length !== c.summary.length).length;
+
     const apply = useCallback(async () => {
-        if (!preview) return;
-        const changes = preview.changes.filter((c) => kept.has(c.taskId));
         if (changes.length === 0) return;
         setApplying(true);
         try {
@@ -160,9 +187,9 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
         } finally {
             setApplying(false);
         }
-    }, [preview, kept, updateTask, onApplied, setVisible]);
+    }, [changes, updateTask, onApplied, setVisible]);
 
-    const keptCount = kept.size;
+    const count = changes.length;
     const renderFooter = useCallback(
         (props: BottomSheetFooterProps) => {
             let button: React.ReactNode = null;
@@ -171,9 +198,9 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
             else if (stage === "review" && preview && preview.changes.length > 0)
                 button = (
                     <PrimaryButton
-                        title={applying ? "Applying..." : `Apply ${keptCount} change${keptCount === 1 ? "" : "s"}`}
+                        title={applying ? "Applying..." : count === 0 ? "Nothing to apply" : `Apply to ${count} task${count === 1 ? "" : "s"}`}
                         onPress={apply}
-                        disabled={applying || keptCount === 0}
+                        disabled={applying || count === 0}
                     />
                 );
             if (!button) return null;
@@ -183,7 +210,7 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
                 </BottomSheetFooter>
             );
         },
-        [stage, preview, applying, keptCount, apply, lookOver, insets.bottom, ThemedColor]
+        [stage, preview, applying, count, apply, lookOver, insets.bottom, ThemedColor]
     );
 
     const introPoints = useMemo(() => {
@@ -198,75 +225,113 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
 
     return (
         <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["85%"]} topInset={insets.top} footerComponent={renderFooter}>
-            <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
-                Tidy up your tasks
-            </ThemedText>
-            <MotiView key={stage} from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 180 }} style={styles.flex}>
-                {stage === "intro" && (
-                    <View style={styles.section}>
-                        <ThemedText type="default" style={styles.sectionTitle}>
-                            Here is what Kindred will do
-                        </ThemedText>
-                        {introPoints.map((point) => (
-                            <View key={point} style={styles.point}>
-                                <CalendarCheckIcon size={18} weight="light" color={ThemedColor.primary} />
-                                <ThemedText type="caption" style={styles.pointText}>
-                                    {point}
-                                </ThemedText>
-                            </View>
-                        ))}
-                        <ThemedText type="caption" style={styles.note}>
-                            Nothing changes yet. You will see every suggestion and can drop any of them before applying.
-                        </ThemedText>
-                    </View>
-                )}
+            {/* One scroll view for every stage, so long lists and small screens
+                always reach the end. A flat contentContainerStyle lets gorhom add
+                the footer's height to paddingBottom. */}
+            <BottomSheetScrollView style={styles.flex} contentContainerStyle={scrollContent} showsVerticalScrollIndicator={false}>
+                <ThemedText type="fancyFrauncesSubheading" style={styles.heading}>
+                    Tidy up your tasks
+                </ThemedText>
+                <MotiView key={stage} from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 180 }}>
+                    {stage === "intro" && (
+                        <View style={styles.section}>
+                            <ThemedText type="default" style={styles.sectionTitle}>
+                                Here is what Kindred will do
+                            </ThemedText>
+                            {introPoints.map((point) => (
+                                <View key={point} style={styles.point}>
+                                    <CalendarCheckIcon size={18} weight="light" color={ThemedColor.primary} />
+                                    <ThemedText type="caption" style={styles.pointText}>
+                                        {point}
+                                    </ThemedText>
+                                </View>
+                            ))}
+                            <ThemedText type="caption" style={styles.note}>
+                                Nothing changes yet. You will see every suggestion and can drop any of them before applying.
+                            </ThemedText>
+                        </View>
+                    )}
 
-                {stage === "loading" && (
-                    <View style={styles.center}>
-                        <ActivityIndicator color={ThemedColor.primary} />
-                        <ThemedText type="caption">Looking over your tasks...</ThemedText>
-                    </View>
-                )}
+                    {stage === "loading" && (
+                        <View style={styles.center}>
+                            <ActivityIndicator color={ThemedColor.primary} />
+                            <ThemedText type="caption">Looking over your tasks...</ThemedText>
+                        </View>
+                    )}
 
-                {stage === "error" && (
-                    <View style={styles.center}>
-                        <ThemedText type="caption">Couldn't look over your tasks right now.</ThemedText>
-                    </View>
-                )}
+                    {stage === "error" && (
+                        <View style={styles.center}>
+                            <ThemedText type="caption">Couldn't look over your tasks right now.</ThemedText>
+                        </View>
+                    )}
 
-                {stage === "review" && preview && (
-                    <BottomSheetScrollView style={styles.flex} contentContainerStyle={{ paddingBottom: 96 }}>
-                        <ThemedText type="caption" style={styles.overview}>
-                            {preview.overview}
-                        </ThemedText>
-                        {preview.changes.map((change) => (
-                            <ChangeRow key={change.taskId} change={change} kept={kept.has(change.taskId)} onToggle={() => toggle(change.taskId)} />
-                        ))}
-                    </BottomSheetScrollView>
-                )}
-            </MotiView>
+                    {stage === "review" && preview && (
+                        <View>
+                            <ThemedText type="caption" style={styles.overview}>
+                                {preview.overview}
+                                {preview.changes.length > 0 ? " Tap the x on anything you don't want." : ""}
+                            </ThemedText>
+                            {changes.map((change) => (
+                                <ChangeRow
+                                    key={change.taskId}
+                                    change={change}
+                                    onDismiss={() => dismissTask(change.taskId)}
+                                    onDismissPart={(index) => dismissPart(change.taskId, index)}
+                                />
+                            ))}
+                            {(dismissedCount > 0 || editedCount > 0) && (
+                                <TouchableOpacity onPress={() => setChanges(preview.changes)} hitSlop={8} style={styles.restore}>
+                                    <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                        Bring back everything I removed
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
+                </MotiView>
+            </BottomSheetScrollView>
         </DefaultModal>
     );
 }
 
-function ChangeRow({ change, kept, onToggle }: { change: EnrichChange; kept: boolean; onToggle: () => void }) {
+const scrollContent = { paddingBottom: 16 };
+
+function ChangeRow({ change, onDismiss, onDismissPart }: { change: EnrichChange; onDismiss: () => void; onDismissPart: (index: number) => void }) {
     const ThemedColor = useThemeColor();
     return (
-        <TouchableOpacity
-            onPress={onToggle}
-            activeOpacity={0.7}
-            style={[styles.change, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary, opacity: kept ? 1 : 0.5 }]}>
-            {kept ? <CheckCircleIcon size={22} weight="fill" color={ThemedColor.primary} /> : <CircleIcon size={22} color={ThemedColor.caption} />}
-            <View style={styles.changeText}>
-                <ThemedText type="default" numberOfLines={1}>
-                    {change.taskName}
-                </ThemedText>
-                <ThemedText type="default" style={{ fontSize: 14, color: ThemedColor.primary }}>
-                    {change.summary.join("  ·  ")}
-                </ThemedText>
-                {change.reason ? <ThemedText type="caption">{change.reason}</ThemedText> : null}
+        <MotiView
+            from={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: "timing", duration: 160 }}
+            style={[styles.change, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}>
+            <View style={styles.changeHeader}>
+                <View style={styles.changeText}>
+                    <ThemedText type="default" numberOfLines={2}>
+                        {change.taskName}
+                    </ThemedText>
+                    {change.categoryName ? <ThemedText type="caption">{change.categoryName}</ThemedText> : null}
+                </View>
+                <TouchableOpacity onPress={onDismiss} hitSlop={12} accessibilityLabel={`Don't change ${change.taskName}`}>
+                    <XIcon size={18} color={ThemedColor.caption} />
+                </TouchableOpacity>
             </View>
-        </TouchableOpacity>
+            <View style={styles.parts}>
+                {change.summary.map((label, index) => (
+                    <View key={label} style={[styles.part, { borderColor: ThemedColor.tertiary }]}>
+                        <ThemedText type="default" style={{ fontSize: 14, color: ThemedColor.primary }}>
+                            {label}
+                        </ThemedText>
+                        {change.summary.length > 1 && (
+                            <TouchableOpacity onPress={() => onDismissPart(index)} hitSlop={8} accessibilityLabel={`Drop ${label}`}>
+                                <XIcon size={12} color={ThemedColor.caption} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                ))}
+            </View>
+            {change.reason ? <ThemedText type="caption">{change.reason}</ThemedText> : null}
+        </MotiView>
     );
 }
 
@@ -316,13 +381,34 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     change: {
-        flexDirection: "row",
-        alignItems: "flex-start",
-        gap: 12,
+        gap: 8,
         padding: 12,
         borderRadius: 12,
         borderWidth: 1,
         marginBottom: 8,
+    },
+    changeHeader: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 12,
+    },
+    parts: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+    part: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+    restore: {
+        alignSelf: "center",
+        paddingVertical: 8,
     },
     changeText: {
         flex: 1,
