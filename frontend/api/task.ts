@@ -772,10 +772,13 @@ export type TaskPrediction = components["schemas"]["TaskPrediction"];
  * New tasks the user will likely need next, each with the reason. Additive:
  * any failure yields an empty list.
  */
-export const getTaskPredictionsAPI = async (): Promise<TaskPrediction[]> => {
+export const getTaskPredictionsAPI = async ({
+    refresh = false,
+    exclude = [],
+}: { refresh?: boolean; exclude?: string[] } = {}): Promise<TaskPrediction[]> => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const { data, error } = await client.GET("/v1/user/tasks/predictions", {
-        params: withAuthHeaders({ query: { timezone } }),
+        params: withAuthHeaders({ query: { timezone, refresh, exclude } }),
     });
     if (error || !data) return [];
     return data.predictions ?? [];

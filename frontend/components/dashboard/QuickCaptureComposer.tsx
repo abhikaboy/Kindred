@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Reanimated, {
     Easing,
     FadeIn,
@@ -23,7 +24,17 @@ import Reanimated, {
     useSharedValue,
     withTiming,
 } from "react-native-reanimated";
-import { ArrowUp, CalendarBlank, Flag, Microphone, Plus, Sparkle, Stop, X } from "phosphor-react-native";
+import {
+    ArrowClockwise,
+    ArrowUp,
+    CalendarBlank,
+    Flag,
+    Microphone,
+    Plus,
+    Sparkle,
+    Stop,
+    X,
+} from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
@@ -73,6 +84,9 @@ const draftDetails = (d: Draft) => {
 };
 
 const TASK_PREDICTIONS_KEY = ["taskPredictions"] as const;
+// Dismissed suggestions never come back; capped so the exclude list stays small
+const DISMISSED_KEY = "quickCapture.dismissedPredictions";
+const DISMISSED_CAP = 50;
 const FADE = { duration: 220, easing: Easing.out(Easing.cubic) };
 const PILE_TRANSITION = LinearTransition.duration(200).easing(Easing.out(Easing.cubic));
 const PRIORITY_LABEL: Record<number, string> = { 1: "Low priority", 2: "Medium priority", 3: "High priority" };
@@ -137,13 +151,29 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
 
     // Predicted from the user's rhythms, deadlines and recent completions; the
     // server caches per user, so reopening the composer is cheap
+    const [dismissed, setDismissed] = useState<string[] | null>(null);
+    const dismissedRef = useRef<string[]>([]);
+    useEffect(() => {
+        AsyncStorage.getItem(DISMISSED_KEY)
+            .then((raw) => {
+                const list = raw ? (JSON.parse(raw) as string[]) : [];
+                dismissedRef.current = list;
+                setDismissed(list);
+            })
+            .catch(() => setDismissed([]));
+    }, []);
     const { data: predictions, isPending: predictionsPending } = useQuery({
         queryKey: TASK_PREDICTIONS_KEY,
-        queryFn: getTaskPredictionsAPI,
+        queryFn: () => getTaskPredictionsAPI({ exclude: dismissedRef.current }),
         staleTime: 10 * 60 * 1000,
+        enabled: dismissed !== null,
     });
+    const [refreshing, setRefreshing] = useState(false);
+    const refreshSeq = useRef(0);
     // Staged ones leave the list; the rest stay tappable
-    const personal = (predictions ?? []).filter((p) => !drafts.some((d) => d.content === p.content));
+    const personal = (predictions ?? []).filter(
+        (p) => !drafts.some((d) => d.content === p.content) && !dismissed?.includes(p.content)
+    );
     // Nothing predicted: fall back to the examples, which show off the parser
     const isPersonal = personal.length > 0;
     const { applyCreatedTask } = useApplyCreatedTasks();
@@ -228,6 +258,29 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                 )
             )
             .catch(() => {});
+    };
+
+    const dismissPrediction = (content: string) => {
+        const next = [content, ...dismissedRef.current.filter((c) => c !== content)].slice(0, DISMISSED_CAP);
+        dismissedRef.current = next;
+        setDismissed(next);
+        AsyncStorage.setItem(DISMISSED_KEY, JSON.stringify(next)).catch(() => {});
+        capture(AnalyticsEvents.TASK_PREDICTION_DISMISSED, { content });
+    };
+
+    // A fresh set that skips what's on screen; the latest tap wins
+    const refreshPredictions = async () => {
+        const seq = ++refreshSeq.current;
+        setRefreshing(true);
+        const shown = (queryClient.getQueryData<typeof predictions>(TASK_PREDICTIONS_KEY) ?? []).map((p) => p.content);
+        try {
+            const fresh = await getTaskPredictionsAPI({ refresh: true, exclude: [...dismissedRef.current, ...shown] });
+            if (seq !== refreshSeq.current) return;
+            // Nothing new: keep the current set rather than blanking the list
+            if (fresh.length > 0) queryClient.setQueryData(TASK_PREDICTIONS_KEY, fresh);
+        } finally {
+            if (seq === refreshSeq.current) setRefreshing(false);
+        }
     };
 
     const addDraft = () => {
@@ -448,29 +501,46 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                             style={styles.starters}>
                             {isPersonal ? (
                                 <>
-                                    <SectionTitle title="Suggested for you" style={{ color: ON_DARK }} />
+                                    <View style={styles.suggestionHeader}>
+                                        <SectionTitle title="Suggested for you" style={{ color: ON_DARK }} />
+                                        <TouchableOpacity
+                                            onPress={refreshPredictions}
+                                            hitSlop={8}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Refresh suggestions"
+                                            style={{ opacity: refreshing ? 0.4 : 1 }}>
+                                            <ArrowClockwise size={16} color={ON_DARK_MUTED} weight="bold" />
+                                        </TouchableOpacity>
+                                    </View>
                                     {/* New tasks predicted from the user's own patterns, each saying why */}
                                     {personal.map((s) => (
-                                        <TouchableOpacity
-                                            key={s.content}
-                                            onPress={() => stageDraft(s.content, s.categoryId)}
-                                            disabled={submitting}
-                                            activeOpacity={0.6}
-                                            accessibilityRole="button"
-                                            accessibilityLabel={`Add ${s.content}`}
-                                            accessibilityHint={s.reason}>
-                                            <Glass interactive style={styles.suggestionCard}>
-                                                <View style={styles.fill}>
-                                                    <ThemedText type="default" style={styles.suggestion}>
-                                                        {s.content}
-                                                    </ThemedText>
-                                                    <ThemedText type="caption" style={styles.suggestionReason}>
-                                                        {s.reason}
-                                                    </ThemedText>
-                                                </View>
-                                                <Plus size={16} color={ON_DARK} weight="bold" />
-                                            </Glass>
-                                        </TouchableOpacity>
+                                        <Reanimated.View key={s.content} entering={FadeIn.duration(200)}>
+                                            <TouchableOpacity
+                                                onPress={() => stageDraft(s.content, s.categoryId)}
+                                                disabled={submitting}
+                                                activeOpacity={0.6}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Add ${s.content}`}
+                                                accessibilityHint={s.reason}>
+                                                <Glass interactive style={styles.suggestionCard}>
+                                                    <View style={styles.fill}>
+                                                        <ThemedText type="default" style={styles.suggestion}>
+                                                            {s.content}
+                                                        </ThemedText>
+                                                        <ThemedText type="caption" style={styles.suggestionReason}>
+                                                            {s.reason}
+                                                        </ThemedText>
+                                                    </View>
+                                                    <Plus size={16} color={ON_DARK} weight="bold" />
+                                                    <TouchableOpacity
+                                                        onPress={() => dismissPrediction(s.content)}
+                                                        hitSlop={8}
+                                                        accessibilityLabel={`Dismiss ${s.content}`}>
+                                                        <X size={16} color={ON_DARK_MUTED} weight="bold" />
+                                                    </TouchableOpacity>
+                                                </Glass>
+                                            </TouchableOpacity>
+                                        </Reanimated.View>
                                     ))}
                                 </>
                             ) : (
@@ -643,6 +713,7 @@ const styles = StyleSheet.create({
     },
     chipText: { color: ON_DARK },
     starters: { gap: 12, paddingHorizontal: 4, paddingBottom: 4 },
+    suggestionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     suggestionCard: {
         flexDirection: "row",
         alignItems: "center",

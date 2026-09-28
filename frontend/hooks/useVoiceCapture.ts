@@ -9,6 +9,8 @@ import {
 import { logger } from "@/utils/logger";
 
 const SILENCE_GRACE_MS = 4000;
+// If the recognizer never reports "start", fail loudly instead of leaving the mic stuck
+const START_TIMEOUT_MS = 4000;
 
 type Options = {
     text: string;
@@ -39,11 +41,13 @@ export function useVoiceCapture({ text, setText, disabled = false, isClosing, re
     const transcriptBaseRef = useRef("");
     const finalizedRef = useRef("");
     const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const startTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const volume = useSharedValue(0);
 
     useEffect(
         () => () => {
             if (silenceTimer.current) clearTimeout(silenceTimer.current);
+            if (startTimer.current) clearTimeout(startTimer.current);
             if (listeningRef.current || startingRef.current) ExpoSpeechRecognitionModule?.stop();
         },
         []
@@ -87,6 +91,7 @@ export function useVoiceCapture({ text, setText, disabled = false, isClosing, re
     // Recognition is a global singleton; only react to sessions this composer started.
     useSpeechRecognitionEvent("start", () => {
         if (!startingRef.current) return;
+        if (startTimer.current) clearTimeout(startTimer.current);
         startingRef.current = false;
         listeningRef.current = true;
         setListening(true);
@@ -143,7 +148,15 @@ export function useVoiceCapture({ text, setText, disabled = false, isClosing, re
             return;
         }
         if (requestingRef.current || disabled) return;
-        if (!ENABLE_SPEECH_RECOGNITION || !ExpoSpeechRecognitionModule) {
+        let available = !!ExpoSpeechRecognitionModule;
+        try {
+            available = available && (ExpoSpeechRecognitionModule?.isRecognitionAvailable?.() ?? true);
+        } catch (error) {
+            logger.error("Speech availability check failed", error);
+            available = false;
+        }
+        if (!ENABLE_SPEECH_RECOGNITION || !ExpoSpeechRecognitionModule || !available) {
+            logger.warn("Speech recognition unavailable; native module missing or service disabled");
             voiceError("Voice isn't available", "Type the task instead.");
             return;
         }
@@ -166,6 +179,14 @@ export function useVoiceCapture({ text, setText, disabled = false, isClosing, re
         }
         transcriptBaseRef.current = text.trim();
         startingRef.current = true;
+        if (startTimer.current) clearTimeout(startTimer.current);
+        startTimer.current = setTimeout(() => {
+            if (!startingRef.current) return;
+            startingRef.current = false;
+            ExpoSpeechRecognitionModule?.stop();
+            logger.warn("Speech recognition never started");
+            voiceError("Voice input failed", "Try again, or type the task instead.");
+        }, START_TIMEOUT_MS);
         try {
             ExpoSpeechRecognitionModule.start({
                 lang: "en-US",
@@ -181,6 +202,7 @@ export function useVoiceCapture({ text, setText, disabled = false, isClosing, re
             });
         } catch (error) {
             startingRef.current = false;
+            if (startTimer.current) clearTimeout(startTimer.current);
             logger.error("Speech recognition failed to start", error);
             voiceError("Voice input failed", "Try again, or type the task instead.");
         }

@@ -525,8 +525,10 @@ func runGeminiFlow(ctx context.Context, service any, flowName string, input any,
 // --- Handler ---
 
 type GetTaskPredictionsInput struct {
-	Authorization string `header:"Authorization" required:"true"`
-	Timezone      string `query:"timezone" doc:"User's timezone (IANA format)" example:"America/New_York"`
+	Authorization string   `header:"Authorization" required:"true"`
+	Timezone      string   `query:"timezone" doc:"User's timezone (IANA format)" example:"America/New_York"`
+	Refresh       bool     `query:"refresh" doc:"Skip the cache and ask for a fresh set"`
+	Exclude       []string `query:"exclude" doc:"Suggestion titles the user dismissed or has already seen; never returned"`
 }
 
 type GetTaskPredictionsOutput struct {
@@ -561,8 +563,8 @@ func (h *Handler) GetTaskPredictions(ctx context.Context, input *GetTaskPredicti
 		return output, nil
 	}
 
-	key := predictionFingerprint(open, history, now, loc)
-	if cached, ok := predictionCache.Load(userID); ok {
+	key := predictionFingerprint(open, history, now, loc) + "|" + strings.Join(input.Exclude, "\x00")
+	if cached, ok := predictionCache.Load(userID); ok && !input.Refresh {
 		entry := cached.(predictionCacheEntry)
 		if entry.key == key && now.Sub(entry.at) < predictionCacheTTL {
 			output.Body.Predictions = entry.predictions
@@ -574,6 +576,8 @@ func (h *Handler) GetTaskPredictions(ctx context.Context, input *GetTaskPredicti
 	if len(signals.Signals) == 0 {
 		return output, nil
 	}
+	// Excluded titles go first so they survive the prompt's title cap
+	signals.KnownTitles = append(append([]string{}, input.Exclude...), signals.KnownTitles...)
 
 	var drafts struct {
 		Predictions []predictionDraft `json:"predictions"`

@@ -42,6 +42,7 @@ export const AnalyticsEvents = {
     // --- Tasks ---
     TASK_FORM_STARTED: "task_form_started",
     TASK_CREATED: "task_created",
+    TASK_PREDICTION_DISMISSED: "task_prediction_dismissed",
     TASK_COMPLETED: "task_completed",
     TASK_DELETED: "task_deleted",
     TASK_UPDATED: "task_updated",

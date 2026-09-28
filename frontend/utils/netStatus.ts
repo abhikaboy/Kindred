@@ -37,6 +37,29 @@ let state: NetStatus = {
 
 const listeners = new Set<Listener>();
 
+// One dropped request or a radio blip isn't "offline": wait for repeated
+// failures over a sustained window before flipping the app into offline mode.
+const FAILURES_BEFORE_OFFLINE = 3;
+const OFFLINE_GRACE_MS = 12_000;
+
+let failureCount = 0;
+let firstFailureAt: number | null = null;
+let failureTimer: ReturnType<typeof setTimeout> | null = null;
+let radioDownTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearFailures() {
+    failureCount = 0;
+    firstFailureAt = null;
+    if (failureTimer) clearTimeout(failureTimer);
+    failureTimer = null;
+}
+
+function markUnreachable() {
+    if (state.reachability === "unreachable") return;
+    state = { ...state, reachability: "unreachable" };
+    emit();
+}
+
 function emit() {
     for (const listener of listeners) listener(state);
 }
@@ -54,6 +77,7 @@ export function getNetStatus(): NetStatus {
 
 /** Called by the API client whenever a request completes successfully. */
 export function reportReachable() {
+    clearFailures();
     if (state.reachability === "reachable") {
         // Still refresh the timestamp, but skip the re-render.
         state = { ...state, lastReachableAt: Date.now() };
@@ -66,13 +90,44 @@ export function reportReachable() {
 /** Called by the API client when a request fails for a network/timeout reason. */
 export function reportUnreachable() {
     if (state.reachability === "unreachable") return;
-    state = { ...state, reachability: "unreachable" };
-    emit();
+    const now = Date.now();
+    failureCount += 1;
+    firstFailureAt ??= now;
+    const elapsed = now - firstFailureAt;
+    if (failureCount >= FAILURES_BEFORE_OFFLINE && elapsed >= OFFLINE_GRACE_MS) {
+        markUnreachable();
+        return;
+    }
+    // Re-check once the window closes, in case no further requests arrive
+    if (!failureTimer) {
+        failureTimer = setTimeout(() => {
+            failureTimer = null;
+            if (failureCount >= FAILURES_BEFORE_OFFLINE) markUnreachable();
+            else clearFailures();
+        }, OFFLINE_GRACE_MS - elapsed);
+    }
 }
 
 /** Called by `useConnectivity` with the expo-network radio state. */
 export function reportRadioState(online: boolean) {
+    if (!online) {
+        // expo-network reports brief drops (cell handoffs, wifi roaming); only
+        // believe the radio is down if it stays down through the grace window.
+        if (radioDownTimer || state.radioOnline === false) return;
+        radioDownTimer = setTimeout(() => {
+            radioDownTimer = null;
+            applyRadioState(false);
+        }, OFFLINE_GRACE_MS);
+        return;
+    }
+    if (radioDownTimer) clearTimeout(radioDownTimer);
+    radioDownTimer = null;
+    applyRadioState(true);
+}
+
+function applyRadioState(online: boolean) {
     if (state.radioOnline === online) return;
+    clearFailures();
     // Regaining the radio makes our last request-derived verdict stale: we have
     // no idea whether the backend is reachable on this new network until we try.
     state = {

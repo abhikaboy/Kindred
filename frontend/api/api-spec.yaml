@@ -6851,6 +6851,22 @@ paths:
                     examples:
                         - America/New_York
                   example: America/New_York
+                - name: refresh
+                  in: query
+                  description: Skip the cache and ask for a fresh set
+                  explode: false
+                  schema:
+                    type: boolean
+                    description: Skip the cache and ask for a fresh set
+                - name: exclude
+                  in: query
+                  description: Suggestion titles the user dismissed or has already seen; never returned
+                  explode: false
+                  schema:
+                    type: array
+                    description: Suggestion titles the user dismissed or has already seen; never returned
+                    items:
+                        type: string
             responses:
                 "200":
                     description: OK

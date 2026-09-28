@@ -4,7 +4,8 @@ type SpeechRecognitionModule = {
     requestPermissionsAsync: () => Promise<{ granted?: boolean }>;
     start: (options: Record<string, unknown>) => void;
     stop: () => void;
-} ;
+    isRecognitionAvailable?: () => boolean;
+};
 
 let ExpoSpeechRecognitionModule: SpeechRecognitionModule | null = null;
 let useSpeechRecognitionEvent: (event: string, handler: (...args: any[]) => void) => void = () => {};

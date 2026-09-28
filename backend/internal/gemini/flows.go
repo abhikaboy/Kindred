@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	Category "github.com/abhikaboy/Kindred/internal/handlers/category"
@@ -13,7 +14,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"google.golang.org/genai"
 )
+
+// Gemini 3 defaults to high thinking; text-to-task parsing doesn't need it and
+// it's most of the latency the user waits through.
+func lowThinking() ai.GenerateOption {
+	return ai.WithConfig(&genai.GenerateContentConfig{
+		ThinkingConfig: &genai.ThinkingConfig{ThinkingLevel: genai.ThinkingLevelLow},
+	})
+}
+
+var existingTaskWords = regexp.MustCompile(`(?i)\b(edit|change|rename|move|delete|remove|cancel|reschedule|postpone|push|mark|complete|completed|done|finish|finished|update|clear|drop|undo|instead)\b`)
+
+// Only edits and deletes need to look up existing tasks; skipping the tool
+// for plain creates saves a whole model round-trip.
+func mentionsExistingTasks(text string) bool {
+	return existingTaskWords.MatchString(text)
+}
 
 // FlowSet contains all the Genkit flows
 type FlowSet struct {
@@ -100,7 +118,7 @@ When choosing category names, prefer existing categories from the list above whe
 			prompt := fmt.Sprintf(`Generate a set of categories and tasks based on the following text- Each task should belong to a category. The current time is %s.`, time.Now().UTC().Format(time.RFC3339))
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.MultiTaskFromText")
 			defer span.End()
-			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewTextPart(input.Text))))
+			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g, ai.WithPrompt(prompt), ai.WithMessages(ai.NewUserMessage(ai.NewTextPart(input.Text))), lowThinking())
 			if err != nil {
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
@@ -153,6 +171,7 @@ When choosing category names, prefer existing categories from the list above whe
 			defer span.End()
 			resp, _, err := genkit.GenerateData[MultiTaskFromTextOutput](ctx, g,
 				ai.WithPrompt(prompt),
+				lowThinking(),
 			)
 			if err != nil {
 				span.RecordError(err)
@@ -505,10 +524,11 @@ Only include operations that are clearly implied by the user's instruction.`,
 
 			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.IntentRouter")
 			defer span.End()
-			resp, _, err := genkit.GenerateData[IntentRouterOutput](ctx, g,
-				ai.WithPrompt(prompt),
-				ai.WithTools(tools.GetUserActiveTasks),
-			)
+			opts := []ai.GenerateOption{ai.WithPrompt(prompt), lowThinking()}
+			if mentionsExistingTasks(input.Text) {
+				opts = append(opts, ai.WithTools(tools.GetUserActiveTasks))
+			}
+			resp, _, err := genkit.GenerateData[IntentRouterOutput](ctx, g, opts...)
 			if err != nil {
 				span.RecordError(err)
 				span.SetStatus(codes.Error, err.Error())
@@ -555,6 +575,7 @@ Rules:
 			defer span.End()
 			resp, _, err := genkit.GenerateData[SuggestTaskFieldsFlowOutput](ctx, g,
 				ai.WithPrompt(prompt),
+				lowThinking(),
 			)
 			if err != nil {
 				span.RecordError(err)

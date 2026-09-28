@@ -15574,6 +15574,10 @@ export interface operations {
                  * @example America/New_York
                  */
                 timezone?: string;
+                /** @description Skip the cache and ask for a fresh set */
+                refresh?: boolean;
+                /** @description Suggestion titles the user dismissed or has already seen; never returned */
+                exclude?: string[];
             };
             header: {
                 Authorization: string;
