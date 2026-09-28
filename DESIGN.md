@@ -28,7 +28,7 @@ The short version: **one surface, one headline, light text, soft depth, no decor
 ### Borders, fills, and depth
 
 - **No borders by default.** A border has to earn its place: it's for inputs and for surfaces that would otherwise vanish into the background. Decorative outlines around groups, headers, or content blocks are out.
-- **Soft shadows over borders.** When a surface needs to lift off the page, give it a soft, diffuse shadow (section 5). Don't use a hard 1px outline.
+- **Soft shadows over borders.** When a surface needs to lift off the page, give it a soft, diffuse shadow (section 7). Don't use a hard 1px outline.
 - **Never stack border + shadow + tinted fill** on the same element. Pick one way to separate it from the page.
 - **No gray wells.** An input or empty row shouldn't read as a gray trough. In light mode it should look like an empty task row on the page (background fill, hairline edge). Dark mode keeps a raised surface.
 - **No gray on light-purple tints.** Caption gray on a `primary` wash looks muddy. Text on a purple tint is `primary` or `text`.
@@ -54,7 +54,7 @@ The short version: **one surface, one headline, light text, soft depth, no decor
 
 ### Consistency
 
-- **No bespoke one-offs.** A hand-rolled task row, hint, button or toggle "strays from the design used everywhere else" and reads as unfinished. Find the existing component and adapt it (section 6).
+- **No bespoke one-offs.** A hand-rolled task row, hint, button or toggle "strays from the design used everywhere else" and reads as unfinished. Find the existing component and adapt it (section 8).
 - **No desktop-only redesigns.** Desktop mirrors mobile's visual structure and exact values. Only the interaction adapts (hover instead of tap, popover instead of bottom sheet).
 - **No theme-specific effects.** A glow, wash or bloom ships for both light and dark mode, on the same animation timeline.
 - **No off-grid spacing.** Padding is a multiple of 4px. On desktop, avoid Tailwind half steps like `p-1.5` and `py-2.5`.
@@ -113,10 +113,113 @@ Two families: **Fraunces** for display, **Outfit** for everything functional. Al
 
 ---
 
-## 5. Space, shape, and depth
+## 5. Hierarchy
 
-- **Spacing grid:** 4px. Common steps are 4, 8, 12, 16, 20 and 24. Page gutters use `HORIZONTAL_PADDING` on mobile.
-- **Keep related things close:** a title sits 8-12px above its content. Separate sections by 24-48px. Don't separate a label from its content by more than the content's own internal gap.
+Hierarchy comes from **order, space, type, and one accent color**, used roughly in that order. Containers, borders, capital letters and heavy weight are the wrong tools. A screen that feels off usually has too many signals, not too few.
+
+### The right levers, strongest first
+
+1. **Order and position.** The most important thing goes first, full width, and the eye moves in one direction. Home runs greeting, Activity Rings, Quick log, quick add, Upcoming, Working On, workspaces. Rank things by where they sit, not by how big their box is.
+2. **Space.** Group with distance (section 6). The gap is the divider.
+3. **Type with fixed roles.** One style per level, and at most two or three levels per screen:
+
+   | Level | Style | Example |
+   |---|---|---|
+   | Screen headline | Fraunces 600, one per screen | the greeting name, "Feed" |
+   | Section | Outfit 17px, sentence case | "Activity Rings", "Personal Workspaces" |
+   | Row title | `defaultSemiBold` or `default` | task names, friend names |
+   | Body | `default` (light Outfit) | most text |
+   | Secondary | `caption` | counts, times, status |
+
+   The headline is the only heavy thing on screen. If something feels too loud, check the supporting lines around it before touching the headline.
+4. **One accent.** `primary` marks the single main action or the current state (the Quick log row, today in the week strip, a selected segment). If three things are purple, none of them leads. Secondary actions are ghost or lightened buttons, and tertiary ones are caption-style links.
+5. **Pushing things back.** Lowering the rest often beats raising one thing. Focusing a ring fades the others to 30%, secondary text sits in caption gray, and placeholder Upcoming tasks are dimmed.
+6. **Soft depth for real layers only.** Dialogs, popovers and tiles get a diffuse shadow. Depth means "this layer is on top," not "this section is important."
+7. **Reveal on demand.** Keep detail back until it's asked for: ring history opens in a popover, the score explainer opens from the score, and helpers appear one at a time.
+
+### The wrong levers
+
+| Wrong | Why it fails | Instead |
+|---|---|---|
+| A box around a group, or a card inside a card | Adds a layer of structure that carries no meaning | Spacing, with at most one thin divider |
+| Eyebrow labels ("THIS WEEK") | Takes a line, adds gaps, competes with the real title | A 17px section title, or no label at all |
+| Captions as group headings ("When", "Repeat") | Reads as bad heading styling | The section title style |
+| A subtitle that repeats the title | Two lines at nearly the same level flatten the hierarchy | A subtitle only for live facts ("3 open tasks from today to check off") |
+| Heavier weight for emphasis | Breaks the one-headline rule | Order and space first, then the row-title style |
+| Loud badges for context ("Demo") | Grabs attention for something minor | Inline caption: " · Demo" |
+| Borders for emphasis | An outline says "separate," not "important" | Borders only for inputs and task cards; soft shadow for layers |
+| Several competing accents (gradients, tinted panels, pills) | No clear focus | One `primary` action, using `PrimaryButton` |
+| Stacked uppercase stat labels | Noise next to the number | An icon for meaning, the number for value, the label in a tooltip |
+
+### Quick test
+
+1. Can you name what the screen is about in one second? That should be the headline or the top section.
+2. Is there exactly one purple call to action?
+3. Could any box, border, label or subtitle be deleted without losing information? Then delete it.
+4. Squint: does everything fall into three or fewer text sizes and weights?
+
+---
+
+## 6. Spacing and layout
+
+In Kindred, space does the job other apps give to boxes and lines: move things closer to group them and farther apart to separate them. Done well, a screen needs almost no borders, cards or dividers to explain how it is organized.
+
+### Principles
+
+- **Proximity shows relationships** (Gestalt). Close together reads as one group; far apart reads as separate.
+- **Space inside a group is smaller than space between groups.** A title's gap to its content must be clearly smaller than the gap to the next section. When they're equal, the screen reads as one flat list. This is the most common reason a layout feels off.
+- **Use a fixed scale, not freehand values** (*Refactoring UI*, Wathan and Schoger). Pick from the scale below instead of nudging by eye.
+- **Start with too much space, then tighten** (*Refactoring UI*). Cramped is the usual failure; airy is easy to fix.
+- **Before adding a border, try more space, a slightly different background, or a soft shadow** (*Refactoring UI*).
+- **Align to few edges.** Everything lines up with something, and one strong left edge reads calmer than many indents.
+- **Keep lines readable.** Text wider than about 70-80 characters is hard to read, so wide screens get a max content width, not stretched text.
+- **"Less, but better"** (Dieter Rams). Every gap, like every element, has a reason.
+
+### What strong apps do
+
+These are well-known patterns from these apps. When solving a specific visual problem, check the current screens on Mobbin before improvising.
+
+- **Airbnb: generous and image-led, with one edge.** Big gaps between sections, tight groups inside them. Listing "cards" have no card at all: a photo, then a tight text stack right under it. Everything hangs off one left margin. For Kindred: keep groups tight and sections generous, and let content define shape without a container.
+- **Uber: one decision per screen, strong anchors.** A single large primary action with nothing competing, confident headings with room around them, list rows with comfortable height separated by space or a faint hairline, and leading icons in a fixed-width column so the text aligns. For Kindred: one purple action, comfortable row heights, and a fixed leading column for icons, times and avatars.
+- **Linear: dense but calm.** Tight spacing on a strict scale, so density still feels orderly. Very low-contrast dividers and subtle surface shifts instead of heavy borders, small type with generous line height, and columns that line up across rows. For Kindred: work surfaces can be denser than home, but only by tightening the same scale.
+
+### The scale
+
+4px grid. The steps worth reaching for are **4, 8, 12, 16, 24, 32, 48**.
+
+| Relationship | Space | Kindred example |
+|---|---|---|
+| Inside one element (icon to label, stacked lines) | 4-8 | chip icon and text; task title and its time line |
+| Between items in a group | 8-12 | task rows; legend rows beside the rings |
+| Section title to its content | 12-16 | "Activity Rings" to the rings |
+| Between sections | 32-48 | rings block to Upcoming (48 on desktop home) |
+| Page gutter | 5% of width on mobile (`HORIZONTAL_PADDING`), 24+ on desktop | |
+
+**Check every time:** each step out is clearly bigger than the step inside it. If the title-to-content gap is 16, the gap between sections can't also be 16. Padding is always a multiple of 4; on desktop, avoid Tailwind half steps such as `p-1.5` and `py-2.5`.
+
+### Layout rules
+
+1. **One column, one direction.** Full-width sections stacked top to bottom, left-aligned. Desktop gets more width, not more competing columns.
+2. **One left edge.** Titles, text and rows share a starting line. Leading items (icons, avatars, time labels) sit in a fixed-width column so the text beside them aligns across rows, like the planner's time column.
+3. **Cap the width.** On desktop, keep content to a readable max width (home uses `max-w-6xl`) instead of stretching rows across the monitor.
+4. **Group with space.** Before reaching for a card, pull the items closer and push the neighbors away. Cards are for real objects (a task, a workspace tile), never for "this is a section."
+5. **Two densities, one scale.** Home, profile and feed use the generous end. Workspaces, calendar and dense lists use the tight end.
+6. **Put the main action where the eye lands.** Right after the headline or top section (Quick log under the rings), or at the bottom of a dialog (Log my day). Never somewhere unexpected.
+
+### The wrong ways
+
+- **Equal spacing everywhere**, so nothing groups.
+- **A label far from what it labels**, such as an eyebrow with 24px of air before its content.
+- **Boxes instead of space**, which leads to cards inside cards and padding on padding.
+- **Freehand values** (10, 14, 18) and half steps. Each is small; together they break the rhythm.
+- **Centering by default**, which makes the left edge wander. Center only a true single focal point, such as the score explainer's headline.
+- **Stretching to fill the screen**: full-width text on a big monitor, or columns added because there's room.
+- **Cramming to fit.** If it doesn't fit, cut or collapse (three all-day tasks plus "+N more"), don't shrink the gaps.
+
+---
+
+## 7. Shape and depth
+
 - **Radii:** 12 for inputs, buttons and CTA rows (matching `PrimaryButton`); 16 for task cards and dialogs; full circles for icon buttons, avatars and dots; full-round pills for chips.
 - **Soft shadow (preferred lift):** diffuse, low opacity, offset downward. For example `0 1px 2px rgba(0,0,0,0.03), 0 8px 28px -14px rgba(0,0,0,0.08)` on desktop, or the theme's `shadowSmall` (`0 1px 5px #0000001a`) on mobile. A focused input can fade in `0 8px 16px rgba(0,0,0,0.08)`.
 - **Hero CTA glow:** only for the single main action on a screen. Use the login-button glow: shadow color `primary`, offset 0/6, opacity 0.3, radius 10.
@@ -124,7 +227,7 @@ Two families: **Fraunces** for display, **Outfit** for everything functional. Al
 
 ---
 
-## 6. Components to reuse
+## 8. Components to reuse
 
 Before building anything visual, find the existing piece.
 
@@ -148,7 +251,7 @@ Before building anything visual, find the existing piece.
 
 ---
 
-## 7. Motion
+## 9. Motion
 
 - **Content swaps** (suggestions, panels, prompts): about a 200ms fade with at most a few pixels of drift. Animate layout height changes the same way.
 - **Progress fills** (rings, meters): about an 800ms ease-out. Empty rings keep a small visible sliver.
@@ -157,7 +260,7 @@ Before building anything visual, find the existing piece.
 
 ---
 
-## 8. Copy
+## 10. Copy
 
 - Short, plain and in sentence case: "Add a task", "Quick log my day", "Nothing planned yet".
 - Captions carry live facts: "3 open tasks from today to check off", "Working on X · for 12m".
@@ -167,16 +270,18 @@ Before building anything visual, find the existing piece.
 
 ---
 
-## 9. Before you ship a screen
+## 11. Before you ship a screen
 
 - [ ] Is anything a card inside a card? Flatten it.
 - [ ] Any uppercase eyebrow labels, or labels floating in extra space? Remove or restyle as a section title.
 - [ ] Does every subtitle carry information the title doesn't? If not, delete it.
 - [ ] Does every border have a functional reason? If not, remove it or replace it with a soft shadow.
 - [ ] Is there exactly one Fraunces headline, with light Outfit around it? Are there three text styles or fewer?
-- [ ] Is all padding on the 4px grid?
+- [ ] Is all padding on the 4px grid, and is each gap clearly bigger than the gaps inside it?
+- [ ] Does everything share one left edge, with leading icons, times and avatars in a fixed column?
+- [ ] Is there exactly one purple call to action, and can you name what the screen is about in one second?
 - [ ] Does it look right in both light and dark mode?
-- [ ] Does it reuse the existing components from section 6?
+- [ ] Does it reuse the existing components from section 8?
 - [ ] Does desktop match mobile's structure and values?
 - [ ] Any emojis? Remove them.
 - [ ] Does every tap respond instantly? Are transitions quiet?
