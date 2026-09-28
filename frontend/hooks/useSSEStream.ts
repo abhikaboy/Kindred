@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { fetchSSEStream, type SSEEvent, type SSEStatusData, type SSEErrorData } from "@/api/stream";
+import { fetchSSEStream, SSEServerError, type SSEEvent, type SSEStatusData, type SSEErrorData } from "@/api/stream";
 
 export interface SSEStreamState<TResult> {
     stage: string | null;
@@ -34,6 +34,7 @@ export function useSSEStream<TResult>() {
             setIsStreaming(true);
 
             let finalResult: TResult | null = null;
+            let serverError: string | null = null;
 
             try {
                 await fetchSSEStream(
@@ -55,6 +56,7 @@ export function useSSEStream<TResult>() {
                                 break;
                             case "error": {
                                 const d = event.data as SSEErrorData;
+                                serverError = d.message;
                                 setError(d.message);
                                 break;
                             }
@@ -66,11 +68,13 @@ export function useSSEStream<TResult>() {
                 if (err instanceof Error && err.name !== "AbortError") {
                     setError(err.message);
                 }
+                throw err;
             } finally {
                 setIsStreaming(false);
                 abortRef.current = null;
             }
 
+            if (serverError && !finalResult) throw new SSEServerError(serverError);
             return finalResult;
         },
         [],

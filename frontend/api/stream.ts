@@ -1,4 +1,6 @@
 import * as SecureStore from "expo-secure-store";
+// React Native's global fetch buffers the whole body and has no stream reader
+import { fetch } from "expo/fetch";
 
 const BASE_URL = (process.env.EXPO_PUBLIC_URL ?? "") + "/api";
 
@@ -12,6 +14,9 @@ export interface SSEStatusData {
 export interface SSEErrorData {
     message: string;
 }
+
+/** The server reached the model and reported a failure; retrying elsewhere won't help. */
+export class SSEServerError extends Error {}
 
 export interface SSEEvent<T = unknown> {
     type: SSEEventType;

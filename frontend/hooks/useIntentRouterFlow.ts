@@ -3,6 +3,7 @@ import { intentTaskNaturalLanguageAPI, confirmTasksFromNaturalLanguageAPI, bulkD
 import type { IntentOp } from "@/api/task";
 import type { components } from "@/api/generated/types";
 import { useSSEStream } from "@/hooks/useSSEStream";
+import { SSEServerError } from "@/api/stream";
 
 type PreviewPayload = components["schemas"]["ConfirmTaskNaturalLanguageInputBody"];
 type TaskDocument = components["schemas"]["TaskDocument"];
@@ -135,9 +136,7 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
                     { text: text.trim(), timezone: resolvedTimezone },
                 );
 
-                if (!streamResult || sseStream.error) {
-                    throw new Error(sseStream.error || "Stream failed");
-                }
+                if (!streamResult) throw new Error("Stream failed");
 
                 const ops = streamResult.ops ?? [];
                 if (ops.length === 0) {
@@ -151,7 +150,12 @@ export function useIntentRouterFlow(options: UseIntentRouterFlowOptions = {}): U
                 currentOpIndexRef.current = 0;
                 advanceToNextOp(ops, 0);
             } catch (error) {
-                // Fallback to non-streaming endpoint
+                // The model already ran and failed server-side; rerunning it only doubles the wait
+                if (error instanceof SSEServerError) {
+                    setError("Couldn't Process Request", [error.message]);
+                    return;
+                }
+                // Transport failure: fall back to the non-streaming endpoint
                 try {
                     const resolvedTimezone =
                         timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
