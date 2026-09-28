@@ -419,8 +419,7 @@ func (h *Handler) PreviewEnrich(ctx context.Context, input *PreviewEnrichInput) 
 
 	key := enrichFingerprint(cands, now, loc)
 	if cached, ok := enrichCache.Load(userID); ok {
-		entry := cached.(enrichCacheEntry)
-		if entry.key == key && now.Sub(entry.at) < enrichCacheTTL {
+		if entry, ok := cached.(enrichCacheEntry); ok && entry.key == key && now.Sub(entry.at) < enrichCacheTTL {
 			output.Body.Changes = entry.changes
 			output.Body.Overview = entry.overview
 			return output, nil

@@ -513,7 +513,10 @@ func runGeminiFlow(ctx context.Context, service any, flowName string, input any,
 	}
 	res := run.Call([]reflect.Value{reflect.ValueOf(ctx), in.Elem()})
 	if errV := res[1]; !errV.IsNil() {
-		return errV.Interface().(error)
+		if err, ok := errV.Interface().(error); ok {
+			return err
+		}
+		return fmt.Errorf("gemini flow %s returned a non-error failure", flowName)
 	}
 	raw, err = json.Marshal(res[0].Interface())
 	if err != nil {
@@ -565,8 +568,7 @@ func (h *Handler) GetTaskPredictions(ctx context.Context, input *GetTaskPredicti
 
 	key := predictionFingerprint(open, history, now, loc) + "|" + strings.Join(input.Exclude, "\x00")
 	if cached, ok := predictionCache.Load(userID); ok && !input.Refresh {
-		entry := cached.(predictionCacheEntry)
-		if entry.key == key && now.Sub(entry.at) < predictionCacheTTL {
+		if entry, ok := cached.(predictionCacheEntry); ok && entry.key == key && now.Sub(entry.at) < predictionCacheTTL {
 			output.Body.Predictions = entry.predictions
 			return output, nil
 		}

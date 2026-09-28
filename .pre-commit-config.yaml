@@ -27,6 +27,13 @@ repos:
         files: ^backend/(go\.mod|go\.sum)$
         pass_filenames: false
 
+      - id: golangci-lint
+        name: golangci-lint (same check as CI, auto-fixes what it can)
+        entry: bash -c 'cd backend && golangci-lint run --timeout=5m --fix'
+        language: system
+        files: ^backend/.*\.go$
+        pass_filenames: false
+
       - id: go-test-short
         name: Run Go unit tests
         entry: bash -c 'cd backend && go test -short ./...'

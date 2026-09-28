@@ -13,8 +13,12 @@
       ];
       shells.default = {
         enterShell = ''
+          export GOPATH="$DEVENV_STATE/go"
+          # Nixpkgs dropped Go 1.25; its newer Go fetches and runs CI's exact toolchain.
+          # A mismatched GOROOT makes golangci-lint balloon to tens of GB of memory.
+          export GOTOOLCHAIN=go1.25.6
+          export PATH="$GOPATH/bin:$PATH"
           printf "\033[0;1;36mKINDRED DEVELOPMENT ENVIRONMENT\033[0m\n"
-          export GOTOOLCHAIN=auto
           export PATH="/opt/homebrew/bin:$PATH"
 
           # Use real Xcode toolchain instead of Nix Apple SDK for iOS builds.
@@ -35,7 +39,7 @@
           if ! echo "$GOLANGCI_VERSION" | grep -q "built with go1.25.6"; then
             echo "🔧 Installing golangci-lint from source with Go 1.25.6..."
             echo "   Current: $GOLANGCI_VERSION"
-            (cd "$DEVENV_ROOT/backend" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+            (cd "$DEVENV_ROOT/backend" && CGO_ENABLED=0 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
             # Ensure it's in PATH
             export PATH="$(go env GOPATH)/bin:$PATH"
             echo "✅ golangci-lint installed: $(golangci-lint version 2>&1 | head -1)"
@@ -65,7 +69,9 @@
         env-help.enable = true;
 
         languages = {
-          go.enable = true;
+          # Go comes from nixpkgs-go via packages; devenv's go module would build
+          # its tooling from the old main lock, which fails against a newer Go.
+          go.enable = false;
           javascript = {
             enable = true;
             package = pkgs.nodejs_22;
@@ -79,7 +85,8 @@
           nodePackages.prettier
           inputs.nixpkgs-bun.legacyPackages.${system}.bun
           git
-          go
+          inputs.nixpkgs-go.legacyPackages.${system}.go
+          inputs.nixpkgs-go.legacyPackages.${system}.gopls
           python3
           python3.pkgs.pip
           python3.pkgs.typer
