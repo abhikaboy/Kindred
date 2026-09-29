@@ -2,6 +2,7 @@ import React, {
     useState,
     useRef,
     useEffect,
+    useMemo,
     useCallback,
     forwardRef,
     useImperativeHandle,
@@ -37,6 +38,7 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { TimeRangeGhostBlock } from "./TimeRangeGhostBlock";
 import { useDailyTasks } from "@/hooks/useDailyTasks";
+import { isInPlan } from "@/utils/waitingCandidate";
 import { formatMinutesToTime } from "@/utils/timeUtils";
 import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 import { logger } from "@/utils/logger";
@@ -79,7 +81,18 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
     const { setSelected, updateTask, removeFromCategory, addToCategory } = useTasks();
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const queryClient = useQueryClient();
-    const { tasksWithSpecificTime, tasksForTodayNoTime } = useDailyTasks(selectedDate);
+    const { tasksWithSpecificTime: realTimed, tasksForTodayNoTime: realAllDay, projectedForSelectedDate } =
+        useDailyTasks(selectedDate);
+    // Projected recurrences sit alongside real tasks but open their source instead of the menu
+    const tasksWithSpecificTime = useMemo(
+        // Planned steps render in the header as a step card with Start, so skip them here
+        () => [...realTimed.filter((t) => !isInPlan(t)), ...projectedForSelectedDate.filter((t) => t.startTime)],
+        [realTimed, projectedForSelectedDate]
+    );
+    const tasksForTodayNoTime = useMemo(
+        () => [...realAllDay.filter((t) => !isInPlan(t)), ...projectedForSelectedDate.filter((t) => !t.startTime)],
+        [realAllDay, projectedForSelectedDate]
+    );
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const currentTimeLineRef = useRef<View>(null);
     const hasScrolledToFirstEvent = useRef(false);
@@ -379,6 +392,13 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
     // Context menu handlers — dismiss ghost block when opening context menu
     const handleLongPress = (task: any) => {
         handleGhostDismiss();
+        if (task.projected) {
+            router.push({
+                pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
+                params: { name: task.content, id: task.sourceId, categoryId: task.categoryID || "" },
+            });
+            return;
+        }
         setSelectedTask(task);
         setContextMenuVisible(true);
     };
@@ -510,7 +530,11 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                                             key={task.id}
                                             onPress={() => handleLongPress(task)}
                                             activeOpacity={0.7}
-                                            style={[styles.allDayChip, { backgroundColor: colors.background }]}
+                                            style={[
+                                                styles.allDayChip,
+                                                { backgroundColor: colors.background },
+                                                task.projected && { opacity: 0.5 },
+                                            ]}
                                         >
                                             <View style={[styles.allDayDot, { backgroundColor: colors.dark }]} />
                                             <ThemedText

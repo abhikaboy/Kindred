@@ -5313,6 +5313,41 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/returned:
+        post:
+            tags:
+                - profiles
+                - user
+            summary: Record a return after a gap
+            description: Called when the Welcome back sheet is shown. Sets returnedAt to now unless it was already set in the last 24 hours.
+            operationId: mark-returned
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MarkReturnedInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MarkReturnedOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/rewards/redeem:
         post:
             tags:
@@ -5951,6 +5986,55 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/breakdown-suggestions:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Suggest small first steps
+            description: Suggests 2-4 tiny first steps that fit the chosen size. Consumes no credits and returns an empty list when AI is unavailable.
+            operationId: breakdown-suggestions
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BreakdownSuggestionsInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BreakdownSuggestionsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/checklist:
         post:
             tags:
@@ -6147,6 +6231,183 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/park:
+        post:
+            tags:
+                - tasks
+            summary: Park a task
+            operationId: park-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskGraceOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/plan:
+        put:
+            tags:
+                - tasks
+            summary: Set a task plan
+            description: Commits a small next step. Moves the task's start to the plan time, adds one reminder there, and optionally appends breakdown steps to the checklist. Replacing a plan counts a replan.
+            operationId: put-task-plan
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetTaskPlanBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - tasks
+            summary: Clear a task plan
+            description: Removes the plan and its pending reminder.
+            operationId: clear-task-plan
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        patch:
+            tags:
+                - tasks
+            summary: Set a task plan
+            description: Commits a small next step. Moves the task's start to the plan time, adds one reminder there, and optionally appends breakdown steps to the checklist. Replacing a plan counts a replan.
+            operationId: patch-task-plan
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetTaskPlanBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/progress:
         post:
             tags:
@@ -6195,6 +6456,48 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/release:
+        post:
+            tags:
+                - tasks
+            summary: Release a task
+            description: Hides the task from every list, reminder and count. Recoverable with unrelease.
+            operationId: release-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskGraceOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/tags:
         patch:
             tags:
@@ -6237,6 +6540,88 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/UpdateTaskTagsOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/unpark:
+        post:
+            tags:
+                - tasks
+            summary: Unpark a task
+            operationId: unpark-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskGraceOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/unrelease:
+        post:
+            tags:
+                - tasks
+            summary: Restore a released task
+            operationId: unrelease-task
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskGraceOutputBody'
                 default:
                     description: Error
                     content:
@@ -7011,6 +7396,64 @@ paths:
                                 type: array
                                 items:
                                     $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/release-bulk:
+        post:
+            tags:
+                - tasks
+            summary: Release many tasks
+            description: Releases a batch of tasks at once. Released tasks are kept and can be restored.
+            operationId: bulk-release-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BulkReleaseTasksInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BulkReleaseTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/released:
+        get:
+            tags:
+                - tasks
+            summary: List released tasks
+            description: Tasks the user let go, most recent first.
+            operationId: get-released-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetReleasedTasksOutputBody'
                 default:
                     description: Error
                     content:
@@ -8837,6 +9280,47 @@ components:
                 - timestamp
                 - category
                 - categories
+        BreakdownSuggestionsInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BreakdownSuggestionsInputBody.json
+                    readOnly: true
+                size:
+                    type: string
+                    description: How much time the user has for the first step
+                    enum:
+                        - 2m
+                        - 10m
+                        - full
+            required:
+                - size
+        BreakdownSuggestionsOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BreakdownSuggestionsOutputBody.json
+                    readOnly: true
+                steps:
+                    type: array
+                    description: 2-4 small first steps; empty when none could be suggested
+                    items:
+                        type: string
+                whenHint:
+                    type: string
+                    description: Optional one-line hint about a good time to try
+            required:
+                - steps
         BulkCompleteTaskInputBody:
             type: object
             additionalProperties: false
@@ -9012,6 +9496,48 @@ components:
                 - message
                 - totalDeleted
                 - totalFailed
+        BulkReleaseTasksInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkReleaseTasksInputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ReleaseTaskItem'
+                    minItems: 1
+                    maxItems: 200
+            required:
+                - tasks
+        BulkReleaseTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/BulkReleaseTasksOutputBody.json
+                    readOnly: true
+                failedTaskIds:
+                    type: array
+                    description: Tasks that were not found or already released
+                    items:
+                        type: string
+                released:
+                    type: integer
+                    description: How many tasks were released
+                    format: int64
+            required:
+                - released
+                - failedTaskIds
         CalendarConnection:
             type: object
             additionalProperties: false
@@ -10335,6 +10861,13 @@ components:
                         $ref: '#/components/schemas/TaskLink'
                 notes:
                     type: string
+                parkedAt:
+                    type: string
+                    description: When the user set this task aside
+                    format: date-time
+                plan:
+                    description: The next small step the user committed to
+                    $ref: '#/components/schemas/TaskPlan'
                 posted:
                     type: boolean
                 priority:
@@ -10356,6 +10889,10 @@ components:
                     type: string
                 recurring:
                     type: boolean
+                releasedAt:
+                    type: string
+                    description: When the user let this task go; released tasks are hidden until restored
+                    format: date-time
                 reminders:
                     type: array
                     items:
@@ -12066,6 +12603,23 @@ components:
                 - unlocksRemaining
                 - unlockedFeatures
                 - referredUsers
+        GetReleasedTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetReleasedTasksOutputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
         GetReportsOutputBody:
             type: object
             additionalProperties: false
@@ -12922,6 +13476,41 @@ components:
             required:
                 - message
                 - count
+        MarkReturnedInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkReturnedInputBody.json
+                    readOnly: true
+                gapDays:
+                    type: integer
+                    description: Whole days since the user was last active, as computed by the client
+                    format: int64
+                    minimum: 0
+                    maximum: 3650
+            required:
+                - gapDays
+        MarkReturnedOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/MarkReturnedOutputBody.json
+                    readOnly: true
+                recorded:
+                    type: boolean
+                    description: Whether this call recorded a new return
+            required:
+                - recorded
         MediaItem:
             type: object
             additionalProperties: false
@@ -14088,6 +14677,21 @@ components:
             required:
                 - status
                 - score
+        ReleaseTaskItem:
+            type: object
+            additionalProperties: false
+            properties:
+                categoryId:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                taskId:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+            required:
+                - taskId
+                - categoryId
         Reminder:
             type: object
             additionalProperties: false
@@ -14711,6 +15315,43 @@ components:
                     type: string
             required:
                 - phone_number
+        SetTaskPlanBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetTaskPlanBody.json
+                    readOnly: true
+                at:
+                    type: string
+                    description: When to try it; the task's start moves here
+                    format: date-time
+                size:
+                    type: string
+                    description: How long the step takes
+                    enum:
+                        - 2m
+                        - 10m
+                        - full
+                step:
+                    type: string
+                    description: The first small step to try
+                    minLength: 1
+                    maxLength: 200
+                steps:
+                    type: array
+                    description: Extra breakdown steps to append to the checklist after the plan step
+                    items:
+                        type: string
+                    maxItems: 6
+            required:
+                - step
+                - size
+                - at
         SetWorkspacePushEnabledInputBody:
             type: object
             additionalProperties: false
@@ -15118,6 +15759,13 @@ components:
                         $ref: '#/components/schemas/TaskLink'
                 notes:
                     type: string
+                parkedAt:
+                    type: string
+                    description: When the user set this task aside
+                    format: date-time
+                plan:
+                    description: The next small step the user committed to
+                    $ref: '#/components/schemas/TaskPlan'
                 posted:
                     type: boolean
                 priority:
@@ -15139,6 +15787,10 @@ components:
                     type: string
                 recurring:
                     type: boolean
+                releasedAt:
+                    type: string
+                    description: When the user let this task go; released tasks are hidden until restored
+                    format: date-time
                 reminders:
                     type: array
                     items:
@@ -15199,6 +15851,23 @@ components:
                 - lastEdited
                 - startDate
                 - posted
+        TaskGraceOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/TaskGraceOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Task updated
+            required:
+                - message
         TaskKudos:
             type: object
             additionalProperties: false
@@ -15243,6 +15912,38 @@ components:
                     description: Absolute URL of the link
             required:
                 - url
+        TaskPlan:
+            type: object
+            additionalProperties: false
+            properties:
+                at:
+                    type: string
+                    description: When the user plans to try it
+                    format: date-time
+                committedAt:
+                    type: string
+                    description: When this plan was set
+                    format: date-time
+                replans:
+                    type: integer
+                    description: How many times the plan was replaced
+                    format: int64
+                size:
+                    type: string
+                    description: How long the step takes
+                    enum:
+                        - 2m
+                        - 10m
+                        - full
+                step:
+                    type: string
+                    description: The first small step to try
+            required:
+                - step
+                - size
+                - at
+                - committedAt
+                - replans
         TaskPrediction:
             type: object
             additionalProperties: false

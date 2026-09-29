@@ -33,7 +33,7 @@ export const useWorkspaceState = (workspaceName: string) => {
             .filter(([_, active]) => active)
             .map(([key, _]) => {
                 const labels: Record<string, string> = {
-                    overdue: "Overdue",
+                    overdue: "Waiting",
                     today: "Today",
                     thisWeek: "This Week",
                     future: "Future",

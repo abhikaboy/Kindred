@@ -514,9 +514,10 @@ struct DueLabel: View {
 
   var body: some View {
     if task.isOverdue(at: now) {
-      Text("Overdue")
-        .font(.outfit(11, .semibold))
-        .foregroundStyle(KindredPalette.overdue)
+      // Past due reads as a calm state, never an alarm
+      Text("Waiting")
+        .font(.outfit(11, .medium))
+        .foregroundStyle(KindredPalette.caption)
     } else if let due = task.dueDate {
       Text(due, style: .time)
         .font(.outfit(11, .medium))

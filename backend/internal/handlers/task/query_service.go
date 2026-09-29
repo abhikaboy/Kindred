@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +19,8 @@ func (s *Service) GetActiveTasks(userId primitive.ObjectID) ([]TaskDocument, err
 	pipeline := getTasksByUserPipeline(userId)
 	pipeline = append(pipeline, bson.D{
 		{Key: "$match", Value: bson.M{
-			"active": true,
+			"active":     true,
+			"releasedAt": nil,
 		}},
 	})
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
@@ -56,6 +58,9 @@ func (s *Service) GetRandomTaskForToday(userID primitive.ObjectID) (*TaskDocumen
 		},
 		{
 			"$unwind": "$tasks",
+		},
+		{
+			"$match": types.NotReleased("tasks."),
 		},
 		{
 			"$match": bson.M{
@@ -193,6 +198,7 @@ func (s *Service) QueryTasksByUser(userId primitive.ObjectID, filters TaskQueryF
 
 	// Step 3: Unwind tasks array
 	pipeline = append(pipeline, bson.D{{Key: "$unwind", Value: "$tasks"}})
+	pipeline = append(pipeline, bson.D{{Key: "$match", Value: types.NotReleased("tasks.")}})
 
 	// Step 4: Set categoryID and userID on each task
 	pipeline = append(pipeline, bson.D{{Key: "$set", Value: bson.M{

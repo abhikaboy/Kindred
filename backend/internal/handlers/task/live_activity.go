@@ -20,6 +20,7 @@ func (s *Service) GetTasksWithStartTimeInWindow(windowStart, windowEnd time.Time
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
 		"active":        true,
 		"timeCompleted": nil,
+		"releasedAt":    nil,
 		"startTime": bson.M{
 			"$gte": windowStart,
 			"$lte": windowEnd,
@@ -47,6 +48,7 @@ func (s *Service) GetTasksWithDeadlineApproaching(windowStart, windowEnd time.Ti
 	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{
 		"active":        true,
 		"timeCompleted": nil,
+		"releasedAt":    nil,
 		"deadline": bson.M{
 			"$gte": windowStart,
 			"$lte": windowEnd,

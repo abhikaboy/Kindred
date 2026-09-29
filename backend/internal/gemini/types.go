@@ -388,6 +388,20 @@ type EnrichTasksFlowOutput struct {
 	Changes []EnrichTaskDraft `json:"changes"`
 }
 
+// --- Suggest breakdown flow types ---
+
+type SuggestBreakdownFlowInput struct {
+	Content   string   `json:"content"`
+	Notes     string   `json:"notes,omitempty"`
+	Checklist []string `json:"checklist,omitempty"`
+	Size      string   `json:"size" jsonschema_description:"How long each step may take: 2m, 10m or full."`
+}
+
+type SuggestBreakdownFlowOutput struct {
+	Steps    []string `json:"steps" jsonschema_description:"2 to 4 tiny first steps, each starting with a verb and under 8 words."`
+	WhenHint string   `json:"whenHint,omitempty" jsonschema_description:"Optional single gentle line about a good moment to try the first step. Omit unless useful."`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`

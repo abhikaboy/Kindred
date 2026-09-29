@@ -150,6 +150,18 @@ export const AnalyticsEvents = {
 
     // --- Share ---
     SHARE_ACTION: "share_action",
+
+    // --- Waiting tasks: release ---
+    FOG_CLEARED: "fog_cleared", // { count }
+    TASK_UNRELEASED: "task_unreleased",
+
+    // --- Waiting tasks: return after a gap ---
+    RETURN_AFTER_GAP: "return_after_gap", // { gapDays, choice }
+
+    // --- Build a plan ---
+    PLAN_BUILT: "plan_built", // { size, when, steps }
+    TASK_RELEASED: "task_released",
+    PLAN_SNOOZED: "plan_snoozed",
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

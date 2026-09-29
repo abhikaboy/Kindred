@@ -44,7 +44,7 @@ func TestComputeAttention_FlagsAndOrder(t *testing.T) {
 	if resp.Attention.Tasks[0].ID != "a" {
 		t.Errorf("expected past-due task first, got %q", resp.Attention.Tasks[0].ID)
 	}
-	if !hasReason(resp.Attention.Tasks[0].Reasons, "Past due") {
+	if !hasReason(resp.Attention.Tasks[0].Reasons, "Waiting a while") {
 		t.Errorf("first task missing 'Past due': %v", resp.Attention.Tasks[0].Reasons)
 	}
 }

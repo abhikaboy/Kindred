@@ -10,7 +10,7 @@ import {
     parseISO,
 } from "date-fns";
 
-export type TimeChipTone = "neutral" | "overdue";
+export type TimeChipTone = "neutral";
 export type TimeChipIcon = "clock" | "calendar";
 export type TimeChipInfo = { label: string; tone: TimeChipTone; icon: TimeChipIcon };
 
@@ -47,7 +47,8 @@ const safeParse = (iso: string): Date | null => {
 
 function deadlineChip(deadline: Date, now: Date): TimeChipInfo {
     if (isAfter(now, deadline)) {
-        return { label: `${distance(deadline, now)} overdue`, tone: "overdue", icon: "clock" };
+        // Age without moral colour: a waiting task reads the same weight as any other
+        return { label: `waiting ${distance(deadline, now)}`, tone: "neutral", icon: "clock" };
     }
     return { label: `due in ${distance(deadline, now)}`, tone: "neutral", icon: "clock" };
 }

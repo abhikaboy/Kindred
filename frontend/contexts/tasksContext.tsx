@@ -9,16 +9,15 @@ import React, {
     startTransition,
 } from "react";
 import { createContext, useState, useContext } from "react";
-import { Task, Workspace, Categories, BlueprintWorkspace } from "../api/types";
-import { getUserTemplatesAPI, moveTaskAPI } from "@/api/task";
+import { Task, Workspace, Categories } from "../api/types";
+import { moveTaskAPI } from "@/api/task";
 import { findTaskIndex, moveTaskInWorkspaces } from "@/utils/moveTask";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { computePhantomTasks } from "@/utils/phantomTasks";
-import { fetchUserWorkspaces } from "@/api/workspace";
+import { workspacesCacheKey, fetchWorkspaceSnapshot, writeWorkspaceCache, type CachedWorkspaces } from "@/utils/workspaceSnapshot";
 import { renameWorkspace as renameWorkspaceAPI, renameCategory as renameCategoryAPI, updateWorkspaceMeta } from "@/api/category";
 import { addDays, startOfDay } from "date-fns";
-import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getNetStatus, isOffline, subscribeNetStatus } from "@/utils/netStatus";
 import { createLogger } from "@/utils/logger";
@@ -105,10 +104,8 @@ const REVALIDATE_AFTER = 30 * 1000;
 const CACHE_WRITE_DEBOUNCE = 1500;
 const RECENTS_WRITE_DEBOUNCE = 500;
 
-const workspacesCacheKey = (userId: string | undefined) => `workspaces_cache_${userId || 'default'}`;
 const recentWorkspacesKey = (userId: string | undefined) => `recent_workspaces_${userId || 'default'}`;
 
-type CachedWorkspaces = { data: Workspace[]; timestamp: number; templates?: any[] };
 
 function createStore(initial: TasksState): TasksStore {
     const store: TasksStore = {
@@ -314,6 +311,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             for (const category of workspace.categories) {
                 for (const task of category.tasks) {
                     if (task.isPhantom) continue;
+                    // Released tasks are a recoverable archive, never part of the live list
+                    if (task.releasedAt) continue;
                     res.push(decorateTask(task, category, workspace));
                 }
             }
@@ -439,24 +438,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         const run = async () => {
             setFetchingWorkspaces(true);
             try {
-                const [data, userTemplates, subscribedBlueprints] = await Promise.all([
-                    fetchUserWorkspaces(uid),
-                    getUserTemplatesAPI().catch(err => {
-                        logger.error("Failed to fetch templates", err);
-                        return [];
-                    }),
-                    getUserSubscribedBlueprints(),
-                ]);
+                const { workspaces: allWorkspaces, templates: userTemplates } = await fetchWorkspaceSnapshot(uid);
                 if (uid !== userIdRef.current) return;
 
-                const blueprintWorkspaces: BlueprintWorkspace[] = subscribedBlueprints.map((blueprint) => ({
-                    name: blueprint.name,
-                    categories: [],
-                    blueprintDetails: blueprint,
-                    isBlueprint: true,
-                }));
-
-                const allWorkspaces = [...data, ...blueprintWorkspaces];
                 const syncedAt = Date.now();
                 startTransition(() => {
                     updateRaw(() => allWorkspaces);
@@ -472,11 +456,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 try {
-                    await AsyncStorage.setItem(workspacesCacheKey(uid), JSON.stringify({
+                    await writeWorkspaceCache(uid, {
                         data: allWorkspaces,
                         timestamp: syncedAt,
                         templates: userTemplates,
-                    }));
+                    });
                 } catch (error) {
                     logger.error("Error caching workspaces", error);
                 }

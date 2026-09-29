@@ -482,7 +482,7 @@ func (s *Service) GetProfileTasks(userID primitive.ObjectID) ([]types.TaskDocume
 			}},
 		},
 		{
-			{Key: "$match", Value: bson.M{"public": true}},
+			{Key: "$match", Value: bson.M{"public": true, "releasedAt": nil}},
 		},
 	}
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)

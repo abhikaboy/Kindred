@@ -43,13 +43,14 @@ let initialized: Promise<void> | null = null;
 export const DEADLINE_COLORS = {
     upcoming: '#854DFF',
     soon: '#FFB020',
-    overdue: '#FF5C5F',
+    // Past the deadline reads calm, never alarm red
+    overdue: '#9A98A8',
 };
 
 /** Accent and label for a deadline activity at a given moment. */
 export function deadlineStatus(deadlineMs: number, now: number): Pick<DeadlineCountdownProps, 'accentColor' | 'statusLabel'> {
     const remaining = deadlineMs - now;
-    if (remaining <= 0) return { accentColor: DEADLINE_COLORS.overdue, statusLabel: 'Overdue' };
+    if (remaining <= 0) return { accentColor: DEADLINE_COLORS.overdue, statusLabel: 'Waiting' };
     if (remaining <= 10 * 60 * 1000) return { accentColor: DEADLINE_COLORS.soon, statusLabel: 'Due soon' };
     return { accentColor: DEADLINE_COLORS.upcoming, statusLabel: 'Upcoming' };
 }

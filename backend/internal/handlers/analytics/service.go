@@ -247,7 +247,7 @@ func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID)
 		}
 		meta = append(meta, AnalyticsCategoryMeta{ID: catID, Name: c.Name, Workspace: c.WorkspaceName})
 		for _, t := range c.Tasks {
-			if !t.Active {
+			if !t.Active || t.ReleasedAt != nil {
 				continue
 			}
 			open = append(open, AnalyticsOpenTaskLite{

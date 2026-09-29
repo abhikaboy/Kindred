@@ -464,7 +464,7 @@ export default function Settings() {
                             Check-in Frequency
                         </ThemedText>
                         <ThemedText type="caption" style={styles.checkinDescription}>
-                            How often you'd like reminders about overdue tasks
+                            How often you'd like gentle check-ins
                         </ThemedText>
                         {isLoadingSettings ? (
                             <ActivityIndicator size="small" color={ThemedColor.primary} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />

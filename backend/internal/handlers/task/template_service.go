@@ -191,13 +191,13 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 			}
 
 			if user.PushToken != "" {
-				message := fmt.Sprintf("Looks like \"%s\" slipped by - no worries, you can still get to it!", templateDoc.Content)
+				message := fmt.Sprintf("\"%s\" rolled over. Still yours whenever you're ready.", templateDoc.Content)
 				if totalMissed > 1 {
-					message = fmt.Sprintf("You missed %d rounds of \"%s\" - want to catch up?", totalMissed, templateDoc.Content)
+					message = fmt.Sprintf("Want to pick \"%s\" back up? One small round counts.", templateDoc.Content)
 				}
 				if err := xutils.SendNotification(xutils.Notification{
 					Token:   user.PushToken,
-					Title:   "Missed one!",
+					Title:   "Rolled over",
 					Message: message,
 					Data: map[string]string{
 						"taskId": templateDoc.ID.Hex(),

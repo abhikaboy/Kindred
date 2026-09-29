@@ -39,10 +39,6 @@ struct WorkspaceSnapshotView: View {
     Color(hexString: workspace.workspaceColor) ?? KindredPalette.brand
   }
 
-  private func overdue(_ workspace: WorkspacePayload) -> Int {
-    max(workspace.overdueCount, workspace.tasks.filter { $0.isOverdue(at: entry.date) }.count)
-  }
-
   private func title(_ workspace: WorkspacePayload) -> some View {
     HStack(spacing: 6) {
       RoundedRectangle(cornerRadius: 3)
@@ -63,10 +59,6 @@ struct WorkspaceSnapshotView: View {
       HStack(spacing: 6) {
         Text(workspace.pendingCount == 1 ? "open task" : "open tasks")
           .foregroundStyle(KindredPalette.caption)
-        if overdue(workspace) > 0 {
-          Text("\(overdue(workspace)) late")
-            .foregroundStyle(KindredPalette.overdue)
-        }
       }
       .font(.outfit(11, .medium))
       .lineLimit(1)

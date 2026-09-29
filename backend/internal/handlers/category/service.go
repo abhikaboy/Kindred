@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -72,6 +73,7 @@ func (s *Service) GetCategoriesByUser(id primitive.ObjectID) ([]WorkspaceResult,
 		{
 			{Key: "$match", Value: filter},
 		},
+		types.DropReleasedTasksStage(),
 		{
 			{Key: "$group", Value: bson.M{
 				"_id": "$$ROOT.workspaceName",
@@ -133,6 +135,7 @@ func (s *Service) GetCategoryByID(id primitive.ObjectID) (*CategoryDocument, err
 		// Different error occurred
 		return nil, err
 	}
+	Category.Tasks = types.WithoutReleased(Category.Tasks)
 
 	return &Category, nil
 }
@@ -347,6 +350,7 @@ func (s *Service) GetWorkspaces(userId primitive.ObjectID) ([]WorkspaceResult, e
 		{
 			{Key: "$match", Value: filter},
 		},
+		types.DropReleasedTasksStage(),
 		{
 			{Key: "$group", Value: bson.M{
 				"_id": "$$ROOT.workspaceName",

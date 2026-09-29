@@ -563,7 +563,7 @@ func computeAttention(open []AnalyticsOpenTaskLite, inScope func(string) bool, n
 		}
 		reasons := []string{}
 		if pastDue {
-			reasons = append(reasons, "Past due")
+			reasons = append(reasons, "Waiting a while")
 		}
 		if t.Deadline == nil {
 			reasons = append(reasons, "No deadline")
@@ -594,7 +594,7 @@ func computeAttention(open []AnalyticsOpenTaskLite, inScope func(string) bool, n
 	}
 
 	sort.SliceStable(tasks, func(i, j int) bool {
-		pi, pj := hasReason(tasks[i].Reasons, "Past due"), hasReason(tasks[j].Reasons, "Past due")
+		pi, pj := hasReason(tasks[i].Reasons, "Waiting a while"), hasReason(tasks[j].Reasons, "Waiting a while")
 		if pi != pj {
 			return pi
 		}

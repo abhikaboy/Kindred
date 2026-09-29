@@ -177,6 +177,12 @@ export interface Task {
     encouragements?: TaskKudos[];
     taggedUsers?: TaggedTaskUser[];
     isPhantom?: boolean;
+    rescheduleCount?: number;
+    /** Soft commitment to a small step at a time; a passed plan rolls back to waiting */
+    plan?: { step: string; size: "2m" | "10m" | "full"; at: string; committedAt?: string; replans?: number } | null;
+    parkedAt?: string | null;
+    /** Recoverable archive: hidden from lists, restorable from the drawer */
+    releasedAt?: string | null;
     nextGenerated?: string;
 }
 

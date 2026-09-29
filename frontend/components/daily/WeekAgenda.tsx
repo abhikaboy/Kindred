@@ -7,7 +7,9 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { format, isSameDay } from "date-fns";
 import { isTaskOnDay } from "@/hooks/useDailyTasks";
+import { isInPlan } from "@/utils/waitingCandidate";
 import { dayKey } from "@/utils/taskCountsByDay";
+import { projectRecurringTasks } from "@/utils/recurrenceProjection";
 import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { DropTarget } from "./dayCells";
@@ -37,11 +39,11 @@ const formatTime = (d: Date) =>
 const openTask = (task: any) =>
     router.push({
         pathname: "/(logged-in)/(tabs)/(task)/task/[id]",
-        params: { name: task.content, id: task.id, categoryId: task.categoryID || "" },
+        params: { name: task.content, id: task.sourceId ?? task.id, categoryId: task.categoryID || "" },
     });
 
 /** `date` is the agenda day the row sits under; omitted for the overdue carry-over list. */
-const Row = ({ task, date }: { task: any; date?: Date }) => {
+export const AgendaRow = ({ task, date }: { task: any; date?: Date }) => {
     const ThemedColor = useThemeColor();
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const categoryColor = getCategoryDuotoneColors(task.categoryID, task.categoryName, scheme).dark;
@@ -49,15 +51,15 @@ const Row = ({ task, date }: { task: any; date?: Date }) => {
     const overdue = !date;
     const dueHere = !!date && !task.startTime && !!task.deadline && isSameDay(new Date(task.deadline), date);
     // Late only where the deadline actually lands, not on every day a span covers
-    const late = (overdue || dueHere || !!task.startTime) && !!task.deadline && new Date(task.deadline) < new Date();
+    const late =
+        !task.projected &&
+        (overdue || dueHere || !!task.startTime) &&
+        !!task.deadline &&
+        new Date(task.deadline) < new Date();
 
     // Left gutter: the time, the due date for carry-overs, or "All day"
-    const gutter = overdue
-        ? format(new Date(task.deadline), "MMM d")
-        : time
-          ? formatTime(time)
-          : "All day";
-    const status = late ? "Overdue" : dueHere ? "Due" : null;
+    const gutter = overdue ? format(new Date(task.deadline), "MMM d") : time ? formatTime(time) : "All day";
+    const status = task.projected ? "Repeats" : late ? "Waiting" : dueHere ? "Due" : null;
 
     // Priority dot matches TaskCard: primary while in progress, else by priority
     const dot = task.workingOnSince
@@ -74,8 +76,11 @@ const Row = ({ task, date }: { task: any; date?: Date }) => {
             <TouchableOpacity
                 onPress={() => openTask(task)}
                 activeOpacity={0.7}
-                style={[styles.card, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}
-            >
+                style={[
+                    styles.card,
+                    { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary },
+                    task.projected && styles.projected,
+                ]}>
                 <View style={[styles.categoryBar, { backgroundColor: categoryColor }]} />
                 <View style={styles.cardText}>
                     <ThemedText type="default" numberOfLines={1}>
@@ -83,7 +88,7 @@ const Row = ({ task, date }: { task: any; date?: Date }) => {
                     </ThemedText>
                     <ThemedText type="caption" numberOfLines={1}>
                         {status && (
-                            <ThemedText type="caption" style={late ? { color: ThemedColor.error } : undefined}>
+                            <ThemedText type="caption">
                                 {`${status} · `}
                             </ThemedText>
                         )}
@@ -101,23 +106,27 @@ const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerD
     const { allTasks } = useTasks();
     const todayKey = dayKey(new Date());
 
-    const days = useMemo(
-        () =>
-            Array.from({ length: 7 }, (_, i) => {
-                const date = new Date(weekStart);
-                date.setDate(weekStart.getDate() + i);
-                const tasks = allTasks
-                    .filter((t) => isTaskOnDay(t, date))
-                    .sort((a, b) => (timeOf(a)?.getTime() ?? Infinity) - (timeOf(b)?.getTime() ?? Infinity));
-                return { date, key: dayKey(date), tasks };
-            }),
-        [allTasks, weekStart]
-    );
+    const days = useMemo(() => {
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        // Released tasks never render in the agenda
+        const shown = [...allTasks, ...projectRecurringTasks(allTasks, weekStart, weekEnd)].filter(
+            (t) => !t.releasedAt
+        );
+        return Array.from({ length: 7 }, (_, i) => {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + i);
+            const tasks = shown
+                .filter((t) => isTaskOnDay(t, date))
+                .sort((a, b) => (timeOf(a)?.getTime() ?? Infinity) - (timeOf(b)?.getTime() ?? Infinity));
+            return { date, key: dayKey(date), tasks };
+        });
+    }, [allTasks, weekStart]);
 
     // Overdue is relative to now, so it only belongs on the current week, and only for
-    // tasks due before it; anything due earlier this week already shows (in red) on its day
+    // tasks due before it; anything due earlier this week already shows on its day
     const carryOver = days.some((d) => d.key === todayKey)
-        ? overdueTasks.filter((t) => new Date(t.deadline) < weekStart)
+        ? overdueTasks.filter((t) => !t.releasedAt && !isInPlan(t) && new Date(t.deadline) < weekStart)
         : [];
     const showOverdue = carryOver.length > 0;
 
@@ -126,13 +135,10 @@ const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerD
             {showOverdue && (
                 <View style={styles.day}>
                     <View style={[styles.dayHeader, { borderBottomColor: ThemedColor.tertiary }]}>
-                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.error }}>
-                            Overdue
-                        </ThemedText>
-                        <ThemedText type="caption">{carryOver.length}</ThemedText>
+                        <ThemedText type="defaultSemiBold">Still on your plate</ThemedText>
                     </View>
                     {carryOver.map((t) => (
-                        <Row key={t.id} task={t} />
+                        <AgendaRow key={t.id} task={t} />
                     ))}
                 </View>
             )}
@@ -150,14 +156,12 @@ const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerD
                             styles.dropZone,
                             hovered && { borderColor: ThemedColor.primary, backgroundColor: ThemedColor.lightened },
                         ]}
-                        onLayout={(e) => onDayLayout?.(key, e.nativeEvent.layout.y)}
-                    >
+                        onLayout={(e) => onDayLayout?.(key, e.nativeEvent.layout.y)}>
                         <View style={[styles.dayHeader, { borderBottomColor: ThemedColor.tertiary }]}>
                             <View style={styles.dayTitle}>
                                 <ThemedText
                                     type="defaultSemiBold"
-                                    style={isToday ? { color: ThemedColor.primary } : undefined}
-                                >
+                                    style={isToday ? { color: ThemedColor.primary } : undefined}>
                                     {`${weekday} ${date.getDate()}`}
                                 </ThemedText>
                                 {isToday && (
@@ -165,20 +169,17 @@ const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerD
                                         Today
                                     </ThemedText>
                                 )}
-                                {tasks.length === 0 && (
-                                    <ThemedText type="caption">Nothing planned</ThemedText>
-                                )}
+                                {tasks.length === 0 && <ThemedText type="caption">Nothing planned</ThemedText>}
                             </View>
                             <TouchableOpacity
                                 onPress={() => onAddTask(date)}
                                 hitSlop={10}
-                                accessibilityLabel={`Add a task on ${weekday} ${date.getDate()}`}
-                            >
+                                accessibilityLabel={`Add a task on ${weekday} ${date.getDate()}`}>
                                 <Plus size={16} color={ThemedColor.caption} weight="bold" />
                             </TouchableOpacity>
                         </View>
                         {tasks.map((t) => (
-                            <Row key={t.id} task={t} date={date} />
+                            <AgendaRow key={t.id} task={t} date={date} />
                         ))}
                     </View>
                 );
@@ -241,6 +242,9 @@ const styles = StyleSheet.create({
     },
     cardText: {
         flex: 1,
+    },
+    projected: {
+        opacity: 0.5,
     },
     dot: {
         width: 10,

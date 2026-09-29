@@ -416,7 +416,7 @@ func FinalizePredictions(drafts []predictionDraft, s PredictionSignals, limit in
 
 func (s *Service) loadPredictionInputs(ctx context.Context, userID primitive.ObjectID, now time.Time) ([]PredictionCategory, []PredictionOpenTask, []PredictionHistoryTask, error) {
 	cursor, err := s.Tasks.Find(ctx, bson.M{"user": userID}, options.Find().SetProjection(bson.M{
-		"name": 1, "workspaceName": 1, "isBlueprint": 1, "tasks.content": 1, "tasks.deadline": 1,
+		"name": 1, "workspaceName": 1, "isBlueprint": 1, "tasks.content": 1, "tasks.deadline": 1, "tasks.releasedAt": 1,
 	}))
 	if err != nil {
 		return nil, nil, nil, err
@@ -426,8 +426,9 @@ func (s *Service) loadPredictionInputs(ctx context.Context, userID primitive.Obj
 		Name          string             `bson:"name"`
 		WorkspaceName string             `bson:"workspaceName"`
 		Tasks         []struct {
-			Content  string     `bson:"content"`
-			Deadline *time.Time `bson:"deadline"`
+			Content    string     `bson:"content"`
+			Deadline   *time.Time `bson:"deadline"`
+			ReleasedAt *time.Time `bson:"releasedAt"`
 		} `bson:"tasks"`
 	}
 	if err := cursor.All(ctx, &catDocs); err != nil {
@@ -437,10 +438,15 @@ func (s *Service) loadPredictionInputs(ctx context.Context, userID primitive.Obj
 	var cats []PredictionCategory
 	var open []PredictionOpenTask
 	for _, c := range catDocs {
-		cats = append(cats, PredictionCategory{ID: c.ID.Hex(), Name: c.Name, Workspace: c.WorkspaceName, OpenCount: len(c.Tasks)})
+		openCount := 0
 		for _, t := range c.Tasks {
+			if t.ReleasedAt != nil {
+				continue
+			}
+			openCount++
 			open = append(open, PredictionOpenTask{Content: t.Content, CategoryID: c.ID.Hex(), Deadline: t.Deadline})
 		}
+		cats = append(cats, PredictionCategory{ID: c.ID.Hex(), Name: c.Name, Workspace: c.WorkspaceName, OpenCount: openCount})
 	}
 
 	hCursor, err := s.CompletedTasks.Find(ctx, bson.M{

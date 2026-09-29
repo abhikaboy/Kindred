@@ -141,7 +141,7 @@ export default function UndoMissedTaskScreen() {
                     <X size={24} color={ThemedColor.text} weight="bold" />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    Missed Task
+                    Rolled over
                 </ThemedText>
                 <View style={styles.placeholder} />
             </View>
@@ -201,7 +201,7 @@ export default function UndoMissedTaskScreen() {
                                 marginTop: 12,
                             }}
                         >
-                            Missed{" "}
+                            Rolled over{" "}
                             {formatTimeSince(new Date(template.lastMissedAt))}
                         </ThemedText>
                     )}

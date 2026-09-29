@@ -41,7 +41,9 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
         categoryId: string,
         taskId: string,
         task: TaskCompletionData,
-        categoryName?: string
+        categoryName?: string,
+        // Callers with their own celebration (a finished plan step) skip the default confetti
+        opts?: { skipConfetti?: boolean }
     ) => {
         if (isCompletingRef.current) return;
 
@@ -79,11 +81,13 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 } as Task);
             }
 
-            setShowConfetti(true);
-            if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
-            confettiTimeoutRef.current = setTimeout(() => {
-                setShowConfetti(false);
-            }, 2000);
+            if (!opts?.skipConfetti) {
+                setShowConfetti(true);
+                if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+                confettiTimeoutRef.current = setTimeout(() => {
+                    setShowConfetti(false);
+                }, 2000);
+            }
             // Haptic rides on the confetti burst now (Confetti.onAnimationStart).
 
             const finalCategoryName =
@@ -112,10 +116,10 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
 
                 if (streakIncreased || isFirstCompletion) {
                     if (isFirstCompletion) {
-                        title = "🎉 Task completed - Streak started!";
+                        title = "Task completed - Streak started!";
                         message = "You've started your streak! Click here to post and document your task!";
                     } else {
-                        title = `🔥 Task completed - ${newStreak} day streak!`;
+                        title = `Task completed - ${newStreak} day streak!`;
                         message = `Keep it up! You're on a ${newStreak} day streak! Click here to post!`;
                     }
                 }

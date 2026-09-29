@@ -202,8 +202,8 @@ describe('deadlineStatus', () => {
     it.each([
         [45 * 60 * 1000, 'Upcoming', DEADLINE_COLORS.upcoming],
         [10 * 60 * 1000, 'Due soon', DEADLINE_COLORS.soon],
-        [0, 'Overdue', DEADLINE_COLORS.overdue],
-        [-60 * 1000, 'Overdue', DEADLINE_COLORS.overdue],
+        [0, 'Waiting', DEADLINE_COLORS.overdue],
+        [-60 * 1000, 'Waiting', DEADLINE_COLORS.overdue],
     ])('%d ms before the deadline is %s', (remaining, label, color) => {
         expect(deadlineStatus(now + remaining, now)).toEqual({ statusLabel: label, accentColor: color });
     });

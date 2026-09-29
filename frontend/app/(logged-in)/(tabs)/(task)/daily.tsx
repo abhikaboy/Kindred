@@ -28,7 +28,9 @@ import PlannerHeader, { PlannerView } from "@/components/daily/PlannerHeader";
 import { mondayOf, DropTarget } from "@/components/daily/dayCells";
 import MonthGrid from "@/components/daily/MonthGrid";
 import WeekAgenda from "@/components/daily/WeekAgenda";
-import DayOverdueSection from "@/components/daily/DayOverdueSection";
+import { PlanDayHeader } from "@/components/daily/WaitingSection";
+import StepDoneCelebration from "@/components/plan/StepDoneCelebration";
+import WelcomeBackSheet from "@/components/plan/WelcomeBackSheet";
 import UnscheduledTray from "@/components/daily/UnscheduledTray";
 import HintBubble from "@/components/ui/HintBubble";
 
@@ -114,11 +116,13 @@ const Daily = ({ embedded }: Props) => {
 
     const {
         tasksForSelectedDate,
+        projectedForSelectedDate,
         tasksForTodayNoTime,
         listUnscheduledTasks,
         openTasks,
         overdueTasks,
     } = useDailyTasks(selectedDate);
+    const waitingTasks = useMemo(() => [...overdueTasks, ...openTasks], [overdueTasks, openTasks]);
 
     // A blocked-out time slot can take any of the day's untimed tasks or the backlog
     const peekTasks = useMemo(
@@ -381,6 +385,7 @@ const Daily = ({ embedded }: Props) => {
                         <TaskListView
                             selectedDate={selectedDate}
                             tasksForSelectedDate={tasksForSelectedDate}
+                            projectedTasks={projectedForSelectedDate}
                             overdueTasks={overdueTasks}
                             openTasks={openTasks}
                             onAddTask={handleAddTask}
@@ -430,11 +435,7 @@ const Daily = ({ embedded }: Props) => {
                                     onGhostRangeChange={handleGhostRangeChange}
                                     bottomInset={contentBottom}
                                     onAddAllDay={() => handleAddTask(selectedDate)}
-                                    headerContent={
-                                        dayKey(selectedDate) === dayKey(today) && overdueTasks.length > 0 ? (
-                                            <DayOverdueSection tasks={overdueTasks} />
-                                        ) : undefined
-                                    }
+                                    headerContent={<PlanDayHeader selectedDate={selectedDate} waiting={waitingTasks} />}
                                 />
                             )}
                         </View>
@@ -491,6 +492,8 @@ const Daily = ({ embedded }: Props) => {
                         </ThemedText>
                     </View>
                 )}
+                <StepDoneCelebration />
+                <WelcomeBackSheet waiting={waitingTasks} />
             </View>
     );
 

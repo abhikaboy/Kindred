@@ -36,10 +36,10 @@ describe("getTimeChipInfo", () => {
         });
     });
 
-    it("past deadline -> overdue tone", () => {
+    it("past deadline -> waiting, neutral tone", () => {
         expect(getTimeChipInfo({ deadline: hours(-2) }, true)).toEqual({
-            label: "2h overdue",
-            tone: "overdue",
+            label: "waiting 2h",
+            tone: "neutral",
             icon: "clock",
         });
     });

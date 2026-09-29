@@ -47,6 +47,7 @@ type FlowSet struct {
 	SuggestTaskFieldsFlow            *core.Flow[SuggestTaskFieldsFlowInput, SuggestTaskFieldsFlowOutput, struct{}]
 	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
 	EnrichTasksFlow                  *core.Flow[EnrichTasksFlowInput, EnrichTasksFlowOutput, struct{}]
+	SuggestBreakdownFlow             *core.Flow[SuggestBreakdownFlowInput, SuggestBreakdownFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -652,6 +653,24 @@ For each task, propose only the changes you are confident about:
 			return *resp, nil
 		})
 
+	// Grace planning: tiny first steps for a task the user wants to restart.
+	// Never gated on credits; the handler returns an empty list on failure.
+	suggestBreakdownFlow := genkit.DefineFlow(g, "suggestBreakdownFlow",
+		func(ctx context.Context, input SuggestBreakdownFlowInput) (SuggestBreakdownFlowOutput, error) {
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.SuggestBreakdown")
+			defer span.End()
+			resp, _, err := genkit.GenerateData[SuggestBreakdownFlowOutput](ctx, g, ai.WithPrompt(BuildSuggestBreakdownPrompt(input)), lowThinking())
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return SuggestBreakdownFlowOutput{}, err
+			}
+			if resp == nil {
+				return SuggestBreakdownFlowOutput{}, nil
+			}
+			return *resp, nil
+		})
+
 	return &FlowSet{
 		TaskFlow:                         generateTaskFlow,
 		TaskFromImageFlow:                generateTaskFromImageFlow,
@@ -665,5 +684,6 @@ For each task, propose only the changes you are confident about:
 		SuggestTaskFieldsFlow:            suggestTaskFieldsFlow,
 		PredictTasksFlow:                 predictTasksFlow,
 		EnrichTasksFlow:                  enrichTasksFlow,
+		SuggestBreakdownFlow:             suggestBreakdownFlow,
 	}
 }

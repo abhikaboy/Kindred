@@ -204,6 +204,7 @@ func (s *Service) GetTasksByUser(id primitive.ObjectID, sort bson.D) ([]TaskDocu
 	fmt.Println(sort)
 
 	pipeline := getTasksByUserPipeline(id)
+	pipeline = append(pipeline, bson.D{{Key: "$match", Value: types.NotReleased("")}})
 	pipeline = append(pipeline, sort)
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)
 
@@ -227,7 +228,7 @@ func (s *Service) GetPublicTasks(id primitive.ObjectID, sort bson.D) ([]TaskDocu
 
 	pipeline := getTasksByUserPipeline(id)
 	pipeline = append(pipeline, bson.D{
-		{Key: "$match", Value: bson.M{"public": true}},
+		{Key: "$match", Value: bson.M{"public": true, "releasedAt": nil}},
 	})
 	pipeline = append(pipeline, sort)
 	cursor, err := s.Tasks.Aggregate(ctx, pipeline)

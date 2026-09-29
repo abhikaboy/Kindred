@@ -151,7 +151,7 @@ func (s *Service) GetPendingTaggedTasks(userID primitive.ObjectID) ([]PendingTag
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.M{"tasks.taggedUsers": elem}}},
 		{{Key: "$unwind", Value: "$tasks"}},
-		{{Key: "$match", Value: bson.M{"tasks.taggedUsers": elem}}},
+		{{Key: "$match", Value: bson.M{"tasks.taggedUsers": elem, "tasks.releasedAt": nil}}},
 		{{Key: "$lookup", Value: bson.M{
 			"from": "users", "localField": "user", "foreignField": "_id", "as": "taggerDoc",
 		}}},

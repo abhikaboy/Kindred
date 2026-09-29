@@ -252,6 +252,9 @@ func (j *KudosSuggesterJob) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Returned moments first, so they claim caps before other triggers.
+	SortMomentsByPriority(moments)
+
 	stats := newRunStats()
 	stats.moments = len(moments)
 	cache := newRunCache()
@@ -290,6 +293,7 @@ func (j *KudosSuggesterJob) detectMoments(ctx context.Context, now time.Time) ([
 		name string
 		fn   func(context.Context, time.Time) ([]KudosMoment, error)
 	}{
+		{"returned", j.detectReturned},
 		{"rings_closed", j.detectRingsClosed},
 		{"streak_milestone", j.detectStreakMilestones},
 		{"notable_completion", j.detectNotableCompletions},
@@ -306,6 +310,64 @@ func (j *KudosSuggesterJob) detectMoments(ctx context.Context, now time.Time) ([
 	}
 
 	return moments, nil
+}
+
+// detectReturned finds users shown the Welcome back sheet within the returned
+// freshness window. The subject is the return date, so each return is its own
+// moment and a user who reopens the app the same day is not a second one.
+func (j *KudosSuggesterJob) detectReturned(ctx context.Context, now time.Time) ([]KudosMoment, error) {
+	if j.users == nil {
+		return nil, nil
+	}
+	cur, err := j.users.Find(ctx,
+		returnedFilter(now, j.policy.Freshness(TriggerReturned)),
+		options.Find().
+			SetProjection(bson.M{"_id": 1, "returnedAt": 1}).
+			SetLimit(j.policy.MaxMomentsPerTrigger),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("find returned users: %w", err)
+	}
+	defer cur.Close(ctx)
+
+	var rows []returnedRow
+	if err := cur.All(ctx, &rows); err != nil {
+		return nil, fmt.Errorf("decode returned users: %w", err)
+	}
+	return returnedMoments(rows, now, j.policy.Freshness(TriggerReturned)), nil
+}
+
+type returnedRow struct {
+	ID         primitive.ObjectID `bson:"_id"`
+	ReturnedAt *time.Time         `bson:"returnedAt"`
+}
+
+func returnedFilter(now time.Time, window time.Duration) bson.M {
+	return bson.M{"returnedAt": bson.M{"$gte": now.Add(-window), "$lte": now}}
+}
+
+// returnedMoments turns rows into moments, re-applying the window so the rule
+// holds even if the query and the clock disagree.
+func returnedMoments(rows []returnedRow, now time.Time, window time.Duration) []KudosMoment {
+	moments := make([]KudosMoment, 0, len(rows))
+	for _, r := range rows {
+		if r.ReturnedAt == nil {
+			continue
+		}
+		at := *r.ReturnedAt
+		if at.After(now) || now.Sub(at) > window {
+			continue
+		}
+		moments = append(moments, KudosMoment{
+			RecipientID: r.ID,
+			Trigger:     TriggerReturned,
+			Subject:     at.UTC().Format("2006-01-02"),
+			// Deliberately neutral: nothing about being away.
+			Detail:     "is getting going today",
+			OccurredAt: at,
+		})
+	}
+	return moments
 }
 
 // detectRingsClosed finds users who closed every ring recently. The freshness
@@ -465,6 +527,7 @@ func (j *KudosSuggesterJob) detectStalledTasks(ctx context.Context, now time.Tim
 		{"$match": bson.M{
 			"tasks.startDate":  bson.M{"$ne": nil, "$lte": cutoff},
 			"tasks.lastEdited": bson.M{"$lte": cutoff},
+			"tasks.releasedAt": nil,
 		}},
 		{"$project": bson.M{
 			"user":       1,
@@ -810,6 +873,8 @@ func kudosPromptCopy(m KudosMoment, name string) (title, body string) {
 		name = "A friend"
 	}
 	switch m.Trigger {
+	case TriggerReturned:
+		return "Cheer them on", fmt.Sprintf("%s is getting going today. A kind word from you would land well right now.", name)
 	case TriggerRingsClosed:
 		return "Say nice work", fmt.Sprintf("%s closed every ring today. A congratulation would land well right now.", name)
 	case TriggerStreakMilestone:

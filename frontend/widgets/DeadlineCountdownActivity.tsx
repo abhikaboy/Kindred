@@ -49,7 +49,7 @@ const DeadlineCountdownComponent = (props: DeadlineCountdownProps) => {
     const { brandMarkUri, taskName, workspaceName, deadline, categoryId, taskId, accentColor, statusLabel } = props;
     const accent = accentColor || SOFT;
     const timerDate = new Date(deadline);
-    const overdue = statusLabel === 'Overdue';
+    const overdue = statusLabel === 'Waiting';
     const status = statusLabel;
     // Empties over the final hour before the deadline
     const progress = overdue ? null : (

@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import { ScrollView, View, AppState, InteractionManager, LogBox, StyleSheet } from "react-native";
 import { noteTaskCompleted, refreshCompletedToday, syncStreakWidgets } from "@/widgets/syncWidgets";
 import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
+import { recordAppOpen } from "@/utils/lastOpen";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
 import { type ErrorBoundaryProps } from "expo-router";
@@ -29,7 +30,9 @@ import { ThemedView } from "@/components/ThemedView";
 import { useCreateModal } from "@/contexts/createModalContext";
 import CreateModal, { Screen } from "@/components/modals/CreateModal";
 import CreateComposer from "@/components/modals/create/composer/CreateComposer";
+import BuildPlanSheet from "@/components/plan/BuildPlanSheet";
 import DefaultToast from "@/components/ui/DefaultToast";
+import { handleSilentPush, isSilentPush } from "@/utils/silentPushHandlers";
 import { AccountOverlay } from "@/components/guest/AccountOverlay";
 import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
@@ -40,6 +43,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { endActivity, tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
 import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
+import { registerBackgroundRefresh } from '@/tasks/backgroundRefresh';
 import { useTaskActions, useTasksSelector } from '@/contexts/tasksContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
@@ -328,11 +332,13 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
         const subscription = AppState.addEventListener('change', (nextState) => {
             if (nextState === 'active') {
+                recordAppOpen().catch(() => {});
                 syncStreakWidgets(user._id, user.streak || 0).catch(() => {});
                 refreshCompletedToday().catch(() => {});
             }
         });
 
+        recordAppOpen().catch(() => {});
         const handle = InteractionManager.runAfterInteractions(() => {
             syncStreakWidgets(user._id, user.streak || 0).catch(() => {});
             refreshCompletedToday().catch(() => {});
@@ -369,6 +375,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         registerBackgroundFetch();
+        void registerBackgroundRefresh();
         initNotificationHandler();
 
         // A push means server state changed — refresh what that notification type
@@ -436,6 +443,12 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                     startDeadlineActivityFromPush(data);
                 }
                 return; // Don't show toast for live activity pushes
+            }
+
+            // Data-only pushes report finished background work; they have nothing to display
+            if (isSilentPush(notification.request.content)) {
+                handleSilentPush(data as any);
+                return;
             }
 
             showToastable({
@@ -603,6 +616,7 @@ const LayoutContent = () => {
                         categoryId={modalConfig.categoryId}
                     />
                 )}
+                <BuildPlanSheet />
                 {/* Guest account prompt: above the tabs and the composer */}
                 <AccountOverlay />
         </View>

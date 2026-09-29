@@ -18,6 +18,10 @@ import (
 const FollowUpReminderType = "FOLLOW_UP"
 const FollowUpDelay = 3 * time.Hour
 
+// PlanReminderType is the single nudge attached to a task's plan. Its copy is
+// always "Try: <step>", never a note about how long the task has waited.
+const PlanReminderType = "PLAN"
+
 func (h *Handler) HandleReminder() (fiber.Map, error) {
 	tasks, err := h.service.GetTasksWithPastReminders()
 	if err != nil {
@@ -167,7 +171,7 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 	ctx := context.Background()
 
 	pipeline := getBaseTaskPipeline()
-	pipeline = append(pipeline, bson.D{{"$match", bson.M{"reminders": bson.M{
+	pipeline = append(pipeline, bson.D{{"$match", bson.M{"releasedAt": nil, "reminders": bson.M{
 		"$exists": true,
 		"$elemMatch": bson.M{
 			"sent": false,
@@ -210,6 +214,9 @@ func (s *Service) SendReminder(userID primitive.ObjectID, reminder *Reminder, ta
 	if reminder.Type == FollowUpReminderType {
 		title = fmt.Sprintf("How was %s?", task.Content)
 	}
+	if reminder.Type == PlanReminderType {
+		title = task.Content
+	}
 
 	// send the reminder to the user
 	return xutils.SendNotification(xutils.Notification{
@@ -232,6 +239,11 @@ func (s *Service) generateReminderMessage(reminder *Reminder, task *TaskDocument
 	// Follow-up reminders use specific copy
 	if reminder.Type == FollowUpReminderType {
 		return "How'd it go? Tap to mark it done!"
+	}
+
+	// Plan reminders only ever name the next step
+	if reminder.Type == PlanReminderType {
+		return planReminderMessage(reminder, task)
 	}
 
 	// Use custom message if provided
@@ -314,7 +326,8 @@ func formatTimeMessage(action string, duration time.Duration, taskName string) s
 func formatOverdueMessage(pastAction string, duration time.Duration, taskName string) string {
 	timeStr := formatDuration(duration)
 	if pastAction == "was due" {
-		return fmt.Sprintf("Overdue: %s (%s %s ago)", taskName, pastAction, timeStr)
+		// No verdict or age in the push: waiting is a state, not a failure
+		return fmt.Sprintf("Still here when you're ready: %s", taskName)
 	}
 	if pastAction == "ended" {
 		return fmt.Sprintf("Ended: %s (%s ago)", taskName, timeStr)
@@ -394,4 +407,21 @@ func (s *Service) AddReminderToTask(taskID primitive.ObjectID, categoryID primit
 	)
 
 	return handleMongoError(ctx, "add reminder to task", err)
+}
+
+// planReminderMessage renders a plan nudge. The stored copy wins; otherwise it
+// is rebuilt from the task's current plan step.
+func planReminderMessage(reminder *Reminder, task *TaskDocument) string {
+	if reminder.CustomMessage != nil && *reminder.CustomMessage != "" {
+		return *reminder.CustomMessage
+	}
+	if task.Plan != nil && task.Plan.Step != "" {
+		return PlanReminderCopy(task.Plan.Step)
+	}
+	return PlanReminderCopy(task.Content)
+}
+
+// PlanReminderCopy is the notification body for a plan step.
+func PlanReminderCopy(step string) string {
+	return "Try: " + step
 }

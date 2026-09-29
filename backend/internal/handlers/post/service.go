@@ -704,6 +704,7 @@ func (s *Service) GetFriendsPublicTasks(userID primitive.ObjectID, limit int) ([
 					"tasks.public":        true,
 					"tasks.active":        bson.M{"$ne": false},
 					"tasks.timeCompleted": bson.M{"$exists": false},
+					"tasks.releasedAt":    nil,
 				}}},
 				// Project the fields we need (incl. scoring fields)
 				{{Key: "$project", Value: bson.M{

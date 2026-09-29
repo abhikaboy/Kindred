@@ -8,10 +8,15 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import TaskSection from "@/components/task/TaskSection";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { AgendaRow } from "./WeekAgenda";
+import { PlanDayHeader } from "./WaitingSection";
+import { isInPlan } from "@/utils/waitingCandidate";
 
 interface TaskListViewProps {
     selectedDate: Date;
     tasksForSelectedDate: any[];
+    /** Upcoming recurrences with no real task yet; shown faded, display-only. */
+    projectedTasks?: any[];
     overdueTasks: any[];
     openTasks: any[];
     onAddTask: () => void;
@@ -26,6 +31,7 @@ const sortTime = (task: any): number => {
 const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     selectedDate,
     tasksForSelectedDate,
+    projectedTasks = [],
     overdueTasks,
     openTasks,
     onAddTask,
@@ -44,17 +50,27 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
     const keyExtractor = React.useCallback((item: any) => `${item.id}-${item.content}`, []);
     const getItemType = React.useCallback(() => 'task', []);
 
+    // In-plan tasks render as their step in PlanDayHeader; released ones never render
     const dayTasks = React.useMemo(
-        () => [...tasksForSelectedDate].sort((a, b) => sortTime(a) - sortTime(b)),
+        () =>
+            tasksForSelectedDate
+                .filter((t) => !t.releasedAt && !(t.plan?.at && isInPlan(t)))
+                .sort((a, b) => sortTime(a) - sortTime(b)),
         [tasksForSelectedDate]
     );
 
-    // Overdue and in-progress are relative to now, so they only belong under today
+    // Waiting and in-progress are relative to now, so they only belong under today
     const showCarryOver = isToday(selectedDate);
+
+    const waiting = React.useMemo(() => [...overdueTasks, ...openTasks], [overdueTasks, openTasks]);
+    const hasPlanned = tasksForSelectedDate.length > dayTasks.length;
 
     return (
         <View style={styles.container}>
-            {dayTasks.length > 0 ? (
+            <View style={styles.bleed}>
+                <PlanDayHeader selectedDate={selectedDate} waiting={waiting} />
+            </View>
+            {dayTasks.length > 0 || projectedTasks.length > 0 || hasPlanned ? (
                 <View style={{ minHeight: 2 }}>
                     <FlashList
                         data={dayTasks}
@@ -63,6 +79,11 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
                         getItemType={getItemType}
                         removeClippedSubviews={true}
                     />
+                    {projectedTasks.map((t) => (
+                        <View key={t.id} style={styles.taskItem}>
+                            <AgendaRow task={t} date={selectedDate} />
+                        </View>
+                    ))}
                 </View>
             ) : (
                 <TouchableOpacity
@@ -82,9 +103,6 @@ const TaskListViewComponent: React.FC<TaskListViewProps> = ({
                 </TouchableOpacity>
             )}
 
-            {showCarryOver && overdueTasks.length > 0 && (
-                <TaskSection tasks={overdueTasks} title="Overdue" />
-            )}
             {showCarryOver && openTasks.length > 0 && (
                 <TaskSection tasks={openTasks} title="In progress" />
             )}
@@ -99,14 +117,18 @@ export const TaskListView = React.memo(TaskListViewComponent, (prevProps, nextPr
     const sameSelectedTasks = prevProps.tasksForSelectedDate.length === nextProps.tasksForSelectedDate.length;
     const sameOverdue = prevProps.overdueTasks.length === nextProps.overdueTasks.length;
     const sameOpen = prevProps.openTasks.length === nextProps.openTasks.length;
+    const sameProjected = (prevProps.projectedTasks?.length ?? 0) === (nextProps.projectedTasks?.length ?? 0);
 
-    return sameDate && sameSelectedTasks && sameOverdue && sameOpen && prevProps.onAddTask === nextProps.onAddTask;
+    return sameDate && sameSelectedTasks && sameProjected && sameOverdue && sameOpen && prevProps.onAddTask === nextProps.onAddTask;
 });
 
 const styles = StyleSheet.create({
     container: {
         gap: 16,
         paddingHorizontal: HORIZONTAL_PADDING,
+    },
+    bleed: {
+        marginHorizontal: -HORIZONTAL_PADDING,
     },
     taskItem: {
         marginBottom: 8,

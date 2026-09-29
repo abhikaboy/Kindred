@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import ReanimatedSwipeable, { SwipeDirection } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { CalendarCheck, CaretDown, CaretUp, Clock, WarningCircle } from "phosphor-react-native";
+import { CalendarCheck, CaretDown, CaretUp, Clock } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import TaskChip from "@/components/cards/TaskChip";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -13,6 +13,16 @@ import { getCategoryDuotoneColors } from "@/utils/categoryColors";
 import { getTimeChipInfo } from "@/utils/timeChip";
 import { showToast } from "@/utils/showToast";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
+import HintBubble from "@/components/ui/HintBubble";
+import { ClearFogAction } from "@/components/plan/ClearFogSheet";
+import { isInPlan, isPassedPlan } from "@/utils/waitingCandidate";
+import { parkedLabel } from "@/utils/planText";
+import PassedPlanCard from "@/components/plan/PassedPlanCard";
+import PlannedStepCard from "@/components/plan/PlannedStepCard";
+import WaitingChip from "@/components/plan/WaitingChip";
+import { useWaitingCandidate } from "@/hooks/useWaitingCandidate";
+import { isSameDay } from "date-fns";
 
 type Props = { tasks: any[] };
 
@@ -30,7 +40,11 @@ const onToday = (deadline: string) => {
     return out;
 };
 
-const OverdueRow = ({ task }: { task: any }) => {
+// Long-waiting tasks fade a little instead of turning red: age is a signal, not a verdict
+const FADE_AFTER_DAYS = 14;
+const daysWaiting = (task: any) => Math.floor((Date.now() - new Date(task.deadline).getTime()) / 86400000);
+
+const WaitingRow = ({ task }: { task: any }) => {
     const ThemedColor = useThemeColor();
     const { updateTask } = useTasks();
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
@@ -70,7 +84,11 @@ const OverdueRow = ({ task }: { task: any }) => {
             <TouchableOpacity
                 onPress={() => openTask(task)}
                 activeOpacity={0.7}
-                style={[styles.card, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}
+                style={[
+                    styles.card,
+                    { backgroundColor: ThemedColor.lightenedCard },
+                    daysWaiting(task) >= FADE_AFTER_DAYS && styles.faded,
+                ]}
             >
                 <View style={[styles.categoryBar, { backgroundColor: categoryColor }]} />
                 <View style={styles.cardText}>
@@ -81,43 +99,54 @@ const OverdueRow = ({ task }: { task: any }) => {
                         {[task.categoryName, task.workspaceName].filter(Boolean).join(" · ")}
                     </ThemedText>
                 </View>
-                {chip && <TaskChip label={chip.label} tone="overdue" Icon={Clock} />}
+                {chip && <TaskChip label={parkedLabel(chip.label, !!task.parkedAt)} tone="neutral" Icon={Clock} />}
             </TouchableOpacity>
         </ReanimatedSwipeable>
     );
 };
 
-/** Today's carry-over: collapsed to one line by default so it doesn't crowd the timeline. */
-const DayOverdueSection = ({ tasks }: Props) => {
+/** Today's carry-over: quiet and collapsed by default so waiting never leads the day. */
+const WaitingSection = ({ tasks: all }: Props) => {
     const ThemedColor = useThemeColor();
-    const [expanded, setExpanded] = useState(false);
+    // Planned tasks show as their step on their day; released ones never show
+    const { passed, tasks } = useMemo(() => {
+        const live = all.filter((t) => !t.releasedAt && !isInPlan(t));
+        return { passed: live.filter((t) => isPassedPlan(t)), tasks: live.filter((t) => !isPassedPlan(t)) };
+    }, [all]);
+    const [expanded, setExpanded] = useState(passed.length > 0);
+    // A plan whose day went by opens the section so its "still want to?" is seen
+    useEffect(() => {
+        if (passed.length > 0) setExpanded(true);
+    }, [passed.length > 0]);
+    const { ready: hintReady, done: hintDone } = useFirstTouchHint("waiting_swipe_today");
     const Caret = expanded ? CaretUp : CaretDown;
+    if (passed.length === 0 && tasks.length === 0) return null;
 
     return (
-        <View style={[styles.section, { backgroundColor: ThemedColor.error + "14", borderColor: ThemedColor.error + "33" }]}>
+        <View style={styles.section}>
             <TouchableOpacity
                 onPress={() => setExpanded((e) => !e)}
                 style={styles.header}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={expanded ? "Hide overdue tasks" : "Show overdue tasks"}
+                accessibilityLabel={expanded ? "Hide tasks still on your plate" : "Show tasks still on your plate"}
             >
-                <WarningCircle size={16} color={ThemedColor.error} weight="bold" />
-                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.error }}>
-                    Overdue
-                </ThemedText>
-                <ThemedText type="caption" style={{ color: ThemedColor.error }}>
-                    {tasks.length}
+                <ThemedText type="default" style={{ fontSize: 17 }}>
+                    Still on your plate
                 </ThemedText>
                 <View style={{ flex: 1 }} />
-                {expanded && <ThemedText type="caption">Swipe right to move to today</ThemedText>}
+                <ClearFogAction />
                 <Caret size={14} color={ThemedColor.caption} weight="bold" />
             </TouchableOpacity>
+            {expanded && hintReady && <HintBubble text="Swipe right to bring one into today" onDone={hintDone} />}
             {/* Pinned above the grid, so a long list scrolls in place instead of burying the day */}
             {expanded && (
                 <ScrollView style={styles.list} contentContainerStyle={styles.listContent} nestedScrollEnabled>
+                    {passed.map((t) => (
+                        <PassedPlanCard key={t.id} task={t} />
+                    ))}
                     {tasks.map((t) => (
-                        <OverdueRow key={t.id} task={t} />
+                        <WaitingRow key={t.id} task={t} />
                     ))}
                 </ScrollView>
             )}
@@ -125,13 +154,51 @@ const DayOverdueSection = ({ tasks }: Props) => {
     );
 };
 
+type HeaderProps = { selectedDate: Date; waiting: any[] };
+
+/** Plans for the viewed day and, on today, the one quiet path chip plus the carry-over. */
+export const PlanDayHeader = ({ selectedDate, waiting }: HeaderProps) => {
+    const { allTasks } = useTasks();
+    const today = isSameDay(selectedDate, new Date());
+    const { candidate, several } = useWaitingCandidate(waiting);
+    const planned = useMemo(
+        () =>
+            allTasks.filter(
+                (t) => !t.releasedAt && t.plan?.at && isInPlan(t) && isSameDay(new Date(t.plan.at), selectedDate)
+            ),
+        [allTasks, selectedDate]
+    );
+    if (!today && planned.length === 0) return null;
+    return (
+        <View style={styles.planHeader}>
+            {today && candidate && (
+                <View style={styles.inset}>
+                    <WaitingChip task={candidate} several={several} />
+                </View>
+            )}
+            {planned.length > 0 && (
+                <View style={[styles.inset, styles.listContent]}>
+                    {planned.map((t) => (
+                        <PlannedStepCard key={t.id} task={t} />
+                    ))}
+                </View>
+            )}
+            {today && <WaitingSection tasks={waiting.filter((t) => !!t.deadline)} />}
+        </View>
+    );
+};
+
 const styles = StyleSheet.create({
+    planHeader: {
+        gap: 8,
+    },
+    inset: {
+        marginHorizontal: HORIZONTAL_PADDING,
+    },
     section: {
         marginHorizontal: HORIZONTAL_PADDING,
         marginBottom: 8,
-        borderWidth: 1,
-        borderRadius: 16,
-        padding: 12,
+        paddingVertical: 8,
         gap: 8,
     },
     list: {
@@ -153,7 +220,9 @@ const styles = StyleSheet.create({
         paddingRight: 12,
         paddingVertical: 8,
         borderRadius: 16,
-        borderWidth: 1,
+    },
+    faded: {
+        opacity: 0.7,
     },
     categoryBar: {
         width: 4,
@@ -172,4 +241,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DayOverdueSection;
+export default WaitingSection;

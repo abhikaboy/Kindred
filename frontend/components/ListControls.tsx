@@ -265,7 +265,7 @@ export const FilterContent = ({ storageKey, onApply }: { storageKey: string; onA
                         Deadline
                     </ThemedText>
                     <View style={styles.filterGrid}>
-                        <FilterCard label="Overdue" isSelected={filters.deadlines.overdue} onPress={() => toggleFilter("deadlines", "overdue")} IconComponent={(props) => <WarningCircle size={28} weight="regular" {...props} />} />
+                        <FilterCard label="Waiting" isSelected={filters.deadlines.overdue} onPress={() => toggleFilter("deadlines", "overdue")} IconComponent={(props) => <WarningCircle size={28} weight="regular" {...props} />} />
                         <FilterCard label="Today" isSelected={filters.deadlines.today} onPress={() => toggleFilter("deadlines", "today")} IconComponent={(props) => <CalendarCheck size={28} weight="regular" {...props} />} />
                         <FilterCard label="This Week" isSelected={filters.deadlines.thisWeek} onPress={() => toggleFilter("deadlines", "thisWeek")} IconComponent={(props) => <CalendarBlank size={28} weight="regular" {...props} />} />
                         <FilterCard label="Future" isSelected={filters.deadlines.future} onPress={() => toggleFilter("deadlines", "future")} IconComponent={(props) => <ArrowRight size={28} weight="regular" {...props} />} />

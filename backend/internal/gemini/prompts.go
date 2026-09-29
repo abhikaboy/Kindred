@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -128,4 +129,42 @@ If the instruction contains only one type of operation, return a single-element 
 If no matching tasks are found for an edit or delete, return an empty "ops" array rather than guessing.
 Only include operations that are clearly implied by the user's instruction.`,
 		userID, userID, now, timezone, text)
+}
+
+// breakdownSizeLimits describes what fits in each plan size.
+var breakdownSizeLimits = map[string]string{
+	"2m":   "about two minutes each. Opening, finding, writing one line, sending one message.",
+	"10m":  "about ten minutes each. One small, finished piece of work.",
+	"full": "one focused sitting each. Still concrete and clearly finishable.",
+}
+
+// BuildSuggestBreakdownPrompt builds the prompt for suggestBreakdownFlow. The
+// tone is calm and never refers to when the task was meant to happen.
+func BuildSuggestBreakdownPrompt(input SuggestBreakdownFlowInput) string {
+	limit, ok := breakdownSizeLimits[input.Size]
+	if !ok {
+		limit = breakdownSizeLimits["10m"]
+	}
+	var checklist strings.Builder
+	for _, c := range input.Checklist {
+		fmt.Fprintf(&checklist, "- %s\n", c)
+	}
+	if checklist.Len() == 0 {
+		checklist.WriteString("(none)\n")
+	}
+	return fmt.Sprintf(`You help someone take the first small step on a task. Be calm, kind and matter-of-fact.
+
+Task: %q
+Notes: %q
+Existing checklist:
+%s
+Suggest 2 to 4 tiny, concrete first steps, in the order they would be done:
+- Each step starts with a verb and is under 8 words.
+- Each step must be doable in %s
+- Use the nouns from the task and notes. Do not invent people, places or facts.
+- Do not repeat items already on the checklist.
+- No judgement, no pep talk, no emojis. Never mention time pressure, dates, being behind, or when the task was meant to happen.
+
+whenHint is optional: one short, gentle line about a good moment to try the first step (for example "Right after lunch works well for a quick call"). Omit it unless it is genuinely useful.`,
+		input.Content, input.Notes, checklist.String(), limit)
 }

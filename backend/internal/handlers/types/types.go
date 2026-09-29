@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -81,6 +82,18 @@ type TaskDocument struct {
 	Notes     string          `bson:"notes,omitempty" json:"notes,omitempty"`
 	Checklist []ChecklistItem `bson:"checklist,omitempty" json:"checklist,omitempty"`
 	Reminders []*Reminder     `bson:"reminders,omitempty" json:"reminders,omitempty"`
+
+	// Plan is the user's small next step for a task that slipped past its day:
+	// what to try, how big it is and when. Replacing it bumps Replans.
+	Plan *TaskPlan `bson:"plan,omitempty" json:"plan,omitempty" doc:"The next small step the user committed to"`
+
+	// ParkedAt marks a task the user set aside on purpose. It stays in lists
+	// but is no longer treated as waiting on them.
+	ParkedAt *time.Time `bson:"parkedAt,omitempty" json:"parkedAt,omitempty" doc:"When the user set this task aside"`
+
+	// ReleasedAt is a recoverable archive: the task is kept but left out of
+	// every list, reminder, count and analytics path until unreleased.
+	ReleasedAt *time.Time `bson:"releasedAt,omitempty" json:"releasedAt,omitempty" doc:"When the user let this task go; released tasks are hidden until restored"`
 
 	// AutoCategorize marks a task the user chose not to file: it sits in their
 	// Inbox until the background categorization job finds it a home. Cleared
@@ -183,6 +196,56 @@ type TaggedTaskUser struct {
 	DisplayName    string             `bson:"display_name" json:"display_name"`
 	ProfilePicture string             `bson:"profile_picture" json:"profile_picture"`
 	Status         TagStatus          `bson:"status" json:"status"`
+}
+
+// Plan sizes: how much time the next step asks for.
+const (
+	PlanSize2m   = "2m"
+	PlanSize10m  = "10m"
+	PlanSizeFull = "full"
+)
+
+// TaskPlan is a committed next step for a task.
+type TaskPlan struct {
+	Step        string    `bson:"step" json:"step" doc:"The first small step to try"`
+	Size        string    `bson:"size" json:"size" enum:"2m,10m,full" doc:"How long the step takes"`
+	At          time.Time `bson:"at" json:"at" doc:"When the user plans to try it"`
+	CommittedAt time.Time `bson:"committedAt" json:"committedAt" doc:"When this plan was set"`
+	Replans     int       `bson:"replans" json:"replans" doc:"How many times the plan was replaced"`
+}
+
+// ValidPlanSize reports whether size is one of the plan sizes.
+func ValidPlanSize(size string) bool {
+	return size == PlanSize2m || size == PlanSize10m || size == PlanSizeFull
+}
+
+// NotReleased matches task documents that were never released (or were
+// restored). A nil value matches both a missing and a null field. Pass the
+// path prefix, e.g. "tasks." right after an $unwind, or "" after $replaceRoot.
+func NotReleased(prefix string) bson.M {
+	return bson.M{prefix + "releasedAt": nil}
+}
+
+// DropReleasedTasksStage rewrites each category's embedded tasks array
+// without released tasks, for pipelines that return whole categories.
+func DropReleasedTasksStage() bson.D {
+	return bson.D{{Key: "$set", Value: bson.M{"tasks": bson.M{"$filter": bson.M{
+		"input": bson.M{"$ifNull": bson.A{"$tasks", bson.A{}}},
+		"as":    "t",
+		"cond":  bson.M{"$eq": bson.A{bson.M{"$ifNull": bson.A{"$$t.releasedAt", nil}}, nil}},
+	}}}}}
+}
+
+// WithoutReleased returns tasks minus the released ones, for code that reads
+// whole category documents.
+func WithoutReleased(tasks []TaskDocument) []TaskDocument {
+	out := tasks[:0:0]
+	for _, t := range tasks {
+		if t.ReleasedAt == nil {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 /*
@@ -386,6 +449,11 @@ type User struct {
 	TermsVersion          string       `bson:"terms_version,omitempty" json:"terms_version,omitempty"`
 	FirstAllRingsClosedAt *time.Time   `bson:"first_all_rings_closed_at,omitempty" json:"first_all_rings_closed_at,omitempty"`
 	Song                  *Song        `bson:"song,omitempty" json:"song,omitempty"`
+	// ReturnedAt is when the client last showed this user the Welcome back
+	// sheet after a gap away. It only feeds the kudos suggester's "returned"
+	// moment and is never serialised to clients, so no friend-facing surface can
+	// learn that someone was away.
+	ReturnedAt *time.Time `bson:"returnedAt,omitempty" json:"-"`
 
 	// IsGuest marks an account created by POST /v1/auth/guest with no
 	// credentials attached. Signing up later upgrades this same document in

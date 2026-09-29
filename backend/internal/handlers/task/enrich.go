@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/danielgtaylor/huma/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -74,7 +75,7 @@ func (s *Service) loadEnrichInputs(ctx context.Context, userID primitive.ObjectI
 	cursor, err := s.Tasks.Find(ctx, bson.M{"user": userID, "isBlueprint": bson.M{"$ne": true}}, options.Find().SetProjection(bson.M{
 		"name": 1, "tasks._id": 1, "tasks.content": 1, "tasks.priority": 1, "tasks.value": 1,
 		"tasks.recurring": 1, "tasks.templateID": 1, "tasks.deadline": 1, "tasks.startDate": 1,
-		"tasks.startTime": 1, "tasks.timestamp": 1, "tasks.autoCategorize": 1,
+		"tasks.startTime": 1, "tasks.timestamp": 1, "tasks.autoCategorize": 1, "tasks.releasedAt": 1,
 	}))
 	if err != nil {
 		return nil, nil, err
@@ -93,7 +94,7 @@ func (s *Service) loadEnrichInputs(ctx context.Context, userID primitive.ObjectI
 	busy := map[string]int{}
 	var out []EnrichCandidate
 	for _, c := range catDocs {
-		for _, t := range c.Tasks {
+		for _, t := range types.WithoutReleased(c.Tasks) {
 			if t.StartDate != nil && !t.StartDate.Before(today) {
 				busy[t.StartDate.In(loc).Format("2006-01-02")]++
 			}

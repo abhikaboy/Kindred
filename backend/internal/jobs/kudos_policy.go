@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -26,6 +27,11 @@ const (
 	TriggerRingsClosed       TriggerType = "rings_closed"
 	TriggerStreakMilestone   TriggerType = "streak_milestone"
 	TriggerNotableCompletion TriggerType = "notable_completion"
+	// TriggerReturned fires when someone opens Kindred and is shown the Welcome
+	// back sheet. It is celebration-class: the friend is only ever told the
+	// person is getting going today, never that they were away, so it discloses
+	// nothing the user did not already make visible by showing up.
+	TriggerReturned TriggerType = "returned"
 
 	// Struggle triggers — require the subject's ShareStruggles consent.
 	TriggerTaskStalled  TriggerType = "task_stalled"
@@ -42,6 +48,51 @@ var achievementTriggers = map[TriggerType]bool{
 	TriggerRingsClosed:       true,
 	TriggerStreakMilestone:   true,
 	TriggerNotableCompletion: true,
+	TriggerReturned:          true,
+}
+
+// TriggerPriority orders moments within a tick; lower runs first. Returned
+// moments go first so they win the sender's daily cap and the per-moment
+// fan-out against everything else: a warm word on the day someone restarts is
+// worth more than one more "nice work". Every other trigger shares a rank, so
+// a stable sort leaves their detection order untouched.
+func TriggerPriority(t TriggerType) int {
+	if t == TriggerReturned {
+		return 0
+	}
+	return 1
+}
+
+// SortMomentsByPriority stable-sorts moments by TriggerPriority in place.
+func SortMomentsByPriority(moments []KudosMoment) {
+	sort.SliceStable(moments, func(i, k int) bool {
+		return TriggerPriority(moments[i].Trigger) < TriggerPriority(moments[k].Trigger)
+	})
+}
+
+// Freshness is how long after a moment it still reads as current, for
+// celebration-class triggers.
+func (p KudosPolicy) Freshness(t TriggerType) time.Duration {
+	if t == TriggerReturned && p.ReturnedFreshness > 0 {
+		return p.ReturnedFreshness
+	}
+	return p.CongratulationFreshness
+}
+
+// AffinityFloor is the minimum kudos-affinity a sender needs for this trigger.
+// Returned moments take ReturnedAffinityDiscount off either floor so one or two
+// more friends in the ranking are eligible on the day it matters most; the
+// discount is small enough that it never reaches friends the worker considers
+// weak ties.
+func (p KudosPolicy) AffinityFloor(t TriggerType, reduce bool) float64 {
+	floor := p.MinAffinity
+	if reduce {
+		floor = p.ReducedMinAffinity
+	}
+	if t == TriggerReturned {
+		floor -= p.ReturnedAffinityDiscount
+	}
+	return floor
 }
 
 // IsStruggle reports whether this trigger discloses a difficulty rather than an
@@ -79,6 +130,14 @@ type KudosPolicy struct {
 	// CongratulationFreshness is how long after an achievement it still reads as
 	// congratulation rather than as a reminder of last week.
 	CongratulationFreshness time.Duration
+	// ReturnedFreshness is the window after a return in which a cheer still
+	// lands. Longer than CongratulationFreshness because a return often happens
+	// late in someone's day or during a friend's quiet hours, and "getting
+	// going today" stays true for longer than "just closed their rings".
+	ReturnedFreshness time.Duration
+	// ReturnedAffinityDiscount is subtracted from the affinity floor for
+	// returned moments.
+	ReturnedAffinityDiscount float64
 
 	// DayStartHour and DayEndHour bound the hours a person may be buzzed in
 	// their own local time. Kindred has no quiet-hours setting yet, so these are
@@ -113,21 +172,23 @@ type KudosPolicy struct {
 // being too loud is that people turn notifications off entirely.
 func DefaultKudosPolicy() KudosPolicy {
 	return KudosPolicy{
-		HardDailyCap:            2,
-		ReducedDailyCap:         1,
-		TriggerCooldown:         72 * time.Hour,
-		CongratulationFreshness: 6 * time.Hour,
-		DayStartHour:            8,
-		DayEndHour:              21,
-		PrePeakLeadHours:        2,
-		MinAffinity:             0.4,
-		ReducedMinAffinity:      0.65,
-		MaxSendersPerMoment:     2,
-		StalledAfter:            72 * time.Hour,
-		MinStreakAtRisk:         3,
-		AtRiskLocalHour:         19,
-		MaxMomentsPerTrigger:    200,
-		LedgerRetention:         30 * 24 * time.Hour,
+		HardDailyCap:             2,
+		ReducedDailyCap:          1,
+		TriggerCooldown:          72 * time.Hour,
+		CongratulationFreshness:  6 * time.Hour,
+		ReturnedFreshness:        12 * time.Hour,
+		ReturnedAffinityDiscount: 0.05,
+		DayStartHour:             8,
+		DayEndHour:               21,
+		PrePeakLeadHours:         2,
+		MinAffinity:              0.4,
+		ReducedMinAffinity:       0.65,
+		MaxSendersPerMoment:      2,
+		StalledAfter:             72 * time.Hour,
+		MinStreakAtRisk:          3,
+		AtRiskLocalHour:          19,
+		MaxMomentsPerTrigger:     200,
+		LedgerRetention:          30 * 24 * time.Hour,
 	}
 }
 
@@ -243,11 +304,7 @@ func EvaluateKudosPrompt(m KudosMoment, r KudosRecipient, s KudosSender, p Kudos
 
 	// 6. Does this person's encouragement carry weight for this recipient? The
 	//    worker owns this judgement; we only read the rank.
-	floor := p.MinAffinity
-	if s.ShouldReduceFrequency {
-		floor = p.ReducedMinAffinity
-	}
-	if s.Affinity < floor {
+	if s.Affinity < p.AffinityFloor(m.Trigger, s.ShouldReduceFrequency) {
 		return deny(SkipLowAffinity)
 	}
 
@@ -262,7 +319,7 @@ func EvaluateKudosPrompt(m KudosMoment, r KudosRecipient, s KudosSender, p Kudos
 	//    encouragement is aimed at a window in the recipient's day. Same fact,
 	//    opposite direction — which is why they are checked differently.
 	if !m.Trigger.IsStruggle() {
-		if age := now.Sub(m.OccurredAt); age > p.CongratulationFreshness {
+		if age := now.Sub(m.OccurredAt); age > p.Freshness(m.Trigger) {
 			return deny(SkipStale)
 		}
 	} else {

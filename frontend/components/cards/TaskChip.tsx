@@ -4,7 +4,7 @@ import { IconProps } from "phosphor-react-native";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
-export type TaskChipTone = "neutral" | "overdue" | "active";
+export type TaskChipTone = "neutral" | "active";
 
 interface Props {
     label?: string;
@@ -21,7 +21,7 @@ const TaskChip = ({ label, tone = "neutral", Icon, color: colorOverride, backgro
     if (!label && !Icon) return null;
 
     const toneColor =
-        tone === "overdue" ? ThemedColor.error : tone === "active" ? ThemedColor.primary : ThemedColor.caption;
+        tone === "active" ? ThemedColor.primary : ThemedColor.caption;
     const color = colorOverride ?? toneColor;
     const bg = bgOverride ?? ThemedColor.lightened;
 

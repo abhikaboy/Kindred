@@ -39,10 +39,6 @@ struct TodayTasksView: View {
     .kindredBackground(scheme, motif: entry.payload == nil ? .none : .today)
   }
 
-  private var overdueCount: Int {
-    entry.payload?.tasks.filter { $0.isOverdue(at: entry.date) }.count ?? 0
-  }
-
   // MARK: Small
 
   private func small(_ today: TodayPayload) -> some View {
@@ -131,11 +127,6 @@ struct TodayTasksView: View {
     HStack {
       WidgetEyebrow(text: "Today")
       Spacer(minLength: 0)
-      if overdueCount > 0 {
-        Text("\(overdueCount) late")
-          .font(.outfit(11, .semibold))
-          .foregroundStyle(KindredPalette.overdue)
-      }
     }
   }
 
@@ -143,10 +134,6 @@ struct TodayTasksView: View {
     HStack(spacing: 6) {
       Text("\(today.completedCount) of \(today.total) done")
         .foregroundStyle(KindredPalette.caption)
-      if overdueCount > 0 {
-        Text("\(overdueCount) overdue")
-          .foregroundStyle(KindredPalette.overdue)
-      }
     }
     .font(.outfit(12, .medium))
   }
