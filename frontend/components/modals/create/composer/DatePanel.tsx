@@ -44,6 +44,12 @@ type Props = {
     /** Picking by tap takes precedence over the text parse. */
     onTouched: () => void;
     onDone: () => void;
+    /** Hides the start/due switch, for editors that only own one of them. */
+    lockTarget?: boolean;
+    /** Someday is chosen: an undated task. */
+    someday?: boolean;
+    /** Offers "Someday" after the start moments; picking a day replaces it. */
+    onSomeday?: () => void;
 };
 
 /**
@@ -55,7 +61,7 @@ type Props = {
  * Start may have no time ("Any time"); a due date without one is due at the
  * end of that day.
  */
-const DatePanel = ({ target, onTargetChange, onTouched, onDone }: Props) => {
+const DatePanel = ({ target, onTargetChange, onTouched, onDone, lockTarget, someday, onSomeday }: Props) => {
     const {
         startDate,
         startTime,
@@ -156,6 +162,9 @@ const DatePanel = ({ target, onTargetChange, onTouched, onDone }: Props) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
+                {lockTarget ? (
+                    <SectionTitle title={target === "start" ? "Start" : "Due"} style={{ color: STAGE.text }} />
+                ) : (
                 <View style={[styles.segment, { backgroundColor: STAGE.fill }]}>
                     {(["start", "due"] as const).map((t) => (
                         <TouchableOpacity
@@ -170,6 +179,7 @@ const DatePanel = ({ target, onTargetChange, onTouched, onDone }: Props) => {
                         </TouchableOpacity>
                     ))}
                 </View>
+                )}
                 <View style={styles.headerRight}>
                     {value && (
                         <TouchableOpacity
@@ -225,6 +235,18 @@ const DatePanel = ({ target, onTargetChange, onTouched, onDone }: Props) => {
                                 </TouchableOpacity>
                             );
                         })}
+                        {target === "start" && onSomeday && (
+                            <TouchableOpacity
+                                key="someday"
+                                onPress={onSomeday}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: !!someday }}
+                                style={pill(!!someday)}>
+                                <ThemedText type="lightBody" style={ink(!!someday)}>
+                                    Someday
+                                </ThemedText>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <View style={styles.monthHeader}>

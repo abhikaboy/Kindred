@@ -7,7 +7,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { useTaskCreationActions } from "@/contexts/taskCreationContext";
-import { Screen } from "../CreateModal";
+import { Screen } from "@/contexts/createModalContext";
 import { Task } from "@/api/types";
 import BottomMenuModal from "../BottomMenuModal";
 import { removeFromCategoryAPI } from "@/api/task";
@@ -38,6 +38,7 @@ const EditPost = (props: Props) => {
             edit: true,
             categoryId: props.id.category,
             screen: Screen.STANDARD,
+            task: props.task,
         });
     };
     const deletePost = async () => {

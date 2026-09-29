@@ -10,7 +10,7 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { CalendarBlank, CaretLeft, Clock, Moon, Plus, SunHorizon, X, type IconProps } from "phosphor-react-native";
+import { CalendarBlank, CaretLeft, Clock, Moon, Planet, Plus, SunHorizon, X, type IconProps } from "phosphor-react-native";
 import { hideToastable, showToastable } from "react-native-toastable";
 import type ConfettiCannon from "react-native-confetti-cannon";
 import DefaultModal from "@/components/modals/DefaultModal";
@@ -26,10 +26,12 @@ import { closePlanSheet, usePlanSheet } from "@/hooks/planSheetStore";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import {
     clearTaskPlanAPI,
+    clearTaskSomedayAPI,
     getBreakdownSuggestionsAPI,
     parkTaskAPI,
     releaseTaskAPI,
     setTaskPlanAPI,
+    setTaskSomedayAPI,
     type PlanSize,
 } from "@/api/plan";
 import { markInProgressAPI, setWorkingAPI } from "@/api/task";
@@ -76,6 +78,52 @@ const mergeChecklist = (checklist: ChecklistItem[] = [], steps: string[]): Check
     }
     return out;
 };
+
+/**
+ * Moves a task to Someday: undated, planless, its steps kept as checklist items.
+ * Optimistic, with a "Saved for someday." toast whose Undo puts the old fields back.
+ */
+export function saveForSomeday(
+    task: Task,
+    steps: string[],
+    updateTask: (categoryId: string, taskId: string, updates: Partial<Task>) => void
+) {
+    const categoryId = task.categoryID ?? "";
+    if (!categoryId) return;
+    const prev: Partial<Task> = {
+        somedayAt: task.somedayAt ?? null,
+        startDate: task.startDate,
+        startTime: task.startTime,
+        deadline: task.deadline,
+        plan: task.plan ?? null,
+        checklist: task.checklist,
+    };
+    updateTask(categoryId, task.id, {
+        somedayAt: new Date().toISOString(),
+        startDate: undefined,
+        startTime: undefined,
+        deadline: undefined,
+        plan: null,
+        checklist: mergeChecklist(task.checklist, steps),
+    });
+    const restore = () => updateTask(categoryId, task.id, prev);
+    setTaskSomedayAPI(categoryId, task.id, steps).catch(() => {
+        restore();
+        showToast("Couldn't save it for someday. Give it another try.", "danger");
+    });
+    const undo = () => {
+        hideToastable();
+        restore();
+        clearTaskSomedayAPI(categoryId, task.id).catch(() => {});
+    };
+    showToastable({
+        message: "Saved for someday.",
+        status: "success",
+        duration: 4000,
+        swipeDirection: "up",
+        renderContent: () => <PlannedToast message="Saved for someday." onUndo={undo} />,
+    });
+}
 
 /** Numbered, editable step row. */
 function StepRow({
@@ -373,6 +421,16 @@ export default function BuildPlanSheet() {
         setPage(3);
     };
 
+    // Someday skips the check: no day to commit to, so no capacity gate either
+    const someday = () => {
+        if (!task || committed.current) return;
+        committed.current = true;
+        hapticLight();
+        closePlanSheet();
+        saveForSomeday(task, filled, updateTask);
+        capture(AnalyticsEvents.TASK_SOMEDAY, { source: "plan_sheet" });
+    };
+
     // --- Commit ---
 
     const savePlan = (at: Date, extra: Partial<Task> = {}) => {
@@ -537,6 +595,15 @@ export default function BuildPlanSheet() {
                             </TouchableOpacity>
                         );
                     })}
+                    <TouchableOpacity
+                        onPress={someday}
+                        style={[styles.chip, { backgroundColor: ThemedColor.lightened }]}
+                        accessibilityRole="button">
+                        <Planet size={16} color={ThemedColor.text} />
+                        <ThemedText type="smallerDefault" style={{ color: ThemedColor.text }}>
+                            Someday
+                        </ThemedText>
+                    </TouchableOpacity>
                 </View>
                 {picking && Platform.OS === "ios" && pickedAt && (
                     <Animated.View entering={FADE}>

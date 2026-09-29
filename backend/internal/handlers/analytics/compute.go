@@ -45,6 +45,8 @@ type AnalyticsOpenTaskLite struct {
 	Deadline   *time.Time
 	Priority   int
 	KudosCount int
+	// Someday tasks are undated on purpose and never need attention.
+	Someday bool
 }
 
 type computeInput struct {
@@ -549,7 +551,7 @@ func formatHour12(h int) string {
 func computeAttention(open []AnalyticsOpenTaskLite, inScope func(string) bool, nameOf, workspaceOf func(string) string, now time.Time) AnalyticsAttention {
 	tasks := []AnalyticsAttentionTask{}
 	for _, t := range open {
-		if !inScope(t.CategoryID) {
+		if t.Someday || !inScope(t.CategoryID) {
 			continue
 		}
 		daysOpen := int(now.Sub(t.CreatedAt).Hours() / 24)

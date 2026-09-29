@@ -91,6 +91,11 @@ type TaskDocument struct {
 	// but is no longer treated as waiting on them.
 	ParkedAt *time.Time `bson:"parkedAt,omitempty" json:"parkedAt,omitempty" doc:"When the user set this task aside"`
 
+	// SomedayAt marks an undated, aspirational task. It stays in its category
+	// and workspace lists but is never waiting or overdue, gets no reminders,
+	// and is left out of check-in counts and attention analytics.
+	SomedayAt *time.Time `bson:"somedayAt,omitempty" json:"somedayAt,omitempty" doc:"When the user moved this task to Someday; Someday tasks are undated and never counted as waiting"`
+
 	// ReleasedAt is a recoverable archive: the task is kept but left out of
 	// every list, reminder, count and analytics path until unreleased.
 	ReleasedAt *time.Time `bson:"releasedAt,omitempty" json:"releasedAt,omitempty" doc:"When the user let this task go; released tasks are hidden until restored"`

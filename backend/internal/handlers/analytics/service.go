@@ -258,6 +258,7 @@ func (s *Service) loadCategories(ctx context.Context, userID primitive.ObjectID)
 				Deadline:   t.Deadline,
 				Priority:   t.Priority,
 				KudosCount: len(t.Encouragements),
+				Someday:    t.SomedayAt != nil,
 			})
 		}
 	}

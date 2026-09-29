@@ -41,10 +41,10 @@ import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEnc
 import { getIntegrationIcon, getIntegrationName, openIntegrationApp } from "@/utils/integrationUtils";
 // import PagerView from "react-native-pager-view"; // Removed - was causing modal issue
 import type { components } from "@/api/generated/types";
-import { Screen } from "@/components/modals/CreateModal";
+import { Screen } from "@/contexts/createModalContext";
 import { useCreateModal } from "@/contexts/createModalContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import DeadlineBottomSheetModal from "@/components/modals/DeadlineBottomSheetModal";
+import DeadlineStage from "@/components/modals/create/composer/DeadlineStage";
 // Removed Picker import - no longer using timer tab
 // import { Picker } from "@react-native-picker/picker";
 import { useTaskCompletion } from "@/hooks/useTaskCompletion";
@@ -455,6 +455,7 @@ export default function Task() {
             edit: true,
             categoryId: categoryId as string,
             screen: Screen.STANDARD,
+            task,
         });
     }, [task?.id, categoryId, openModal, loadTaskData]);
 
@@ -464,12 +465,11 @@ export default function Task() {
         isLoadingTaskData.current = true;
 
         try {
-            loadTaskData(task);
             setShowDeadlineModal(true);
         } finally {
             isLoadingTaskData.current = false;
         }
-    }, [task?.id, loadTaskData]); // Only depend on task.id, not the whole object
+    }, [task?.id]);
 
     logger.debug("Current task state", { task, categoryId, id });
 
@@ -952,9 +952,10 @@ export default function Task() {
             )}
 
             {showDeadlineModal && (
-                <DeadlineBottomSheetModal
+                <DeadlineStage
                     visible={showDeadlineModal}
                     setVisible={setShowDeadlineModal}
+                    task={task}
                     taskId={id as string}
                     categoryId={categoryId as string}
                     onDeadlineUpdate={handleDeadlineUpdate}

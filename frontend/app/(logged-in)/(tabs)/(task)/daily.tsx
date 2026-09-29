@@ -9,8 +9,8 @@ import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { useTasks } from "@/contexts/tasksContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDrawer } from "@/contexts/drawerContext";
-import { Screen } from "@/components/modals/CreateModal";
-import { AUTO_CATEGORY_ID } from "@/components/modals/create/Standard";
+import { Screen } from "@/contexts/createModalContext";
+import { AUTO_CATEGORY_ID } from "@/hooks/useSubmitNewTask";
 import { useCreateModal } from "@/contexts/createModalContext";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, {
@@ -282,7 +282,8 @@ const Daily = ({ embedded }: Props) => {
         openModal({
             edit: true,
             categoryId: task.categoryID || "",
-            screen: type === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE
+            screen: type === 'deadline' ? Screen.DEADLINE : Screen.STARTDATE,
+            task,
         });
     };
 

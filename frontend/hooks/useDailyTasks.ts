@@ -20,7 +20,7 @@ export const useDailyTasks = (selectedDate: Date) => {
 
     // Filter tasks based on selected date
     const tasksForSelectedDate = useMemo(
-        () => allTasks.filter((task) => isTaskOnDay(task, selectedDate)),
+        () => allTasks.filter((task) => !task.somedayAt && isTaskOnDay(task, selectedDate)),
         [allTasks, selectedDate]
     );
 
@@ -78,7 +78,7 @@ export const useDailyTasks = (selectedDate: Date) => {
 
     // Filter lists for List View
     const listUnscheduledTasks = useMemo(() => {
-        return allTasks.filter((task) => !task.startDate && !task.deadline);
+        return allTasks.filter((task) => !task.startDate && !task.deadline && !task.somedayAt);
     }, [allTasks]);
 
     const upcomingTasks = useMemo(() => {
@@ -110,7 +110,8 @@ export const useDailyTasks = (selectedDate: Date) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return allTasks.filter((task) => {
-            if (!task.startDate) return false;
+            // Someday tasks never count as waiting
+            if (!task.startDate || task.somedayAt) return false;
             const taskStartDate = new Date(task.startDate);
             taskStartDate.setHours(0, 0, 0, 0);
             const isPastStart = taskStartDate < today;
@@ -123,7 +124,7 @@ export const useDailyTasks = (selectedDate: Date) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return allTasks.filter((task) => {
-            if (!task.deadline) return false;
+            if (!task.deadline || task.somedayAt) return false;
             const taskDeadline = new Date(task.deadline);
             taskDeadline.setHours(0, 0, 0, 0);
             return taskDeadline < today;

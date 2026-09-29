@@ -29,7 +29,6 @@ import {
     CalendarBlank,
     DownloadSimple,
     CheckCircle,
-    ArrowCounterClockwise
 } from "phosphor-react-native";
 
 type DrawerProps = {
@@ -114,7 +113,6 @@ const DrawerContent = React.memo(({
         if (pathname.includes("/calendar")) return "Calendar";
         if (pathname.includes("/analytics")) return "Analytics";
         if (pathname.includes("/completed")) return "Completed Tasks";
-        if (pathname.includes("/released")) return "Released";
         if (pathname.includes("/voice")) return "Voice Dump";
         if (pathname === "/(logged-in)/(tabs)/(task)" || pathname === "/") {
             // On home route, use workspace selection
@@ -345,13 +343,6 @@ const DrawerContent = React.memo(({
                         selected={currentSelected}
                         icon={<CheckCircle size={20} color={ThemedColor.primary} weight="regular" />}
                         onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/completed")}
-                        onLongPress={() => {}}
-                    />
-                    <DrawerItem
-                        title="Released"
-                        selected={currentSelected}
-                        icon={<ArrowCounterClockwise size={20} color={ThemedColor.primary} weight="regular" />}
-                        onPress={() => handleNavigate("/(logged-in)/(tabs)/(task)/released")}
                         onLongPress={() => {}}
                     />
                 </View>

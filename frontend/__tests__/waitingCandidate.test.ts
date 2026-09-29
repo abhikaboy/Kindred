@@ -1,4 +1,4 @@
-import { daysWaiting, fogCandidates, isPassedPlan, pickWaitingCandidate } from "@/utils/waitingCandidate";
+import { daysWaiting, fogCandidates, isPassedPlan, isSomeday, pickWaitingCandidate } from "@/utils/waitingCandidate";
 
 const NOW = new Date(2026, 8, 28, 12);
 const ago = (n: number) => new Date(NOW.getTime() - n * 86400_000).toISOString();
@@ -65,5 +65,30 @@ describe("fogCandidates", () => {
             { id: "fresh2", deadline: ago(2) },
         ];
         expect(fogCandidates(tasks, NOW).map((t) => t.id)).toEqual(["old0", "old1", "old2", "old3"]);
+    });
+});
+
+describe("someday", () => {
+    it("is someday only when somedayAt is set", () => {
+        expect(isSomeday({ somedayAt: ago(1) })).toBe(true);
+        expect(isSomeday({ somedayAt: null })).toBe(false);
+        expect(isSomeday({})).toBe(false);
+    });
+
+    it("never picks a someday task, even with an old start day or many reschedules", () => {
+        const tasks = [
+            { id: "someday-start", startDate: ago(40), somedayAt: ago(1) },
+            { id: "someday-resched", rescheduleCount: 9, somedayAt: ago(2) },
+        ];
+        expect(pickWaitingCandidate(tasks, { now: NOW })).toBeNull();
+        expect(pickWaitingCandidate([...tasks, { id: "waiting", deadline: ago(10) }], { now: NOW })?.id).toBe("waiting");
+    });
+
+    it("leaves someday tasks out of the fog and its threshold", () => {
+        const waiting = Array.from({ length: 5 }, (_, i) => ({ id: `w${i}`, deadline: ago(20) }));
+        const someday = Array.from({ length: 3 }, (_, i) => ({ id: `s${i}`, startDate: ago(30), somedayAt: ago(1) }));
+        expect(fogCandidates([...waiting, ...someday], NOW)).toEqual([]);
+        const more = [...waiting, { id: "w5", deadline: ago(20) }, ...someday];
+        expect(fogCandidates(more, NOW).map((t) => t.id)).toEqual(["w0", "w1", "w2", "w3", "w4", "w5"]);
     });
 });

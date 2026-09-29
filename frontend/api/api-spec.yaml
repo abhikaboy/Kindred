@@ -6498,6 +6498,93 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/{category}/{id}/someday:
+        post:
+            tags:
+                - tasks
+            summary: Move a task to Someday
+            description: Clears the task's start date, start time, deadline, plan and unsent reminders. Optionally appends breakdown steps to the checklist.
+            operationId: set-task-someday
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetTaskSomedayInputBody'
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - tasks
+            summary: Take a task out of Someday
+            operationId: clear-task-someday
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: category
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskDocument'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/{category}/{id}/tags:
         patch:
             tags:
@@ -7454,6 +7541,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/GetReleasedTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/someday:
+        get:
+            tags:
+                - tasks
+            summary: List Someday tasks
+            description: Undated tasks the user moved to Someday, most recent first. Released tasks are left out.
+            operationId: get-someday-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetSomedayTasksOutputBody'
                 default:
                     description: Error
                     content:
@@ -10909,6 +11022,10 @@ components:
                     type: string
                 sessionTrackable:
                     type: boolean
+                somedayAt:
+                    type: string
+                    description: When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+                    format: date-time
                 source:
                     type: string
                 startDate:
@@ -11007,6 +11124,9 @@ components:
                         $ref: '#/components/schemas/Reminder'
                 sessionTrackable:
                     type: boolean
+                someday:
+                    type: boolean
+                    description: 'Create the task as Someday: undated, with no default start date'
                 startDate:
                     type: string
                     format: date-time
@@ -12641,6 +12761,23 @@ components:
             required:
                 - reports
                 - total
+        GetSomedayTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetSomedayTasksOutputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+            required:
+                - tasks
         GetTaskPredictionsOutputBody:
             type: object
             additionalProperties: false
@@ -15352,6 +15489,23 @@ components:
                 - step
                 - size
                 - at
+        SetTaskSomedayInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SetTaskSomedayInputBody.json
+                    readOnly: true
+                steps:
+                    type: array
+                    description: Breakdown steps to append to the checklist
+                    items:
+                        type: string
+                    maxItems: 6
         SetWorkspacePushEnabledInputBody:
             type: object
             additionalProperties: false
@@ -15804,6 +15958,10 @@ components:
                     type: string
                 sessionTrackable:
                     type: boolean
+                somedayAt:
+                    type: string
+                    description: When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+                    format: date-time
                 source:
                     type: string
                 startDate:

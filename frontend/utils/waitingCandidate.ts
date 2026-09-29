@@ -17,7 +17,11 @@ export type WaitingTask = {
     plan?: { at?: string } | null;
     parkedAt?: string | null;
     releasedAt?: string | null;
+    somedayAt?: string | null;
 };
+
+/** Someday tasks are undated by choice: never waiting, never nudged. */
+export const isSomeday = (task: { somedayAt?: string | null }): boolean => !!task.somedayAt;
 
 const startOfDay = (d: Date) => {
     const out = new Date(d);
@@ -59,7 +63,7 @@ type Options = { now?: Date; snoozedIds?: Set<string> };
 
 export function pickWaitingCandidate(tasks: WaitingTask[], { now = new Date(), snoozedIds }: Options = {}) {
     const eligible = tasks.filter((t) => {
-        if (t.releasedAt || isInPlan(t, now) || snoozedIds?.has(t.id)) return false;
+        if (t.releasedAt || isSomeday(t) || isInPlan(t, now) || snoozedIds?.has(t.id)) return false;
         if (t.parkedAt && now.getTime() - new Date(t.parkedAt).getTime() < PARK_QUIET_DAYS * DAY_MS) return false;
         return isSevere(t, now);
     });
@@ -70,7 +74,7 @@ export function pickWaitingCandidate(tasks: WaitingTask[], { now = new Date(), s
 
 /** Tasks "Clear the fog" offers to release; empty unless the waiting pile is past the threshold. */
 export function fogCandidates(tasks: WaitingTask[], now: Date = new Date()): WaitingTask[] {
-    const waiting = tasks.filter((t) => !t.releasedAt && !isInPlan(t, now));
+    const waiting = tasks.filter((t) => !t.releasedAt && !isSomeday(t) && !isInPlan(t, now));
     if (waiting.length <= FOG_THRESHOLD) return [];
     return waiting.filter((t) => daysWaiting(t, now) >= FOG_MIN_AGE_DAYS);
 }

@@ -1,7 +1,20 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Screen } from "@/components/modals/CreateModal";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import type { Task } from "@/api/types";
+
+export enum Screen {
+    STANDARD,
+    NEW_CATEGORY,
+    EDIT,
+    DEADLINE,
+    RECURRING,
+    STARTDATE,
+    REMINDER,
+    COLLABORATORS,
+    INTEGRATION,
+    SELECT_WORKSPACE,
+}
 
 type CreateModalContextType = {
     visible: boolean;
@@ -16,6 +29,8 @@ export type CreateModalConfig = {
     screen?: Screen;
     categoryId?: string;
     isBlueprint?: boolean;
+    /** Edit only: the task being saved, so it never depends on the last-tapped card. */
+    task?: Task;
 };
 
 const CreateModalContext = createContext<CreateModalContextType | undefined>(undefined);

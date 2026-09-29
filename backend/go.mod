@@ -22,7 +22,7 @@ require (
 	github.com/gofiber/contrib/otelfiber/v2 v2.2.3
 	github.com/gofiber/contrib/socketio v1.1.6
 	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/lmittmann/tint v1.1.2
 	github.com/posthog/posthog-go v1.10.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
@@ -37,6 +37,14 @@ require (
 	golang.org/x/oauth2 v0.35.0
 	google.golang.org/api v0.265.0
 	google.golang.org/grpc v1.80.0
+)
+
+require (
+	github.com/google/jsonschema-go v0.4.3 // indirect
+	github.com/modelcontextprotocol/go-sdk v1.8.0
+	github.com/segmentio/asm v1.1.3 // indirect
+	github.com/segmentio/encoding v0.5.4 // indirect
+	golang.org/x/time v0.15.0 // indirect
 )
 
 require (

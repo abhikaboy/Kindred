@@ -13,7 +13,8 @@ import { useTaskActions } from "@/contexts/tasksContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import EncourageModal from "../modals/EncourageModal";
 import CongratulateModal from "../modals/CongratulateModal";
-import { Sparkle, Repeat, Camera, Clock, CalendarBlank } from "phosphor-react-native";
+import { Sparkle, Repeat, Camera, Clock, CalendarBlank, Planet } from "phosphor-react-native";
+import { isSomedayTask } from "@/hooks/useSomedayTasks";
 import { getTimeChipInfo } from "@/utils/timeChip";
 import TaskChip from "./TaskChip";
 import { getIntegrationIcon } from "@/utils/integrationUtils";
@@ -150,6 +151,9 @@ const TaskCard = ({
         () => getTimeChipInfo(task, detailed),
         [task?.deadline, task?.startDate, task?.startTime, task?.isPhantom, task?.nextGenerated, detailed]
     );
+
+    // Someday tasks carry less weight: a quiet "Someday" chip instead of a date, no priority dot.
+    const someday = isSomedayTask(task);
 
     const getPriorityColor = (level: PriorityLevel) => {
         switch (level) {
@@ -386,9 +390,17 @@ const TaskCard = ({
                         </ThemedText>
                         {inlineComponent && <View style={styles.inlineWrapper}>{inlineComponent}</View>}
                     </View>
-                    {!encourage && !!(timeChip || task?.recurring) && (
+                    {!encourage && !!(someday || timeChip || task?.recurring) && (
                         <View style={styles.metaRow}>
-                            {timeChip && (
+                            {someday && (
+                                <TaskChip
+                                    inline
+                                    label="Someday"
+                                    Icon={Planet}
+                                    color={encouraged ? encColors.secondaryText : ThemedColor.caption}
+                                />
+                            )}
+                            {!someday && timeChip && (
                                 <TaskChip
                                     inline
                                     label={timeChip.label}
@@ -440,7 +452,7 @@ const TaskCard = ({
                                 <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
                             ) : (
                                 <View
-                                    style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                    style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : someday ? getPriorityColor("none") : getPriorityColor(PRIORITY_MAP[priority]) }]}
                                 />
                             )}
                         </>
@@ -534,6 +546,7 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
         prevProps.task?.deadline === nextProps.task?.deadline &&
         prevProps.task?.startDate === nextProps.task?.startDate &&
         prevProps.task?.startTime === nextProps.task?.startTime &&
+        prevProps.task?.somedayAt === nextProps.task?.somedayAt &&
         prevProps.task?.active === nextProps.task?.active &&
         prevProps.task?.recurring === nextProps.task?.recurring &&
         prevProps.task?.flexInfo?.instanceNumber === nextProps.task?.flexInfo?.instanceNumber &&

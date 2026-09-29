@@ -186,34 +186,10 @@ func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*Crea
 		}
 	}
 
-	// Auto-inject a FOLLOW_UP reminder if the task has a deadline or startTime
-	followUp := BuildFollowUpReminder(task.Deadline, task.StartTime)
-	if followUp != nil {
-		task.Reminders = append(task.Reminders, followUp)
+	if taskParams.Someday && task.Recurring {
+		return nil, huma.Error400BadRequest("A Someday task can't repeat", nil)
 	}
-
-	// Frontend now sends a pre-combined startDate (date + time in local timezone),
-	// so we only need to handle the fallback when startDate is nil.
-	if task.StartDate == nil {
-		// Set default StartDate to today if not provided at all
-		now := time.Now()
-
-		// If we have a StartTime, combine it with today's date
-		if task.StartTime != nil {
-			hour, min, sec := task.StartTime.Clock()
-			combinedDateTime := time.Date(
-				now.Year(),
-				now.Month(),
-				now.Day(),
-				hour, min, sec, 0,
-				now.Location(),
-			)
-			task.StartDate = &combinedDateTime
-		} else {
-			// No time specified, just use today's date
-			task.StartDate = &now
-		}
-	}
+	applyCreateSchedule(&task, taskParams.Someday, time.Now())
 
 	// Handle recurring task template creation if this is a recurring task
 	if task.Recurring {

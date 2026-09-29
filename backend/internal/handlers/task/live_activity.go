@@ -21,6 +21,7 @@ func (s *Service) GetTasksWithStartTimeInWindow(windowStart, windowEnd time.Time
 		"active":        true,
 		"timeCompleted": nil,
 		"releasedAt":    nil,
+		"somedayAt":     nil,
 		"startTime": bson.M{
 			"$gte": windowStart,
 			"$lte": windowEnd,
@@ -49,6 +50,7 @@ func (s *Service) GetTasksWithDeadlineApproaching(windowStart, windowEnd time.Ti
 		"active":        true,
 		"timeCompleted": nil,
 		"releasedAt":    nil,
+		"somedayAt":     nil,
 		"deadline": bson.M{
 			"$gte": windowStart,
 			"$lte": windowEnd,

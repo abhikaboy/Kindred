@@ -80,6 +80,7 @@ func validateEnvironment(ctx context.Context, client *mongo.Client, environment 
 // commands in cmd/db.
 var requiredCollections = []string{
 	"contact_links",
+	"mcp_tokens",
 }
 
 func setupCollections(ctx context.Context, db *mongo.Database) (map[string]*mongo.Collection, error) {

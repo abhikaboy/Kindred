@@ -14,7 +14,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { markAsCompletedAPI, activateTaskAPI, setWorkingAPI } from "@/api/task";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
-import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { hideToastable, showToastable } from "react-native-toastable";
 import TaskToast from "../ui/TaskToast";
 import DefaultToast from "../ui/DefaultToast";
@@ -26,8 +25,9 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
-import DeadlineBottomSheetModal from "../modals/DeadlineBottomSheetModal";
-import ReminderBottomSheetModal from "../modals/ReminderBottomSheetModal";
+import DeadlineStage from "../modals/create/composer/DeadlineStage";
+import ReminderStage from "../modals/create/composer/ReminderStage";
+import type { Reminder } from "@/hooks/useReminder";
 
 type Props = {
     redirect?: boolean;
@@ -94,7 +94,6 @@ const SwipableTaskCard = ({
     const fallbackCategoryName = useTasksSelector((s) =>
         categoryName || task.categoryName ? null : (s.categories?.find((cat) => cat.id === categoryId)?.name ?? null)
     );
-    const { loadTaskData } = useTaskCreationActions();
     const ThemedColor = useThemeColor();
     const { deleteWithUndo, alertElement } = useUndoableDelete();
     const { capture } = useAnalytics();
@@ -107,18 +106,15 @@ const SwipableTaskCard = ({
     const swipeableRef = useRef<SwipeableMethods>(null);
     const mountSwipeHint = showSwipeHint !== false && !tutorial && !peekClaimed && !isHintKnownDone(SWIPE_HINT_KEY);
 
-    const openDeadline = () => {
-        loadTaskData(task);
-        setShowDeadlineModal(true);
-    };
-
-    const openReminder = () => {
-        loadTaskData(task);
-        setShowReminderModal(true);
-    };
+    const openDeadline = () => setShowDeadlineModal(true);
+    const openReminder = () => setShowReminderModal(true);
 
     const handleDeadlineUpdate = (deadline: Date | null) => {
         updateTask(categoryId, task.id, { deadline: deadline?.toISOString() || "" });
+    };
+
+    const handleReminderUpdate = (reminders: Reminder[]) => {
+        updateTask(categoryId, task.id, { reminders } as any);
     };
 
     const finalCategoryName =
@@ -299,9 +295,10 @@ const SwipableTaskCard = ({
             {mountSwipeHint && <SwipeHintPeek swipeableRef={swipeableRef} />}
 
             {showDeadlineModal && (
-                <DeadlineBottomSheetModal
+                <DeadlineStage
                     visible={showDeadlineModal}
                     setVisible={setShowDeadlineModal}
+                    task={task}
                     taskId={task.id}
                     categoryId={categoryId}
                     onDeadlineUpdate={handleDeadlineUpdate}
@@ -309,11 +306,13 @@ const SwipableTaskCard = ({
             )}
 
             {showReminderModal && (
-                <ReminderBottomSheetModal
+                <ReminderStage
                     visible={showReminderModal}
                     setVisible={setShowReminderModal}
+                    task={task}
                     taskId={task.id}
                     categoryId={categoryId}
+                    onReminderUpdate={handleReminderUpdate}
                 />
             )}
 

@@ -55,12 +55,15 @@ export function useSubmitNewTask() {
         resetTaskCreation,
     } = useTaskCreation();
 
-    return async (categoryId: string) => {
+    return async (categoryId: string, { someday = false }: { someday?: boolean } = {}) => {
         const autoCategorize = categoryId === AUTO_CATEGORY_ID;
         // Trim trailing newlines and whitespace from task name
         const content = taskName.replace(/[\n\r]+$/g, "").trim();
-        const start = (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString();
-        const reminderBody = reminders.map((reminder) => ({
+        // Someday tasks are undated: no start, deadline or reminders
+        const start = someday
+            ? undefined
+            : (startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate)?.toISOString();
+        const reminderBody = (someday ? [] : reminders).map((reminder) => ({
             ...reminder,
             triggerTime: reminder.triggerTime.toISOString(),
         }));
@@ -77,8 +80,9 @@ export function useSubmitNewTask() {
             checklist,
             notes,
             startDate: start,
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
+            startTime: someday ? undefined : startTime?.toISOString(),
+            deadline: someday ? undefined : deadline?.toISOString(),
+            somedayAt: someday ? new Date().toISOString() : undefined,
             reminders: reminderBody,
             recurFrequency: recurring ? recurFrequency : undefined,
             recurDetails: recurring ? (recurDetails as any) : undefined,
@@ -104,13 +108,16 @@ export function useSubmitNewTask() {
             checklist,
             notes,
             startDate: start,
-            startTime: startTime?.toISOString(),
-            deadline: deadline?.toISOString(),
+            startTime: someday ? undefined : startTime?.toISOString(),
+            deadline: someday ? undefined : deadline?.toISOString(),
             reminders: reminderBody,
             integration: integration || undefined,
             taggedUserIds: taggedUsers.length > 0 ? taggedUsers.map((u) => u.id) : undefined,
         };
-        if (recurring || flexDetails) {
+        if (someday) {
+            postBody.someday = true;
+            capture(AnalyticsEvents.TASK_SOMEDAY, { source: "composer" });
+        } else if (recurring || flexDetails) {
             postBody.recurFrequency = recurFrequency;
             postBody.recurring = true;
             const details = { ...recurDetails } as any;

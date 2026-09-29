@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity, View, StyleSheet } from "react-native";
 import * as PhosphorIcons from "phosphor-react-native";
-import { CalendarBlank } from "phosphor-react-native";
+import { CalendarBlank, Planet } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { Workspace } from "@/api/types";
@@ -11,6 +11,10 @@ type Props = {
     selected: string;
     onSelectCalendar?: () => void;
     onSelectWorkspace: (name: string) => void;
+    // Someday smart view (not a real workspace). Omit in create flows so it
+    // can never be picked as a destination.
+    onSelectSomeday?: () => void;
+    somedaySelected?: boolean;
 };
 
 const activeTaskCount = (workspace: Workspace) =>
@@ -22,7 +26,14 @@ const activeTaskCount = (workspace: Workspace) =>
 
 // Glassy list shown above the pencil tab: Calendar pinned on top, then every
 // non-blueprint workspace. Pure/presentational — navigation is wired by the parent.
-export function WorkspaceSwitcherList({ workspaces, selected, onSelectCalendar, onSelectWorkspace }: Props) {
+export function WorkspaceSwitcherList({
+    workspaces,
+    selected,
+    onSelectCalendar,
+    onSelectWorkspace,
+    onSelectSomeday,
+    somedaySelected,
+}: Props) {
     const ThemedColor = useThemeColor();
 
     return (
@@ -66,6 +77,14 @@ export function WorkspaceSwitcherList({ workspaces, selected, onSelectCalendar, 
                         />
                     );
                 })}
+            {onSelectSomeday && (
+                <SwitcherRow
+                    label="Someday"
+                    selected={somedaySelected}
+                    icon={<Planet size={18} color={ThemedColor.caption} weight="regular" />}
+                    onPress={onSelectSomeday}
+                />
+            )}
         </View>
     );
 }

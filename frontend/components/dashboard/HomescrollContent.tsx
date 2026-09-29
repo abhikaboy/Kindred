@@ -58,6 +58,7 @@ import AutoEnrichCard from "@/components/dashboard/AutoEnrichCard";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
 import type { HomeTour } from "@/hooks/useHomeTour";
 import { hapticLight } from "@/utils/haptics";
+import { router, type Href } from "expo-router";
 
 interface HomeScrollContentProps {
     workspaces: any[];
@@ -609,6 +610,13 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                                         )}
                                     </View>
                                 ))}
+                            {/* Someday smart view: pinned after real workspaces, no count */}
+                            <WorkspaceDrawerItem
+                                title="Someday"
+                                selected=""
+                                workspaceIcon="Planet"
+                                onPress={() => router.push("/(logged-in)/(tabs)/(task)/someday" as Href)}
+                            />
                         </View>
                     )}
                     </View>

@@ -171,7 +171,7 @@ func (s *Service) GetTasksWithPastReminders() ([]TaskDocument, error) {
 	ctx := context.Background()
 
 	pipeline := getBaseTaskPipeline()
-	pipeline = append(pipeline, bson.D{{"$match", bson.M{"releasedAt": nil, "reminders": bson.M{
+	pipeline = append(pipeline, bson.D{{"$match", bson.M{"releasedAt": nil, "somedayAt": nil, "reminders": bson.M{
 		"$exists": true,
 		"$elemMatch": bson.M{
 			"sent": false,

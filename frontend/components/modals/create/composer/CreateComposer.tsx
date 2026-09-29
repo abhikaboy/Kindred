@@ -42,7 +42,9 @@ import {
     Stop,
     X,
     UsersThree,
+    Planet,
 } from "phosphor-react-native";
+import { ObjectId } from "bson";
 import { describeSchedule } from "@shared/taskSuggest";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -61,6 +63,12 @@ import { AUTO_CATEGORY_ID, useSubmitNewTask } from "@/hooks/useSubmitNewTask";
 import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
+import { useBlueprints } from "@/contexts/blueprintContext";
+import CustomAlert, { type AlertButton } from "@/components/modals/CustomAlert";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
+import type { Task } from "@/api/types";
+import { persistTaskEdit, persistTemplateEdit, buildBlueprintTask } from "./persistEdit";
 import { formatHandle } from "@/utils/handle";
 import CategoryPicker, { categoryColor } from "./CategoryPicker";
 import PropertyChip, { type ChipState } from "./PropertyChip";
@@ -72,7 +80,7 @@ import ReminderPanel from "./ReminderPanel";
 import IntegrationPanel from "./IntegrationPanel";
 import { listCategories, rankCategories, type CategoryOption } from "./categoryOptions";
 
-type Panel = "start" | "due" | "repeat" | "priority" | "difficulty" | "reminder" | "tag" | "integration";
+export type Panel = "start" | "due" | "repeat" | "priority" | "difficulty" | "reminder" | "tag" | "integration";
 
 const FADE = { duration: 220, easing: Easing.out(Easing.cubic) };
 const ROW_TRANSITION = LinearTransition.duration(200).easing(Easing.out(Easing.cubic));
@@ -98,6 +106,14 @@ interface Props {
     tutorial?: boolean;
     /** Tutorial only: workspace name shown on the locked destination card. */
     tutorialWorkspaceLabel?: string;
+    /** Edit the task loaded into the creation context instead of adding one. */
+    edit?: boolean;
+    /** Edit only: the task being saved; falls back to the tasks context's task. */
+    editTask?: Task | null;
+    /** Files into the blueprint being built (local only) rather than a workspace. */
+    isBlueprint?: boolean;
+    /** Opens with this property's panel showing. */
+    initialPanel?: Panel;
 }
 
 // The caller's typewriter ticks faster than this, so a pause means it's done
@@ -113,13 +129,26 @@ const TUTORIAL_TITLE_SETTLE_MS = 600;
  * Task fields live in the task-creation context, so the old sheet's
  * screens drop straight into the panels.
  */
-export default function CreateComposer({ visible, setVisible, categoryId, tutorial = false, tutorialWorkspaceLabel }: Props) {
+export default function CreateComposer({
+    visible,
+    setVisible,
+    categoryId,
+    tutorial = false,
+    tutorialWorkspaceLabel,
+    edit = false,
+    editTask,
+    isBlueprint = false,
+    initialPanel,
+}: Props) {
     const ThemedColor = useThemeColor();
     // Follows the app's theme setting (applied through Appearance)
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const styles = useMemo(() => makeStyles(ThemedColor), [ThemedColor]);
     const insets = useSafeAreaInsets();
-    const { workspaces, selected, addToWorkspace } = useTasks();
+    const { workspaces, selected, addToWorkspace, updateTask, task: contextTask } = useTasks();
+    const { blueprintCategories, addBlueprintCategory, addTaskToBlueprintCategory } = useBlueprints();
+    const { capture } = useAnalytics();
+    const [alert, setAlert] = useState<{ title: string; message: string; buttons: AlertButton[] } | null>(null);
     const { request } = useRequest();
     const submitNewTask = useSubmitNewTask();
     const { filter: filterFriends } = useFriendsForMention();
@@ -153,7 +182,12 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
         taggedUsers,
         setTaggedUsers,
         setCopySourceTaskId,
+        setIsBlueprint,
+        resetTaskCreation,
     } = useTaskCreation();
+    const creation = useTaskCreation();
+    const creationRef = useRef(creation);
+    creationRef.current = creation;
 
     const [mounted, setMounted] = useState(visible);
     const opacity = useSharedValue(0);
@@ -178,12 +212,21 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
     const nameRef = useRef(taskName);
     nameRef.current = taskName;
 
-    const options = useMemo(() => listCategories(workspaces), [workspaces]);
+    const options = useMemo(
+        () =>
+            isBlueprint
+                ? blueprintCategories.map((c) => ({ id: c.id, name: c.name, workspace: "Blueprint" }))
+                : listCategories(workspaces),
+        [isBlueprint, blueprintCategories, workspaces]
+    );
     // New categories land in the workspace being viewed, if it can hold one
-    const homeWorkspace =
-        workspaces.find((w) => w.name === selected && !w.isBlueprint)?.name ??
-        workspaces.find((w) => !w.isBlueprint)?.name ??
-        "Personal";
+    const homeWorkspace = isBlueprint
+        ? "Blueprint"
+        : (workspaces.find((w) => w.name === selected && !w.isBlueprint)?.name ??
+          workspaces.find((w) => !w.isBlueprint)?.name ??
+          "Personal");
+    // Edits and blueprints file into a real category, so there's no Auto Sort
+    const allowAuto = !edit && !isBlueprint;
 
     const {
         token: typedToken,
@@ -192,10 +235,22 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
         replace: replaceToken,
     } = useInlineTrigger(taskName, setTaskName, ["@"]);
     // The tutorial title is typed for the user, so it never opens "@"
-    const token = tutorial ? null : typedToken;
+    // Tags only go out with a new task, so edits and blueprints never open "@" either
+    const canTag = !tutorial && !edit && !isBlueprint;
+
+    // Someday: an undated new task. Any date or repeat replaces it, since the server rejects the mix
+    const [someday, setSomeday] = useState(false);
+    const allowSomeday = !edit && !isBlueprint;
+    useEffect(() => {
+        if (visible) setSomeday(false);
+    }, [visible]);
+    useEffect(() => {
+        if (startDate || deadline || recurring || flexDetails) setSomeday(false);
+    }, [startDate, deadline, recurring, flexDetails]);
+    const token = canTag ? typedToken : null;
 
     // An empty title keeps the tutorial free of guesses: no schedule, priority or category
-    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(tutorial ? "" : taskName);
+    const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(tutorial || edit ? "" : taskName);
     const guess = fuzzy?.categoryId ? options.find((o) => o.id === fuzzy.categoryId) : undefined;
 
     const { listening, volume, toggleMic, cancelListening, voiceModeRef } = useVoiceCapture({
@@ -230,7 +285,10 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                 : null;
         setCategory(opened);
         // A prefilled task (copy, calendar) arrives with values someone chose
-        setTouched({ priority: priority !== 1, value: value !== 1 });
+        setTouched(edit ? { priority: true, value: true } : { priority: priority !== 1, value: value !== 1 });
+        // Same as the old sheet: blueprint mode picks its own default start date
+        if (!edit) setIsBlueprint(isBlueprint);
+        setPanel(initialPanel ?? null);
         opacity.value = withTiming(1, FADE);
         // Only opening resets this session; options/priority/value are read once
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -246,6 +304,9 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
         setApplied(noAppliedSchedule());
         // A cancelled copy must not mark the tag "copied" on a later create
         setCopySourceTaskId(null);
+        // An edit's fields must not prefill the next new task
+        if (edit) resetTaskCreation();
+        setAlert(null);
         setVisible(false);
     };
 
@@ -359,6 +420,18 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
     };
 
     const createCategory = async (name: string): Promise<CategoryOption | null> => {
+        if (isBlueprint) {
+            const id = new ObjectId().toString();
+            addBlueprintCategory({
+                id,
+                name,
+                workspaceName: selected || "Personal",
+                lastEdited: new Date().toISOString(),
+                tasks: [],
+                user: "",
+            });
+            return { id, name, workspace: homeWorkspace };
+        }
         try {
             const response = await request("POST", `/user/categories`, { name, workspaceName: homeWorkspace });
             addToWorkspace(homeWorkspace, response);
@@ -395,12 +468,62 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
     const hasTitle = taskName.trim().length > 0;
     // An explicit pick wins; otherwise file where the guess says, like quick capture
     const destinationId = category?.id ?? guess?.id ?? AUTO_CATEGORY_ID;
+    const taskToEdit = editTask ?? contextTask;
+
+    const saveEdit = () => {
+        if (!taskToEdit) return close();
+        // Auto Sort isn't offered here, so no pick means the task's own category
+        const targetCategoryId = category?.id || taskToEdit.categoryID;
+        const fields = creationRef.current;
+        const persist = () =>
+            persistTaskEdit(fields, taskToEdit, targetCategoryId, updateTask).then((ok) => {
+                if (ok) capture(AnalyticsEvents.TASK_UPDATED, { source: "edit_modal" });
+            });
+        if (!taskToEdit.templateID) {
+            persist();
+            return close();
+        }
+        setAlert({
+            title: "Update Recurring Task",
+            message: "Do you want to update only this occurrence or all future tasks?",
+            buttons: [
+                {
+                    text: "Only This Task",
+                    onPress: () => {
+                        persist();
+                        close();
+                    },
+                },
+                {
+                    text: "All Future Tasks",
+                    onPress: () => {
+                        persist().then(() => persistTemplateEdit(fields, taskToEdit));
+                        close();
+                    },
+                },
+                { text: "Cancel", style: "cancel" },
+            ],
+        });
+    };
 
     const submit = () => {
         if (!hasTitle || closingRef.current) return;
+        // A blueprint task needs a blueprint category; send them to pick or make one
+        if (isBlueprint && !category) return startPicking();
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         cancelListening();
-        submitNewTask(destinationId);
+        if (edit) return saveEdit();
+        if (isBlueprint && category) {
+            addTaskToBlueprintCategory(category.id, buildBlueprintTask(creationRef.current, category.id));
+            capture(AnalyticsEvents.TASK_CREATED, {
+                source: "create_modal",
+                has_deadline: !!deadline,
+                has_checklist: false,
+            });
+            resetTaskCreation();
+        } else {
+            submitNewTask(destinationId, { someday: allowSomeday && someday });
+        }
         close();
     };
 
@@ -439,10 +562,12 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
             {/* Core: when and how urgent, always labeled */}
             <PropertyChip
                 tier="core"
-                Icon={CalendarBlank}
-                state={state(startSet)}
+                Icon={someday ? Planet : CalendarBlank}
+                state={state(startSet || someday)}
                 label={
-                    startDate
+                    someday
+                      ? "Someday"
+                      : startDate
                         ? startTime
                             ? `${fmtDay(startDate)}, ${fmtTime(startTime)}`
                             : fmtDay(startDate)
@@ -452,6 +577,7 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                 onPress={() => openPanel("start")}
                 onClear={() => {
                     dismiss();
+                    setSomeday(false);
                     setStartDate(null);
                     setStartTime(null);
                 }}
@@ -540,7 +666,7 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                 }}
                 accessibilityLabel="Difficulty"
             />
-            {!tutorial && (
+            {canTag && (
                 <PropertyChip
                     tier="extra"
                     Icon={UsersThree}
@@ -673,7 +799,9 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                     ? `Category: ${category.name}. Change`
                     : guess
                       ? `Auto Sort, suggests ${guess.name}. Change`
-                      : "Auto Sort. Pick a category"
+                      : allowAuto
+                        ? "Auto Sort. Pick a category"
+                        : "Pick a category"
             }>
             {destination ? (
                 <View
@@ -688,14 +816,16 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
             )}
             <View style={styles.fill}>
                 <ThemedText type="default" numberOfLines={1} style={styles.destinationName}>
-                    {destination ? destination.name : "Auto Sort"}
+                    {destination ? destination.name : allowAuto ? "Auto Sort" : "Pick a category"}
                 </ThemedText>
                 <ThemedText type="caption" numberOfLines={1} style={styles.pillCaption}>
                     {category
                         ? category.workspace || "Category"
                         : guess
                           ? `Suggested · ${guess.workspace}`
-                          : "Files it for you"}
+                          : allowAuto
+                            ? "Files it for you"
+                            : "Required"}
                 </ThemedText>
             </View>
             <CaretDown size={14} color={STAGE.muted} weight="bold" />
@@ -708,6 +838,19 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
     const optionSurface = (selected: boolean) => ({ backgroundColor: selected ? STAGE.selected : STAGE.fill });
     const optionInk = (selected: boolean) => ({ color: selected ? STAGE.onSelected : STAGE.text });
 
+    const chooseSomeday = () => {
+        Haptics.selectionAsync();
+        dismiss();
+        setStartDate(null);
+        setStartTime(null);
+        setDeadline(null);
+        setReminders([]);
+        setRecurring(false);
+        setFlexDetails(null);
+        setSomeday(true);
+        closePanel();
+    };
+
     const panelContent = (() => {
         switch (panel) {
             case "start":
@@ -718,6 +861,8 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                         onTargetChange={(t) => setPanel(t)}
                         onTouched={dismiss}
                         onDone={closePanel}
+                        someday={someday}
+                        onSomeday={allowSomeday ? chooseSomeday : undefined}
                     />
                 );
             case "repeat":
@@ -836,7 +981,7 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
 
     const addButton = (
         <PrimaryButton
-            title="Add"
+            title={edit ? "Save" : "Add"}
             onPress={submit}
             disabled={!hasTitle}
             style={{
@@ -855,7 +1000,9 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
             statusBarTranslucent
             onRequestClose={onRequestClose}
             // Focus once presented; autoFocus fires before the modal is on screen
-            onShow={focusTitle}>
+            onShow={() => {
+                if (!panelRef.current) focusTitle();
+            }}>
             <CaptureBackdrop opacity={opacity} />
 
             <Pressable
@@ -875,7 +1022,7 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                             onPress={close}
                             hitSlop={8}
                             accessibilityRole="button"
-                            accessibilityLabel="Close without adding"
+                            accessibilityLabel={edit ? "Close without saving" : "Close without adding"}
                             style={[styles.closeButton, { backgroundColor: STAGE.fillRaised }]}>
                             <X size={18} color={STAGE.text} weight="bold" />
                         </TouchableOpacity>
@@ -961,6 +1108,7 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                                 suggestedId={guess?.id}
                                 selectedId={category?.id}
                                 workspace={homeWorkspace}
+                                showAuto={allowAuto}
                                 onPickAuto={() => {
                                     pickCategory(null);
                                     stopPicking();
@@ -1029,6 +1177,15 @@ export default function CreateComposer({ visible, setVisible, categoryId, tutori
                     </View>
                 </Reanimated.View>
             </KeyboardAvoidingView>
+            <CustomAlert
+                visible={alert !== null}
+                setVisible={(v) => {
+                    if (!v) setAlert(null);
+                }}
+                title={alert?.title ?? ""}
+                message={alert?.message}
+                buttons={alert?.buttons}
+            />
         </Modal>
     );
 }

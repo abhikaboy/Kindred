@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "../inputs/PrimaryButton";
-import CreateModal from "@/components/modals/CreateModal";
+import CreateComposer from "@/components/modals/create/composer/CreateComposer";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useBlueprints } from "@/contexts/blueprintContext";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
@@ -89,11 +89,7 @@ const Tasks = ({ data, onUpdate }: Props) => {
                 onPress={() => setShowCreateModal(true)}
             />
 
-            <CreateModal
-                visible={showCreateModal}
-                setVisible={setShowCreateModal}
-                isBlueprint={true}
-            />
+            <CreateComposer visible={showCreateModal} setVisible={setShowCreateModal} isBlueprint />
         </View>
     );
 };

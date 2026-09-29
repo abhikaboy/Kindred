@@ -136,7 +136,8 @@ func (s *Service) SetTaskPlan(ctx context.Context, userID, categoryID, taskID pr
 	if len(body.Steps) > 0 {
 		set["tasks.$[t].checklist"] = appendPlanSteps(current.Checklist, step, body.Steps)
 	}
-	update := bson.M{"$set": set}
+	// Planning a Someday task makes it a normal, dated task again.
+	update := bson.M{"$set": set, "$unset": bson.M{"tasks.$[t].somedayAt": ""}}
 	if inc := s.rescheduleInc(ctx, taskID, categoryID, &at, nil); inc != nil {
 		update["$inc"] = inc
 	}
@@ -578,6 +579,7 @@ func (h *Handler) BreakdownSuggestions(ctx context.Context, input *BreakdownSugg
 // RegisterGraceOperations registers plan, park, release and breakdown
 // endpoints. The static paths must come before /{category} routes.
 func RegisterGraceOperations(api huma.API, handler *Handler) {
+	registerSomedayOperations(api, handler)
 	huma.Register(api, huma.Operation{
 		OperationID: "bulk-release-tasks",
 		Method:      http.MethodPost,

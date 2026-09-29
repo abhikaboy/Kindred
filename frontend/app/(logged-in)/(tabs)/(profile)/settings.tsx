@@ -649,6 +649,11 @@ export default function Settings() {
                         onPress={() => router.push('/(logged-in)/(tabs)/(profile)/blocked-users')}
                         icon="ban-outline"
                     />
+                    <SettingsActionRow
+                        label="Released tasks"
+                        onPress={() => router.push('/(logged-in)/(tabs)/(profile)/released')}
+                        icon="archive-outline"
+                    />
                 </SettingsSection>
 
                 <SettingsSection title="RESOURCES">

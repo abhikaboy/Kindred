@@ -16,8 +16,9 @@ import SlidingText from "@/components/ui/SlidingText";
 import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Screen } from "@/components/modals/CreateModal";
+import CategoryComposer from "@/components/modals/create/composer/CategoryComposer";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
+import { sinkSomeday } from "@/hooks/useSomedayTasks";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
@@ -123,6 +124,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
+    const [creatingCategory, setCreatingCategory] = useState(false);
     const [showIconPicker, setShowIconPicker] = useState(false);
     const [focusedCategory, setFocusedCategory] = useState<string>("");
     const [workspaceAction, setWorkspaceAction] = useState<"sort" | "filter" | "group" | null>(null);
@@ -217,7 +219,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
         visibleCategories.forEach((category) => {
             let filtered = byTasks.get(category.tasks);
             if (!filtered) {
-                filtered = applyFilters(category.tasks);
+                // Someday tasks sink below dated ones.
+                filtered = sinkSomeday(applyFilters(category.tasks));
                 byTasks.set(category.tasks, filtered);
             }
             result.set(category.id, filtered);
@@ -318,6 +321,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     return (
         <>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
+            <CategoryComposer visible={creatingCategory} setVisible={setCreatingCategory} workspace={selected} />
             <EditWorkspace
                 editing={editingWorkspace}
                 setEditing={setEditingWorkspace}
@@ -453,7 +457,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             </ThemedText>
                                             <TouchableOpacity
                                                 style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary, alignSelf: "flex-start" }]}
-                                                onPress={() => openModal({ screen: Screen.NEW_CATEGORY })}
+                                                onPress={() => setCreatingCategory(true)}
                                                 activeOpacity={0.7}>
                                                 <FolderPlus size={16} color="#fff" weight="regular" />
                                                 <ThemedText type="smallerDefault" style={{ color: "#fff" }}>

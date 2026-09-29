@@ -101,6 +101,21 @@ var Indexes = []Index{
 			Options: options.Index().SetUnique(true),
 		},
 	},
+	// MCP personal access tokens: lookup by hash on every MCP request, list by owner.
+	{
+		Collection: "mcp_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "token_hash", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("token_hash_unique"),
+		},
+	},
+	{
+		Collection: "mcp_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("user_id_idx"),
+		},
+	},
 	// Referrals collection indexes
 	{
 		Collection: "referrals",

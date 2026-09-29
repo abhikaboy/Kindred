@@ -20,6 +20,8 @@ type Props = {
     selectedId?: string;
     /** Where "Create" puts a new category, and whose categories lead. */
     workspace: string;
+    /** Edits and blueprints need a real category, so they hide Auto Sort. */
+    showAuto?: boolean;
     onPickAuto: () => void;
     onPick: (option: CategoryOption) => void;
     onCreate: (name: string) => void;
@@ -30,7 +32,17 @@ type Props = {
  * a search field. Empty query: Auto Sort, the guess, then every workspace.
  * Typing: ranked matches, then a row to create what was typed.
  */
-const CategoryPicker = ({ options, query, suggestedId, selectedId, workspace, onPickAuto, onPick, onCreate }: Props) => {
+const CategoryPicker = ({
+    options,
+    query,
+    suggestedId,
+    selectedId,
+    workspace,
+    showAuto = true,
+    onPickAuto,
+    onPick,
+    onCreate,
+}: Props) => {
     const { height } = useWindowDimensions();
     const ThemedColor = useThemeColor();
     const q = query.trim();
@@ -43,13 +55,15 @@ const CategoryPicker = ({ options, query, suggestedId, selectedId, workspace, on
         );
         body = (
             <>
-                <Row
-                    auto
-                    name="Auto Sort"
-                    caption="File it for me"
-                    selected={!selectedId}
-                    onPress={onPickAuto}
-                />
+                {showAuto && (
+                    <Row
+                        auto
+                        name="Auto Sort"
+                        caption="File it for me"
+                        selected={!selectedId}
+                        onPress={onPickAuto}
+                    />
+                )}
                 {suggested && (
                     <>
                         <SectionLabel text="Best match" />

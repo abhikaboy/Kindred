@@ -9,6 +9,9 @@ import { releaseTaskAPI, setTaskPlanAPI } from "@/api/plan";
 import { isDayFull } from "@/utils/planCapacity";
 import { passedPlanCaption, sameTimeTomorrow } from "@/utils/planText";
 import { showToast } from "@/utils/showToast";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { AnalyticsEvents } from "@/utils/analytics";
+import { saveForSomeday } from "./BuildPlanSheet";
 import type { Task } from "@/api/types";
 
 type Props = { task: Task };
@@ -17,6 +20,7 @@ type Props = { task: Task };
 const PassedPlanCard = ({ task }: Props) => {
     const ThemedColor = useThemeColor();
     const { allTasks, updateTask, removeFromCategory, addToCategory } = useTasks();
+    const { capture } = useAnalytics();
     const plan = task.plan;
     const categoryId = task.categoryID ?? "";
     if (!plan || !categoryId) return null;
@@ -39,6 +43,18 @@ const PassedPlanCard = ({ task }: Props) => {
                 updateTask(categoryId, task.id, { plan });
                 showToast("Couldn't move it just now", "info");
             });
+    };
+
+    // Keeps the planned step and whatever's still unchecked, as the task's steps
+    const someday = () => {
+        Haptics.selectionAsync();
+        const unchecked = (task.checklist ?? [])
+            .filter((c) => !c.completed && c.content.trim())
+            .sort((a, b) => a.order - b.order)
+            .map((c) => c.content.trim());
+        const steps = [plan.step.trim(), ...unchecked].filter(Boolean);
+        saveForSomeday(task, steps, updateTask);
+        capture(AnalyticsEvents.TASK_SOMEDAY, { source: "passed_card" });
     };
 
     const letGo = () => {
@@ -70,7 +86,13 @@ const PassedPlanCard = ({ task }: Props) => {
                         Break down this task
                     </ThemedText>
                 </TouchableOpacity>
-                <View style={{ flex: 1 }} />
+            </View>
+            <View style={styles.actions}>
+                <TouchableOpacity onPress={someday} hitSlop={8} accessibilityRole="button">
+                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption }}>
+                        Save for someday
+                    </ThemedText>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={letGo} hitSlop={8} accessibilityRole="button">
                     <ThemedText type="smallerDefault" style={{ color: ThemedColor.caption }}>
                         Let it go

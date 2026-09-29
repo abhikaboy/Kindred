@@ -98,3 +98,27 @@ export const markReturnedAPI = async (gapDays: number): Promise<void> => {
         // Best effort only.
     }
 };
+
+/** Moves a task to Someday: clears its dates and plan, keeps it in its workspace. */
+export const setTaskSomedayAPI = async (categoryId: string, taskId: string, steps?: string[]): Promise<TaskDocument> => {
+    const { data, error } = await client.POST("/v1/user/tasks/{category}/{id}/someday" as any, {
+        params: withAuthHeaders(taskPath(categoryId, taskId)),
+        body: steps?.length ? { steps } : {},
+    });
+    if (error) throw fail("save for someday", error);
+    return data as unknown as TaskDocument;
+};
+
+export const clearTaskSomedayAPI = async (categoryId: string, taskId: string): Promise<TaskDocument> => {
+    const { data, error } = await client.DELETE("/v1/user/tasks/{category}/{id}/someday" as any, {
+        params: withAuthHeaders(taskPath(categoryId, taskId)),
+    });
+    if (error) throw fail("clear someday", error);
+    return data as unknown as TaskDocument;
+};
+
+export const getSomedayTasksAPI = async (): Promise<TaskDocument[]> => {
+    const { data, error } = await client.GET("/v1/user/tasks/someday" as any, { params: withAuthHeaders({}) });
+    if (error) throw fail("load someday tasks", error);
+    return ((data as any)?.tasks ?? []) as TaskDocument[];
+};

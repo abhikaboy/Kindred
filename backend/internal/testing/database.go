@@ -137,6 +137,7 @@ func (td *TestDatabase) GetCollections() map[string]*mongo.Collection {
 		"encouragements":  td.DB.Collection("encouragements"),
 		"friend-requests": td.DB.Collection("friend-requests"),
 		"groups":          td.DB.Collection("groups"),
+		"mcp_tokens":      td.DB.Collection("mcp_tokens"),
 		"notifications":   td.DB.Collection("notifications"),
 		"posts":           td.DB.Collection("posts"),
 		"referrals":       td.DB.Collection("referrals"),

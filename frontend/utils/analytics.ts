@@ -162,6 +162,7 @@ export const AnalyticsEvents = {
     PLAN_BUILT: "plan_built", // { size, when, steps }
     TASK_RELEASED: "task_released",
     PLAN_SNOOZED: "plan_snoozed",
+    TASK_SOMEDAY: "task_someday", // { source: "plan_sheet" | "passed_card" | "composer" }
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

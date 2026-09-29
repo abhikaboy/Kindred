@@ -91,7 +91,8 @@ export function selectTodayTasks(tasks: Task[], now: number): Task[] {
     const dayStart = startOfLocalDay(now);
     const dayEnd = nextLocalMidnight(now);
     return tasks.filter((task) => {
-        if (task.timeCompleted) return false;
+        // Someday tasks are undated by choice and stay off Today
+        if (task.timeCompleted || task.somedayAt) return false;
         const due = time(task.deadline);
         const start = time(task.startDate);
         const dueTodayOrOverdue = Number.isFinite(due) && due < dayEnd;

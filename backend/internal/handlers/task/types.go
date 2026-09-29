@@ -48,6 +48,9 @@ type CreateTaskParams struct {
 	// into the user's Inbox and a background job moves it once it has a guess.
 	AutoCategorize bool `bson:"autoCategorize,omitempty" json:"autoCategorize,omitempty" doc:"File this task into the Inbox and let the background job choose its category"`
 
+	// Someday creates an undated task: no default start date and SomedayAt set.
+	Someday bool `bson:"-" json:"someday,omitempty" doc:"Create the task as Someday: undated, with no default start date"`
+
 	TaggedUserIDs []string `bson:"-" json:"taggedUserIds,omitempty"`
 }
 

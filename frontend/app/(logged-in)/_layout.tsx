@@ -27,9 +27,9 @@ import {
 } from "@/utils/notificationService";
 import { showToastable, ToastableMessageStatus } from "react-native-toastable";
 import { ThemedView } from "@/components/ThemedView";
-import { useCreateModal } from "@/contexts/createModalContext";
-import CreateModal, { Screen } from "@/components/modals/CreateModal";
-import CreateComposer from "@/components/modals/create/composer/CreateComposer";
+import { Screen, useCreateModal } from "@/contexts/createModalContext";
+import CategoryComposer from "@/components/modals/create/composer/CategoryComposer";
+import CreateComposer, { type Panel } from "@/components/modals/create/composer/CreateComposer";
 import BuildPlanSheet from "@/components/plan/BuildPlanSheet";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { handleSilentPush, isSilentPush } from "@/utils/silentPushHandlers";
@@ -562,21 +562,26 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+// Old sheet screens that open straight onto a composer panel
+const SCREEN_PANEL: Partial<Record<Screen, Panel>> = {
+    [Screen.DEADLINE]: "due",
+    [Screen.STARTDATE]: "start",
+    [Screen.RECURRING]: "repeat",
+    [Screen.REMINDER]: "reminder",
+    [Screen.COLLABORATORS]: "tag",
+    [Screen.INTEGRATION]: "integration",
+};
+
 // Separate component to use the CreateModal context
 const LayoutContent = () => {
     const { visible, setVisible, modalConfig } = useCreateModal();
     const ThemedColor = useThemeColor();
-    // Don't pay for the sheet until it's first opened; keep it mounted afterwards
+    // Don't pay for the composers until it's first opened; keep it mounted afterwards
     const [createModalMounted, setCreateModalMounted] = useState(visible);
     if (visible && !createModalMounted) setCreateModalMounted(true);
-    // New tasks go to the full-screen composer; editing, blueprints and the
-    // new-category entry still use the sheet.
-    const composerRoute =
-        !modalConfig.edit &&
-        !modalConfig.isBlueprint &&
-        (modalConfig.screen === undefined ||
-            modalConfig.screen === Screen.STANDARD ||
-            modalConfig.screen === Screen.SELECT_WORKSPACE);
+    // New categories get their own composer; everything else goes to the task composer
+    const composerRoute = modalConfig.screen !== Screen.NEW_CATEGORY;
+    const composerPanel = modalConfig.screen !== undefined ? SCREEN_PANEL[modalConfig.screen] : undefined;
 
     // Auto-start live activities when task times arrive (foreground)
     useLiveActivityScheduler();
@@ -607,13 +612,17 @@ const LayoutContent = () => {
                     /> */}
                 </Stack>
                 {createModalMounted && (
-                    <CreateModal visible={visible && !composerRoute} setVisible={setVisible} {...modalConfig} />
+                    <CategoryComposer visible={visible && !composerRoute} setVisible={setVisible} />
                 )}
                 {createModalMounted && (
                     <CreateComposer
                         visible={visible && composerRoute}
                         setVisible={setVisible}
                         categoryId={modalConfig.categoryId}
+                        edit={modalConfig.edit}
+                        editTask={modalConfig.task}
+                        isBlueprint={modalConfig.isBlueprint}
+                        initialPanel={composerPanel}
                     />
                 )}
                 <BuildPlanSheet />

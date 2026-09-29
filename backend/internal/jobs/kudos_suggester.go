@@ -528,6 +528,7 @@ func (j *KudosSuggesterJob) detectStalledTasks(ctx context.Context, now time.Tim
 			"tasks.startDate":  bson.M{"$ne": nil, "$lte": cutoff},
 			"tasks.lastEdited": bson.M{"$lte": cutoff},
 			"tasks.releasedAt": nil,
+			"tasks.somedayAt":  nil,
 		}},
 		{"$project": bson.M{
 			"user":       1,

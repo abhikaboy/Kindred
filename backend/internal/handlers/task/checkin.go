@@ -224,9 +224,10 @@ func (s *Service) GetUserTaskCountsForTodayWithTimezone(userID primitive.ObjectI
 		{
 			"$unwind": "$tasks",
 		},
-		// Released tasks were let go on purpose; they never count as waiting
+		// Released tasks were let go on purpose and Someday tasks are undated;
+		// neither ever counts as waiting
 		{
-			"$match": types.NotReleased("tasks."),
+			"$match": bson.M{"tasks.releasedAt": nil, "tasks.somedayAt": nil},
 		},
 		{
 			"$group": bson.M{
@@ -311,6 +312,7 @@ func (s *Service) GetOpenTaskCountForUser(userID primitive.ObjectID, loc *time.L
 			"tasks.deadline":   nil,
 			"tasks.startTime":  nil,
 			"tasks.releasedAt": nil,
+			"tasks.somedayAt":  nil,
 		}},
 		{"$count": "total"},
 	}

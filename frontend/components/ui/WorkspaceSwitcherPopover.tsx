@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, Platform } from "react-native";
 import Popover, { PopoverPlacement } from "react-native-popover-view";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { router, type Href } from "expo-router";
+import { router, usePathname, type Href } from "expo-router";
 import { useTasks } from "@/contexts/tasksContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { WorkspaceSwitcherList } from "./WorkspaceSwitcherList";
@@ -19,6 +19,7 @@ try {
 
 const TASK_ROUTE = "/(logged-in)/(tabs)/(task)" as Href;
 const CALENDAR_ROUTE = "/(logged-in)/(tabs)/(task)/daily" as Href;
+const SOMEDAY_ROUTE = "/(logged-in)/(tabs)/(task)/someday" as Href;
 
 type Props = {
     isVisible: boolean;
@@ -32,6 +33,7 @@ type Props = {
 export function WorkspaceSwitcherPopover({ isVisible, onClose, from }: Props) {
     const ThemedColor = useThemeColor();
     const { workspaces, selected, setSelected } = useTasks();
+    const pathname = usePathname();
     const isDark = ThemedColor.background === "#13121F";
 
     const navigate = useCallback(
@@ -81,6 +83,8 @@ export function WorkspaceSwitcherPopover({ isVisible, onClose, from }: Props) {
                     selected={selected}
                     onSelectCalendar={() => navigate(CALENDAR_ROUTE)}
                     onSelectWorkspace={(name) => navigate(TASK_ROUTE, name)}
+                    onSelectSomeday={() => navigate(SOMEDAY_ROUTE)}
+                    somedaySelected={pathname.endsWith("/someday")}
                 />
             </ScrollView>
         </Popover>

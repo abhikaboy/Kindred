@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 import { useCreateModal } from "@/contexts/createModalContext";
-import { Screen } from "@/components/modals/CreateModal";
+import { Screen } from "@/contexts/createModalContext";
 import { respondToTaskTagAPI } from "@/api/task";
 import { usePendingTaskTags, PENDING_TAGS_KEY } from "@/hooks/usePendingTaskTags";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Task } from "@/api/types";
-import { pickWaitingCandidate } from "@/utils/waitingCandidate";
+import { isSomeday, pickWaitingCandidate } from "@/utils/waitingCandidate";
 import { getSnoozedIds } from "@/utils/planSnooze";
 import { usePlanSheet } from "@/hooks/planSheetStore";
 
@@ -8,7 +8,9 @@ import { usePlanSheet } from "@/hooks/planSheetStore";
  * The one waiting task worth a gentle path today, plus whether others are eligible
  * too (only ever used to pick "1 thing" vs "A few things", never shown as a number).
  */
-export function useWaitingCandidate(waiting: Task[]) {
+export function useWaitingCandidate(all: Task[]) {
+    // Someday tasks are never waiting, so they never count toward the chip or Welcome back
+    const waiting = useMemo(() => all.filter((t) => !isSomeday(t)), [all]);
     const [snoozedIds, setSnoozedIds] = useState<Set<string>>(() => new Set());
     const sheet = usePlanSheet();
 

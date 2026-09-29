@@ -3105,6 +3105,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/someday": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a task to Someday
+         * @description Clears the task's start date, start time, deadline, plan and unsent reminders. Optionally appends breakdown steps to the checklist.
+         */
+        post: operations["set-task-someday"];
+        /** Take a task out of Someday */
+        delete: operations["clear-task-someday"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}/tags": {
         parameters: {
             query?: never;
@@ -3611,6 +3632,26 @@ export interface paths {
          * @description Tasks the user let go, most recent first.
          */
         get: operations["get-released-tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/someday": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Someday tasks
+         * @description Undated tasks the user moved to Someday, most recent first. Released tasks are left out.
+         */
+        get: operations["get-someday-tasks"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5606,6 +5647,11 @@ export interface components {
             sessionNote?: string;
             sessionPhoto?: string;
             sessionTrackable?: boolean;
+            /**
+             * Format: date-time
+             * @description When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+             */
+            somedayAt?: string;
             source?: string;
             /** Format: date-time */
             startDate: string;
@@ -5653,6 +5699,8 @@ export interface components {
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
             sessionTrackable?: boolean;
+            /** @description Create the task as Someday: undated, with no default start date */
+            someday?: boolean;
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -6625,6 +6673,15 @@ export interface components {
             reports: components["schemas"]["ReportDocumentAPI"][];
             /** Format: int64 */
             total: number;
+        };
+        GetSomedayTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetSomedayTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            tasks: components["schemas"]["TaskDocument"][];
         };
         GetTaskPredictionsOutputBody: {
             /**
@@ -8086,6 +8143,16 @@ export interface components {
             /** @description Extra breakdown steps to append to the checklist after the plan step */
             steps?: string[];
         };
+        SetTaskSomedayInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetTaskSomedayInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Breakdown steps to append to the checklist */
+            steps?: string[];
+        };
         SetWorkspacePushEnabledInputBody: {
             /**
              * Format: uri
@@ -8351,6 +8418,11 @@ export interface components {
             sessionNote?: string;
             sessionPhoto?: string;
             sessionTrackable?: boolean;
+            /**
+             * Format: date-time
+             * @description When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+             */
+            somedayAt?: string;
             source?: string;
             /** Format: date-time */
             startDate: string;
@@ -15714,6 +15786,82 @@ export interface operations {
             };
         };
     };
+    "set-task-someday": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetTaskSomedayInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "clear-task-someday": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "update-task-tags": {
         parameters: {
             query?: never;
@@ -16638,6 +16786,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetReleasedTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-someday-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetSomedayTasksOutputBody"];
                 };
             };
             /** @description Error */

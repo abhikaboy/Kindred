@@ -16,7 +16,7 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
 import { ClearFogAction } from "@/components/plan/ClearFogSheet";
-import { isInPlan, isPassedPlan } from "@/utils/waitingCandidate";
+import { isInPlan, isPassedPlan, isSomeday } from "@/utils/waitingCandidate";
 import { parkedLabel } from "@/utils/planText";
 import PassedPlanCard from "@/components/plan/PassedPlanCard";
 import PlannedStepCard from "@/components/plan/PlannedStepCard";
@@ -110,7 +110,7 @@ const WaitingSection = ({ tasks: all }: Props) => {
     const ThemedColor = useThemeColor();
     // Planned tasks show as their step on their day; released ones never show
     const { passed, tasks } = useMemo(() => {
-        const live = all.filter((t) => !t.releasedAt && !isInPlan(t));
+        const live = all.filter((t) => !t.releasedAt && !isSomeday(t) && !isInPlan(t));
         return { passed: live.filter((t) => isPassedPlan(t)), tasks: live.filter((t) => !isPassedPlan(t)) };
     }, [all]);
     const [expanded, setExpanded] = useState(passed.length > 0);

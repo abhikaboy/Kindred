@@ -183,6 +183,8 @@ export interface Task {
     parkedAt?: string | null;
     /** Recoverable archive: hidden from lists, restorable from the drawer */
     releasedAt?: string | null;
+    /** Undated, low-pressure task: never waiting, never reminded */
+    somedayAt?: string | null;
     nextGenerated?: string;
 }
 
