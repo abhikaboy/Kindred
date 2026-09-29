@@ -189,10 +189,10 @@ type completeTaskInput struct {
 }
 
 type completeTaskOutput struct {
-	Task          taskSummary `json:"task"`
-	CurrentStreak int         `json:"current_streak"`
-	StreakChanged bool        `json:"streak_changed"`
-	TasksComplete float64     `json:"tasks_complete"`
+	Task          taskSummary  `json:"task"`
+	CurrentStreak int          `json:"current_streak"`
+	StreakChanged bool         `json:"streak_changed"`
+	TasksComplete float64      `json:"tasks_complete"`
 	NextTask      *taskSummary `json:"next_task,omitempty" jsonschema:"For flexible recurring tasks, the next instance that was created"`
 }
 

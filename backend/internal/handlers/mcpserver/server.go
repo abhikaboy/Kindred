@@ -38,7 +38,14 @@ type Authenticator interface {
 
 // Mount registers the MCP endpoint on the Fiber app.
 func Mount(app *fiber.App, collections map[string]*mongo.Collection, ringService *rings.RingService, authn Authenticator) {
-	app.All(Path, adaptor.HTTPHandler(NewHandler(collections, ringService, authn)))
+	h := NewHandler(collections, ringService, authn)
+	app.All(Path, func(c *fiber.Ctx) error {
+		// fasthttp's RequestCtx reports itself canceled outside a running server, so use Fiber's user context.
+		ctx := c.UserContext()
+		return adaptor.HTTPHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r.WithContext(ctx))
+		})(c)
+	})
 }
 
 // NewHandler builds the authenticated, stateless streamable HTTP handler.
