@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Animated, Platform, Switch } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions, Modal, Platform, Switch } from "react-native";
 import * as Haptics from "expo-haptics";
 import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
 import { ThemedText } from "@/components/ThemedText";
@@ -18,10 +18,7 @@ import GifPicker from "./GifPicker";
 import KudosVideoRecorder from "./KudosVideoRecorder";
 import KudosVideoPreview from "./KudosVideoPreview";
 import { formatVideoDuration } from "@/api/media";
-import { LinearGradient } from "expo-linear-gradient";
-import { Portal } from "@gorhom/portal";
 import Confetti from "@/components/ui/Confetti";
-import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
 import KudosPreviewAvatar from "@/components/cards/KudosPreviewAvatar";
 import CustomAlert, { AlertButton } from "./CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -30,10 +27,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import { useKudosSent } from "@/contexts/kudosSentContext";
 
-// single soft bloom behind the sheet header; same language as the page glows
-const KUDOS_GLOW: GlowBlob[] = [
-    { color: "#854DFF", opacity: { dark: 0.07, light: 0.05 }, cx: 50, cy: 18, rx: 45, ry: 22, falloff: "60%" },
-];
 
 type SelectedKudosMedia = { uri: string; type: "image" | "video"; durationMs?: number };
 
@@ -82,48 +75,9 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
-    // Purple glow animation
-    const glowOpacity = useRef(new Animated.Value(0)).current;
 
     const styles = useMemo(() => styleSheet(ThemedColor), [ThemedColor]);
 
-    // Purple glow animation effect
-    useEffect(() => {
-        let glowLoop: Animated.CompositeAnimation | null = null;
-
-        if (visible) {
-            // Start the pulsing animation
-            glowLoop = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(glowOpacity, {
-                        toValue: 0.3,
-                        duration: 2000,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(glowOpacity, {
-                        toValue: 0.1,
-                        duration: 2000,
-                        useNativeDriver: true,
-                    }),
-                ])
-            );
-            glowLoop.start();
-        } else {
-            // Fade out when closing
-            Animated.timing(glowOpacity, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }).start();
-        }
-
-        // Cleanup: stop animation on unmount or when visibility changes
-        return () => {
-            if (glowLoop) {
-                glowLoop.stop();
-            }
-        };
-    }, [visible]);
 
     // Track mounted state and reset when modal opens
     useEffect(() => {
@@ -379,47 +333,6 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
     return (
         <>
-            {/* Full Screen Purple Glow - Using Portal for root-level rendering */}
-            {visible && (
-                <Portal>
-                    <Animated.View
-                        style={[
-                            styles.fullScreenGlowWrapper,
-                            { opacity: glowOpacity }
-                        ]}
-                        pointerEvents="box-none"
-                    >
-                        {/* Top Border Glow */}
-                        <LinearGradient
-                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
-                            style={styles.glowBorderTop}
-                            pointerEvents="none"
-                        />
-                        {/* Bottom Border Glow */}
-                        <LinearGradient
-                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
-                            style={styles.glowBorderBottom}
-                            pointerEvents="none"
-                        />
-                        {/* Left Border Glow */}
-                        <LinearGradient
-                            colors={['rgba(147, 51, 234, 0.8)', 'transparent']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.glowBorderLeft}
-                            pointerEvents="none"
-                        />
-                        {/* Right Border Glow */}
-                        <LinearGradient
-                            colors={['transparent', 'rgba(147, 51, 234, 0.8)']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.glowBorderRight}
-                            pointerEvents="none"
-                        />
-                    </Animated.View>
-                </Portal>
-            )}
 
             {/* Confetti Cannon - Full screen overlay, same as task completion */}
             {showConfetti && (
@@ -430,7 +343,6 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
 
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
-                <GlowBackground blobs={KUDOS_GLOW} />
                 {/* Title */}
                 <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
                     {tutorialPrefill
@@ -774,45 +686,5 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         gifPickerTitle: {
             fontSize: 18,
-        },
-        fullScreenGlowWrapper: {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: Dimensions.get("window").width,
-            height: Dimensions.get("window").height,
-            backgroundColor: "transparent",
-            zIndex: 999,
-            elevation: 999,
-        },
-        glowBorderTop: {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-        },
-        glowBorderBottom: {
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-        },
-        glowBorderLeft: {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: 80,
-        },
-        glowBorderRight: {
-            position: "absolute",
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 80,
         },
     });

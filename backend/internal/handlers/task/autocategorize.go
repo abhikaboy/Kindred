@@ -40,6 +40,13 @@ const autoCategorizeBatchSize = 25
 // sweeps picking up the same task would race on the move.
 var autoCategorizeRunning sync.Mutex
 
+// categorizingNow holds task ids being classified right after creation, so the
+// sweep doesn't pick the same task up mid-flight.
+var categorizingNow sync.Map
+
+// TaskFiledPushType is the silent push sent when a task leaves the Inbox.
+const TaskFiledPushType = "task_filed"
+
 // geminiConfigured reports whether the injected classifier is actually usable.
 // The service arrives as an `any` holding a *gemini.GeminiService, so a missing
 // service is a non-nil interface wrapping a nil pointer.
@@ -206,6 +213,9 @@ func (h *Handler) RunAutoCategorization(ctx context.Context) (placed int, err er
 	}
 
 	for _, item := range pending {
+		if _, busy := categorizingNow.Load(item.Task.ID); busy {
+			continue
+		}
 		if h.categorizeOne(ctx, item) {
 			placed++
 		}
@@ -223,7 +233,12 @@ func (h *Handler) categorizeOne(ctx context.Context, item PendingCategorization)
 			slog.String("userID", item.UserID.Hex()))...)
 	}
 
-	suggestion, err := h.callGeminiSuggestFlow(ctx, item.UserID.Hex(), categorizationText(item.Task), "UTC")
+	timezone := "UTC"
+	if loc, locErr := h.service.getUserLocation(ctx, item.UserID); locErr == nil && loc != nil {
+		timezone = loc.String()
+	}
+
+	suggestion, err := h.callGeminiSuggestFlow(ctx, item.UserID.Hex(), categorizationText(item.Task), timezone)
 	if err != nil {
 		log(slog.LevelWarn, "Auto-categorization model call failed", slog.String("error", err.Error()))
 		if attemptErr := h.service.recordCategorizationAttempt(ctx, item.Task.ID, item.CategoryID); attemptErr != nil {
@@ -260,7 +275,53 @@ func (h *Handler) categorizeOne(ctx context.Context, item PendingCategorization)
 	}
 
 	log(slog.LevelInfo, "Auto-categorized task", slog.String("categoryID", target.Hex()))
+	h.notifyTaskFiled(ctx, item, target)
 	return true
+}
+
+// CategorizeSoon classifies a just-created Inbox task right away instead of
+// waiting for the next sweep, which stays as the retry path if this fails.
+func (h *Handler) CategorizeSoon(item PendingCategorization) {
+	if !geminiConfigured(h.geminiService) {
+		return
+	}
+	if _, busy := categorizingNow.LoadOrStore(item.Task.ID, struct{}{}); busy {
+		return
+	}
+	go func() {
+		defer categorizingNow.Delete(item.Task.ID)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		h.categorizeOne(ctx, item)
+	}()
+}
+
+// notifyTaskFiled lets the user's app move the task out of its Inbox without
+// polling. Best effort: the next workspace fetch shows the move regardless.
+func (h *Handler) notifyTaskFiled(ctx context.Context, item PendingCategorization, target primitive.ObjectID) {
+	if h.service.Users == nil {
+		return
+	}
+	user, err := h.service.Users.GetUserByID(ctx, item.UserID)
+	if err != nil || user.PushToken == "" {
+		return
+	}
+
+	var category types.CategoryDocument
+	_ = h.service.Tasks.FindOne(ctx, bson.M{"_id": target}, options.FindOne().SetProjection(bson.M{"name": 1, "workspaceName": 1})).Decode(&category)
+
+	err = xutils.SendSilentUpdate(user.PushToken, TaskFiledPushType, map[string]string{
+		"taskId":         item.Task.ID.Hex(),
+		"taskName":       item.Task.Content,
+		"fromCategoryId": item.CategoryID.Hex(),
+		"categoryId":     target.Hex(),
+		"categoryName":   category.Name,
+		"workspaceName":  category.WorkspaceName,
+	})
+	if err != nil {
+		slog.LogAttrs(ctx, slog.LevelWarn, "Failed to send task filed push",
+			slog.String("taskID", item.Task.ID.Hex()), slog.String("error", err.Error()))
+	}
 }
 
 // resolveCategorizationTarget turns a suggestion into a category to move into.

@@ -118,7 +118,7 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
     const taskLabel = isDeadline ? `${task.content} [Deadline]` : task.content;
 
     return (
-        <Animated.View style={[taskStyle, containerStyle]}>
+        <Animated.View style={[taskStyle, containerStyle, task.projected && { opacity: 0.5 }]}>
             <TouchableOpacity
                 style={styles.touchable}
                 activeOpacity={0.7}

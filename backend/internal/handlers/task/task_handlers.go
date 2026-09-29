@@ -100,11 +100,17 @@ func (h *Handler) CreateTaskAuto(ctx context.Context, input *CreateTaskAutoInput
 	body := input.Body
 	body.AutoCategorize = true
 
-	return h.CreateTask(ctx, &CreateTaskInput{
+	out, err := h.CreateTask(ctx, &CreateTaskInput{
 		Authorization: input.Authorization,
 		Category:      inbox.ID.Hex(),
 		Body:          body,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	h.CategorizeSoon(PendingCategorization{Task: out.Body.TaskDocument, CategoryID: inbox.ID, UserID: userObjID})
+	return out, nil
 }
 
 func (h *Handler) CreateTask(ctx context.Context, input *CreateTaskInput) (*CreateTaskOutput, error) {

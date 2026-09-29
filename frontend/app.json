@@ -182,7 +182,8 @@
       "@sentry/react-native",
       "expo-image",
       "expo-sharing",
-      "expo-video"
+      "expo-video",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,

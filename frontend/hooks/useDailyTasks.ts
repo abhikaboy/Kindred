@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTasks } from "@/contexts/tasksContext";
 import { isSameDay, isWithinInterval } from "date-fns";
+import { projectRecurringTasks } from "@/utils/recurrenceProjection";
 
 /** True when the task starts, is due, or spans across `date`. */
 export const isTaskOnDay = (task: { startDate?: string | null; deadline?: string | null }, date: Date): boolean => {
@@ -20,6 +21,12 @@ export const useDailyTasks = (selectedDate: Date) => {
     // Filter tasks based on selected date
     const tasksForSelectedDate = useMemo(
         () => allTasks.filter((task) => isTaskOnDay(task, selectedDate)),
+        [allTasks, selectedDate]
+    );
+
+    // Upcoming recurrences that don't exist as tasks yet; display-only
+    const projectedForSelectedDate = useMemo(
+        () => projectRecurringTasks(allTasks, selectedDate, selectedDate),
         [allTasks, selectedDate]
     );
 
@@ -125,6 +132,7 @@ export const useDailyTasks = (selectedDate: Date) => {
 
     return {
         tasksForSelectedDate,
+        projectedForSelectedDate,
         tasksWithSpecificTime,
         tasksForTodayNoTime,
         tasksUnscheduled,

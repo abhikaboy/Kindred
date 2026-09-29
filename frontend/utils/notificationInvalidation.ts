@@ -57,6 +57,8 @@ export function getNotificationRefreshPlan(type: string | undefined): Notificati
         case "comment":
         case "post_tag":
             return FEED;
+        case "task_filed":
+            return plan([], { workspaces: true });
         case "rings_closed":
             return plan(["rings", "friend-profile", "profile"]);
         case "task_tagged":

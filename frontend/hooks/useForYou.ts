@@ -15,12 +15,15 @@ export type UseForYouResult = {
     dismissCard: (cardId: string) => void;
 };
 
+export const FOR_YOU_KEY = ["forYou"];
+export const fetchForYou = async () => (await request("GET", "/user/for-you")) as ForYouFeed;
+
 export function useForYou(): UseForYouResult {
     const queryClient = useQueryClient();
 
     const { data, isPending, error, refetch } = useQuery({
-        queryKey: ["forYou"],
-        queryFn: async () => (await request("GET", "/user/for-you")) as ForYouFeed,
+        queryKey: FOR_YOU_KEY,
+        queryFn: fetchForYou,
     });
 
     if (error) {

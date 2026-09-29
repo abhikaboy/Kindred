@@ -12,7 +12,6 @@ import { PortalProvider } from "@gorhom/portal";
 
 // Import components and contexts after the core modules
 import { AuthProvider } from "@/hooks/useAuth";
-import { isNetworkError } from "@/api/client";
 import { getNetStatus, isOffline, subscribeNetStatus } from "@/utils/netStatus";
 import { OnboardingProvider } from "@/hooks/useOnboarding";
 import { TasksProvider } from "@/contexts/tasksContext";
@@ -30,7 +29,11 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import Toastable from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider, focusManager, onlineManager } from "@tanstack/react-query";
+import { focusManager, onlineManager } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { queryClient, persistOptions } from "@/utils/queryClient";
+// Defines the background refresh task at module scope, before any headless run needs it
+import "@/tasks/backgroundRefresh";
 import { AnimatePresence } from "moti";
 import * as Sentry from "@sentry/react-native";
 import { KudosProvider } from "@/contexts/kudosContext";
@@ -93,22 +96,6 @@ onlineManager.setEventListener((setOnline) => {
     return subscribeNetStatus((status) => setOnline(!isOffline(status)));
 });
 
-// Create QueryClient outside component to prevent recreation on every render
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            refetchOnWindowFocus: true,
-            refetchOnMount: true,
-            refetchOnReconnect: true,
-            // Retry only when we couldn't reach the server. A genuine 4xx
-            // should surface immediately rather than being tried again.
-            retry: (failureCount, error) => isNetworkError(error) && failureCount < 1,
-            retryDelay: 1000,
-            staleTime: 1000 * 60 * 2, // 2 minutes - data considered fresh
-            gcTime: 1000 * 60 * 5, // 5 minutes - garbage collect unused data
-        },
-    },
-});
 
 // Dev only: "Reset to first launch" in the Expo dev menu (shake / Cmd+D), so the
 // guest flow can be re-run without reinstalling. Not available in Expo Go.
@@ -175,7 +162,7 @@ export default Sentry.wrap(function RootLayout() {
     }
 
     return (
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <RingUpdateProvider>
             <KudosSentProvider>
             <AnalyticsProvider>
@@ -231,6 +218,6 @@ export default Sentry.wrap(function RootLayout() {
             </AnalyticsProvider>
             </KudosSentProvider>
             </RingUpdateProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
     );
 });

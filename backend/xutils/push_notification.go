@@ -43,6 +43,10 @@ type expoPushMessage struct {
 	// post/kudos media, NOT the sender's avatar - the avatar travels in Data
 	// so the two never compete for the same slot.
 	RichContent *expoRichContent `json:"richContent,omitempty"`
+
+	// ContentAvailable marks a silent push, delivered to the app with no alert.
+	ContentAvailable bool   `json:"_contentAvailable,omitempty"`
+	Priority         string `json:"priority,omitempty"`
 }
 
 type expoRichContent struct {
@@ -97,6 +101,15 @@ func buildMessage(notification Notification) expoPushMessage {
 		data["senderAvatar"] = notification.SenderAvatar
 		if notification.SenderID != "" {
 			data["senderId"] = notification.SenderID
+		}
+	}
+
+	if notification.Silent {
+		return expoPushMessage{
+			To:               []string{notification.Token},
+			Data:             data,
+			ContentAvailable: true,
+			Priority:         "normal",
 		}
 	}
 
