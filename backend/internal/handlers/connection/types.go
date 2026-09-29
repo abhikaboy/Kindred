@@ -125,7 +125,7 @@ type FriendReference struct {
 	DisplayName    string `bson:"display_name" json:"display_name" example:"John Doe" doc:"User display name"`
 	Handle         string `bson:"handle" json:"handle" example:"johndoe" doc:"User handle"`
 	ProfilePicture string `bson:"profile_picture" json:"profile_picture" example:"https://example.com/avatar.jpg" doc:"Profile picture URL"`
-	Streak         int    `bson:"streak" json:"streak" example:"5" doc:"Current streak"`
+	Streak         int    `bson:"streak" json:"streak" example:"0" doc:"Always 0: streaks are only visible to their owner"`
 	TasksComplete  int    `bson:"tasks_complete" json:"tasks_complete" example:"12" doc:"Total tasks completed"`
 	Encouragements int    `bson:"encouragements" json:"encouragements" example:"3" doc:"Available encouragements to send"`
 	PostsThisWeek  int    `bson:"posts_this_week" json:"posts_this_week" example:"2" doc:"Number of posts made this week"`

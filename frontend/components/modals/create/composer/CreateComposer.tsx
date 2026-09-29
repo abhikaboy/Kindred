@@ -174,6 +174,7 @@ export default function CreateComposer({
         startTime,
         setStartTime,
         reminders,
+        remindersAuto,
         setReminders,
         isPublic,
         setIsPublic,
@@ -637,9 +638,11 @@ export default function CreateComposer({
                 state={state(reminders.length > 0)}
                 label={
                     reminders.length === 1
-                        ? fmtTime(reminders[0].triggerTime)
+                        ? `${remindersAuto ? "Auto · " : ""}${fmtTime(reminders[0].triggerTime)}`
                         : reminders.length > 1
-                          ? `${reminders.length} reminders`
+                          ? remindersAuto
+                              ? "Auto reminders"
+                              : `${reminders.length} reminders`
                           : undefined
                 }
                 active={panel === "reminder"}

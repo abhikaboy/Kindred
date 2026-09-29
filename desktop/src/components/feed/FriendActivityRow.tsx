@@ -96,7 +96,6 @@ export function FriendActivityRow({
             size={56}
             strokeWidth={5}
             gap={2}
-            center={<ThemedText type="caption" className="text-xs">{profile?.productivity_score}</ThemedText>}
           />
         ) : null}
       </div>

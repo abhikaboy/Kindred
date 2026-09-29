@@ -182,7 +182,7 @@ const SwipableTaskCard = ({
             let message = "Congrats! Click here to post and document your task!";
 
             if (res.streakChanged) {
-                title = `🔥 Task completed - ${res.currentStreak} day streak!`;
+                title = `Task completed - ${res.currentStreak} day streak!`;
                 message = `Keep it up! You're on a ${res.currentStreak} day streak! Click here to post!`;
             }
 

@@ -2,8 +2,10 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
@@ -11,194 +13,278 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// CheckinSchedule defines the time-to-message and title mapping for daily checkins
-// Times are in local time (hour:minute format) and will be checked against each user's timezone
-type CheckinInfo struct {
-	Title    string // Title template with %s for user display name
-	Message  string // Message template with %d for scheduled tasks, %d for deadline tasks
-	SendTask bool   // Whether to send a task with the checkin
-	Hour     int    // Hour in user's local time (0-23)
-	Minute   int    // Minute in user's local time (0-59)
-}
+// userMemoryCollection mirrors gemini.UserMemoryCollection. package gemini
+// imports this one, so the name can't be shared without a cycle.
+const userMemoryCollection = "user_memory"
 
-var CheckinTimes = []CheckinInfo{
-	{
-		Title:    "How's your day going?",
-		Message:  "Hey %s, you still have some tasks on your plate today - take a look!",
-		SendTask: false,
-		Hour:     17, // 5 PM local time
-		Minute:   1,
-	},
-}
-
-// openTaskCheckinMessage returns a check-in message that includes open task count when applicable
-func openTaskCheckinMessage(displayName string, openTaskCount int, baseMessage string) string {
-	if openTaskCount > 0 {
-		return fmt.Sprintf("Hey %s, you've got %d things left today - you got this!", displayName, openTaskCount)
-	}
-	return fmt.Sprintf(baseMessage, displayName)
-}
-
+// HandleCheckin runs every minute and sends the check-ins that are due. See
+// checkin_policy.go for the rules; this gathers the state they need.
 func (h *Handler) HandleCheckin() (fiber.Map, error) {
-	// Get current time in UTC
 	nowUTC := time.Now().UTC()
+	ctx := context.Background()
 
-	// Get all users with push tokens
 	users, err := h.service.GetUsersWithPushTokens()
 	if err != nil {
 		slog.Error("Error getting users with push tokens", "error", err)
-		return fiber.Map{
-			"error": err.Error(),
-		}, err
+		return fiber.Map{"error": err.Error()}, err
 	}
 
-	if len(users) == 0 {
-		return fiber.Map{
-			"message":      "No users with push tokens found",
-			"current_time": nowUTC.Format("15:04"),
-		}, nil
-	}
-
-	// Prepare notifications for users whose local time matches a check-in time
 	notifications := make([]xutils.Notification, 0)
-	skippedCount := 0
-	totalMatched := 0
+	skipped := map[CheckinSkip]int{}
+	inSlot := 0
 
 	for _, user := range users {
-		// Skip if user has disabled check-ins
-		frequency := user.Settings.Notifications.CheckinFrequency
-		if frequency == "none" {
-			skippedCount++
+		if user.Settings.Notifications.CheckinFrequency == "none" {
 			continue
 		}
+		loc := checkinLocation(user.Timezone)
+		local := nowUTC.In(loc)
 
-		// Get user's timezone, default to UTC if not set
-		userTimezone := user.Timezone
-		if userTimezone == "" {
-			userTimezone = "UTC"
-		}
-
-		// Load user's timezone location
-		loc, err := time.LoadLocation(userTimezone)
-		if err != nil {
-			slog.Warn("Invalid timezone for user, defaulting to UTC",
-				"user_id", user.ID,
-				"timezone", userTimezone,
-				"error", err)
-			loc = time.UTC
-		}
-
-		// Convert current UTC time to user's local time
-		userLocalTime := nowUTC.In(loc)
-		userHour := userLocalTime.Hour()
-		userMinute := userLocalTime.Minute()
-		userDayOfWeek := userLocalTime.Weekday()
-
-		// Check if current time matches any check-in time for this user
-		var matchedCheckin *CheckinInfo
-		for i := range CheckinTimes {
-			checkin := &CheckinTimes[i]
-			if checkin.Hour == userHour && checkin.Minute == userMinute {
-				matchedCheckin = checkin
-				break
-			}
-		}
-
-		if matchedCheckin == nil {
-			// No check-in scheduled for this user at this time
+		// Cheap gates first: most users are nowhere near their slot this
+		// minute, and those never cost a query.
+		if local.Minute() != CheckinMinute(user.ID) {
 			continue
 		}
-
-		// Apply frequency-based filtering
-		shouldNotify := false
-		switch frequency {
-		case "occasionally": // 1-2x per week (Monday, Thursday)
-			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Thursday
-		case "regularly": // 3-4x per week (Mon, Wed, Fri, Sun)
-			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Wednesday ||
-				userDayOfWeek == time.Friday || userDayOfWeek == time.Sunday
-		case "frequently": // Daily
-			shouldNotify = true
-		default:
-			// Default to regularly if invalid value
-			shouldNotify = userDayOfWeek == time.Monday || userDayOfWeek == time.Wednesday ||
-				userDayOfWeek == time.Friday || userDayOfWeek == time.Sunday
-		}
-
-		if !shouldNotify {
-			skippedCount++
+		if local.Hour() < CheckinEarliestHour || local.Hour() > CheckinLatestHour {
 			continue
 		}
+		peakStart, reduce := h.service.loadCheckinFacts(ctx, user.ID)
+		if local.Hour() != CheckinHour(peakStart) {
+			continue
+		}
+		inSlot++
 
-		totalMatched++
-
-		// Skip users without push tokens (extra safety check)
 		if user.PushToken == "" {
+			skipped[CheckinSkipNoToken]++
 			continue
 		}
 
-		// Get task counts for this user using their timezone
-		taskCounts, err := h.service.GetUserTaskCountsForTodayWithTimezone(user.ID, loc)
+		state, err := h.service.loadCheckinState(ctx, user.ID)
 		if err != nil {
-			slog.Error("Error getting task counts for user", "user_id", user.ID, "error", err)
-			// Continue with zero counts if there's an error
-			taskCounts = &TaskCounts{ScheduledToday: 0, DeadlineToday: 0}
+			slog.Error("Check-in: failed to load state", "user_id", user.ID, "error", err)
+			continue
+		}
+		candidates, lastEdit, err := h.service.loadCheckinCandidates(ctx, user.ID)
+		if err != nil {
+			slog.Error("Check-in: failed to load tasks", "user_id", user.ID, "error", err)
+			continue
+		}
+		lastDone, err := h.service.lastCompletionAt(ctx, user.ID)
+		if err != nil {
+			slog.Error("Check-in: failed to load last completion", "user_id", user.ID, "error", err)
+			continue
+		}
+		state.Frequency = user.Settings.Notifications.CheckinFrequency
+		state.ReduceFrequency = reduce
+		state.LastActiveAt = latestTime(lastEdit, lastDone)
+
+		if skip := EvaluateCheckin(state, nowUTC, loc); skip != CheckinSend {
+			skipped[skip]++
+			continue
+		}
+		focus := PickCheckinFocus(candidates, nowUTC, loc)
+		if focus == nil {
+			skipped[CheckinSkipNoFocus]++
+			continue
 		}
 
-		// Get open task count for this user
-		openTaskCount, openErr := h.service.GetOpenTaskCountForUser(user.ID, loc)
-		if openErr != nil {
-			slog.Error("Error getting open task count for user", "user_id", user.ID, "error", openErr)
-			openTaskCount = 0
+		// Claim before sending so overlapping runs or instances can't both send.
+		claimed, err := h.service.claimCheckin(ctx, user.ID, nowUTC, loc, state.NextIgnoredInARow())
+		if err != nil {
+			slog.Error("Check-in: failed to claim", "user_id", user.ID, "error", err)
+			continue
+		}
+		if !claimed {
+			skipped[CheckinSkipTooSoon]++
+			continue
 		}
 
-		// Personalize the message — include open task count when available
-		personalizedMessage := openTaskCheckinMessage(user.DisplayName, openTaskCount, matchedCheckin.Message)
-
+		title, body := CheckinMessage(*focus)
 		notifications = append(notifications, xutils.Notification{
 			Token:   user.PushToken,
-			Message: personalizedMessage,
-			Title:   matchedCheckin.Title,
+			Title:   title,
+			Message: body,
 			Data: map[string]string{
-				"type":            "checkin",
-				"time":            userLocalTime.Format("15:04"),
-				"timestamp":       userLocalTime.Format(time.RFC3339),
-				"scheduled_today": fmt.Sprintf("%d", taskCounts.ScheduledToday),
-				"deadline_today":  fmt.Sprintf("%d", taskCounts.DeadlineToday),
-				"open_tasks":      fmt.Sprintf("%d", openTaskCount),
-				"url":             "/(logged-in)/(tabs)/(task)/review",
+				"type":       "checkin",
+				"task_id":    focus.TaskID.Hex(),
+				"categoryId": focus.CategoryID.Hex(),
+				"reason":     string(focus.Kind),
+				"url": fmt.Sprintf("/(logged-in)/(tabs)/(task)/task/%s?categoryId=%s&name=%s",
+					focus.TaskID.Hex(), focus.CategoryID.Hex(), url.QueryEscape(focus.Content)),
 			},
 		})
 	}
 
-	// Send batch notifications
 	if len(notifications) > 0 {
-		err = xutils.SendBatchNotification(notifications)
-		if err != nil {
+		if err := xutils.SendBatchNotification(notifications); err != nil {
 			slog.Error("Error sending batch checkin notifications", "error", err)
-			return fiber.Map{
-				"error":              err.Error(),
-				"users_targeted":     len(users),
-				"notifications_sent": 0,
-				"current_time":       nowUTC.Format("15:04"),
-			}, err
+			return fiber.Map{"error": err.Error(), "notifications_sent": 0}, err
 		}
-
-		slog.Info("Checkin notifications sent successfully",
-			"users_count", len(notifications),
-			"time", nowUTC.Format("15:04"))
 	}
 
 	return fiber.Map{
 		"message":            "Checkin notifications processed",
 		"total_users":        len(users),
-		"matched_users":      totalMatched,
-		"skipped_users":      skippedCount,
+		"matched_users":      inSlot,
+		"skipped":            skipped,
 		"notifications_sent": len(notifications),
 		"current_time":       nowUTC.Format("15:04"),
 	}, nil
+}
+
+func checkinLocation(timezone string) *time.Location {
+	if timezone == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+func latestTime(ts ...*time.Time) *time.Time {
+	var latest *time.Time
+	for _, t := range ts {
+		if t != nil && (latest == nil || t.After(*latest)) {
+			latest = t
+		}
+	}
+	return latest
+}
+
+func (s *Service) usersColl() *mongo.Collection {
+	return s.Tasks.Database().Collection("users")
+}
+
+// loadCheckinFacts reads the two personalization facts the check-in uses: the
+// hour the user's peak window opens, and whether they should be nudged less.
+// Missing facts are normal for new users and just mean "use the defaults".
+func (s *Service) loadCheckinFacts(ctx context.Context, userID primitive.ObjectID) (peakStart *int, reduce bool) {
+	cur, err := s.Tasks.Database().Collection(userMemoryCollection).Find(ctx, bson.M{
+		"userId":     userID,
+		"key":        bson.M{"$in": bson.A{"peak-hours", "nudge-receptivity"}},
+		"confidence": bson.M{"$gte": 0.35}, // gemini.MinFactConfidence
+	})
+	if err != nil {
+		slog.Warn("Check-in: failed to load user facts", "user_id", userID, "error", err)
+		return nil, false
+	}
+	defer cur.Close(ctx)
+
+	var facts []struct {
+		Key      string `bson:"key"`
+		Evidence struct {
+			WindowStartHour       *int `bson:"windowStartHour"`
+			ShouldReduceFrequency bool `bson:"shouldReduceFrequency"`
+		} `bson:"evidence"`
+	}
+	if err := cur.All(ctx, &facts); err != nil {
+		slog.Warn("Check-in: failed to decode user facts", "user_id", userID, "error", err)
+		return nil, false
+	}
+	for _, f := range facts {
+		switch f.Key {
+		case "peak-hours":
+			if h := f.Evidence.WindowStartHour; h != nil && *h >= 0 && *h <= 23 {
+				peakStart = h
+			}
+		case "nudge-receptivity":
+			reduce = f.Evidence.ShouldReduceFrequency
+		}
+	}
+	return peakStart, reduce
+}
+
+// loadCheckinState reads the check-in's ledger off the user document.
+func (s *Service) loadCheckinState(ctx context.Context, userID primitive.ObjectID) (CheckinState, error) {
+	var doc struct {
+		Checkin struct {
+			LastSentAt    *time.Time `bson:"lastSentAt"`
+			IgnoredInARow int        `bson:"ignoredInARow"`
+		} `bson:"checkin"`
+	}
+	err := s.usersColl().FindOne(ctx, bson.M{"_id": userID},
+		options.FindOne().SetProjection(bson.M{"checkin": 1})).Decode(&doc)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return CheckinState{}, err
+	}
+	return CheckinState{LastSentAt: doc.Checkin.LastSentAt, IgnoredInARow: doc.Checkin.IgnoredInARow}, nil
+}
+
+// loadCheckinCandidates returns the user's open tasks, and the latest time any
+// task was created or edited, which counts as being active.
+func (s *Service) loadCheckinCandidates(ctx context.Context, userID primitive.ObjectID) ([]CheckinCandidate, *time.Time, error) {
+	cur, err := s.Tasks.Aggregate(ctx, []bson.M{
+		{"$match": bson.M{"user": userID}},
+		{"$unwind": "$tasks"},
+		{"$match": bson.M{"tasks.releasedAt": nil, "tasks.somedayAt": nil}},
+		{"$project": bson.M{"tasks": 1}},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	defer cur.Close(ctx)
+
+	var rows []struct {
+		CategoryID primitive.ObjectID `bson:"_id"`
+		Task       types.TaskDocument `bson:"tasks"`
+	}
+	if err := cur.All(ctx, &rows); err != nil {
+		return nil, nil, err
+	}
+	candidates := make([]CheckinCandidate, 0, len(rows))
+	var lastEdit *time.Time
+	for _, r := range rows {
+		candidates = append(candidates, CheckinCandidate{Task: r.Task, CategoryID: r.CategoryID})
+		created, edited := r.Task.Timestamp, r.Task.LastEdited
+		lastEdit = latestTime(lastEdit, &created, &edited)
+	}
+	return candidates, lastEdit, nil
+}
+
+// lastCompletionAt is when the user last completed a task or logged progress.
+func (s *Service) lastCompletionAt(ctx context.Context, userID primitive.ObjectID) (*time.Time, error) {
+	var doc struct {
+		TimeCompleted time.Time `bson:"timeCompleted"`
+	}
+	err := s.CompletedTasks.FindOne(ctx, bson.M{"user": userID},
+		options.FindOne().SetSort(bson.D{{Key: "timeCompleted", Value: -1}}).
+			SetProjection(bson.M{"timeCompleted": 1})).Decode(&doc)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &doc.TimeCompleted, nil
+}
+
+// claimCheckin records a check-in as sent today, unless one already was. The
+// check and the write are one conditional update, so only one sender wins.
+func (s *Service) claimCheckin(ctx context.Context, userID primitive.ObjectID, now time.Time, loc *time.Location, ignoredInARow int) (bool, error) {
+	today := localMidnight(now.In(loc)).UTC()
+	res, err := s.usersColl().UpdateOne(ctx,
+		bson.M{
+			"_id": userID,
+			"$or": bson.A{
+				bson.M{"checkin.lastSentAt": nil},
+				bson.M{"checkin.lastSentAt": bson.M{"$lt": today}},
+			},
+		},
+		bson.M{"$set": bson.M{
+			"checkin.lastSentAt":    now,
+			"checkin.ignoredInARow": ignoredInARow,
+		}},
+	)
+	if err != nil {
+		return false, err
+	}
+	return res.ModifiedCount > 0, nil
 }
 
 // TaskCounts represents the count of tasks for a user

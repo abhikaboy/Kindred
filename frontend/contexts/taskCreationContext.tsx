@@ -25,6 +25,8 @@ type TaskCreationContextType = {
     startTime: Date | null;
     startDate: Date | null;
     reminders: Reminder[];
+    /** Every reminder on the task was added automatically when a date was picked. */
+    remindersAuto: boolean;
     setReminders: (reminders: Reminder[]) => void;
     isPublic: boolean;
     setIsPublic: (isPublic: boolean) => void;
@@ -146,7 +148,13 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const [deadline, setDeadline] = useState<Date | null>(null);
     const [startTime, setStartTime] = useState<Date | null>(null);
     const [startDate, setStartDate] = useState<Date | null>(null);
-    const [reminders, setReminders] = useState<Reminder[]>([]);
+    const [reminders, setRemindersRaw] = useState<Reminder[]>([]);
+    const [remindersAuto, setRemindersAuto] = useState(false);
+    // Anyone outside this file setting reminders is the user choosing them.
+    const setReminders = useCallback((next: Reminder[]) => {
+        setRemindersAuto(false);
+        setRemindersRaw(next);
+    }, []);
     const [isPublic, setIsPublic] = useState(true);
     const [isBlueprint, setIsBlueprint] = useState(false);
     const [integration, setIntegration] = useState("");
@@ -175,7 +183,11 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     const addSmartDeadlineReminders = useCallback((dl: Date) => {
         const reminder = getDeadlineReminder(dl);
         if (reminder) {
-            setReminders((prev) => addRemindersUnique(prev, [reminder]));
+            setRemindersRaw((prev) => {
+                // Only auto if nothing the user picked was already there
+                if (prev.length === 0) setRemindersAuto(true);
+                return addRemindersUnique(prev, [reminder]);
+            });
         }
     }, [getDeadlineReminder]);
 
@@ -184,7 +196,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         const atStartReminder = getStartDateReminder(sd, st);
         const beforeStartReminder = getStartTimeReminder(sd, st);
 
-        setReminders((prev) => {
+        setRemindersRaw((prev) => {
+            if (prev.length === 0) setRemindersAuto(true);
             // Remove old start-time related reminders
             const filtered = prev.filter(
                 (r) =>
@@ -259,7 +272,8 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setStartDate(taskData.startDate ? new Date(taskData.startDate) : null);
 
         // Set reminders directly from task data
-        setReminders(
+        setRemindersAuto(false);
+        setRemindersRaw(
             taskData.reminders?.map((reminder) => ({
                 ...reminder,
                 triggerTime: new Date(reminder.triggerTime),
@@ -299,7 +313,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         setNotes,
         setChecklist,
         setCopySourceTaskId,
-    }), [resetTaskCreation, loadTaskData, setIsBlueprintWithStartDate, addSmartDeadlineReminders, addSmartStartReminders]);
+    }), [resetTaskCreation, loadTaskData, setReminders, setIsBlueprintWithStartDate, addSmartDeadlineReminders, addSmartStartReminders]);
 
     const contextValue = useMemo(() => ({
         ...actions,
@@ -314,6 +328,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
         startTime,
         startDate,
         reminders,
+        remindersAuto,
         isPublic,
         isBlueprint,
         flexDetails,
@@ -325,7 +340,7 @@ export const TaskCreationProvider = ({ children }: { children: React.ReactNode }
     }), [
         actions, taskName, showAdvanced, priority, value,
         recurring, recurFrequency, recurDetails, deadline,
-        startTime, startDate, reminders, isPublic, isBlueprint,
+        startTime, startDate, reminders, remindersAuto, isPublic, isBlueprint,
         integration, flexDetails, taggedUsers, notes, checklist, copySourceTaskId,
     ]);
 

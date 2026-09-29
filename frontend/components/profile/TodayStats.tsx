@@ -58,7 +58,8 @@ export default function TodayStats({ userId }: TodayStatsProps) {
     }) as any; // Type assertion until profile types are aligned
 
     // Determine which user's stats to show
-    const targetUser = userId && userId !== user?._id ? profile : user;
+    const isOther = !!userId && userId !== user?._id;
+    const targetUser = isOther ? profile : user;
 
     // Use stats directly from the user profile (no separate API calls needed)
     const stats = {
@@ -69,17 +70,20 @@ export default function TodayStats({ userId }: TodayStatsProps) {
     };
 
     // Loading state based on whether user data is available
-    const loading = userId && userId !== user?._id ? profileLoading : !user;
+    const loading = isOther ? profileLoading : !user;
 
     return (
         <View style={styles.container}>
             <View style={styles.gridContainer}>
-                <StatItem
-                    icon={<Fire size={iconSize} color={ThemedColor.primary} />}
-                    label="Streak"
-                    value={stats.streak}
-                    loading={loading}
-                />
+                {/* Streak and points are the user's own; never shown on someone else's profile */}
+                {!isOther && (
+                    <StatItem
+                        icon={<Fire size={iconSize} color={ThemedColor.primary} />}
+                        label="Streak"
+                        value={stats.streak}
+                        loading={loading}
+                    />
+                )}
                 <StatItem
                     icon={<CheckCircle size={iconSize} color={ThemedColor.primary} />}
                     label="Tasks Complete"
@@ -92,12 +96,14 @@ export default function TodayStats({ userId }: TodayStatsProps) {
                     value={stats.posts}
                     loading={loading}
                 />
-                <StatItem
-                    icon={<CreditCard size={iconSize} color={ThemedColor.primary} />}
-                    label="Points"
-                    value={stats.points}
-                    loading={loading}
-                />
+                {!isOther && (
+                    <StatItem
+                        icon={<CreditCard size={iconSize} color={ThemedColor.primary} />}
+                        label="Points"
+                        value={stats.points}
+                        loading={loading}
+                    />
+                )}
             </View>
         </View>
     );

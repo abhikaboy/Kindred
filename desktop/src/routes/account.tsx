@@ -142,7 +142,6 @@ export default function AccountScreen() {
       />
 
       <div className="mt-6 flex gap-8 px-2">
-        <Stat value={profile.points} label="Points" />
         <Stat value={profile.tasks_complete} label="Completed" />
         <Stat value={profile.posts_made} label="Posts" />
         <Stat value={profile.friends.length} label="Friends" />

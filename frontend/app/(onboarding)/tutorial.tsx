@@ -10,6 +10,7 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Pressable,
+    BackHandler,
 } from "react-native";
 
 // Shared smoothing curve so cursors glide between spots instead of jumping.
@@ -50,7 +51,7 @@ import PostCardFooter from "@/components/cards/PostCardFooter";
 import CachedImage from "@/components/CachedImage";
 import TaskToast from "@/components/ui/TaskToast";
 import { Task, RingState } from "@/api/types";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, getCachedUser } from "@/hooks/useAuth";
 import { useRequest } from "@/hooks/useRequest";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -181,6 +182,20 @@ export default function TutorialOnboarding() {
     const { capture } = useAnalytics();
     const { user } = useAuth();
     const isGuest = useIsGuest();
+
+    // The user can still be loading when a fast tap lands; fall back to the
+    // cached user so the done flags are written either way.
+    const tutorialUserId = useCallback(
+        async () => user?._id ?? (await getCachedUser())?._id ?? null,
+        [user?._id]
+    );
+
+    // No way back out of the tutorial mid-step: Skip is the exit. iOS swipe-back
+    // is off in the layout; this covers the Android back button.
+    useEffect(() => {
+        const sub = BackHandler.addEventListener("hardwareBackPress", () => true);
+        return () => sub.remove();
+    }, []);
     const { workspaces, fetchWorkspaces, categories, setSelected } = useTasks();
     const setCreateCategory = useSetCreateCategory();
     const { setTaskName, resetTaskCreation } = useTaskCreationActions();
@@ -629,31 +644,46 @@ export default function TutorialOnboarding() {
             step_index: OnboardingSteps.TUTORIAL.index,
         });
         setSelected(""); // land on the home page, not the Guide workspace
-        if (user?._id) {
-            await AsyncStorage.setItem(`${user._id}-guest-tutorial-done`, "true").catch(() => {});
+        const userId = await tutorialUserId();
+        if (userId) {
+            await AsyncStorage.setItem(guestTutorialDoneKey(userId), "true").catch(() => {});
         }
         markGuestTutorialDone();
         router.replace("/(logged-in)/(tabs)/(task)");
     };
 
-    // Guest skip: straight to Home with the tour marked seen, then the account overlay
-    const handleGuestSkip = async () => {
+    // Skip, for guests and new accounts alike. Skipping means "let me in", so
+    // every other first-run guide on Home (home tour, intro tour, quick setup
+    // sheet) is marked seen too; otherwise they'd stack up on arrival.
+    // Guests land on Home and get the account prompt; new accounts still get
+    // the calendar step, which has its own skip.
+    const handleSkip = async () => {
         if (guestFinishedRef.current) return;
         guestFinishedRef.current = true;
         capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
             step_name: OnboardingSteps.TUTORIAL.name,
             step_index: OnboardingSteps.TUTORIAL.index,
             skipped: true,
+            skipped_at_step: step,
+            is_guest: isGuest,
         });
         setSelected("");
-        if (user?._id) {
-            await AsyncStorage.multiSet([
-                [guestTutorialDoneKey(user._id), "true"],
-                [`${user._id}-home-tour-seen`, "true"],
-            ]).catch(() => {});
+        const userId = await tutorialUserId();
+        if (userId) {
+            const seen: [string, string][] = [
+                [`${userId}-home-tour-seen`, "true"],
+                [`${userId}-intro-tour-seen`, "true"],
+                [`${userId}-quicksetup`, "true"],
+            ];
+            if (isGuest) seen.push([guestTutorialDoneKey(userId), "true"]);
+            await AsyncStorage.multiSet(seen).catch(() => {});
         }
-        promptAccountAfterSkippingTutorial();
-        router.replace("/(logged-in)/(tabs)/(task)");
+        if (isGuest) {
+            promptAccountAfterSkippingTutorial();
+            router.replace("/(logged-in)/(tabs)/(task)");
+        } else {
+            router.replace("/(onboarding)/calendar");
+        }
     };
 
     // ─── Prompt text per step ───────────────────────────────────────
@@ -668,19 +698,17 @@ export default function TutorialOnboarding() {
     return (
         <ThemedView style={styles.mainContainer}>
             {isGuest ? (
-                <>
-                    <OnboardingProgressBar currentStep={Math.min(step, STEP_RINGS) + 1} totalSteps={GUEST_TOTAL_STEPS} />
-                    <TouchableOpacity
-                        onPress={handleGuestSkip}
-                        hitSlop={12}
-                        accessibilityRole="button"
-                        style={[styles.skip, { top: insets.top + 16 }]}>
-                        <ThemedText type="caption">Skip</ThemedText>
-                    </TouchableOpacity>
-                </>
+                <OnboardingProgressBar currentStep={Math.min(step, STEP_RINGS) + 1} totalSteps={GUEST_TOTAL_STEPS} />
             ) : (
                 <OnboardingProgressBar currentStep={totalSteps} totalSteps={totalSteps} />
             )}
+            <TouchableOpacity
+                onPress={handleSkip}
+                hitSlop={12}
+                accessibilityRole="button"
+                style={[styles.skip, { top: insets.top + 16 }]}>
+                <ThemedText type="caption">Skip</ThemedText>
+            </TouchableOpacity>
 
             {showConfetti && (
                 <View style={styles.confettiContainer}>

@@ -377,7 +377,7 @@ func (s *Service) GetFriends(userID primitive.ObjectID) ([]FriendReference, erro
 			"display_name":    1,
 			"handle":          1,
 			"profile_picture": 1,
-			"streak":          1,
+			// No streak: scores are only visible to their owner
 			"tasks_complete":  1,
 			"encouragements":  1,
 			"posts_this_week": 1,

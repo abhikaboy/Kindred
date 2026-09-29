@@ -328,7 +328,6 @@ const FriendCard = React.memo(function FriendCard({ friend, profile }: { friend:
                         size={56}
                         strokeWidth={5}
                         gap={2}
-                        center={<ThemedText type="caption">{profile?.productivity_score}</ThemedText>}
                     />
                 )}
             </View>

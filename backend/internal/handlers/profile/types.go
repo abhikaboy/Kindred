@@ -28,7 +28,7 @@ type ProfileDocument struct {
 	TasksComplete     int                  `bson:"tasks_complete" json:"tasks_complete"`
 	Streak            int                  `bson:"streak" json:"streak"`
 	Points            int                  `bson:"points" json:"points"`                         // Suppressed in API responses (always 0)
-	ProductivityScore int                  `bson:"productivity_score" json:"productivity_score"` // Public-facing score
+	ProductivityScore int                  `bson:"productivity_score" json:"productivity_score"` // Only the user themselves sees it
 	PostsMade         int                  `bson:"posts_made" json:"posts_made"`                 // Stored field in users collection
 	Song              *types.Song          `bson:"song,omitempty" json:"song,omitempty"`
 	Friends           []primitive.ObjectID `bson:"friends" json:"friends"`
@@ -48,12 +48,14 @@ type RelationshipInfo struct {
 }
 
 // sanitizeForResponse hides internal metrics from the API response.
-// Points are always hidden. Streak is hidden when viewing another user's profile
-// (it is only visible to the user themselves via productivity_score).
+// Points are always hidden. Scores (streak and productivity score) are the
+// user's own: a number a friend can see turns into a scoreboard, so another
+// user's profile never carries them.
 func (p *ProfileDocument) sanitizeForResponse(isSelf bool) {
 	p.Points = 0
 	if !isSelf {
 		p.Streak = 0
+		p.ProductivityScore = 0
 	}
 }
 

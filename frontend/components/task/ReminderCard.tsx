@@ -11,13 +11,22 @@ type Props = {
     deadline?: string | Date | null;
 };
 
+/** Reminders the backend adds itself, labelled by type instead of a bare time. */
+const TYPE_LABELS: Record<string, string> = {
+    FOLLOW_UP: "Follow-up",
+    PLAN: "Your planned step",
+};
+
 const ReminderCard = ({ reminder, start, deadline }: Props) => {
     const ThemedColor = useThemeColor();
-    const relative = reminderRelativeLabel(reminder, { start, deadline });
     const when = `${formatOrdinalDate(reminder.triggerTime)} · ${formatLocalTime(reminder.triggerTime, {
         hour: "numeric",
         minute: "2-digit",
     })}`;
+    // Follow-ups are added on their own, so say so rather than showing a time
+    // the user doesn't remember setting.
+    const relative = TYPE_LABELS[reminder.type] ?? reminderRelativeLabel(reminder, { start, deadline });
+    const caption = reminder.type === "FOLLOW_UP" ? `Automatic · ${when}` : when;
 
     return (
         <View
@@ -31,7 +40,7 @@ const ReminderCard = ({ reminder, start, deadline }: Props) => {
             {relative ? (
                 <>
                     <ThemedText type="defaultSemiBold">{relative}</ThemedText>
-                    <ThemedText type="caption">{when}</ThemedText>
+                    <ThemedText type="caption">{caption}</ThemedText>
                 </>
             ) : (
                 <ThemedText type="defaultSemiBold">{when}</ThemedText>
