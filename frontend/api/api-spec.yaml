@@ -4313,6 +4313,142 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/mcp-activity:
+        get:
+            tags:
+                - mcp
+            summary: List recent MCP agent activity
+            description: Recent create and complete calls made by the caller's connected agents, newest first.
+            operationId: list-mcp-activity
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: connection_id
+                  in: query
+                  description: Only activity from this token or OAuth grant id
+                  explode: false
+                  schema:
+                    type: string
+                    description: Only activity from this token or OAuth grant id
+                - name: limit
+                  in: query
+                  description: Entries to return, default 20, max 100
+                  explode: false
+                  schema:
+                    type: integer
+                    description: Entries to return, default 20, max 100
+                    format: int64
+                    minimum: 0
+                    maximum: 100
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ActivityItem'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/mcp-tokens:
+        get:
+            tags:
+                - mcp
+            summary: List MCP access tokens
+            operationId: list-mcp-tokens
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/TokenMetadata'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        post:
+            tags:
+                - mcp
+            summary: Create MCP access token
+            description: Mint a personal access token for the MCP server. The raw token is returned only once.
+            operationId: create-mcp-token
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateTokenParams'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateTokenOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/mcp-tokens/{id}:
+        delete:
+            tags:
+                - mcp
+            summary: Revoke MCP access token
+            operationId: revoke-mcp-token
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                  example: 507f1f77bcf86cd799439011
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RevokeTokenOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/notifications:
         get:
             tags:
@@ -4483,6 +4619,194 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MarkAllNotificationsReadOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/grants:
+        get:
+            tags:
+                - oauth
+            summary: List connected MCP apps
+            operationId: list-oauth-grants
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/GrantView'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/grants/{id}:
+        delete:
+            tags:
+                - oauth
+            summary: Disconnect an MCP app and revoke its tokens
+            operationId: revoke-oauth-grant
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RevokeGrantOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/requests/{id}:
+        get:
+            tags:
+                - oauth
+            summary: Get a pending MCP connection request
+            operationId: get-oauth-request
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RequestView'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/requests/{id}/approve:
+        post:
+            tags:
+                - oauth
+            summary: Approve an MCP connection request
+            operationId: approve-oauth-request
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ApproveRequestInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StatusBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/requests/{id}/deny:
+        post:
+            tags:
+                - oauth
+            summary: Deny an MCP connection request
+            operationId: deny-oauth-request
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StatusBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+    /v1/user/oauth/requests/by-code/{code}:
+        get:
+            tags:
+                - oauth
+            summary: Find a pending MCP connection request by its user code
+            operationId: get-oauth-request-by-code
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+                - name: code
+                  in: path
+                  description: User code shown in the browser; case-insensitive, dash optional
+                  required: true
+                  schema:
+                    type: string
+                    description: User code shown in the browser; case-insensitive, dash optional
+                    examples:
+                        - K7QX-2MPA
+                  example: K7QX-2MPA
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RequestView'
                 default:
                     description: Error
                     content:
@@ -8422,6 +8746,37 @@ components:
                 - days
                 - totalCount
                 - lastUpdated
+        ActivityItem:
+            type: object
+            additionalProperties: false
+            properties:
+                created_at:
+                    type: string
+                    format: date-time
+                id:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                ok:
+                    type: boolean
+                summary:
+                    type: string
+                    examples:
+                        - Created task "Buy milk" in Groceries
+                target_id:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                tool:
+                    type: string
+                    examples:
+                        - create_task
+            required:
+                - id
+                - tool
+                - summary
+                - ok
+                - created_at
         AddCommentOutputBody:
             type: object
             additionalProperties: false
@@ -9180,6 +9535,25 @@ components:
             required:
                 - success
                 - message
+        ApproveRequestInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/ApproveRequestInputBody.json
+                    readOnly: true
+                scopes:
+                    type: array
+                    description: Scopes to grant; a non-empty subset of the requested scopes
+                    items:
+                        type: string
+                    minItems: 1
+            required:
+                - scopes
         BlockUserOutputBody:
             type: object
             additionalProperties: false
@@ -9434,6 +9808,17 @@ components:
                     description: Optional one-line hint about a good time to try
             required:
                 - steps
+        BrowserView:
+            type: object
+            additionalProperties: false
+            properties:
+                ip:
+                    type: string
+                user_agent:
+                    type: string
+            required:
+                - user_agent
+                - ip
         BulkCompleteTaskInputBody:
             type: object
             additionalProperties: false
@@ -9894,6 +10279,37 @@ components:
             required:
                 - credit_type
                 - amount
+        ClientView:
+            type: object
+            additionalProperties: false
+            properties:
+                host:
+                    type: string
+                    examples:
+                        - claude.ai
+                id:
+                    type: string
+                    examples:
+                        - https://claude.ai/oauth/mcp-oauth-client-metadata
+                logo_uri:
+                    type: string
+                name:
+                    type: string
+                    examples:
+                        - Claude
+                registration:
+                    type: string
+                    enum:
+                        - cimd
+                        - dcr
+                verified:
+                    type: boolean
+            required:
+                - id
+                - name
+                - host
+                - verified
+                - registration
         CommentDocumentAPI:
             type: object
             additionalProperties: false
@@ -10974,6 +11390,8 @@ components:
                         $ref: '#/components/schemas/TaskLink'
                 notes:
                     type: string
+                origin:
+                    $ref: '#/components/schemas/TaskOrigin'
                 parkedAt:
                     type: string
                     description: When the user set this task aside
@@ -11146,6 +11564,59 @@ components:
                 - value
                 - recurring
                 - public
+        CreateTokenOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateTokenOutputBody.json
+                    readOnly: true
+                metadata:
+                    $ref: '#/components/schemas/TokenMetadata'
+                token:
+                    type: string
+                    description: Raw token. Shown only once; store it securely.
+            required:
+                - token
+                - metadata
+        CreateTokenParams:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/CreateTokenParams.json
+                    readOnly: true
+                expires_in_days:
+                    type: integer
+                    description: Days until the token expires. Omit or 0 for no expiry
+                    format: int64
+                    minimum: 0
+                    maximum: 365
+                name:
+                    type: string
+                    examples:
+                        - Claude Desktop
+                    minLength: 1
+                    maxLength: 64
+                scopes:
+                    type: array
+                    description: Scopes to grant. Omit for all scopes
+                    items:
+                        type: string
+                        enum:
+                            - kindred:read
+                            - kindred:write
+                            - kindred:complete
+            required:
+                - name
         CreateWaitlistParams:
             type: object
             additionalProperties: false
@@ -12310,10 +12781,10 @@ components:
                         - https://example.com/avatar.jpg
                 streak:
                     type: integer
-                    description: Current streak
+                    description: 'Always 0: streaks are only visible to their owner'
                     format: int64
                     examples:
-                        - 5
+                        - 0
                 tasks_complete:
                     type: integer
                     description: Total tasks completed
@@ -12972,6 +13443,30 @@ components:
                         $ref: '#/components/schemas/UserExtendedReference'
             required:
                 - users
+        GrantView:
+            type: object
+            additionalProperties: false
+            properties:
+                client:
+                    $ref: '#/components/schemas/ClientView'
+                created_at:
+                    type: string
+                    format: date-time
+                id:
+                    type: string
+                last_used_at:
+                    type: string
+                    format: date-time
+                scopes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ScopeView'
+            required:
+                - id
+                - client
+                - scopes
+                - created_at
+                - last_used_at
         GroupDocumentAPI:
             type: object
             additionalProperties: false
@@ -15050,6 +15545,48 @@ components:
                         - inappropriate
             required:
                 - reason
+        RequestView:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RequestView.json
+                    readOnly: true
+                browser:
+                    $ref: '#/components/schemas/BrowserView'
+                client:
+                    $ref: '#/components/schemas/ClientView'
+                expires_at:
+                    type: string
+                    format: date-time
+                id:
+                    type: string
+                requested_at:
+                    type: string
+                    format: date-time
+                scopes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ScopeView'
+                status:
+                    type: string
+                    enum:
+                        - pending
+                        - approved
+                        - denied
+                        - expired
+            required:
+                - id
+                - status
+                - client
+                - scopes
+                - requested_at
+                - expires_at
+                - browser
         ResetTemplateMetricsOutputBody:
             type: object
             additionalProperties: false
@@ -15158,6 +15695,40 @@ components:
                 - price_in_purchased_currency
                 - currency
                 - original_transaction_id
+        RevokeGrantOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RevokeGrantOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Connection revoked
+            required:
+                - message
+        RevokeTokenOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/RevokeTokenOutputBody.json
+                    readOnly: true
+                message:
+                    type: string
+                    examples:
+                        - Token revoked
+            required:
+                - message
         RingDelta:
             type: object
             additionalProperties: false
@@ -15362,6 +15933,26 @@ components:
             required:
                 - message
                 - keys
+        ScopeView:
+            type: object
+            additionalProperties: false
+            properties:
+                description:
+                    type: string
+                    examples:
+                        - See your workspaces, categories and tasks.
+                id:
+                    type: string
+                    examples:
+                        - kindred:read
+                title:
+                    type: string
+                    examples:
+                        - View your tasks
+            required:
+                - id
+                - title
+                - description
         SendBeakCongratulationParams:
             type: object
             additionalProperties: false
@@ -15670,6 +16261,26 @@ components:
                         - encouraging
                         - direct
                         - playful
+        StatusBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/StatusBody.json
+                    readOnly: true
+                status:
+                    type: string
+                    enum:
+                        - pending
+                        - approved
+                        - denied
+                        - expired
+            required:
+                - status
         SubscribeToBlueprintOutputBody:
             type: object
             additionalProperties: false
@@ -15913,6 +16524,8 @@ components:
                         $ref: '#/components/schemas/TaskLink'
                 notes:
                     type: string
+                origin:
+                    $ref: '#/components/schemas/TaskOrigin'
                 parkedAt:
                     type: string
                     description: When the user set this task aside
@@ -16070,6 +16683,27 @@ components:
                     description: Absolute URL of the link
             required:
                 - url
+        TaskOrigin:
+            type: object
+            additionalProperties: false
+            properties:
+                at:
+                    type: string
+                    format: date-time
+                client_id:
+                    type: string
+                client_name:
+                    type: string
+                connection_id:
+                    type: string
+                kind:
+                    type: string
+                    examples:
+                        - mcp
+            required:
+                - kind
+                - connection_id
+                - at
         TaskPlan:
             type: object
             additionalProperties: false
@@ -16419,6 +17053,47 @@ components:
                         - Authorized!
             required:
                 - message
+        TokenMetadata:
+            type: object
+            additionalProperties: false
+            properties:
+                created_at:
+                    type: string
+                    format: date-time
+                expires_at:
+                    type: string
+                    description: When the token stops working; absent means never
+                    format: date-time
+                id:
+                    type: string
+                    examples:
+                        - 507f1f77bcf86cd799439011
+                last_used_at:
+                    type: string
+                    format: date-time
+                name:
+                    type: string
+                    examples:
+                        - Claude Desktop
+                prefix:
+                    type: string
+                    examples:
+                        - kdr_AbCdEfGh
+                scopes:
+                    type: array
+                    description: Scopes the token grants
+                    examples:
+                        - - kindred:read
+                          - kindred:write
+                    items:
+                        type: string
+            required:
+                - id
+                - name
+                - prefix
+                - created_at
+                - last_used_at
+                - scopes
         UnblockUserOutputBody:
             type: object
             additionalProperties: false

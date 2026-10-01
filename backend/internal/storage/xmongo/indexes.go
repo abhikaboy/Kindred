@@ -116,6 +116,101 @@ var Indexes = []Index{
 			Options: options.Index().SetName("user_id_idx"),
 		},
 	},
+	// MCP OAuth: hashed secrets are unique, short-lived documents expire via TTL,
+	// and one grant exists per user and client (the compound index also serves user_id lookups).
+	{
+		Collection: "oauth_requests",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "expires_at", Value: 1}},
+			Options: options.Index().SetName("expires_at_ttl").SetExpireAfterSeconds(0),
+		},
+	},
+	{
+		Collection: "oauth_requests",
+		Model: mongo.IndexModel{
+			Keys: bson.D{{Key: "user_code", Value: 1}},
+			Options: options.Index().SetName("pending_user_code_unique").SetUnique(true).
+				SetPartialFilterExpression(bson.D{{Key: "status", Value: "pending"}}),
+		},
+	},
+	{
+		Collection: "oauth_codes",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "code_hash", Value: 1}},
+			Options: options.Index().SetName("code_hash_unique").SetUnique(true),
+		},
+	},
+	{
+		Collection: "oauth_codes",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "expires_at", Value: 1}},
+			Options: options.Index().SetName("expires_at_ttl").SetExpireAfterSeconds(0),
+		},
+	},
+	{
+		Collection: "oauth_codes",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "grant_id", Value: 1}},
+			Options: options.Index().SetName("grant_id_idx"),
+		},
+	},
+	{
+		Collection: "oauth_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "token_hash", Value: 1}},
+			Options: options.Index().SetName("token_hash_unique").SetUnique(true),
+		},
+	},
+	{
+		Collection: "oauth_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "expires_at", Value: 1}},
+			Options: options.Index().SetName("expires_at_ttl").SetExpireAfterSeconds(0),
+		},
+	},
+	{
+		Collection: "oauth_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "grant_id", Value: 1}},
+			Options: options.Index().SetName("grant_id_idx"),
+		},
+	},
+	{
+		Collection: "oauth_tokens",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "family_id", Value: 1}},
+			Options: options.Index().SetName("family_id_idx"),
+		},
+	},
+	{
+		Collection: "oauth_grants",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "client_id", Value: 1}},
+			Options: options.Index().SetName("user_client_unique").SetUnique(true),
+		},
+	},
+	{
+		Collection: "mcp_audit",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "connection_id", Value: 1}, {Key: "created_at", Value: -1}},
+			Options: options.Index().SetName("connection_created_idx"),
+		},
+	},
+	{
+		Collection: "mcp_audit",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}},
+			Options: options.Index().SetName("user_created_idx"),
+		},
+	},
+	// Audit entries age out after a year.
+	{
+		Collection: "mcp_audit",
+		Model: mongo.IndexModel{
+			Keys:    bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetName("created_at_ttl").SetExpireAfterSeconds(365 * 24 * 60 * 60),
+		},
+	},
 	// Referrals collection indexes
 	{
 		Collection: "referrals",

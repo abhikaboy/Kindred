@@ -1,0 +1,13 @@
+{{define "error.html"}}<!doctype html>
+<html lang="en">
+<head>
+<title>{{.Heading}} - Kindred</title>
+{{template "head" .}}
+</head>
+<body>
+<main>
+  <h1>{{.Heading}}</h1>
+  <p class="caption">{{.Message}}</p>
+</main>
+</body>
+</html>{{end}}

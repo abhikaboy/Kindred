@@ -19,10 +19,14 @@ type TokenMetadata struct {
 	Prefix     string     `json:"prefix" example:"kdr_AbCdEfGh"`
 	CreatedAt  time.Time  `json:"created_at"`
 	LastUsedAt *time.Time `json:"last_used_at"`
+	Scopes     []string   `json:"scopes" example:"kindred:read,kindred:write" doc:"Scopes the token grants"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty" doc:"When the token stops working; absent means never"`
 }
 
 type CreateTokenParams struct {
-	Name string `json:"name" minLength:"1" maxLength:"64" example:"Claude Desktop"`
+	Name          string   `json:"name" minLength:"1" maxLength:"64" example:"Claude Desktop"`
+	Scopes        []string `json:"scopes,omitempty" enum:"kindred:read,kindred:write,kindred:complete" doc:"Scopes to grant. Omit for all scopes"`
+	ExpiresInDays int      `json:"expires_in_days,omitempty" minimum:"0" maximum:"365" doc:"Days until the token expires. Omit or 0 for no expiry"`
 }
 
 type CreateTokenInput struct {
@@ -108,6 +112,8 @@ func toTokenMetadata(d *TokenDocument) TokenMetadata {
 		Prefix:     d.Prefix,
 		CreatedAt:  d.CreatedAt,
 		LastUsedAt: d.LastUsedAt,
+		Scopes:     d.EffectiveScopes(),
+		ExpiresAt:  d.ExpiresAt,
 	}
 }
 
@@ -121,7 +127,14 @@ func (h *tokenHandler) Create(ctx context.Context, input *CreateTokenInput) (*Cr
 		return nil, huma.Error400BadRequest("Token name must be 1 to 64 characters")
 	}
 
-	raw, doc, err := h.service.Create(ctx, userID, name)
+	opts := TokenOptions{Scopes: input.Body.Scopes, ExpiresInDays: input.Body.ExpiresInDays}
+	raw, doc, err := h.service.Create(ctx, userID, name, opts)
+	if errors.Is(err, ErrInvalidScopes) {
+		return nil, huma.Error400BadRequest("Scopes must be one or more of kindred:read, kindred:write, kindred:complete")
+	}
+	if errors.Is(err, ErrInvalidExpiry) {
+		return nil, huma.Error400BadRequest("Expiry must be between 1 and 365 days")
+	}
 	if errors.Is(err, ErrTokenLimit) {
 		return nil, huma.Error409Conflict("You can have at most 10 MCP tokens. Revoke one to create another.")
 	}

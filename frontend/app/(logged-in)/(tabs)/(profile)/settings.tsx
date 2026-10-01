@@ -628,6 +628,10 @@ export default function Settings() {
                             </View>
                         </TouchableOpacity>
                     </SettingsCard>
+                    <SettingsActionRow
+                        label="Connected assistants"
+                        onPress={() => router.push('/(logged-in)/(tabs)/(profile)/connected-assistants')}
+                    />
                 </SettingsSection>
 
                 <SettingsSection title="PRIVACY & DATA">

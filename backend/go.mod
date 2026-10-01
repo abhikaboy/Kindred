@@ -39,6 +39,8 @@ require (
 	google.golang.org/grpc v1.80.0
 )
 
+require rsc.io/qr v0.2.0
+
 require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/modelcontextprotocol/go-sdk v1.8.0

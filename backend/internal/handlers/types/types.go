@@ -160,6 +160,18 @@ type TaskDocument struct {
 	SessionNote     string              `bson:"sessionNote,omitempty" json:"sessionNote,omitempty"`
 	SessionPhoto    string              `bson:"sessionPhoto,omitempty" json:"sessionPhoto,omitempty"`
 	Source          string              `bson:"source,omitempty" json:"source,omitempty"`
+
+	// Origin records which connected agent created the task; nil for tasks made in the app.
+	Origin *TaskOrigin `bson:"origin,omitempty" json:"origin,omitempty"`
+}
+
+// TaskOrigin identifies the external agent connection that created a task.
+type TaskOrigin struct {
+	Kind         string             `bson:"kind" json:"kind" example:"mcp"`
+	ConnectionID primitive.ObjectID `bson:"connection_id" json:"connection_id"`
+	ClientID     string             `bson:"client_id,omitempty" json:"client_id,omitempty"`
+	ClientName   string             `bson:"client_name,omitempty" json:"client_name,omitempty"`
+	At           time.Time          `bson:"at" json:"at"`
 }
 
 // KudosSender is an extended reference to the user who sent an encouragement,

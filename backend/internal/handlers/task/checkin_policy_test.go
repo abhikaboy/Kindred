@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-
 func TestCheckinHour(t *testing.T) {
 	cases := []struct {
 		peak *int

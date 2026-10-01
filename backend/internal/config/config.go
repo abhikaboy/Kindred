@@ -15,6 +15,7 @@ type Config struct {
 	GoogleCalendar `envPrefix:"GOOGLE_CALENDAR_"`
 	RevenueCat     `envPrefix:"REVENUECAT_"`
 	OAuth          `envPrefix:"OAUTH_"`
+	MCPOAuth
 }
 
 func Load() (Config, error) {

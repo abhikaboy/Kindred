@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/handlers/oauth"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
 	testpkg "github.com/abhikaboy/Kindred/internal/testing"
@@ -27,6 +29,7 @@ type ToolsTestSuite struct {
 	session *mcp.ClientSession
 	userID  primitive.ObjectID
 	token   string
+	tokenID primitive.ObjectID
 }
 
 func TestTools(t *testing.T) {
@@ -37,13 +40,42 @@ func (s *ToolsTestSuite) SetupTest() {
 	s.BaseSuite.SetupTest()
 	s.service = NewTokenService(s.Collections)
 	s.userID = s.GetUser(0).ID
-	raw, _, err := s.service.Create(s.Ctx, s.userID, "Claude")
+	raw, doc, err := s.service.Create(s.Ctx, s.userID, "Claude", TokenOptions{})
 	s.Require().NoError(err)
-	s.token = raw
+	s.token, s.tokenID = raw, doc.ID
 
-	h := NewHandler(s.Collections, rings.NewRingServiceFromCollections(s.Collections), s.service)
+	h := NewHandler(s.Collections, rings.NewRingServiceFromCollections(s.Collections), s.service, nil)
 	s.srv = httptest.NewServer(h)
 	s.session = connectClient(s.T(), s.srv.URL, s.token)
+}
+
+// connectWith opens a session for a fresh token with the given scopes and limits.
+func (s *ToolsTestSuite) connectWith(scopes []string, l limits) (*mcp.ClientSession, primitive.ObjectID) {
+	raw, doc, err := s.service.Create(s.Ctx, s.userID, "Scoped", TokenOptions{Scopes: scopes})
+	s.Require().NoError(err)
+	t := newTools(s.Collections, rings.NewRingServiceFromCollections(s.Collections), l)
+	srv := httptest.NewServer(newHandler(t, s.service, nil, s.Collections["users"], l))
+	s.T().Cleanup(srv.Close)
+	return connectClient(s.T(), srv.URL, raw), doc.ID
+}
+
+func callOn(session *mcp.ClientSession, name string, args map[string]any) (*mcp.CallToolResult, error) {
+	return session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
+}
+
+func (s *ToolsTestSuite) newCategory(ws, name string) categorySummary {
+	var cat categorySummary
+	s.call("create_workspace", map[string]any{"name": ws}, &createWorkspaceOutput{})
+	s.call("create_category", map[string]any{"name": name, "workspace": ws}, &cat)
+	return cat
+}
+
+func (s *ToolsTestSuite) auditEntries(filter bson.M) []AuditEntry {
+	cursor, err := NewAuditLog(s.Collections).coll.Find(s.Ctx, filter)
+	s.Require().NoError(err)
+	var out []AuditEntry
+	s.Require().NoError(cursor.All(s.Ctx, &out))
+	return out
 }
 
 func (s *ToolsTestSuite) TearDownTest() {
@@ -191,7 +223,7 @@ func (s *ToolsTestSuite) TestCreateTaskValidation() {
 
 func (s *ToolsTestSuite) TestMountOnFiber() {
 	app := fiber.New()
-	Mount(app, s.Collections, nil, s.service)
+	Mount(app, s.Collections, nil, s.service, nil)
 
 	req := httptest.NewRequest(http.MethodPost, Path, strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -218,4 +250,193 @@ func (s *ToolsTestSuite) TestMountOnFiber() {
 	}
 	s.Require().NoError(json.NewDecoder(resp.Body).Decode(&body))
 	s.Len(body.Result.Tools, 7)
+}
+
+func (s *ToolsTestSuite) TestOriginStampedAndSurvivesCompletion() {
+	cat := s.newCategory("Errands", "Groceries")
+	var created createTaskOutput
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Buy milk"}, &created)
+	taskID, err := primitive.ObjectIDFromHex(created.Task.ID)
+	s.Require().NoError(err)
+	catID, err := primitive.ObjectIDFromHex(cat.ID)
+	s.Require().NoError(err)
+
+	var stored category.CategoryDocument
+	s.FindOne("categories", bson.M{"_id": catID}, &stored)
+	s.Require().Len(stored.Tasks, 1)
+	origin := stored.Tasks[0].Origin
+	s.Require().NotNil(origin)
+	s.Equal("mcp", origin.Kind)
+	s.Equal(s.tokenID, origin.ConnectionID)
+	s.Equal("Claude", origin.ClientName)
+	s.False(origin.At.IsZero())
+
+	s.call("complete_task", map[string]any{"task_id": created.Task.ID}, &completeTaskOutput{})
+	var done task.TaskDocument
+	s.FindOne("completed-tasks", bson.M{"_id": taskID}, &done)
+	s.Require().NotNil(done.Origin, "origin is copied into the completed record")
+	s.Equal(s.tokenID, done.Origin.ConnectionID)
+}
+
+func (s *ToolsTestSuite) TestTasksArePrivateByDefault() {
+	cat := s.newCategory("Errands", "Groceries")
+	catID, err := primitive.ObjectIDFromHex(cat.ID)
+	s.Require().NoError(err)
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Quiet"}, &createTaskOutput{})
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Shared", "public": true}, &createTaskOutput{})
+
+	var stored category.CategoryDocument
+	s.FindOne("categories", bson.M{"_id": catID}, &stored)
+	s.Require().Len(stored.Tasks, 2)
+	public := map[string]bool{}
+	for _, tk := range stored.Tasks {
+		public[tk.Content] = tk.Public
+	}
+	s.False(public["Quiet"])
+	s.True(public["Shared"])
+}
+
+func (s *ToolsTestSuite) TestAuditEntriesForWrites() {
+	cat := s.newCategory("Errands", "Groceries")
+	var created createTaskOutput
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Buy milk"}, &created)
+	s.call("create_task", map[string]any{"category_id": primitive.NewObjectID().Hex(), "content": "Ghost"}, nil)
+	s.call("complete_task", map[string]any{"task_id": created.Task.ID}, &completeTaskOutput{})
+	s.call("list_tasks", map[string]any{}, &listTasksOutput{})
+
+	entries := s.auditEntries(bson.M{"connection_id": s.tokenID})
+	s.Require().Len(entries, 5, "workspace, category, two task creates and one completion; reads are not audited")
+	byTool := map[string][]AuditEntry{}
+	for _, e := range entries {
+		s.Equal(s.userID, e.UserID)
+		s.Equal("pat", e.Kind)
+		s.Equal("Claude", e.ClientName)
+		s.False(e.CreatedAt.IsZero())
+		byTool[e.Tool] = append(byTool[e.Tool], e)
+	}
+	s.Require().Len(byTool["create_task"], 2)
+	var ok, failed AuditEntry
+	for _, e := range byTool["create_task"] {
+		if e.OK {
+			ok = e
+		} else {
+			failed = e
+		}
+	}
+	s.Equal(`Created task "Buy milk" in Groceries`, ok.Summary)
+	s.Equal(created.Task.ID, ok.TargetIDs[0].Hex())
+	s.Contains(failed.Summary, `Failed to create task "Ghost"`)
+	s.Contains(failed.Error, "category not found")
+
+	s.Require().Len(byTool["complete_task"], 1)
+	s.True(byTool["complete_task"][0].OK)
+	s.Equal(`Completed task "Buy milk" in Groceries`, byTool["complete_task"][0].Summary)
+	s.Equal(`Created workspace "Errands"`, byTool["create_workspace"][0].Summary)
+	s.Equal(`Created category "Groceries" in Errands`, byTool["create_category"][0].Summary)
+}
+
+func (s *ToolsTestSuite) TestScopedTokenSeesAndCallsOnlyGrantedTools() {
+	cat := s.newCategory("Errands", "Groceries")
+	var created createTaskOutput
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Buy milk"}, &created)
+
+	session, connID := s.connectWith([]string{oauth.ScopeRead}, defaultLimits)
+	s.Equal([]string{"list_categories", "list_tasks", "list_workspaces"}, toolNames(s.T(), session))
+
+	res, err := callOn(session, "list_tasks", map[string]any{})
+	s.Require().NoError(err)
+	s.False(res.IsError)
+
+	res, err = callOn(session, "complete_task", map[string]any{"task_id": created.Task.ID})
+	s.True(err != nil || res.IsError, "unlisted tools cannot be called")
+	s.Equal(int64(1), s.CountDocuments("categories", bson.M{"tasks._id": mustID(s, created.Task.ID)}), "task is still open")
+	s.Empty(s.auditEntries(bson.M{"connection_id": connID}))
+}
+
+func mustID(s *ToolsTestSuite, hex string) primitive.ObjectID {
+	id, err := primitive.ObjectIDFromHex(hex)
+	s.Require().NoError(err)
+	return id
+}
+
+func (s *ToolsTestSuite) TestDailyCaps() {
+	session, connID := s.connectWith(oauth.AllScopes(), limits{requestsPerMinute: 1000, dailyCreates: 3, dailyCompletes: 1})
+	for _, call := range []struct {
+		tool string
+		args map[string]any
+	}{
+		{"create_workspace", map[string]any{"name": "Capped"}},
+		{"create_category", map[string]any{"name": "One", "workspace": "Capped"}},
+	} {
+		res, err := callOn(session, call.tool, call.args)
+		s.Require().NoError(err)
+		s.Require().False(res.IsError, toolText(res))
+	}
+	var cats listCategoriesOutput
+	s.call("list_categories", map[string]any{"workspace": "Capped"}, &cats)
+	s.Require().Len(cats.Categories, 1)
+	catID := cats.Categories[0].ID
+
+	res, err := callOn(session, "create_task", map[string]any{"category_id": catID, "content": "First"})
+	s.Require().NoError(err)
+	s.Require().False(res.IsError, toolText(res))
+
+	res, err = callOn(session, "create_task", map[string]any{"category_id": catID, "content": "Fourth"})
+	s.Require().NoError(err)
+	s.True(res.IsError)
+	s.Contains(toolText(res), "daily limit reached")
+
+	var tasks listTasksOutput
+	s.call("list_tasks", map[string]any{"category_id": catID}, &tasks)
+	s.Require().Len(tasks.Tasks, 1)
+
+	res, err = callOn(session, "complete_task", map[string]any{"task_id": tasks.Tasks[0].ID})
+	s.Require().NoError(err)
+	s.Require().False(res.IsError, toolText(res))
+
+	s.call("create_task", map[string]any{"category_id": catID, "content": "Via main token"}, &createTaskOutput{})
+	s.call("list_tasks", map[string]any{"category_id": catID}, &tasks)
+	res, err = callOn(session, "complete_task", map[string]any{"task_id": tasks.Tasks[0].ID})
+	s.Require().NoError(err)
+	s.True(res.IsError)
+	s.Contains(toolText(res), "daily limit reached")
+
+	s.call("complete_task", map[string]any{"task_id": tasks.Tasks[0].ID}, &completeTaskOutput{})
+	failed := s.auditEntries(bson.M{"connection_id": connID, "ok": false})
+	s.Len(failed, 2, "capped calls are audited as failures")
+}
+
+func (s *ToolsTestSuite) TestActivityEndpointScopedToCaller() {
+	cat := s.newCategory("Errands", "Groceries")
+	s.call("create_task", map[string]any{"category_id": cat.ID, "content": "Buy milk"}, &createTaskOutput{})
+
+	audit := NewAuditLog(s.Collections)
+	other := s.GetUser(1).ID
+	s.Require().NoError(audit.Record(s.Ctx, &oauth.Principal{UserID: other, ConnectionID: s.tokenID, Kind: "pat"}, "create_task", nil, "Theirs", nil))
+
+	h := &activityHandler{audit: audit}
+	ctx := context.WithValue(s.Ctx, auth.UserIDContextKey, s.userID.Hex())
+	out, err := h.List(ctx, &ListActivityInput{})
+	s.Require().NoError(err)
+	s.Require().Len(out.Body, 3)
+	s.Equal("create_task", out.Body[0].Tool, "newest first")
+	s.Equal(`Created task "Buy milk" in Groceries`, out.Body[0].Summary)
+	s.True(out.Body[0].OK)
+	s.NotEmpty(out.Body[0].TargetID)
+	for _, item := range out.Body {
+		s.NotEqual("Theirs", item.Summary, "other users' activity is never returned")
+	}
+
+	out, err = h.List(ctx, &ListActivityInput{ConnectionID: s.tokenID.Hex(), Limit: 1})
+	s.Require().NoError(err)
+	s.Len(out.Body, 1)
+
+	out, err = h.List(ctx, &ListActivityInput{ConnectionID: primitive.NewObjectID().Hex()})
+	s.Require().NoError(err)
+	s.Empty(out.Body)
+
+	_, err = h.List(ctx, &ListActivityInput{ConnectionID: "nope"})
+	s.Error(err)
+	_, err = h.List(s.Ctx, &ListActivityInput{})
+	s.Error(err, "requires an authenticated caller")
 }

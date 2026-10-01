@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TextInput, StyleProp, TextStyle } from "react-native";
+import { StyleSheet, Text, View, TextInput, StyleProp, TextStyle, TextInputProps } from "react-native";
 import React, { forwardRef } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
@@ -19,6 +19,8 @@ type Props = {
     useBottomSheetInput?: boolean; // New prop to determine input type
     secureTextEntry?: boolean; // New prop for password fields
     forceTheme?: "light" | "dark"; // Force a specific theme
+    /** Extra native TextInput props (keyboard, autocorrect, maxLength...). */
+    inputProps?: Omit<TextInputProps, "value" | "onChangeText" | "style">;
 };
 
 const ThemedInput = forwardRef<any, Props>(
@@ -42,6 +44,7 @@ const ThemedInput = forwardRef<any, Props>(
         };
 
         const commonProps = {
+            ...props.inputProps,
             autoFocus: props?.autofocus,
             placeholder: props?.placeHolder,
             onSubmitEditing: props?.onSubmit,

@@ -4,16 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/abhikaboy/Kindred/internal/handlers/auth"
 	category "github.com/abhikaboy/Kindred/internal/handlers/category"
+	"github.com/abhikaboy/Kindred/internal/handlers/oauth"
 	"github.com/abhikaboy/Kindred/internal/handlers/rings"
 	"github.com/abhikaboy/Kindred/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -34,9 +39,12 @@ type tools struct {
 	taskHandler *task.Handler
 	taskService *task.Service
 	categories  *category.Service
+	categoryDB  *mongo.Collection
+	audit       *AuditLog
+	limits      limits
 }
 
-func newTools(collections map[string]*mongo.Collection, ringService *rings.RingService) *tools {
+func newTools(collections map[string]*mongo.Collection, ringService *rings.RingService, l limits) *tools {
 	if collections["workspaces"] == nil && collections["categories"] != nil {
 		collections["workspaces"] = collections["categories"].Database().Collection("workspaces")
 	}
@@ -44,49 +52,109 @@ func newTools(collections map[string]*mongo.Collection, ringService *rings.RingS
 		taskHandler: task.NewStreamHandler(collections, nil, ringService),
 		taskService: task.NewService(collections),
 		categories:  category.NewService(collections),
+		categoryDB:  collections["categories"],
+		audit:       NewAuditLog(collections),
+		limits:      l,
 	}
 }
 
-func (t *tools) register(s *mcp.Server) {
-	readOnly := &mcp.ToolAnnotations{ReadOnlyHint: true}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "list_workspaces",
-		Title:       "List workspaces",
-		Description: "List the user's workspaces with the categories inside each one, including category ids and open task counts.",
-		Annotations: readOnly,
-	}, t.listWorkspaces)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "list_categories",
-		Title:       "List categories",
-		Description: "List the user's categories, optionally limited to one workspace. Use the returned id as category_id for other tools.",
-		Annotations: readOnly,
-	}, t.listCategories)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "list_tasks",
-		Title:       "List tasks",
-		Description: "List the user's open tasks, optionally filtered by workspace, category or deadline window. Set include_completed to also get recently completed tasks.",
-		Annotations: readOnly,
-	}, t.listTasks)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "create_workspace",
-		Title:       "Create workspace",
-		Description: "Create a new, empty workspace. Add categories to it with create_category before creating tasks.",
-	}, t.createWorkspace)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "create_category",
-		Title:       "Create category",
-		Description: "Create a category inside an existing workspace. Returns the new category id.",
-	}, t.createCategory)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "create_task",
-		Title:       "Create task",
-		Description: "Create a task in a category. Behaves like creating a task in the Kindred app, including ring progress.",
-	}, t.createTask)
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "complete_task",
-		Title:       "Complete task",
-		Description: "Mark an open task as complete. This moves it to the user's completed history and updates their streak and rings, exactly as the app does. It cannot be undone through this server.",
-	}, t.completeTask)
+var (
+	createTools   = []string{"create_workspace", "create_category", "create_task"}
+	completeTools = []string{"complete_task"}
+)
+
+// register adds only the tools the granted scopes allow.
+func (t *tools) register(s *mcp.Server, scopes []string) {
+	if slices.Contains(scopes, oauth.ScopeRead) {
+		readOnly := &mcp.ToolAnnotations{ReadOnlyHint: true}
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "list_workspaces",
+			Title:       "List workspaces",
+			Description: "List the user's workspaces with the categories inside each one, including category ids and open task counts.",
+			Annotations: readOnly,
+		}, readTool(t.listWorkspaces))
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "list_categories",
+			Title:       "List categories",
+			Description: "List the user's categories, optionally limited to one workspace. Use the returned id as category_id for other tools.",
+			Annotations: readOnly,
+		}, readTool(t.listCategories))
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "list_tasks",
+			Title:       "List tasks",
+			Description: "List the user's open tasks, optionally filtered by workspace, category or deadline window. Set include_completed to also get recently completed tasks.",
+			Annotations: readOnly,
+		}, readTool(t.listTasks))
+	}
+	if slices.Contains(scopes, oauth.ScopeWrite) {
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "create_workspace",
+			Title:       "Create workspace",
+			Description: "Create a new, empty workspace. Add categories to it with create_category before creating tasks.",
+		}, auditedTool(t, "create_workspace", "create workspace", oauth.ScopeWrite, t.createWorkspace))
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "create_category",
+			Title:       "Create category",
+			Description: "Create a category inside an existing workspace. Returns the new category id.",
+		}, auditedTool(t, "create_category", "create category", oauth.ScopeWrite, t.createCategory))
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "create_task",
+			Title:       "Create task",
+			Description: "Create a task in a category. Behaves like creating a task in the Kindred app, including ring progress. Tasks are private unless the user explicitly asks to share them with friends.",
+		}, auditedTool(t, "create_task", "create task", oauth.ScopeWrite, t.createTask))
+	}
+	if slices.Contains(scopes, oauth.ScopeComplete) {
+		mcp.AddTool(s, &mcp.Tool{
+			Name:        "complete_task",
+			Title:       "Complete task",
+			Description: "Mark an open task as complete. Only use this when the user explicitly says the task is done. This moves it to the user's completed history and updates their streak and rings, exactly as the app does. It cannot be undone through this server.",
+		}, auditedTool(t, "complete_task", "complete task", oauth.ScopeComplete, t.completeTask))
+	}
+}
+
+// readTool enforces the read scope inside the handler, in case a tool is reached without being listed.
+func readTool[In, Out any](fn func(context.Context, caller, In) (Out, error)) mcp.ToolHandlerFor[In, Out] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
+		var zero Out
+		c, err := callerFrom(req)
+		if err != nil {
+			return nil, zero, err
+		}
+		if !c.can(oauth.ScopeRead) {
+			return nil, zero, scopeError(oauth.ScopeRead)
+		}
+		out, err := fn(ctx, c, in)
+		return nil, out, err
+	}
+}
+
+// auditRecord is filled in by a write tool so the audit entry can describe what happened.
+type auditRecord struct {
+	subject string
+	summary string
+	targets []primitive.ObjectID
+}
+
+// auditedTool enforces scope and daily caps, then writes an mcp_audit entry whether the call succeeds or fails.
+func auditedTool[In, Out any](t *tools, name, verb, scope string, fn func(context.Context, caller, In, *auditRecord) (Out, error)) mcp.ToolHandlerFor[In, Out] {
+	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
+		var zero Out
+		c, err := callerFrom(req)
+		if err != nil {
+			return nil, zero, err
+		}
+		rec := &auditRecord{}
+		var out Out
+		err = t.guard(ctx, c, name, scope)
+		if err == nil {
+			out, err = fn(ctx, c, in, rec)
+		}
+		t.recordAudit(ctx, c, name, verb, rec, err)
+		if err != nil {
+			return nil, zero, err
+		}
+		return nil, out, nil
+	}
 }
 
 // Tool inputs and outputs.
@@ -176,7 +244,7 @@ type createTaskInput struct {
 	Deadline   string  `json:"deadline,omitempty" jsonschema:"When it is due. YYYY-MM-DD means the end of that day, or give a date and time"`
 	Notes      string  `json:"notes,omitempty" jsonschema:"Optional free text notes"`
 	Someday    bool    `json:"someday,omitempty" jsonschema:"Create as an undated Someday task. Start date and deadline are ignored"`
-	Public     *bool   `json:"public,omitempty" jsonschema:"Whether friends can see the task. Defaults to true, like the app"`
+	Public     *bool   `json:"public,omitempty" jsonschema:"Whether friends can see the task. Defaults to false (private). Set true only when the user explicitly asks to share it"`
 }
 
 type createTaskOutput struct {
@@ -198,60 +266,48 @@ type completeTaskOutput struct {
 
 // Handlers.
 
-func (t *tools) listWorkspaces(ctx context.Context, req *mcp.CallToolRequest, _ listWorkspacesInput) (*mcp.CallToolResult, listWorkspacesOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, listWorkspacesOutput{}, err
-	}
+func (t *tools) listWorkspaces(_ context.Context, c caller, _ listWorkspacesInput) (listWorkspacesOutput, error) {
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, listWorkspacesOutput{}, err
+		return listWorkspacesOutput{}, err
 	}
 	out := listWorkspacesOutput{Workspaces: make([]workspaceSummary, 0, len(ws))}
 	for _, w := range ws {
 		out.Workspaces = append(out.Workspaces, workspaceSummary{Name: w.name, Color: w.color, Categories: w.summaries()})
 	}
-	return nil, out, nil
+	return out, nil
 }
 
-func (t *tools) listCategories(ctx context.Context, req *mcp.CallToolRequest, in listCategoriesInput) (*mcp.CallToolResult, listCategoriesOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, listCategoriesOutput{}, err
-	}
+func (t *tools) listCategories(_ context.Context, c caller, in listCategoriesInput) (listCategoriesOutput, error) {
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, listCategoriesOutput{}, err
+		return listCategoriesOutput{}, err
 	}
 	out := listCategoriesOutput{Categories: []categorySummary{}}
 	name := strings.TrimSpace(in.Workspace)
 	if name != "" {
 		w := findWorkspace(ws, name)
 		if w == nil {
-			return nil, out, fmt.Errorf("workspace %q not found", name)
+			return out, fmt.Errorf("workspace %q not found", name)
 		}
 		ws = []workspace{*w}
 	}
 	for _, w := range ws {
 		out.Categories = append(out.Categories, w.summaries()...)
 	}
-	return nil, out, nil
+	return out, nil
 }
 
-func (t *tools) listTasks(ctx context.Context, req *mcp.CallToolRequest, in listTasksInput) (*mcp.CallToolResult, listTasksOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, listTasksOutput{}, err
-	}
+func (t *tools) listTasks(_ context.Context, c caller, in listTasksInput) (listTasksOutput, error) {
 	out := listTasksOutput{Tasks: []taskSummary{}, Timezone: c.timezone}
 
 	after, err := parseBound(in.DueAfter, c.loc, false)
 	if err != nil {
-		return nil, out, fmt.Errorf("due_after: %w", err)
+		return out, fmt.Errorf("due_after: %w", err)
 	}
 	before, err := parseBound(in.DueBefore, c.loc, true)
 	if err != nil {
-		return nil, out, fmt.Errorf("due_before: %w", err)
+		return out, fmt.Errorf("due_before: %w", err)
 	}
 	limit := in.Limit
 	if limit <= 0 {
@@ -261,11 +317,11 @@ func (t *tools) listTasks(ctx context.Context, req *mcp.CallToolRequest, in list
 
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, out, err
+		return out, err
 	}
 	scope, err := selectCategories(ws, in.Workspace, in.CategoryID)
 	if err != nil {
-		return nil, out, err
+		return out, err
 	}
 	inWindow := func(d *time.Time) bool {
 		if after == nil && before == nil {
@@ -292,7 +348,7 @@ func (t *tools) listTasks(ctx context.Context, req *mcp.CallToolRequest, in list
 	if in.IncludeCompleted {
 		done, _, err := t.taskService.GetCompletedTasks(c.userID, 1, maxCompleted)
 		if err != nil {
-			return nil, out, errors.New("could not load completed tasks")
+			return out, errors.New("could not load completed tasks")
 		}
 		byID := make(map[primitive.ObjectID]categoryRef, len(scope))
 		for _, cat := range scope {
@@ -308,28 +364,25 @@ func (t *tools) listTasks(ctx context.Context, req *mcp.CallToolRequest, in list
 			out.Completed = append(out.Completed, summarize(tk, cat, c.loc))
 		}
 	}
-	return nil, out, nil
+	return out, nil
 }
 
-func (t *tools) createWorkspace(ctx context.Context, req *mcp.CallToolRequest, in createWorkspaceInput) (*mcp.CallToolResult, createWorkspaceOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, createWorkspaceOutput{}, err
-	}
+func (t *tools) createWorkspace(_ context.Context, c caller, in createWorkspaceInput, rec *auditRecord) (createWorkspaceOutput, error) {
 	name := strings.TrimSpace(in.Name)
 	if name == "" {
-		return nil, createWorkspaceOutput{}, errors.New("name is required")
+		return createWorkspaceOutput{}, errors.New("name is required")
 	}
+	rec.subject = name
 	color := strings.TrimSpace(in.Color)
 	if color != "" && !hexColor.MatchString(color) {
-		return nil, createWorkspaceOutput{}, errors.New("color must be a hex value like #6C5CE7")
+		return createWorkspaceOutput{}, errors.New("color must be a hex value like #6C5CE7")
 	}
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, createWorkspaceOutput{}, err
+		return createWorkspaceOutput{}, err
 	}
 	if w := findWorkspace(ws, name); w != nil {
-		return nil, createWorkspaceOutput{}, fmt.Errorf("workspace %q already exists", w.name)
+		return createWorkspaceOutput{}, fmt.Errorf("workspace %q already exists", w.name)
 	}
 
 	// Mirrors the app: an empty workspace is a placeholder category plus optional metadata.
@@ -342,39 +395,37 @@ func (t *tools) createWorkspace(ctx context.Context, req *mcp.CallToolRequest, i
 		LastEdited:    xutils.NowUTC(),
 	}
 	if _, err := t.categories.CreateCategory(&doc); err != nil {
-		return nil, createWorkspaceOutput{}, errors.New("could not create workspace")
+		return createWorkspaceOutput{}, errors.New("could not create workspace")
 	}
 	if color != "" {
 		if err := t.categories.UpsertWorkspaceMeta(name, c.userID, nil, &color); err != nil {
-			return nil, createWorkspaceOutput{}, errors.New("workspace created but its color could not be saved")
+			return createWorkspaceOutput{}, errors.New("workspace created but its color could not be saved")
 		}
 	}
-	return nil, createWorkspaceOutput{Name: name}, nil
+	rec.summary = fmt.Sprintf("Created workspace %q", name)
+	return createWorkspaceOutput{Name: name}, nil
 }
 
-func (t *tools) createCategory(ctx context.Context, req *mcp.CallToolRequest, in createCategoryInput) (*mcp.CallToolResult, categorySummary, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, categorySummary{}, err
-	}
+func (t *tools) createCategory(_ context.Context, c caller, in createCategoryInput, rec *auditRecord) (categorySummary, error) {
 	name, wsName := strings.TrimSpace(in.Name), strings.TrimSpace(in.Workspace)
 	if name == "" || wsName == "" {
-		return nil, categorySummary{}, errors.New("name and workspace are required")
+		return categorySummary{}, errors.New("name and workspace are required")
 	}
+	rec.subject = name
 	if name == proxyCategoryName {
-		return nil, categorySummary{}, errors.New("that category name is reserved")
+		return categorySummary{}, errors.New("that category name is reserved")
 	}
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, categorySummary{}, err
+		return categorySummary{}, err
 	}
 	w := findWorkspace(ws, wsName)
 	if w == nil {
-		return nil, categorySummary{}, fmt.Errorf("workspace %q not found; create it with create_workspace first", wsName)
+		return categorySummary{}, fmt.Errorf("workspace %q not found; create it with create_workspace first", wsName)
 	}
 	for _, cat := range w.categories {
 		if strings.EqualFold(cat.doc.Name, name) {
-			return nil, categorySummary{}, fmt.Errorf("category %q already exists in %q with id %s", cat.doc.Name, w.name, cat.doc.ID.Hex())
+			return categorySummary{}, fmt.Errorf("category %q already exists in %q with id %s", cat.doc.Name, w.name, cat.doc.ID.Hex())
 		}
 	}
 
@@ -387,41 +438,40 @@ func (t *tools) createCategory(ctx context.Context, req *mcp.CallToolRequest, in
 		LastEdited:    xutils.NowUTC(),
 	}
 	if _, err := t.categories.CreateCategory(&doc); err != nil {
-		return nil, categorySummary{}, errors.New("could not create category")
+		return categorySummary{}, errors.New("could not create category")
 	}
-	return nil, categorySummary{ID: doc.ID.Hex(), Name: doc.Name, Workspace: doc.WorkspaceName}, nil
+	rec.targets = []primitive.ObjectID{doc.ID}
+	rec.summary = fmt.Sprintf("Created category %q in %s", doc.Name, doc.WorkspaceName)
+	return categorySummary{ID: doc.ID.Hex(), Name: doc.Name, Workspace: doc.WorkspaceName}, nil
 }
 
-func (t *tools) createTask(ctx context.Context, req *mcp.CallToolRequest, in createTaskInput) (*mcp.CallToolResult, createTaskOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, createTaskOutput{}, err
-	}
+func (t *tools) createTask(ctx context.Context, c caller, in createTaskInput, rec *auditRecord) (createTaskOutput, error) {
 	content := strings.TrimSpace(in.Content)
 	if content == "" {
-		return nil, createTaskOutput{}, errors.New("content is required")
+		return createTaskOutput{}, errors.New("content is required")
 	}
+	rec.subject = content
 	priority := in.Priority
 	if priority == 0 {
 		priority = 1
 	}
 	if priority < 1 || priority > 3 {
-		return nil, createTaskOutput{}, errors.New("priority must be 1, 2 or 3")
+		return createTaskOutput{}, errors.New("priority must be 1, 2 or 3")
 	}
 	difficulty := in.Difficulty
 	if difficulty == 0 {
 		difficulty = 1
 	}
 	if difficulty < 1 || difficulty > 10 {
-		return nil, createTaskOutput{}, errors.New("difficulty must be between 1 and 10")
+		return createTaskOutput{}, errors.New("difficulty must be between 1 and 10")
 	}
 	start, startHasTime, err := parseWhen(in.StartDate, c.loc)
 	if err != nil {
-		return nil, createTaskOutput{}, fmt.Errorf("start_date: %w", err)
+		return createTaskOutput{}, fmt.Errorf("start_date: %w", err)
 	}
 	deadline, deadlineHasTime, err := parseWhen(in.Deadline, c.loc)
 	if err != nil {
-		return nil, createTaskOutput{}, fmt.Errorf("deadline: %w", err)
+		return createTaskOutput{}, fmt.Errorf("deadline: %w", err)
 	}
 	if deadline != nil && !deadlineHasTime {
 		y, m, d := deadline.Date()
@@ -431,17 +481,17 @@ func (t *tools) createTask(ctx context.Context, req *mcp.CallToolRequest, in cre
 
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, createTaskOutput{}, err
+		return createTaskOutput{}, err
 	}
 	cat, err := findCategory(ws, in.CategoryID)
 	if err != nil {
-		return nil, createTaskOutput{}, err
+		return createTaskOutput{}, err
 	}
 	if cat.doc.Name == proxyCategoryName {
-		return nil, createTaskOutput{}, errors.New("that id is a workspace placeholder, not a category; create a category first")
+		return createTaskOutput{}, errors.New("that id is a workspace placeholder, not a category; create a category first")
 	}
 
-	public := true
+	public := false
 	if in.Public != nil {
 		public = *in.Public
 	}
@@ -461,30 +511,32 @@ func (t *tools) createTask(ctx context.Context, req *mcp.CallToolRequest, in cre
 
 	res, err := t.taskHandler.CreateTask(c.context(ctx), &task.CreateTaskInput{Category: cat.doc.ID.Hex(), Body: params})
 	if err != nil {
-		return nil, createTaskOutput{}, fmt.Errorf("could not create task: %s", err.Error())
+		return createTaskOutput{}, fmt.Errorf("could not create task: %s", err.Error())
 	}
-	return nil, createTaskOutput{Task: summarize(res.Body.TaskDocument, cat, c.loc)}, nil
+	created := res.Body.TaskDocument
+	rec.targets = []primitive.ObjectID{created.ID, cat.doc.ID}
+	rec.summary = fmt.Sprintf("Created task %q in %s", created.Content, cat.doc.Name)
+	t.stampOrigin(ctx, c, cat.doc.ID, created.ID)
+	return createTaskOutput{Task: summarize(created, cat, c.loc)}, nil
 }
 
-func (t *tools) completeTask(ctx context.Context, req *mcp.CallToolRequest, in completeTaskInput) (*mcp.CallToolResult, completeTaskOutput, error) {
-	c, err := callerFrom(req)
-	if err != nil {
-		return nil, completeTaskOutput{}, err
-	}
+func (t *tools) completeTask(ctx context.Context, c caller, in completeTaskInput, rec *auditRecord) (completeTaskOutput, error) {
 	taskID, err := primitive.ObjectIDFromHex(strings.TrimSpace(in.TaskID))
 	if err != nil {
-		return nil, completeTaskOutput{}, errors.New("task_id is not a valid id")
+		return completeTaskOutput{}, errors.New("task_id is not a valid id")
 	}
+	rec.targets = []primitive.ObjectID{taskID}
 	ws, err := t.loadWorkspaces(c)
 	if err != nil {
-		return nil, completeTaskOutput{}, err
+		return completeTaskOutput{}, err
 	}
 	tk, cat, ok := findTask(ws, taskID)
 	if !ok {
-		return nil, completeTaskOutput{}, errors.New("open task not found; it may already be complete")
+		return completeTaskOutput{}, errors.New("open task not found; it may already be complete")
 	}
+	rec.subject = tk.Content
 	if id := strings.TrimSpace(in.CategoryID); id != "" && id != cat.doc.ID.Hex() {
-		return nil, completeTaskOutput{}, fmt.Errorf("task is in category %s, not %s", cat.doc.ID.Hex(), id)
+		return completeTaskOutput{}, fmt.Errorf("task is in category %s, not %s", cat.doc.ID.Hex(), id)
 	}
 
 	res, err := t.taskHandler.CompleteTask(c.context(ctx), &task.CompleteTaskInput{
@@ -493,9 +545,10 @@ func (t *tools) completeTask(ctx context.Context, req *mcp.CallToolRequest, in c
 		Body:     task.CompleteTaskDocument{TimeCompleted: time.Now().UTC().Format(time.RFC3339), TimeTaken: "PT0S"},
 	})
 	if err != nil {
-		return nil, completeTaskOutput{}, fmt.Errorf("could not complete task: %s", err.Error())
+		return completeTaskOutput{}, fmt.Errorf("could not complete task: %s", err.Error())
 	}
 
+	rec.summary = fmt.Sprintf("Completed task %q in %s", tk.Content, cat.doc.Name)
 	done := summarize(tk, cat, c.loc)
 	done.Completed = true
 	out := completeTaskOutput{
@@ -508,11 +561,72 @@ func (t *tools) completeTask(ctx context.Context, req *mcp.CallToolRequest, in c
 		s := summarize(next.Task, cat, c.loc)
 		out.NextTask = &s
 	}
-	return nil, out, nil
+	return out, nil
 }
 
 // context returns ctx carrying the same auth values the JWT middleware sets for Huma handlers.
 func (c caller) context(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, auth.UserIDContextKey, c.userID.Hex())
 	return context.WithValue(ctx, auth.TimezoneContextKey, c.timezone)
+}
+
+func scopeError(scope string) error {
+	return fmt.Errorf("this connection was not granted the %s scope", scope)
+}
+
+// guard checks the tool's scope and the connection's rolling 24h cap before a write runs.
+func (t *tools) guard(ctx context.Context, c caller, name, scope string) error {
+	if !c.can(scope) {
+		return scopeError(scope)
+	}
+	group, limit, noun := createTools, t.limits.dailyCreates, "create"
+	if scope == oauth.ScopeComplete {
+		group, limit, noun = completeTools, t.limits.dailyCompletes, "complete"
+	}
+	if limit <= 0 || !slices.Contains(group, name) {
+		return nil
+	}
+	n, err := t.audit.CountSince(ctx, c.principal.ConnectionID, group, time.Now().Add(-24*time.Hour))
+	if err != nil {
+		slog.ErrorContext(ctx, "MCP daily cap check failed", "error", err)
+		return errors.New("could not check this connection's daily limit; try again shortly")
+	}
+	if n >= int64(limit) {
+		return fmt.Errorf("daily limit reached: this connection can %s at most %d items per 24 hours. Ask the user to do more in the Kindred app", noun, limit)
+	}
+	return nil
+}
+
+func (t *tools) recordAudit(ctx context.Context, c caller, name, verb string, rec *auditRecord, callErr error) {
+	summary := rec.summary
+	if callErr != nil || summary == "" {
+		summary = "Failed to " + verb
+		if rec.subject != "" {
+			summary += fmt.Sprintf(" %q", rec.subject)
+		}
+		if callErr != nil {
+			summary += ": " + callErr.Error()
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := t.audit.Record(ctx, c.principal, name, rec.targets, summary, callErr); err != nil {
+		slog.ErrorContext(ctx, "MCP audit write failed", "tool", name, "error", err)
+	}
+}
+
+// stampOrigin marks a newly created task with the agent connection that made it.
+func (t *tools) stampOrigin(ctx context.Context, c caller, categoryID, taskID primitive.ObjectID) {
+	if t.categoryDB == nil {
+		return
+	}
+	p := c.principal
+	origin := types.TaskOrigin{Kind: "mcp", ConnectionID: p.ConnectionID, ClientID: p.ClientID, ClientName: p.ClientName, At: time.Now().UTC()}
+	_, err := t.categoryDB.UpdateOne(ctx,
+		bson.M{"_id": categoryID, "user": c.userID, "tasks._id": taskID},
+		bson.M{"$set": bson.M{"tasks.$.origin": origin}},
+	)
+	if err != nil {
+		slog.ErrorContext(ctx, "MCP origin stamp failed", "taskId", taskID.Hex(), "error", err)
+	}
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/health"
 	"github.com/abhikaboy/Kindred/internal/handlers/mcpserver"
 	"github.com/abhikaboy/Kindred/internal/handlers/notifications"
+	"github.com/abhikaboy/Kindred/internal/handlers/oauth"
 	post "github.com/abhikaboy/Kindred/internal/handlers/post"
 	profile "github.com/abhikaboy/Kindred/internal/handlers/profile"
 	referral "github.com/abhikaboy/Kindred/internal/handlers/referral"
@@ -148,6 +149,9 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	category.Routes(api, collections)
 	tokenService := mcpserver.NewTokenService(collections)
 	mcpserver.RegisterTokenRoutes(api, tokenService)
+	mcpserver.RegisterActivityRoutes(api, mcpserver.NewAuditLog(collections))
+	oauthService := oauth.NewService(collections, cfg)
+	oauth.Routes(app, api, oauthService)
 	activity.Routes(api, collections)
 	analytics.Routes(api, collections)
 	profile.Routes(api, collections, ringService)
@@ -160,8 +164,8 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	app.Post("/v1/user/tasks/natural-language/query/stream", taskStreamHandler.StreamQueryNaturalLanguage)
 	app.Post("/v1/user/tasks/natural-language/edit/stream", taskStreamHandler.StreamEditNaturalLanguage)
 
-	// MCP endpoint for AI assistants (raw Fiber, bypasses Huma); authenticated by personal access tokens.
-	mcpserver.Mount(app, collections, ringService, tokenService)
+	// MCP endpoint for AI assistants (raw Fiber, bypasses Huma); accepts OAuth access tokens and personal access tokens.
+	mcpserver.Mount(app, collections, ringService, tokenService, oauthService)
 
 	connection.Routes(api, collections)
 	group.RegisterRoutes(api, collections)

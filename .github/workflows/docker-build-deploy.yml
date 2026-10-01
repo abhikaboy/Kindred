@@ -71,6 +71,9 @@ jobs:
                   # Sentry Configuration
                   SENTRY_DSN=${{ secrets.SENTRY_DSN }}
                   APP_ENV=production
+
+                  # MCP OAuth (public issuer behind the nginx /api proxy)
+                  MCP_OAUTH_ISSUER=https://kindredtodo.com/api
                   EOF
 
             - name: Log in to the Container registry

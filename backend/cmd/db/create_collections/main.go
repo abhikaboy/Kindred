@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// Collections to create
-	collections := []string{"encouragements", "congratulations", "notifications", "workspaces", "reports", "for_you_exposures", "contact_links", "mcp_tokens"}
+	collections := []string{"encouragements", "congratulations", "notifications", "workspaces", "reports", "for_you_exposures", "contact_links", "mcp_tokens", "oauth_clients", "oauth_requests", "oauth_codes", "oauth_tokens", "oauth_grants", "mcp_audit"}
 
 	for _, collectionName := range collections {
 		if err := createCollectionIfNotExists(ctx, db.DB, collectionName); err != nil {

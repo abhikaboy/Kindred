@@ -49,6 +49,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
 import { getNotificationRefreshPlan } from '@/utils/notificationInvalidation';
 import { logger } from '@/utils/logger';
+import { useResumePendingOAuth } from '@/hooks/useAssistantConnections';
 
 export const unstable_settings = {
     initialRouteName: "index",
@@ -585,6 +586,9 @@ const LayoutContent = () => {
 
     // Auto-start live activities when task times arrive (foreground)
     useLiveActivityScheduler();
+
+    // Reopen an assistant consent request that was waiting on login
+    useResumePendingOAuth();
 
     // Sync task times to AsyncStorage for background fetch
     const allTasks = useTasksSelector((s) => s.allTasks);

@@ -2080,6 +2080,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/mcp-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List recent MCP agent activity
+         * @description Recent create and complete calls made by the caller's connected agents, newest first.
+         */
+        get: operations["list-mcp-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/mcp-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List MCP access tokens */
+        get: operations["list-mcp-tokens"];
+        put?: never;
+        /**
+         * Create MCP access token
+         * @description Mint a personal access token for the MCP server. The raw token is returned only once.
+         */
+        post: operations["create-mcp-token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/mcp-tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke MCP access token */
+        delete: operations["revoke-mcp-token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/notifications": {
         parameters: {
             query?: never;
@@ -2158,6 +2216,108 @@ export interface paths {
          * @description Mark all notifications as read for the authenticated user
          */
         patch: operations["mark-all-notifications-read"];
+        trace?: never;
+    };
+    "/v1/user/oauth/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List connected MCP apps */
+        get: operations["list-oauth-grants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/grants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect an MCP app and revoke its tokens */
+        delete: operations["revoke-oauth-grant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a pending MCP connection request */
+        get: operations["get-oauth-request"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve an MCP connection request */
+        post: operations["approve-oauth-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deny an MCP connection request */
+        post: operations["deny-oauth-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/by-code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a pending MCP connection request by its user code */
+        get: operations["get-oauth-request-by-code"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/phone": {
@@ -4108,6 +4268,19 @@ export interface components {
             /** Format: int64 */
             year: number;
         };
+        ActivityItem: {
+            /** Format: date-time */
+            created_at: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            id: string;
+            ok: boolean;
+            /** @example Created task "Buy milk" in Groceries */
+            summary: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            target_id?: string;
+            /** @example create_task */
+            tool: string;
+        };
         AddCommentOutputBody: {
             /**
              * Format: uri
@@ -4431,6 +4604,16 @@ export interface components {
             referrer?: components["schemas"]["ReferrerInfo"];
             success: boolean;
         };
+        ApproveRequestInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApproveRequestInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Scopes to grant; a non-empty subset of the requested scopes */
+            scopes: string[];
+        };
         BlockUserOutputBody: {
             /**
              * Format: uri
@@ -4624,6 +4807,10 @@ export interface components {
             steps: string[];
             /** @description Optional one-line hint about a good time to try */
             whenHint?: string;
+        };
+        BrowserView: {
+            ip: string;
+            user_agent: string;
         };
         BulkCompleteTaskInputBody: {
             /**
@@ -4863,6 +5050,18 @@ export interface components {
             /** Format: int64 */
             amount: number;
             credit_type: string;
+        };
+        ClientView: {
+            /** @example claude.ai */
+            host: string;
+            /** @example https://claude.ai/oauth/mcp-oauth-client-metadata */
+            id: string;
+            logo_uri?: string;
+            /** @example Claude */
+            name: string;
+            /** @enum {string} */
+            registration: "cimd" | "dcr";
+            verified: boolean;
         };
         CommentDocumentAPI: {
             content: string;
@@ -5616,6 +5815,7 @@ export interface components {
             /** @description URLs attached to the task, from the notes or added by hand */
             links?: components["schemas"]["TaskLink"][];
             notes?: string;
+            origin?: components["schemas"]["TaskOrigin"];
             /**
              * Format: date-time
              * @description When the user set this task aside
@@ -5708,6 +5908,34 @@ export interface components {
             taggedUserIds?: string[];
             /** Format: double */
             value: number;
+        };
+        CreateTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["TokenMetadata"];
+            /** @description Raw token. Shown only once; store it securely. */
+            token: string;
+        };
+        CreateTokenParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTokenParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Days until the token expires. Omit or 0 for no expiry
+             */
+            expires_in_days?: number;
+            /** @example Claude Desktop */
+            name: string;
+            /** @description Scopes to grant. Omit for all scopes */
+            scopes?: ("kindred:read" | "kindred:write" | "kindred:complete")[];
         };
         CreateWaitlistParams: {
             /**
@@ -6404,8 +6632,8 @@ export interface components {
             profile_picture: string;
             /**
              * Format: int64
-             * @description Current streak
-             * @example 5
+             * @description Always 0: streaks are only visible to their owner
+             * @example 0
              */
             streak: number;
             /**
@@ -6795,6 +7023,15 @@ export interface components {
              */
             readonly $schema?: string;
             users: components["schemas"]["UserExtendedReference"][];
+        };
+        GrantView: {
+            client: components["schemas"]["ClientView"];
+            /** Format: date-time */
+            created_at: string;
+            id: string;
+            /** Format: date-time */
+            last_used_at: string;
+            scopes: components["schemas"]["ScopeView"][];
         };
         GroupDocumentAPI: {
             /**
@@ -7923,6 +8160,24 @@ export interface components {
              */
             reason: string;
         };
+        RequestView: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RequestView.json
+             */
+            readonly $schema?: string;
+            browser: components["schemas"]["BrowserView"];
+            client: components["schemas"]["ClientView"];
+            /** Format: date-time */
+            expires_at: string;
+            id: string;
+            /** Format: date-time */
+            requested_at: string;
+            scopes: components["schemas"]["ScopeView"][];
+            /** @enum {string} */
+            status: "pending" | "approved" | "denied" | "expired";
+        };
         ResetTemplateMetricsOutputBody: {
             /**
              * Format: uri
@@ -7972,6 +8227,26 @@ export interface components {
             purchased_at_ms: number;
             store: string;
             type: string;
+        };
+        RevokeGrantOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RevokeGrantOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Connection revoked */
+            message: string;
+        };
+        RevokeTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RevokeTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Token revoked */
+            message: string;
         };
         RingDelta: {
             all_closed: boolean;
@@ -8061,6 +8336,14 @@ export interface components {
             keys: string[];
             /** @example Preferences saved */
             message: string;
+        };
+        ScopeView: {
+            /** @example See your workspaces, categories and tasks. */
+            description: string;
+            /** @example kindred:read */
+            id: string;
+            /** @example View your tasks */
+            title: string;
         };
         SendBeakCongratulationParams: {
             /**
@@ -8247,6 +8530,16 @@ export interface components {
              */
             tone?: "encouraging" | "direct" | "playful";
         };
+        StatusBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StatusBody.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "denied" | "expired";
+        };
         SubscribeToBlueprintOutputBody: {
             /**
              * Format: uri
@@ -8389,6 +8682,7 @@ export interface components {
             /** @description URLs attached to the task, from the notes or added by hand */
             links?: components["schemas"]["TaskLink"][];
             notes?: string;
+            origin?: components["schemas"]["TaskOrigin"];
             /**
              * Format: date-time
              * @description When the user set this task aside
@@ -8475,6 +8769,15 @@ export interface components {
             title?: string;
             /** @description Absolute URL of the link */
             url: string;
+        };
+        TaskOrigin: {
+            /** Format: date-time */
+            at: string;
+            client_id?: string;
+            client_name?: string;
+            connection_id: string;
+            /** @example mcp */
+            kind: string;
         };
         TaskPlan: {
             /**
@@ -8669,6 +8972,31 @@ export interface components {
             readonly $schema?: string;
             /** @example Authorized! */
             message: string;
+        };
+        TokenMetadata: {
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the token stops working; absent means never
+             */
+            expires_at?: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            id: string;
+            /** Format: date-time */
+            last_used_at: string;
+            /** @example Claude Desktop */
+            name: string;
+            /** @example kdr_AbCdEfGh */
+            prefix: string;
+            /**
+             * @description Scopes the token grants
+             * @example [
+             *       "kindred:read",
+             *       "kindred:write"
+             *     ]
+             */
+            scopes: string[];
         };
         UnblockUserOutputBody: {
             /**
@@ -13720,6 +14048,142 @@ export interface operations {
             };
         };
     };
+    "list-mcp-activity": {
+        parameters: {
+            query?: {
+                /** @description Only activity from this token or OAuth grant id */
+                connection_id?: string;
+                /** @description Entries to return, default 20, max 100 */
+                limit?: number;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityItem"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-mcp-tokens": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenMetadata"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-mcp-token": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTokenParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTokenOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "revoke-mcp-token": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeTokenOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-notifications": {
         parameters: {
             query?: {
@@ -13861,6 +14325,210 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkAllNotificationsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-oauth-grants": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantView"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "revoke-oauth-grant": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeGrantOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "approve-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveRequestInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "deny-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-oauth-request-by-code": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /**
+                 * @description User code shown in the browser; case-insensitive, dash optional
+                 * @example K7QX-2MPA
+                 */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestView"];
                 };
             };
             /** @description Error */

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/handlers/oauth"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,12 +25,15 @@ const (
 	displayPrefixLen = 12
 	maxTokensPerUser = 10
 	maxTokenNameLen  = 64
+	maxTokenDays     = 365
 )
 
 var (
 	ErrInvalidToken   = errors.New("invalid token")
 	ErrTokenLimit     = errors.New("token limit reached")
 	ErrTokenNotFound  = errors.New("token not found")
+	ErrInvalidScopes  = errors.New("invalid scopes")
+	ErrInvalidExpiry  = errors.New("invalid expiry")
 	encodedTokenBytes = base64.RawURLEncoding.EncodedLen(tokenBytes)
 )
 
@@ -42,6 +46,23 @@ type TokenDocument struct {
 	Prefix     string             `bson:"prefix"`
 	CreatedAt  time.Time          `bson:"created_at"`
 	LastUsedAt *time.Time         `bson:"last_used_at"`
+	// Scopes is nil on tokens minted before scopes existed; those grant every scope.
+	Scopes    []string   `bson:"scopes,omitempty"`
+	ExpiresAt *time.Time `bson:"expires_at,omitempty"`
+}
+
+// EffectiveScopes is the scope set the token grants.
+func (d *TokenDocument) EffectiveScopes() []string {
+	if len(d.Scopes) == 0 {
+		return oauth.AllScopes()
+	}
+	return d.Scopes
+}
+
+// TokenOptions narrows a new token. Zero values mean every scope and no expiry.
+type TokenOptions struct {
+	Scopes        []string
+	ExpiresInDays int
 }
 
 type TokenService struct {
@@ -73,8 +94,37 @@ func tokenWellFormed(raw string) bool {
 	return strings.HasPrefix(raw, tokenPrefix) && len(raw) == len(tokenPrefix)+encodedTokenBytes
 }
 
+// normalizeScopes validates requested scopes, returning them deduplicated in canonical order.
+func normalizeScopes(requested []string) ([]string, error) {
+	if requested == nil {
+		return oauth.AllScopes(), nil
+	}
+	want := make(map[string]bool, len(requested))
+	for _, sc := range requested {
+		want[strings.TrimSpace(sc)] = true
+	}
+	var out []string
+	for _, sc := range oauth.AllScopes() {
+		if want[sc] {
+			out = append(out, sc)
+			delete(want, sc)
+		}
+	}
+	if len(out) == 0 || len(want) > 0 {
+		return nil, ErrInvalidScopes
+	}
+	return out, nil
+}
+
 // Create mints a token for the user and returns the raw value alongside the stored metadata.
-func (s *TokenService) Create(ctx context.Context, userID primitive.ObjectID, name string) (string, *TokenDocument, error) {
+func (s *TokenService) Create(ctx context.Context, userID primitive.ObjectID, name string, opts TokenOptions) (string, *TokenDocument, error) {
+	scopes, err := normalizeScopes(opts.Scopes)
+	if err != nil {
+		return "", nil, err
+	}
+	if opts.ExpiresInDays < 0 || opts.ExpiresInDays > maxTokenDays {
+		return "", nil, ErrInvalidExpiry
+	}
 	count, err := s.tokens.CountDocuments(ctx, bson.M{"user_id": userID})
 	if err != nil {
 		return "", nil, fmt.Errorf("count tokens: %w", err)
@@ -94,6 +144,11 @@ func (s *TokenService) Create(ctx context.Context, userID primitive.ObjectID, na
 		TokenHash: hashToken(raw),
 		Prefix:    raw[:displayPrefixLen],
 		CreatedAt: time.Now().UTC(),
+		Scopes:    scopes,
+	}
+	if opts.ExpiresInDays > 0 {
+		exp := doc.CreatedAt.AddDate(0, 0, opts.ExpiresInDays)
+		doc.ExpiresAt = &exp
 	}
 	if _, err := s.tokens.InsertOne(ctx, doc); err != nil {
 		return "", nil, fmt.Errorf("insert token: %w", err)
@@ -130,22 +185,45 @@ func (s *TokenService) Revoke(ctx context.Context, userID, tokenID primitive.Obj
 
 // Authenticate resolves a raw bearer token to its owning user, updating last_used_at.
 func (s *TokenService) Authenticate(ctx context.Context, raw string) (primitive.ObjectID, error) {
+	p, err := s.AuthenticatePrincipal(ctx, raw)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+	return p.UserID, nil
+}
+
+// AuthenticatePrincipal resolves a live (unexpired, unrevoked) token to the principal it acts as.
+func (s *TokenService) AuthenticatePrincipal(ctx context.Context, raw string) (*oauth.Principal, error) {
 	raw = strings.TrimSpace(raw)
 	if !tokenWellFormed(raw) {
-		return primitive.NilObjectID, ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 
+	now := time.Now().UTC()
 	var doc TokenDocument
 	err := s.tokens.FindOneAndUpdate(ctx,
-		bson.M{"token_hash": hashToken(raw)},
-		bson.M{"$set": bson.M{"last_used_at": time.Now().UTC()}},
-		options.FindOneAndUpdate().SetProjection(bson.M{"user_id": 1}),
+		bson.M{
+			"token_hash": hashToken(raw),
+			"$or":        bson.A{bson.M{"expires_at": nil}, bson.M{"expires_at": bson.M{"$gt": now}}},
+		},
+		bson.M{"$set": bson.M{"last_used_at": now}},
+		options.FindOneAndUpdate().SetProjection(bson.M{"token_hash": 0}),
 	).Decode(&doc)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return primitive.NilObjectID, ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 	if err != nil {
-		return primitive.NilObjectID, fmt.Errorf("lookup token: %w", err)
+		return nil, fmt.Errorf("lookup token: %w", err)
 	}
-	return doc.UserID, nil
+	p := &oauth.Principal{
+		UserID:       doc.UserID,
+		ConnectionID: doc.ID,
+		Kind:         "pat",
+		ClientName:   doc.Name,
+		Scopes:       doc.EffectiveScopes(),
+	}
+	if doc.ExpiresAt != nil {
+		p.ExpiresAt = *doc.ExpiresAt
+	}
+	return p, nil
 }
