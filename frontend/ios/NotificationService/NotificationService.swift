@@ -103,6 +103,12 @@ class NotificationService: UNNotificationServiceExtension {
         interaction.direction = .incoming
         interaction.donate(completion: nil)
 
+        // iOS swaps the title for the sender's name, so keep the original
+        // headline (e.g. "x just finished [task]") as the subtitle.
+        if content.subtitle.isEmpty, !content.title.isEmpty, content.title != senderName {
+            content.subtitle = content.title
+        }
+
         do {
             return try content.updating(from: intent)
         } catch {

@@ -1299,7 +1299,7 @@ func (s *Service) NotifyFriendsOfPost(postID primitive.ObjectID, posterID primit
 		if len(taskName) > 40 {
 			taskName = taskName[:37] + "..."
 		}
-		title = fmt.Sprintf("%s completed \"%s\"", posterName, taskName)
+		title = fmt.Sprintf("%s just finished %s", posterName, taskName)
 	}
 	content := title
 	if caption != "" {
