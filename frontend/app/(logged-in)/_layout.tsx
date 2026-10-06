@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useState, useRef } from "react";
 import { ScrollView, View, AppState, InteractionManager, LogBox, StyleSheet } from "react-native";
 import { noteTaskCompleted, refreshCompletedToday, syncStreakWidgets } from "@/widgets/syncWidgets";
 import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
+import PostCompletionNudgeSheet from "@/components/modals/PostCompletionNudgeSheet";
 import { recordAppOpen } from "@/utils/lastOpen";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
@@ -630,6 +631,7 @@ const LayoutContent = () => {
                     />
                 )}
                 <BuildPlanSheet />
+                <PostCompletionNudgeSheet />
                 {/* Guest account prompt: above the tabs and the composer */}
                 <AccountOverlay />
         </View>
