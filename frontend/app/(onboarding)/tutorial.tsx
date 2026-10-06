@@ -33,6 +33,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, OnboardingSteps } from "@/utils/analytics";
 import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { deleteCategory } from "@/api/category";
 import { useTasks } from "@/contexts/tasksContext";
 import { useSetCreateCategory } from "@/contexts/selectedCategoryContext";
 import { useTaskCreationActions } from "@/contexts/taskCreationContext";
@@ -196,7 +197,7 @@ export default function TutorialOnboarding() {
         const sub = BackHandler.addEventListener("hardwareBackPress", () => true);
         return () => sub.remove();
     }, []);
-    const { workspaces, fetchWorkspaces, categories, setSelected } = useTasks();
+    const { workspaces, fetchWorkspaces, categories, setSelected, removeFromWorkspace } = useTasks();
     const setCreateCategory = useSetCreateCategory();
     const { setTaskName, resetTaskCreation } = useTaskCreationActions();
     const { request } = useRequest();
@@ -668,6 +669,13 @@ export default function TutorialOnboarding() {
             is_guest: isGuest,
         });
         setSelected("");
+        // Skipping before the swipe would leave the practice category and task
+        // next to the seeded one, so the Guide would open with two tasks.
+        // Deleting the category takes its task with it.
+        if (categoryId && !completionHandledRef.current) {
+            removeFromWorkspace(ONBOARDING_WORKSPACE, categoryId);
+            deleteCategory(categoryId).catch((e) => console.warn("Failed to remove tutorial category", e));
+        }
         const userId = await tutorialUserId();
         if (userId) {
             const seen: [string, string][] = [

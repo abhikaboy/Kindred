@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindred prototype: Build a plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+:root{
+  --primary:#854DFF;--text:#13121F;--caption:#919090;--bg:#FFFFFF;--lightened:#F5F5F5;
+  --card:#FAFAFAB8;--tertiary:#E5E5E5;--success:#1CF954;--warning:#FFD700;
+  --shadow:0 1px 2px rgba(0,0,0,.03),0 8px 28px -14px rgba(0,0,0,.10);
+  --sheet-shadow:0 -8px 32px rgba(0,0,0,.10);
+  --scrim:rgba(19,18,31,.28);
+}
+[data-theme=dark]{
+  --text:#FFFFFF;--bg:#0c0c1a;--lightened:#171626;--card:#1a1929B8;--tertiary:#1F1D2E;
+  --success:#5CFF95;--warning:#FFFF5C;
+  --shadow:0 1px 2px rgba(0,0,0,.2),0 8px 28px -14px rgba(0,0,0,.5);
+  --sheet-shadow:0 -8px 32px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Outfit,system-ui,sans-serif;font-weight:300;background:#e9e8ee;color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;gap:48px;padding:24px}
+body[data-theme=dark]{background:#05050d}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:active{opacity:.7}
+input{font:inherit;color:inherit}
+
+/* prototype panel (outside phone) */
+.panel{width:200px;font-size:13px;color:#6b6a78;display:flex;flex-direction:column;gap:4px}
+.panel b{font-weight:500;color:#13121F;margin:12px 0 4px}
+body[data-theme=dark] .panel b{color:#fff}
+.panel button{text-align:left;padding:4px 8px;border-radius:8px}
+.panel button.on{color:var(--primary);background:#854DFF14}
+
+/* phone */
+.phone{width:390px;height:844px;border-radius:48px;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 24px 64px -24px rgba(0,0,0,.35),0 0 0 8px #1b1a24}
+.status{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;font-size:14px;font-weight:500}
+.scroll{position:absolute;top:48px;bottom:0;left:0;right:0;overflow-y:auto;padding:0 20px 120px}
+.scroll::-webkit-scrollbar{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;height:44px}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
+h1{font-family:Fraunces,serif;font-weight:600;font-size:32px;line-height:40px;margin-top:8px}
+.caption{color:var(--caption);font-size:14px;font-weight:400;line-height:20px}
+.section{margin-top:32px}
+.stitle{font-size:17px;font-weight:300;line-height:24px;display:flex;align-items:center;justify-content:space-between}
+.stitle .link{font-size:14px;color:var(--primary);font-weight:400}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+
+/* TaskCard */
+.card{background:var(--card);border:1px solid var(--tertiary);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card .title{font-size:16px;line-height:24px}
+.meta{display:flex;align-items:center;gap:4px;color:var(--caption);font-size:12.5px;line-height:16px;font-weight:400}
+.meta.active{color:var(--primary)}
+.dot{width:10px;height:10px;border-radius:10px;flex-shrink:0}
+.card.done .title{color:var(--caption);text-decoration:line-through}
+.check{width:24px;height:24px;border-radius:50%;border:1px solid var(--tertiary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:#fff}
+.check.on{background:var(--primary);border-color:var(--primary)}
+.inline-actions{display:flex;align-items:center;gap:16px;font-size:14px;font-weight:400}
+.inline-actions .p{color:var(--primary)}
+.inline-actions .s{color:var(--caption)}
+
+/* chips (TaskChip look) */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:999px;background:var(--lightened);color:var(--caption);font-size:12.5px;line-height:16px;font-weight:400}
+.chip.pathchip{margin-top:16px;padding:8px 12px;font-size:14px;line-height:20px;color:var(--text);gap:8px}
+.chip.pathchip i{color:var(--primary);font-size:16px}
+.greet{margin-top:4px}
+.wrow{display:flex;align-items:center;gap:16px;width:100%;text-align:left;padding:16px;border-radius:16px;background:var(--card);box-shadow:0 4px 16px -8px rgba(0,0,0,.16);transition:transform .1s}
+.wrow:active{transform:scale(.99)}
+.wrow>i.ph:first-child{font-size:22px;color:var(--primary)}
+.wrow .cr{color:var(--caption)}
+.wtitle{display:block;font-size:16px;line-height:24px}
+.passed-line{margin:4px 0 12px}
+
+/* buttons */
+.primary{width:100%;height:48px;border-radius:12px;background:var(--primary);color:#fff;font-weight:400;font-size:16px;box-shadow:0 6px 10px -2px #854DFF4D}
+.primary.sm{height:36px;width:auto;padding:0 16px;font-size:14px;box-shadow:none}
+.verbs{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:16px;font-size:14px;color:var(--caption);font-weight:400}
+.verbs button{padding:4px}
+
+/* sheet */
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:var(--sheet-shadow);transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+[data-theme=dark] .sheet{background:var(--lightened)}
+.sheet.on{transform:none}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--tertiary);margin:8px auto 0;flex-shrink:0}
+[data-theme=dark] .grab{background:#2c2a40}
+.sheetbody{overflow-y:auto;padding:16px 20px 32px}
+.sheetbody::-webkit-scrollbar{display:none}
+h2{font-family:Fraunces,serif;font-weight:600;font-size:24px;line-height:32px}
+.pad{position:relative;height:200px;margin-top:24px;border-radius:24px;background:var(--lightened);box-shadow:0 8px 24px -12px rgba(0,0,0,.18);touch-action:none}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.pad .ghost{position:absolute;inset:24px 40px;width:calc(100% - 80px);height:calc(100% - 48px);transition:opacity .18s}
+.pad .ghost path{fill:none;stroke:var(--caption);stroke-opacity:.35;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2 14}
+.pad.drawing .ghost{opacity:0}
+.pad.done{box-shadow:0 8px 28px -10px #854DFF66}
+.pad-hint{text-align:center;margin-top:12px}
+.confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+.back{margin:0 0 8px;color:var(--caption)}
+.lead{font-size:16px;margin-top:4px;color:var(--caption);font-weight:300}
+.block{margin-top:24px}
+.block .list{margin-top:12px}
+
+/* segmented */
+.seg{display:flex;border-radius:24px;border:1px solid var(--tertiary);padding:4px;margin-top:12px;position:relative}
+.seg button{flex:1;height:40px;border-radius:20px;font-size:14px;font-weight:400;position:relative;z-index:1;transition:color .15s}
+.seg .pill{position:absolute;top:4px;bottom:4px;border-radius:20px;background:#854DFF1F;transition:left .18s ease,width .18s ease}
+.seg button.on{color:var(--primary)}
+
+/* suggestion rows */
+.sugg{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:16px;background:var(--card);box-shadow:0 4px 16px -8px rgba(0,0,0,.16);text-align:left;width:100%;font-size:16px;line-height:24px;transition:background .15s,transform .1s}
+.sugg i{color:var(--caption);font-size:16px}
+.sugg:active{background:#854DFF14;transform:scale(.99)}
+.sugg.on{background:#854DFF14;border-color:transparent;color:var(--primary)}
+.sugg .radio{width:20px;height:20px;border-radius:50%;border:1px solid var(--tertiary);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.sugg.on .radio{background:var(--primary);border-color:var(--primary)}
+.shimmer{height:50px;border-radius:16px;background:linear-gradient(90deg,var(--lightened) 0%,var(--tertiary) 50%,var(--lightened) 100%);background-size:200% 100%;animation:sh 1s linear infinite}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.textlink{font-size:14px;color:var(--primary);font-weight:400;margin-top:12px;display:inline-flex;align-items:center;gap:4px}
+.why{margin-top:8px}
+
+/* custom steps */
+.steprow{display:flex;align-items:center;gap:8px}
+.steprow input{flex:1;height:48px;border-radius:12px;border:1px solid var(--tertiary);background:var(--bg);padding:0 16px;font-size:16px;font-weight:300;outline:none}
+[data-theme=dark] .steprow input{background:#1F1D2E;border-color:transparent}
+.steprow input:focus{box-shadow:0 8px 16px rgba(0,0,0,.08);border-color:#854DFF66}
+.steprow .n{width:20px;color:var(--caption);font-size:14px;font-weight:400;text-align:center}
+
+/* when chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.wchip{height:40px;padding:0 16px;border-radius:999px;background:var(--lightened);font-size:14px;font-weight:400;display:inline-flex;align-items:center;gap:8px;transition:background .15s,color .15s}
+[data-theme=dark] .wchip{background:#1F1D2E}
+.wchip.on{background:#854DFF1F;color:var(--primary)}
+.gate{margin-top:12px}
+.gate p{font-size:14px;line-height:20px;font-weight:400}
+.swap{display:flex;flex-direction:column;margin-top:8px}
+.swap button{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:16px;text-align:left;border-bottom:1px solid var(--tertiary)}
+.swap button:last-child{border-bottom:0}
+.swap button span{font-size:14px;color:var(--primary);font-weight:400}
+.swap button.parked span{color:var(--caption)}
+.preview{font-size:17px;line-height:24px;margin-top:32px;margin-bottom:16px}
+.preview em{font-style:normal;color:var(--primary)}
+
+/* celebration */
+.celebrate{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .2s;padding:32px;text-align:center}
+.celebrate.on{opacity:1;pointer-events:auto}
+.burst{font-size:64px;color:var(--primary);margin-bottom:24px;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{opacity:.6}}
+.celebrate .actions{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:48px}
+.ghost{height:48px;border-radius:12px;background:var(--lightened);font-size:16px;font-weight:400;width:100%}
+
+/* drawer */
+.drawer{position:absolute;top:0;bottom:0;left:0;width:300px;background:var(--bg);box-shadow:8px 0 32px rgba(0,0,0,.12);transform:translateX(-100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);padding:64px 20px 24px;overflow-y:auto}
+[data-theme=dark] .drawer{background:var(--lightened)}
+.drawer.on{transform:none}
+.drawer .nav{display:flex;flex-direction:column;gap:4px;margin-top:24px}
+.drawer .nav div{display:flex;align-items:center;gap:12px;height:44px;font-size:16px}
+.drawer .nav i{font-size:20px;color:var(--caption)}
+.rel{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:16px}
+.rel button{color:var(--primary);font-size:14px;font-weight:400}
+
+/* toast */
+.toast{position:absolute;left:20px;right:20px;bottom:40px;background:var(--text);color:var(--bg);border-radius:12px;padding:12px 16px;font-size:14px;font-weight:400;display:flex;align-items:center;justify-content:space-between;gap:12px;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.on{opacity:1;transform:none;pointer-events:auto}
+.toast button{color:#B79BFF}
+
+.fade{animation:fade .18s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.collapse-caret{transition:transform .18s;display:inline-block;color:var(--caption);font-size:16px;margin-left:4px}
+.open .collapse-caret{transform:rotate(90deg)}
+.tap{display:inline-flex;align-items:center}
+.fogrow{display:flex;align-items:center;gap:12px;padding:12px 0;width:100%;text-align:left;font-size:16px}
+.fogrow .t{flex:1}
+/* someday */
+.inline-actions.wrap{flex-wrap:wrap;row-gap:8px}
+.sdrow{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 16px;border-radius:16px;background:var(--card);box-shadow:0 4px 16px -8px rgba(0,0,0,.16)}
+.sdrow .t{font-size:16px;line-height:24px}
+.sdrow button{font-size:14px;line-height:20px;color:var(--primary);font-weight:400}
+.wrow .x{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--caption);font-size:16px;flex-shrink:0;margin-right:-8px}
+.composer input{width:100%;height:48px;border-radius:12px;border:1px solid var(--tertiary);background:var(--bg);padding:0 16px;font-size:16px;font-weight:300;outline:none;margin-top:16px}
+[data-theme=dark] .composer input{background:#1F1D2E;border-color:transparent}
+.composer input:focus{box-shadow:0 8px 16px rgba(0,0,0,.08);border-color:#854DFF66}
+</style>
+</head>
+<body data-theme="light">
+
+<div class="panel" id="panel">
+  <b>Prototype states</b>
+  <button data-preset="calm">Today calm</button>
+  <button data-preset="return">Returning after a gap</button>
+  <button data-preset="fog">7 waiting (fog)</button>
+  <button data-preset="passed">A passed plan</button>
+  <button data-preset="full">Tomorrow full</button>
+  <button data-preset="someday">Someday ideas</button>
+  <b>Theme</b>
+  <button id="themeBtn">Switch to dark</button>
+</div>
+
+<div class="phone" id="phone">
+  <div class="status"><span>9:41</span><span><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+  <div class="scroll" id="screen"></div>
+  <div class="scrim" id="scrim"></div>
+  <div class="drawer" id="drawer"></div>
+  <div class="sheet" id="sheet"><div class="grab"></div><div class="sheetbody" id="sheetbody"></div></div>
+  <div class="celebrate" id="celebrate"></div>
+  <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo">Undo</button></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const SUGGESTIONS = {
+  "Learn Spanish": { "2 min":["Download a language app","Learn how to say hello"],
+                "10 min":["Do one beginner lesson","Write down ten common words","Watch a short show in Spanish"],
+                "Whole thing":["Sign up for an evening class"] },
+  "Do taxes": { "2 min":["Find your W-2 in email","Make a folder called Taxes 2026","Open last year's return PDF"],
+                "10 min":["Open last year's return PDF","Find your W-2 in email","Make a folder called Taxes 2026"],
+                "Whole thing":["File with last year's software","Book an hour with the tax portal"] },
+  default: { "2 min":["Open the thing you need","Write one sentence about it"],
+             "10 min":["Do the first small piece","Gather what you need"],
+             "Whole thing":["Block time and do it all"] }
+};
+const W = (id,title,days,old) => ({id,title,days,old});
+
+let S;
+function preset(name){
+  S = {
+    preset:name, waitingOpen:false, returning:name==="return",
+    today:[
+      {id:"t1",title:"Morning walk",meta:"8:00 AM",pri:"low",done:true},
+      {id:"t2",title:"Reply to Maya",meta:"11:30 AM",pri:"med"},
+      {id:"t3",title:"Groceries",meta:"5:00 PM",pri:"low"},
+    ],
+    tomorrow: name==="full" ? [
+      {id:"m1",title:"Dentist",meta:"9:00 AM",pri:"med"},
+      {id:"m2",title:"Team offsite prep",meta:"1:00 PM",pri:"med"},
+      {id:"m3",title:"Laundry",meta:"6:00 PM",pri:"low"},
+      {id:"m4",title:"Call Mom",meta:"8:00 PM",pri:"low"},
+    ] : [{id:"m1",title:"Dentist",meta:"9:00 AM",pri:"med"}],
+    waiting: (name==="fog"||name==="return") ? [
+      W("w1","Do taxes",11,false), W("w2","Return the blue jacket",32,true), W("w3","Update resume",21,true),
+      W("w4","Clean out the garage",45,true), W("w5","Email landlord about the sink",17,true),
+      W("w6","Book eye exam",9,false), W("w7","Fix the bike light",28,true)
+    ] : [W("w1","Do taxes",11,false)],
+    plans:[], released:[], parked:[],
+    // Someday: undated ideas. Kept apart from waiting so they never count as waiting,
+    // never show in Still on your plate, and are never part of Clear the fog.
+    someday: name==="someday" ? [
+      {id:"s1",title:"Learn Spanish",steps:[]},{id:"s2",title:"Reorganize the bookshelf",steps:[]},{id:"s3",title:"Try the new ramen place",steps:[]}
+    ] : [],
+    suggestHidden:false,
+  };
+  if(name==="someday") S.waiting=[];
+  if(name==="passed"){
+    S.waiting=[];
+    S.plans=[{id:"p1",taskId:"w1",task:"Do taxes",step:"Open last year's return PDF",when:"Yesterday",passed:true,checklist:[]}];
+  }
+  if(name==="full"){ /* nothing extra: tomorrow already has 4 */ }
+  closeAll(); render();
+  if(name==='return') setTimeout(openWelcome, 450);
+  document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===name));
+}
+
+/* ---------- Today screen ---------- */
+function taskCard(t){
+  const pri = {low:'var(--success)',med:'var(--warning)',high:'#FF5C5F'}[t.pri]; // priority, never lateness
+  return `<div class="card ${t.done?'done':''}"><div class="row"><div><div class="title">${esc(t.title)}</div>
+    <div class="meta"><i class="ph ph-clock"></i>${esc(t.meta)}</div></div>
+    <span class="dot" style="background:${t.done?'var(--tertiary)':pri}"></span></div></div>`;
+}
+function lc(t){ return t.charAt(0).toLowerCase()+t.slice(1); }
+function passedCard(p){
+  return `<div class="card"><div class="title">${esc(p.task)}</div>
+    <div class="caption passed-line">${esc(p.when)}'s plan was to ${esc(lc(p.step))}. Still want to?</div>
+    <div class="inline-actions"><button class="p" data-act="try-tomorrow" data-id="${p.id}">Try tomorrow</button>
+      <button class="p" data-act="smaller" data-id="${p.id}">Break down this task</button>
+      </div><div class="inline-actions"><button class="s" data-act="someday-plan" data-id="${p.id}">Save for someday</button>
+      <button class="s" data-act="release-plan" data-id="${p.id}">Let it go</button></div></div>`;
+}
+function planCard(p){
+  const sub = `<div class="meta active"><i class="ph ph-path"></i>${esc(p.task)} · ${esc(p.when.toLowerCase())}${p.checklist.length?` · ${p.checklist.length} more step${p.checklist.length>1?'s':''} after`:''}</div>`;
+  let action;
+  if(p.passed) action = `<div class="inline-actions"><span class="caption" style="flex:1">Replan or release?</span>
+      <button class="p" data-act="replan" data-id="${p.id}">Replan</button><button class="s" data-act="release-plan" data-id="${p.id}">Release</button></div>`;
+  else if(p.started) action = `<div class="row"><span class="meta active"><i class="ph-fill ph-circle"></i>Working on it</span><button class="primary sm" data-act="complete" data-id="${p.id}">Done</button></div>`;
+  else action = `<div class="row"><span></span><button class="primary sm" data-act="start" data-id="${p.id}"><i class="ph ph-play"></i> Start</button></div>`;
+  return `<div class="card"><div class="row"><div><div class="title">${esc(p.step)}</div>${sub}</div>
+    ${p.started?'<span class="dot" style="background:var(--primary)"></span>':''}</div>${action}</div>`;
+}
+function render(){
+  const passed = S.plans.filter(p=>p.passed);
+  const todayPlans = S.plans.filter(p=>!p.passed&&(p.when==="Tonight"||p.started));
+  const tomPlans = S.plans.filter(p=>!p.passed&&p.when!=="Tonight"&&!p.started);
+  const n = S.waiting.length;
+  const chipText = n===1 ? "1 thing waiting on a path" : "A few things waiting on a path";
+  let h = `<div class="topbar"><button class="iconbtn" data-act="drawer" aria-label="Menu"><i class="ph ph-list"></i></button>
+      <button class="iconbtn" data-act="new-task" aria-label="Add"><i class="ph ph-plus"></i></button></div>
+    <h1>Today</h1><div class="caption">Monday, September 28</div>`;
+  if(n>0) h += `<button class="chip pathchip" data-act="plan" data-id="${S.waiting[0].id}"><i class="ph ph-path"></i>${chipText}</button>`;
+  h += `<div class="list" style="margin-top:24px">${todayPlans.map(planCard).join('')}${S.today.map(taskCard).join('')}</div>`;
+  if(tomPlans.length || S.tomorrow.length) h += `<div class="section"><div class="stitle">Tomorrow</div>
+      <div class="list">${tomPlans.map(planCard).join('')}${S.tomorrow.filter(t=>!S.parked.includes(t.id)).map(taskCard).join('')}</div></div>`;
+  if(n>0||passed.length){
+    const open = S.waitingOpen||passed.length>0;
+    h += `<div class="section ${open?'open':''}"><div class="stitle">
+        <button class="tap" data-act="toggle-waiting">Still on your plate<i class="ph ph-caret-right collapse-caret"></i></button>
+        ${n>5?'<button class="link" data-act="fog">Clear the fog</button>':''}</div>`;
+    if(open) h += `<div class="list fade">${passed.map(passedCard).join('')}${S.waiting.map(w=>`<button class="card" style="text-align:left" data-act="plan" data-id="${w.id}">
+        <div class="row"><div><div class="title">${esc(w.title)}</div><div class="meta"><i class="ph ph-hourglass-medium"></i>Waiting on a path</div></div>
+        <i class="ph ph-caret-right" style="color:var(--caption)"></i></div></button>`).join('')}</div>`;
+    h += `</div>`;
+  }
+  // Someday tasks stay off Today: no date, no pressure, no nudges
+  const el = $('#screen'); const top = el.scrollTop;
+  el.innerHTML = `<div class="fade">${h}</div>`; el.scrollTop = top;
+}
+
+/* ---------- Build a plan sheet ---------- */
+let P; let loadTimer;
+function openPlan(taskId, fromPlan, opts={}){
+  const w = S.waiting.find(x=>x.id===taskId) || S.someday.find(x=>x.id===taskId) || {id:taskId,title:fromPlan?.task||"Do taxes"};
+  P = {stage:'step', taskId:w.id, title:w.title, size:opts.size||"10 min", sugg:null, loading:true, custom:null, when:opts.when||null, gate:opts.when==="Tomorrow"&&tomorrowFull(), swapped:null, replanOf:fromPlan?.id};
+  showSheet();
+  if(w.steps?.length){ P.loading=false; P.custom=[...w.steps]; renderPlan(); } // saved breakdown comes back as-is
+  else { renderPlan(); loadSuggestions(); }
+}
+function loadSuggestions(){
+  clearTimeout(loadTimer); P.loading=true; P.sugg=null; renderPlan();
+  loadTimer = setTimeout(()=>{ P.loading=false; P.custom=[...suggList()]; renderPlan(); }, 700);
+}
+// Step size shown as Small / Medium / Large; the time values stay internal
+const SIZE_LABEL={"2 min":"Small","10 min":"Medium","Whole thing":"Large"};
+function suggList(){ return (SUGGESTIONS[P.title]||SUGGESTIONS.default)[P.size]; }
+function stepText(){
+  if(P.custom){ const f=P.custom.find(s=>s.trim()); if(f) return f.trim(); }
+  else if(P.sugg!==null && !P.loading) return suggList()[P.sugg];
+  return P.size==="Whole thing" ? P.title : `${P.size.replace(' min',' minutes')} on ${P.title.toLowerCase()}`;
+}
+function whenPhrase(){ return {Tonight:"tonight",Tomorrow:"tomorrow","This weekend":"this weekend","Pick time":"Thursday at 7 PM"}[P.when]; }
+function tomorrowFull(){ return S.tomorrow.filter(t=>!S.parked.includes(t.id)).length + S.plans.filter(p=>p.when==="Tomorrow").length >= 3; }
+
+// One question per page: pick a first step, then pick when. Picking "when" commits.
+function renderPlan(){
+  const sizes=["2 min","10 min","Whole thing"]; const si=sizes.indexOf(P.size);
+  let h;
+  if(P.stage==="commit"){
+    h = `<button class="textlink back" data-act="back"><i class="ph ph-caret-left"></i>When</button>
+      <h2>${esc(stepText())}</h2>
+      <div class="caption" style="margin-top:4px">${esc(whenPhrase().charAt(0).toUpperCase()+whenPhrase().slice(1))}</div>
+      <div class="pad" id="pad"><svg class="ghost" viewBox="0 0 200 120"><path d="M50 62 L86 94 L152 30"/></svg>
+        <canvas id="padCanvas"></canvas></div>
+      <div class="caption pad-hint" id="padHint">Draw a check to commit</div>
+      <div class="verbs"><button data-act="tap-commit">Just tap to commit</button></div>`;
+    $('#sheetbody').innerHTML = `<div class="fade">${h}</div>`; setupPad(); return;
+  }
+  if(P.stage==="when"){
+    h = `<button class="textlink back" data-act="back"><i class="ph ph-caret-left"></i>${esc(P.title)}</button>
+      <h2 class="fade">${esc(stepText())}</h2>
+      <div class="caption" style="margin-top:4px">Step 1 of ${P.custom.filter(x=>x.trim()).length}</div>
+      <div class="block"><div class="stitle">When do you want to start?</div><div class="chips">
+        ${[["Tonight","ph-moon"],["Tomorrow","ph-sun-horizon"],["This weekend","ph-calendar-blank"],["Pick time","ph-clock"],["Someday","ph-planet"]].map(([w,ic])=>
+          `<button class="wchip ${P.when===w?'on':''}" data-act="when" data-v="${w}"><i class="ph ${ic}"></i>${w}</button>`).join('')}</div>
+        <div id="gateArea">${gateArea()}</div></div>
+      <div class="verbs"><button data-act="start-now">Start it now instead</button></div>`;
+  } else {
+    h = `<h2>${esc(P.title)}</h2>
+      <div class="block"><div class="stitle">How should we break it down?</div>
+        <div class="seg" id="seg"><div class="pill" style="left:calc(4px + ${si}*(100% - 8px)/3);width:calc((100% - 8px)/3)"></div>
+        ${sizes.map(s=>`<button class="${s===P.size?'on':''}" data-act="size" data-v="${s}">${SIZE_LABEL[s]}</button>`).join('')}</div></div>
+      <div class="block"><div id="stepArea">${stepArea()}</div></div>
+      <div class="verbs"><button data-act="close">Not now</button><span>·</span><button data-act="release-task">Let it go</button></div>`;
+  }
+  $('#sheetbody').innerHTML = `<div class="fade">${h}</div>`;
+}
+// The whole breakdown is the suggestion: every step is added to the task's checklist
+// in its workspace, and the first one is what gets planned. Editing the list is the custom path.
+function stepArea(){
+  if(P.loading) return `<div class="list">${[0,1,2].map(()=>'<div class="shimmer"></div>').join('')}</div>`;
+  return `<div class="list fade">${P.custom.map((s,i)=>`<div class="steprow"><span class="n">${i+1}</span>
+      <input data-step="${i}" value="${esc(s)}" placeholder="${i===0?'A small first step':'Then...'}">
+      <button class="iconbtn" data-act="rm-step" data-i="${i}" aria-label="Remove step" style="color:var(--caption)"><i class="ph ph-x"></i></button></div>`).join('')}</div>
+    <button class="textlink" data-act="add-step"><i class="ph ph-plus"></i>Add a step</button>
+    <button class="primary" data-act="custom-next" style="margin-top:16px">Add ${P.custom.filter(x=>x.trim()).length} steps to ${esc(P.title)}</button>`;
+}
+function gateArea(){
+  if(!(P.when==="Tomorrow" && P.gate)) return '';
+  const items = S.tomorrow;
+  return `<div class="gate fade"><p>Tomorrow's already full. Swap with one, or pick another day.</p><div class="swap">
+    ${items.map(t=>{const parked=S.parked.includes(t.id);return `<button class="${parked?'parked':''}" data-act="swap" data-id="${t.id}">${esc(t.title)}<span>${parked?'Parked':'Park this'}</span></button>`}).join('')}</div></div>`;
+}
+function canCommit(){ return P.when && !(P.when==="Tomorrow" && P.gate && !P.swapped); }
+function commitArea(){
+  const sentence = P.when ? `I'll try: <em>${esc(stepText())}</em>, ${whenPhrase()}` : `I'll try: <em>${esc(stepText())}</em>`;
+  return `<div class="preview fade">${sentence}</div>
+    <button class="primary" data-act="commit" ${canCommit()?'':'disabled style="opacity:.4;box-shadow:none"'}>Soft commit</button>`;
+}
+function refreshParts(){ // partial updates so inputs keep focus
+  const sa=$('#stepArea'); if(sa && !document.activeElement?.dataset?.step) sa.innerHTML=stepArea();
+  const ga=$('#gateArea'); if(ga) ga.innerHTML=gateArea();
+}
+
+function commit(){
+  const snapshot = JSON.stringify(S); // committing is one tap, so it must be one tap to undo
+  const checklist = P.custom ? P.custom.map(s=>s.trim()).filter(Boolean).slice(1) : [];
+  const plan = {id:"p"+Date.now(),taskId:P.taskId,task:P.title,step:stepText(),when:P.when==="Pick time"?"Thursday 7 PM":P.when,checklist};
+  if(P.replanOf) S.plans = S.plans.filter(p=>p.id!==P.replanOf);
+  S.plans.push(plan);
+  S.waiting = S.waiting.filter(w=>w.id!==P.taskId);
+  S.someday = S.someday.filter(w=>w.id!==P.taskId);
+  S.returning=false;
+  closeAll(); render();
+  if(name==='return') setTimeout(openWelcome, 450);
+  toast(`Planned for ${whenPhrase()}.`, ()=>{S=JSON.parse(snapshot); render();});
+}
+
+/* ---------- Check-mark commit + confetti ---------- */
+function setupPad(){
+  const cv=$('#padCanvas'), pad=$('#pad'), dpr=devicePixelRatio||1;
+  cv.width=pad.clientWidth*dpr; cv.height=pad.clientHeight*dpr;
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.lineWidth=8; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--primary').trim()||'#854DFF';
+  let pts=[], drawing=false;
+  const at=e=>{const b=cv.getBoundingClientRect(); return {x:e.clientX-b.left,y:e.clientY-b.top};};
+  cv.onpointerdown=e=>{drawing=true; pts=[at(e)]; ctx.clearRect(0,0,cv.width,cv.height); pad.classList.add('drawing'); cv.setPointerCapture(e.pointerId);};
+  cv.onpointermove=e=>{ if(!drawing) return; const p=at(e), q=pts[pts.length-1];
+    ctx.beginPath(); ctx.moveTo(q.x,q.y); ctx.lineTo(p.x,p.y); ctx.stroke(); pts.push(p); };
+  cv.onpointerup=()=>{ drawing=false;
+    if(isCheck(pts)) celebrateCommit();
+    else { pad.classList.remove('drawing'); ctx.clearRect(0,0,cv.width,cv.height); $('#padHint').textContent='A quick check works. Down, then up.'; }
+  };
+}
+// A check: goes down to a low point, then rises further than it fell, moving right overall
+function isCheck(pts){
+  if(pts.length<6) return false;
+  let lo=0; pts.forEach((p,i)=>{ if(p.y>pts[lo].y) lo=i; });
+  const a=pts[0], m=pts[lo], z=pts[pts.length-1];
+  const fall=m.y-a.y, rise=m.y-z.y;
+  return fall>12 && rise>fall*0.9 && z.x-a.x>40 && m.x>=a.x-10 && z.x>m.x;
+}
+function celebrateCommit(){
+  $('#pad')?.classList.add('done');
+  const hint=$('#padHint'); if(hint) hint.textContent="You're in.";
+  confetti();
+  setTimeout(commit, 700);
+}
+function confetti(){
+  const phone=$('#phone'), cv=document.createElement('canvas'), dpr=devicePixelRatio||1;
+  cv.className='confetti'; cv.width=phone.clientWidth*dpr; cv.height=phone.clientHeight*dpr; phone.appendChild(cv);
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const colors=['#854DFF','#B899FF','#FFD66B','#5FD68A','#FFFFFF'];
+  const W=phone.clientWidth, H=phone.clientHeight;
+  const ps=Array.from({length:110},()=>({x:W/2+(Math.random()-.5)*60,y:H*0.62,vx:(Math.random()-.5)*9,vy:-(6+Math.random()*9),
+    r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,w:6+Math.random()*5,h:3+Math.random()*4,c:colors[Math.random()*colors.length|0]}));
+  const t0=performance.now();
+  (function frame(t){ const k=(t-t0)/1600; ctx.clearRect(0,0,W,H);
+    ps.forEach(p=>{ p.vy+=.28; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr;
+      ctx.save(); ctx.globalAlpha=Math.max(0,1-k); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
+    if(k<1) requestAnimationFrame(frame); else cv.remove(); })(t0);
+}
+
+/* ---------- Fog sheet ---------- */
+let F;
+// Welcome back: once per gap, an invitation with three choices. No counts, no dates, no recap.
+function openWelcome(){
+  const top = S.waiting.slice().sort((a,b)=>b.days-a.days).find(w=>!w.fog) || S.waiting[0];
+  const fog = S.waiting.length>5;
+  const row=(act,icon,title,line,extra='')=>`<button class="wrow" data-act="${act}" ${extra}><i class="ph ${icon}"></i>
+    <span style="flex:1"><span class="wtitle">${title}</span><span class="caption">${line}</span></span><i class="ph ph-caret-right cr"></i></button>`;
+  $('#sheetbody').innerHTML = `<div class="fade"><h2>Welcome back</h2><div class="lead">Let's make today feel light.</div>
+    <div class="list" style="margin-top:24px">
+      ${row('welcome-plan','ph-path','Move one thing forward',esc(S.waiting[0].title),`data-id="${S.waiting[0].id}"`)}
+      ${fog?row('fog','ph-wind','Clear the fog','Let go of what no longer matters'):''}
+      ${row('close','ph-sun','Start fresh today','Just focus on today')}
+    </div></div>`;
+  showSheet(); S.returning=false;
+}
+function openFog(){
+  F = {keep:new Set(), done:false};
+  showSheet(); renderFog();
+}
+function renderFog(){
+  const old = S.waiting.filter(w=>w.days>14);
+  let h;
+  if(!F.done){
+    const n = old.filter(w=>!F.keep.has(w.id)).length;
+    h = `<h2>Clear the fog</h2><div class="lead">These have been waiting a while. Untick any you want to keep.</div>
+      <div class="block">${old.map(w=>{const on=!F.keep.has(w.id);return `<button class="fogrow" data-act="fog-toggle" data-id="${w.id}">
+        <span class="check ${on?'on':''}">${on?'<i class="ph-bold ph-check"></i>':''}</span><span class="t">${esc(w.title)}</span></button>`}).join('')}</div>
+      <div style="margin-top:24px"><button class="primary" data-act="fog-confirm" ${n?'':'disabled style="opacity:.4;box-shadow:none"'}>Release these</button></div>
+      <div class="verbs"><button data-act="close">Not now</button></div>`;
+  } else {
+    const top = S.waiting[0];
+    h = `<h2>Clearer now.</h2><div class="lead">${top?`Want a tiny path for ${esc(top.title.toLowerCase())}?`:'Nothing else is waiting.'}</div>
+      <div style="margin-top:32px">${top?`<button class="primary" data-act="plan" data-id="${top.id}">Build a plan</button>`:''}</div>
+      <div class="verbs"><button data-act="close">Done for now</button></div>`;
+  }
+  $('#sheetbody').innerHTML = `<div class="fade">${h}</div>`;
+}
+
+/* ---------- celebration, drawer, toast ---------- */
+let celebratingPlan;
+function celebrate(p){
+  celebratingPlan=p;
+  const next = p.checklist[0];
+  $('#celebrate').innerHTML = `<i class="ph-fill ph-sparkle burst"></i><h2>Step done</h2>
+    <div class="lead">${esc(p.task)} is moving.</div>
+    <div class="actions"><button class="primary" data-act="keep-going">${next?`Keep going: ${esc(next)}`:'Keep going'}</button>
+    <button class="ghost" data-act="done-for-now">Done for now</button></div>`;
+  $('#celebrate').classList.add('on'); confetti();
+}
+function renderDrawer(){
+  $('#drawer').innerHTML = `<h2>Kindred</h2><div class="nav">
+      <div><i class="ph ph-sun"></i>Today</div><div><i class="ph ph-calendar-blank"></i>Upcoming</div><div><i class="ph ph-squares-four"></i>Workspaces</div></div>
+    <div class="section"><div class="stitle">Someday</div><div class="list">
+      ${S.someday.length?S.someday.map(x=>`<div class="sdrow"><span class="t">${esc(x.title)}</span><button data-act="plan" data-id="${x.id}">Give it a first step</button></div>`).join('')
+        :'<div class="caption">Tasks without a date live here.</div>'}</div></div>
+    <div class="section"><div class="stitle">Released</div><div class="list" style="gap:0">
+      ${S.released.length?S.released.map(r=>`<div class="rel"><span>${esc(r.title)}</span><button data-act="bring-back" data-id="${r.id}">Bring back</button></div>`).join('')
+        :'<div class="caption">Things you let go of show up here.</div>'}</div></div>`;
+}
+// Someday: move a task out of waiting/plans into the undated list, keeping its breakdown steps
+function saveSomeday(taskId, title, steps){
+  const snapshot = JSON.stringify(S);
+  S.waiting = S.waiting.filter(w=>w.id!==taskId);
+  S.plans = S.plans.filter(p=>p.taskId!==taskId);
+  S.someday = S.someday.filter(x=>x.id!==taskId);
+  S.someday.push({id:taskId,title,steps});
+  closeAll(); render(); renderDrawer();
+  toast("Saved for someday.", ()=>{S=JSON.parse(snapshot); render(); renderDrawer();});
+}
+/* ---------- New task mini composer ---------- */
+let N;
+function openComposer(){
+  N = {when:"Today"};
+  $('#sheetbody').innerHTML = `<div class="fade composer"><h2>New task</h2>
+    <input id="newTitle" placeholder="What do you want to do?" autocomplete="off">
+    <div class="chips">${[["Today","ph-sun"],["Tomorrow","ph-sun-horizon"],["Someday","ph-planet"]].map(([w,ic])=>
+      `<button class="wchip ${w===N.when?'on':''}" data-act="new-when" data-v="${w}"><i class="ph ${ic}"></i>${w}</button>`).join('')}</div>
+    <button class="primary" data-act="new-add" style="margin-top:24px">Add task</button></div>`;
+  showSheet(); setTimeout(()=>$('#newTitle')?.focus(), 50);
+}
+function addNew(){
+  const title = $('#newTitle').value.trim(); if(!title){ $('#newTitle').focus(); return; }
+  const snapshot = JSON.stringify(S), id = "n"+Date.now();
+  if(N.when==="Someday") S.someday.push({id,title,steps:[]});
+  else (N.when==="Today"?S.today:S.tomorrow).push({id,title,meta:"Anytime",pri:"low"});
+  closeAll(); render(); renderDrawer();
+  toast(N.when==="Someday"?"Saved for someday.":`Added to ${N.when.toLowerCase()}.`, ()=>{S=JSON.parse(snapshot); render(); renderDrawer();});
+}
+let toastT, undoFn;
+function toast(text, undo){
+  $('#toastText').textContent=text; undoFn=undo; $('#toastUndo').style.display=undo?'':'none';
+  $('#toast').classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>$('#toast').classList.remove('on'),3200);
+}
+function release(ids, label){
+  const snapshot = JSON.stringify(S);
+  ids.forEach(id=>{
+    const w = S.waiting.find(x=>x.id===id) || S.someday.find(x=>x.id===id) || S.plans.find(p=>p.id===id||p.taskId===id);
+    if(!w) return;
+    S.released.push({id:w.taskId||w.id,title:w.title||w.task,days:w.days||11});
+    S.waiting=S.waiting.filter(x=>x.id!==id); S.someday=S.someday.filter(x=>x.id!==id); S.plans=S.plans.filter(p=>p.id!==id&&p.taskId!==id);
+  });
+  render(); renderDrawer();
+  toast(label||"Let go. You can bring it back anytime.", ()=>{S=JSON.parse(snapshot); render(); renderDrawer();});
+}
+
+function showSheet(){ $('#scrim').classList.add('on'); $('#sheet').classList.add('on'); $('#drawer').classList.remove('on'); $('#sheetbody').scrollTop=0; }
+function closeAll(){ ['#scrim','#sheet','#drawer','#celebrate'].forEach(s=>$(s).classList.remove('on')); F=null; }
+
+/* ---------- events ---------- */
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  const a=b.dataset.act, id=b.dataset.id;
+  switch(a){
+    case 'plan': F=null; openPlan(id); break;
+    case 'welcome-plan': openPlan(id); break;
+    case 'toggle-waiting': S.waitingOpen=!S.waitingOpen; render(); break;
+    case 'fog': openFog(); break;
+    case 'drawer': renderDrawer(); $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); break;
+    case 'close': closeAll(); break;
+    case 'size': P.size=b.dataset.v; loadSuggestions(); break;
+    case 'sugg': P.sugg=+b.dataset.i; P.stage='when'; renderPlan(); break;
+    case 'custom-next': if(P.custom.some(x=>x.trim())){ P.stage='when'; renderPlan(); } break;
+    case 'back': P.stage = P.stage==='commit' ? 'when' : 'step'; P.when=null; P.gate=false; renderPlan(); break;
+    case 'tap-commit': celebrateCommit(); break;
+    case 'custom': P.custom=[P.sugg!==null&&!P.loading?suggList()[P.sugg]:"",""]; refreshParts(); setTimeout(()=>$('[data-step="1"]')?.focus()); break;
+    case 'use-sugg': P.custom=null; refreshParts(); break;
+    case 'add-step': P.custom.push(""); refreshParts(); setTimeout(()=>$(`[data-step="${P.custom.length-1}"]`)?.focus()); break;
+    case 'rm-step': P.custom.splice(+b.dataset.i,1); if(!P.custom.length) P.custom=[""]; renderPlan(); break;
+    case 'when': if(b.dataset.v==="Someday"){ // skips the check-mark page
+        saveSomeday(P.taskId, P.title, (P.custom||[]).map(s=>s.trim()).filter(Boolean)); break; }
+      P.when=b.dataset.v; P.gate = P.when==="Tomorrow" && tomorrowFull(); P.swapped=null;
+      if(!P.gate){ P.stage='commit'; renderPlan(); break; }
+      document.querySelectorAll('.wchip').forEach(c=>c.classList.toggle('on',c.dataset.v===P.when)); refreshParts(); break;
+    case 'swap': if(S.parked.includes(id)){S.parked=S.parked.filter(x=>x!==id); if(P.swapped===id) P.swapped=null;}
+      else { if(P.swapped) S.parked=S.parked.filter(x=>x!==P.swapped); S.parked.push(id); P.swapped=id; P.stage='commit'; renderPlan(); break; } refreshParts(); break;
+    case 'commit': if(canCommit()) commit(); break;
+    case 'start-now': P.when="Tonight"; commit(); { const p=S.plans[S.plans.length-1]; p.started=true; render(); } break;
+    case 'release-task': closeAll(); release([P.taskId]); break;
+    case 'start': { const p=S.plans.find(x=>x.id===id); p.started=true; render(); break; }
+    case 'complete': { const p=S.plans.find(x=>x.id===id); celebrate(p); break; }
+    case 'keep-going': { const p=celebratingPlan; $('#celebrate').classList.remove('on');
+      if(p.checklist.length){ p.step=p.checklist.shift(); p.started=true; render(); }
+      else { S.plans=S.plans.filter(x=>x!==p); S.today.unshift({id:p.id,title:p.step,meta:"Just now",pri:"low",done:true}); render();
+        S.waiting.unshift({id:p.taskId,title:p.task,days:0}); openPlan(p.taskId); } break; }
+    case 'done-for-now': { const p=celebratingPlan; $('#celebrate').classList.remove('on');
+      S.plans=S.plans.filter(x=>x!==p); S.today.unshift({id:p.id,title:p.step,meta:"Just now",pri:"low",done:true}); render(); break; }
+    case 'try-tomorrow': { const p=S.plans.find(x=>x.id===id);
+      // Same step, one day later; only open the sheet when tomorrow has no room
+      if(tomorrowFull()) openPlan(p.taskId,p,{when:"Tomorrow",size:"10 min"});
+      else { p.passed=false; p.when="Tomorrow"; render(); toast("Moved to tomorrow.",null); }
+      break; }
+    case 'smaller': { const p=S.plans.find(x=>x.id===id); openPlan(p.taskId,p); break; }
+    case 'release-plan': release([id]); break;
+    case 'someday-plan': { const p=S.plans.find(x=>x.id===id); saveSomeday(p.taskId, p.task, [p.step,...p.checklist]); break; }
+    case 'hide-suggest': S.suggestHidden=true; render(); break;
+    case 'new-task': openComposer(); break;
+    case 'new-when': N.when=b.dataset.v; document.querySelectorAll('[data-act=new-when]').forEach(c=>c.classList.toggle('on',c.dataset.v===N.when)); $('#newTitle').focus(); break;
+    case 'new-add': addNew(); break;
+    case 'bring-back': { const r=S.released.find(x=>x.id===id); S.released=S.released.filter(x=>x.id!==id);
+      S.waiting.push({id:r.id,title:r.title,days:r.days}); renderDrawer(); render(); toast("Back on your plate.",null); break; }
+    case 'fog-toggle': F.keep.has(id)?F.keep.delete(id):F.keep.add(id); renderFog(); break;
+    case 'fog-confirm': { const ids=S.waiting.filter(w=>w.days>14&&!F.keep.has(w.id)).map(w=>w.id);
+      release(ids,"Let go. You can bring them back anytime."); F.done=true; renderFog(); break; }
+  }
+});
+document.addEventListener('input', e=>{ if(e.target.dataset.step!==undefined){ P.custom[+e.target.dataset.step]=e.target.value;
+    const n=P.custom.filter(x=>x.trim()).length, nb=$('[data-act=custom-next]'); if(nb) nb.textContent=`Add ${n} steps to ${P.title}`; }});
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='newTitle'){ addNew(); return; } if(e.key==='Enter' && e.target.dataset.step!==undefined){ P.custom.push(""); $('#stepArea').innerHTML=stepArea(); $(`[data-step="${P.custom.length-1}"]`).focus(); }});
+$('#scrim').addEventListener('click', closeAll);
+$('#toastUndo').addEventListener('click', ()=>{ undoFn&&undoFn(); $('#toast').classList.remove('on'); });
+$('#panel').addEventListener('click', e=>{ const p=e.target.closest('[data-preset]'); if(p) preset(p.dataset.preset); });
+$('#themeBtn').addEventListener('click', ()=>{ const d=document.body.dataset.theme==='dark'; document.body.dataset.theme=d?'light':'dark'; $('#themeBtn').textContent=d?'Switch to dark':'Switch to light'; });
+preset(new URLSearchParams(location.search).get('state')||'return');
+if(new URLSearchParams(location.search).get('theme')==='dark') $('#themeBtn').click();
+</script>
+</body>
+</html>

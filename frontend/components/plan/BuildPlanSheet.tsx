@@ -12,14 +12,14 @@ import Animated, {
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { CalendarBlank, CaretLeft, Clock, Moon, Planet, Plus, SunHorizon, X, type IconProps } from "phosphor-react-native";
 import { hideToastable, showToastable } from "react-native-toastable";
-import type ConfettiCannon from "react-native-confetti-cannon";
+
 import DefaultModal from "@/components/modals/DefaultModal";
 import DefaultToast from "@/components/ui/DefaultToast";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { ThemedText } from "@/components/ThemedText";
 import CheckPad from "./CheckPad";
-import PlanConfetti from "./PlanConfetti";
+import PlanConfetti, { type PlanConfettiHandle } from "./PlanConfetti";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { closePlanSheet, usePlanSheet } from "@/hooks/planSheetStore";
@@ -241,7 +241,7 @@ export default function BuildPlanSheet() {
     const { capture } = useAnalytics();
     const { updateTask } = useTaskActions();
     const allTasks = useTasksSelector((s) => s.allTasks);
-    const confettiRef = useRef<ConfettiCannon>(null);
+    const confettiRef = useRef<PlanConfettiHandle>(null);
 
     // Keep the last task around so content doesn't blank while the sheet slides away
     const [task, setTask] = useState<Task | null>(null);

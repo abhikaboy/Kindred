@@ -4038,6 +4038,40 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/friends/activity:
+        post:
+            tags:
+                - profiles
+            summary: Get friends activity
+            description: Returns open tasks, today's completions and ring state for the given friends in one response. Non-friends are omitted.
+            operationId: get-friends-activity
+            parameters:
+                - name: Authorization
+                  in: header
+                  description: Bearer token for authentication
+                  required: true
+                  schema:
+                    type: string
+                    description: Bearer token for authentication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetFriendsActivityInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetFriendsActivityOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/groups:
         get:
             tags:
@@ -12743,6 +12777,26 @@ components:
             required:
                 - userId
                 - displayName
+        FriendActivity:
+            type: object
+            additionalProperties: false
+            properties:
+                completed_tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                ring_state:
+                    $ref: '#/components/schemas/RingState'
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TaskDocument'
+                user_id:
+                    type: string
+            required:
+                - user_id
+                - tasks
+                - completed_tasks
         FriendReference:
             type: object
             additionalProperties: false
@@ -13014,6 +13068,42 @@ components:
                 - total
                 - hasMore
                 - nextOffset
+        GetFriendsActivityInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetFriendsActivityInputBody.json
+                    readOnly: true
+                user_ids:
+                    type: array
+                    description: Friend user IDs to load activity for
+                    items:
+                        type: string
+                    maxItems: 200
+            required:
+                - user_ids
+        GetFriendsActivityOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/GetFriendsActivityOutputBody.json
+                    readOnly: true
+                friends:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FriendActivity'
+            required:
+                - friends
         GetFriendsPostsOutputBody:
             type: object
             additionalProperties: false

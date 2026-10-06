@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { SectionList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
     CheckIcon,
@@ -17,8 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { getFriendsAPI } from "@/api/connection";
-import { getProfile } from "@/api/profile";
+import { getFriendsActivityAPI, getFriendsAPI } from "@/api/connection";
 import { getCategoryById } from "@/api/category";
 import PreviewIcon from "@/components/profile/PreviewIcon";
 import { ConcentricRings, RING_ENCOURAGE_MESSAGES, type RingKey } from "@/components/profile/ProductivityRings";
@@ -40,10 +39,10 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import type { components } from "@/api/generated/types";
 
 type Friend = components["schemas"]["UserExtendedReference"];
-type Profile = components["schemas"]["ProfileDocument"];
+type Profile = components["schemas"]["FriendActivity"];
 type TaskDocument = components["schemas"]["TaskDocument"];
 
-const PROFILE_STALE_MS = 5 * 60 * 1000;
+const ACTIVITY_STALE_MS = 5 * 60 * 1000;
 const LIVE_DOT_COLOR = "#34C759";
 const RING_KEYS: RingKey[] = ["plan", "do", "share"];
 
@@ -440,22 +439,30 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
         queryFn: getFriendsAPI as () => Promise<Friend[]>,
     });
 
-    const onRefresh = useCallback(async () => {
-        await Promise.all([refetch(), queryClient.invalidateQueries({ queryKey: ["friend-profile"] })]);
-    }, [refetch, queryClient]);
-
-    const profileQueries = useQueries({
-        queries: (friends ?? []).map((f) => ({
-            queryKey: ["friend-profile", f._id],
-            queryFn: () => getProfile(f._id),
-            staleTime: PROFILE_STALE_MS,
-            enabled: profilesEnabled,
-        })),
+    const friendIds = useMemo(() => (friends ?? []).map((f) => f._id).sort(), [friends]);
+    // One batched request instead of one per friend. Not persisted: rewriting it to disk
+    // on every change serialized the whole cache on the JS thread and froze the page.
+    const {
+        data: activity,
+        isPending: activityPending,
+        refetch: refetchActivity,
+    } = useQuery({
+        queryKey: ["friends-activity", friendIds],
+        queryFn: () => getFriendsActivityAPI(friendIds),
+        enabled: profilesEnabled && friendIds.length > 0,
+        staleTime: ACTIVITY_STALE_MS,
+        placeholderData: keepPreviousData,
+        meta: { persist: false },
     });
 
+    const onRefresh = useCallback(async () => {
+        await Promise.all([refetch(), refetchActivity()]);
+    }, [refetch, refetchActivity]);
+
     const sections = useMemo(() => {
-        const rows = (friends ?? []).map((friend, i) => {
-            const profile = profileQueries[i]?.data;
+        const byId = new Map((activity ?? []).map((a) => [a.user_id, a]));
+        const rows = (friends ?? []).map((friend) => {
+            const profile = byId.get(friend._id);
             return { friend, profile, activity: getActivity(profile) };
         });
         rows.sort((a, b) => {
@@ -468,9 +475,12 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
         return (["working", "finished", "idle"] as const)
             .map((kind) => ({ title: SECTION_TITLES[kind], data: rows.filter((r) => r.activity.kind === kind) }))
             .filter((section) => section.data.length > 0);
-    }, [friends, profileQueries]);
+    }, [friends, activity]);
 
-    if (isLoading) {
+    // Hold the skeleton until activity lands, so cards don't render as idle and then regroup
+    const waitingForActivity = friendIds.length > 0 && activityPending;
+
+    if (isLoading || waitingForActivity) {
         return (
             <View style={styles.listContent}>
                 <FriendsHeader />

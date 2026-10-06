@@ -1,5 +1,6 @@
 import client from "@/api/client";
 import { withAuthHeaders } from "./utils";
+import type { components } from "@/api/generated/types";
 
 export interface BlockedUser {
     _id: string;
@@ -7,6 +8,24 @@ export interface BlockedUser {
     handle: string;
     picture?: string;
 }
+
+type FriendActivity = components["schemas"]["FriendActivity"];
+
+/**
+ * Open tasks, today's completions and ring state for many friends in one request
+ */
+export const getFriendsActivityAPI = async (userIds: string[]): Promise<FriendActivity[]> => {
+    const { data, error } = await client.POST("/v1/user/friends/activity", {
+        params: withAuthHeaders(),
+        body: { user_ids: userIds },
+    });
+
+    if (error) {
+        throw new Error(`Failed to get friends activity: ${JSON.stringify(error)}`);
+    }
+
+    return data.friends ?? [];
+};
 
 /**
  * Block a user

@@ -1984,6 +1984,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/friends/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get friends activity
+         * @description Returns open tasks, today's completions and ring state for the given friends in one response. Non-friends are omitted.
+         */
+        post: operations["get-friends-activity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/groups": {
         parameters: {
             query?: never;
@@ -6597,6 +6617,12 @@ export interface components {
             /** @example 507f1f77bcf86cd799439011 */
             userId: string;
         };
+        FriendActivity: {
+            completed_tasks: components["schemas"]["TaskDocument"][];
+            ring_state?: components["schemas"]["RingState"];
+            tasks: components["schemas"]["TaskDocument"][];
+            user_id: string;
+        };
         FriendReference: {
             /**
              * @description User ID
@@ -6779,6 +6805,25 @@ export interface components {
              * @description Total number of feed items available
              */
             total: number;
+        };
+        GetFriendsActivityInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFriendsActivityInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Friend user IDs to load activity for */
+            user_ids: string[];
+        };
+        GetFriendsActivityOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFriendsActivityOutputBody.json
+             */
+            readonly $schema?: string;
+            friends: components["schemas"]["FriendActivity"][];
         };
         GetFriendsPostsOutputBody: {
             /**
@@ -13754,6 +13799,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordInteractionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-friends-activity": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetFriendsActivityInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFriendsActivityOutputBody"];
                 };
             };
             /** @description Error */

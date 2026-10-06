@@ -35,6 +35,7 @@ func RegisterProfileOperations(api huma.API, handler *Handler) {
 	RegisterGetSuggestedUsersOperation(api, handler)
 	RegisterFindUsersByPhoneNumbersOperation(api, handler)
 	RegisterGetUsersByIDsOperation(api, handler)
+	RegisterGetFriendsActivityOperation(api, handler)
 	RegisterGetUserCreditsOperation(api, handler)
 	RegisterUpdateTimezoneOperation(api, handler)
 	RegisterMarkReturnedOperation(api, handler)

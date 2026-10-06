@@ -24,6 +24,7 @@ const FRIENDS = plan([
     "home-friends",
     "suggestedUsers",
     "friend-profile",
+    "friends-activity",
     "friends-of-user",
     "profile",
 ]);
@@ -60,7 +61,7 @@ export function getNotificationRefreshPlan(type: string | undefined): Notificati
         case "task_filed":
             return plan([], { workspaces: true });
         case "rings_closed":
-            return plan(["rings", "friend-profile", "profile"]);
+            return plan(["rings", "friend-profile", "friends-activity", "profile"]);
         case "task_tagged":
         case "task_copied":
         case "task_completed_watcher":
