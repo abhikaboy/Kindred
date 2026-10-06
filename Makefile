@@ -201,9 +201,17 @@ quick-openapi: ## Quick OpenAPI generation (build + generate)
 	@cd backend && go run ./cmd/server --generate-openapi --openapi-output="../frontend/api/api-spec.yaml"
 	@echo "✅ OpenAPI spec generated: frontend/api/api-spec.yaml"
 
+test-gemini-live: mongodb-start ## Live Gemini smoke test of text-to-task (spends tokens; reads GEMINI_API_KEY from backend/.env)
+	@cd backend && GEMINI_LIVE=1 go test -v -count=1 -run TestLive ./internal/gemini/
+
 mongodb-start: ## Start MongoDB in Docker for tests
 	@echo "🚀 Starting MongoDB..."
-	@docker run -d --name kindred-mongodb-test -p 27017:27017 mongo:latest 2>/dev/null || docker start kindred-mongodb-test
+	@# Pinned + GLIBC_TUNABLES: mongo crashes at boot on Linux kernel 6.19+ (SERVER-121912).
+	@# Single-node replica set like CI, since services use transactions.
+	@docker run -d --name kindred-mongodb-test -p 27017:27017 -e GLIBC_TUNABLES=glibc.pthread.rseq=1 mongo:8.0 --replSet rs0 2>/dev/null || docker start kindred-mongodb-test
+	@for i in $$(seq 1 30); do docker exec kindred-mongodb-test mongosh --quiet --eval 'db.runCommand({ping:1}).ok' >/dev/null 2>&1 && break; sleep 1; done
+	@docker exec kindred-mongodb-test mongosh --quiet --eval 'try { rs.status() } catch (e) { rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]}) }' >/dev/null
+	@for i in $$(seq 1 30); do docker exec kindred-mongodb-test mongosh --quiet --eval 'db.hello().isWritablePrimary' 2>/dev/null | grep -q true && break; sleep 1; done
 	@echo "✅ MongoDB running on localhost:27017"
 
 mongodb-stop: ## Stop MongoDB Docker container
