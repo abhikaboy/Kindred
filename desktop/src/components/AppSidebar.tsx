@@ -8,7 +8,7 @@ import {
   MagnifyingGlass,
   ChartLineUp,
   Plus,
-  Sparkle,
+  ListPlus,
   User,
   GearSix,
   SignOut,
@@ -104,9 +104,9 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => openCreateTask({ ai: true })} tooltip="Create with AI">
-                  <Sparkle weight="fill" className="text-primary" />
-                  <span>Create with AI</span>
+                <SidebarMenuButton onClick={() => openCreateTask({ ai: true })} tooltip="Draft tasks from a note">
+                  <ListPlus />
+                  <span>Draft tasks</span>
                   <kbd className="ml-auto text-xs font-medium tracking-wide text-muted-foreground/40">⇧A</kbd>
                 </SidebarMenuButton>
               </SidebarMenuItem>

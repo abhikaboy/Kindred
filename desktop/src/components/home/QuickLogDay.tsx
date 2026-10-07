@@ -48,20 +48,20 @@ export function QuickLogDay() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Quick log my day"
-          className="flex w-full items-center gap-3 rounded-xl bg-primary p-3 text-left text-primary-foreground transition-opacity hover:opacity-90"
+          className="flex w-full items-center gap-3 group rounded-xl bg-primary/[0.08] p-3 text-left text-primary transition-colors duration-150 hover:bg-primary/[0.12] active:scale-[0.995]"
         >
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/15">
-            <MoonStars size={20} weight="fill" className="text-white" />
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+            <MoonStars size={20} weight="fill" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <ThemedText type="defaultSemiBold" className="text-primary-foreground">
+            <ThemedText type="defaultSemiBold" className="text-primary">
               Quick log my day
             </ThemedText>
-            <ThemedText type="caption" className="text-primary-foreground opacity-80">
+            <ThemedText type="caption" className="text-primary/80">
               {subtitle}
             </ThemedText>
           </span>
-          <CaretRight size={16} weight="bold" className="shrink-0 text-white" />
+          <CaretRight size={16} weight="bold" className="shrink-0 text-primary transition-transform duration-150 group-hover:translate-x-0.5" />
         </button>
       )}
       {/* Stays mounted after markDone so the dialog can finish closing */}

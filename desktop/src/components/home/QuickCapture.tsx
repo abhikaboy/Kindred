@@ -93,7 +93,7 @@ export function QuickCapture() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex min-h-12 items-center gap-3 rounded-xl border bg-background py-2 pl-4 pr-2 transition-shadow focus-within:shadow-[0_8px_16px_rgba(0,0,0,0.08)] dark:bg-card">
+      <div className="flex min-h-12 items-center gap-3 rounded-full bg-background py-2 pl-5 pr-2 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.12)] transition-shadow duration-200 focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.18)] dark:bg-card">
         <Plus size={18} weight="bold" className="shrink-0 text-primary" />
         <input
           value={text}
