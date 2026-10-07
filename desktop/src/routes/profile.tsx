@@ -8,9 +8,9 @@ import { ProfileCheerSection } from "@/components/profile/ProfileCheerSection";
 import { ProfileTasks } from "@/components/profile/ProfileTasks";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 
-// Consistent card wrapper so every profile section reads as one system.
+// Sections sit on the page; spacing, not boxes, separates them.
 function SectionCard({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <section className={cn("rounded-2xl border border-border p-5", className)}>{children}</section>;
+    return <section className={cn("flex flex-col", className)}>{children}</section>;
 }
 
 export default function ProfileScreen() {
@@ -19,9 +19,9 @@ export default function ProfileScreen() {
     if (!user) return null;
 
     return (
-        <div className="mx-auto flex max-w-5xl flex-col gap-6 pt-6">
+        <div className="mx-auto flex max-w-5xl flex-col gap-12 pt-6">
             {/* Identity header — avatar, name, actions, and current song together. */}
-            <SectionCard className="flex flex-col gap-5 p-6">
+            <SectionCard className="gap-5">
                 <ProfileIdentity
                     displayName={user.display_name}
                     handle={user.handle}
@@ -33,9 +33,9 @@ export default function ProfileScreen() {
 
             <CompleteProfileCard />
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
                 {/* Main column — what you're doing + what you've done. */}
-                <div className="flex flex-col gap-6 lg:col-span-2">
+                <div className="flex flex-col gap-12 lg:col-span-2">
                     <SectionCard>
                         <ProfileCheerSection />
                     </SectionCard>

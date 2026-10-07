@@ -55,7 +55,8 @@ export function ProfileGallery({ userId }: { userId: string }) {
                             src={thumb}
                             alt={post.caption}
                             loading="lazy"
-                            className="size-full object-cover"
+                            onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                            className="size-full object-cover text-transparent"
                         />
                         {isVideo && (
                             <Play weight="fill" className="absolute right-2 top-2 size-4 text-white drop-shadow" />
