@@ -1,10 +1,10 @@
+import { CheckCircle, CircleIcon } from "phosphor-react-native";
 import React, { useMemo, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/inputs/ThemedInput";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useFriendsForMention, MentionCandidate } from "@/hooks/useFriendsForMention";
-import { Ionicons } from "@expo/vector-icons";
 import { formatHandle } from "@/utils/handle";
 
 type Props = {
@@ -55,16 +55,22 @@ function FriendRow({ item, checked, locked, onToggle, primaryColor, captionColor
         <TouchableOpacity
             disabled={locked}
             onPress={() => onToggle(item)}
-            style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, gap: 12, opacity: locked ? 0.5 : 1 }}>
+            style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 10,
+                gap: 12,
+                opacity: locked ? 0.5 : 1,
+            }}>
             <View style={{ flex: 1 }}>
                 <ThemedText type="defaultSemiBold">{item.display_name}</ThemedText>
                 <ThemedText type="caption">{formatHandle(item.handle)}</ThemedText>
             </View>
-            <Ionicons
-                name={checked ? "checkmark-circle" : "ellipse-outline"}
-                size={22}
-                color={checked ? primaryColor : captionColor}
-            />
+            {checked ? (
+                <CheckCircle weight="fill" size={22} color={checked ? primaryColor : captionColor} />
+            ) : (
+                <CircleIcon size={22} color={checked ? primaryColor : captionColor} />
+            )}
         </TouchableOpacity>
     );
 }

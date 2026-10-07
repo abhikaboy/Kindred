@@ -1,4 +1,4 @@
-import { X, Check, Hourglass } from "phosphor-react-native";
+import { X, Check, Hourglass, StopCircle } from "phosphor-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
@@ -87,11 +87,7 @@ const StaggeredTaskCard: React.FC<{ index: number; children: React.ReactNode }> 
         ]).start();
     }, []);
 
-    return (
-        <Animated.View style={{ opacity, transform: [{ translateX }, { translateY }] }}>
-            {children}
-        </Animated.View>
-    );
+    return <Animated.View style={{ opacity, transform: [{ translateX }, { translateY }] }}>{children}</Animated.View>;
 };
 
 export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose }) => {
@@ -139,10 +135,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
     useEffect(() => {
         setDeleteSelected(new Set(deletePreviewTasks.map((t) => t.id)));
     }, [deletePreviewTasks]);
-    const transcriptionWords = useMemo(
-        () => transcription.trim().split(/\s+/).filter(Boolean),
-        [transcription]
-    );
+    const transcriptionWords = useMemo(() => transcription.trim().split(/\s+/).filter(Boolean), [transcription]);
 
     // Prevents double-firing exit animation (e.g. rapid X presses)
     const isClosingRef = useRef(false);
@@ -234,54 +227,57 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         // stopTogether: false prevents the show/hide previewOpacity effect (which also
         // runs on mount) from cancelling the entire parallel when it starts its own
         // animation on previewOpacity.
-        Animated.parallel([
-            Animated.timing(backdropOpacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.timing(gradientOpacity, {
-                toValue: 1,
-                duration: 350,
-                easing: Easing.out(Easing.ease),
-                useNativeDriver: true,
-            }),
-            Animated.timing(closeBtnOpacity, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-            }),
-            Animated.parallel([
-                Animated.timing(previewOpacity, {
-                    toValue: 1,
-                    duration: 320,
-                    delay: 150,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(previewTranslateY, {
-                    toValue: 0,
-                    duration: 320,
-                    delay: 150,
-                    easing: Easing.out(Easing.cubic),
-                    useNativeDriver: true,
-                }),
-            ]),
-            Animated.parallel([
-                Animated.timing(micOpacity, {
+        Animated.parallel(
+            [
+                Animated.timing(backdropOpacity, {
                     toValue: 1,
                     duration: 300,
-                    delay: 100,
                     useNativeDriver: true,
                 }),
-                Animated.timing(micTranslateY, {
-                    toValue: 0,
+                Animated.timing(gradientOpacity, {
+                    toValue: 1,
+                    duration: 350,
+                    easing: Easing.out(Easing.ease),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(closeBtnOpacity, {
+                    toValue: 1,
                     duration: 300,
-                    delay: 100,
-                    easing: Easing.out(Easing.cubic),
                     useNativeDriver: true,
                 }),
-            ]),
-        ], { stopTogether: false }).start();
+                Animated.parallel([
+                    Animated.timing(previewOpacity, {
+                        toValue: 1,
+                        duration: 320,
+                        delay: 150,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(previewTranslateY, {
+                        toValue: 0,
+                        duration: 320,
+                        delay: 150,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.parallel([
+                    Animated.timing(micOpacity, {
+                        toValue: 1,
+                        duration: 300,
+                        delay: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(micTranslateY, {
+                        toValue: 0,
+                        duration: 300,
+                        delay: 100,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                ]),
+            ],
+            { stopTogether: false }
+        ).start();
     };
 
     const animateOut = (callback: () => void) => {
@@ -493,7 +489,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             }).start(() => {
                 setSuggestionIndex((i) => (i + 1) % PLACEHOLDER_SUGGESTIONS.length);
                 Animated.timing(suggestionOpacity, {
-                toValue: 1,
+                    toValue: 1,
                     duration: 350,
                     useNativeDriver: true,
                 }).start();
@@ -563,11 +559,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
         clearInactivityTimer();
         // Silence/timeout/abort aren't real failures — stop quietly, keep any transcript.
         const code = event?.error;
-        const benign =
-            code === "no-speech" ||
-            code === "speech-timeout" ||
-            code === "aborted" ||
-            code === "client";
+        const benign = code === "no-speech" || code === "speech-timeout" || code === "aborted" || code === "client";
         if (benign) return;
         setError("Voice Input Failed", ["Try again or type a request."]);
     });
@@ -630,14 +622,10 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
 
     const handleClose = React.useCallback(() => {
         if (transcription.trim().length > 0) {
-            Alert.alert(
-                "Discard transcript?",
-                "You'll lose your current voice input.",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Discard", style: "destructive", onPress: closeOverlay },
-                ]
-            );
+            Alert.alert("Discard transcript?", "You'll lose your current voice input.", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Discard", style: "destructive", onPress: closeOverlay },
+            ]);
             return;
         }
         closeOverlay();
@@ -719,7 +707,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             });
         });
 
-        const existingGroups = new Map<string, typeof groups[number]>();
+        const existingGroups = new Map<string, (typeof groups)[number]>();
         previewPayload.tasks.forEach((pair, index) => {
             const categoryId = pair.categoryId || `preview-existing-${index}`;
             if (!existingGroups.has(categoryId)) {
@@ -732,9 +720,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     tasks: [],
                 });
             }
-            existingGroups.get(categoryId)!.tasks.push(
-                buildTask(pair.task, `${categoryId}-${index}`, categoryId)
-            );
+            existingGroups.get(categoryId)!.tasks.push(buildTask(pair.task, `${categoryId}-${index}`, categoryId));
         });
 
         return [...groups, ...Array.from(existingGroups.values())];
@@ -745,24 +731,15 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             {/* Background layer */}
             <View style={styles.backgroundLayer} pointerEvents="none">
                 {/* Blurred full-screen backdrop */}
-                <Animated.View
-                    style={[StyleSheet.absoluteFill, styles.blurWrapper, { opacity: backdropOpacity }]}
-                >
+                <Animated.View style={[StyleSheet.absoluteFill, styles.blurWrapper, { opacity: backdropOpacity }]}>
                     <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
                     <View style={[StyleSheet.absoluteFill, styles.dimOverlay]} />
                 </Animated.View>
 
                 {/* Dark gradient from top */}
-                <Animated.View
-                    style={[styles.gradientWrapper, { opacity: gradientOpacity }]}
-                >
+                <Animated.View style={[styles.gradientWrapper, { opacity: gradientOpacity }]}>
                     <LinearGradient
-                        colors={[
-                            "rgba(0,0,0,0.92)",
-                            "rgba(0,0,0,0.78)",
-                            "rgba(0,0,0,0.28)",
-                            "transparent",
-                        ]}
+                        colors={["rgba(0,0,0,0.92)", "rgba(0,0,0,0.78)", "rgba(0,0,0,0.28)", "transparent"]}
                         locations={[0, 0.38, 0.72, 1]}
                         style={StyleSheet.absoluteFill}
                     />
@@ -773,24 +750,15 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             </View>
 
             {/* Intercept background touches and dismiss */}
-            <Pressable
-                onPress={handleClose}
-                style={styles.touchInterceptor}
-                pointerEvents="auto"
-            />
+            <Pressable onPress={handleClose} style={styles.touchInterceptor} pointerEvents="auto" />
 
             {/* Content layer */}
             <View style={styles.contentLayer} pointerEvents="box-none">
                 {/* Close button */}
-                <Animated.View
-                    style={[styles.closeButton, { top: insets.top + 12, opacity: closeBtnOpacity }]}
-                >
-                    <TouchableOpacity
-                        onPress={handleClose}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    >
+                <Animated.View style={[styles.closeButton, { top: insets.top + 12, opacity: closeBtnOpacity }]}>
+                    <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                         <View style={styles.closeButtonInner}>
-                            <X  size={20} color="#ffffff" />
+                            <X size={20} color="#ffffff" />
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
@@ -805,12 +773,9 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             transform: [{ translateY: previewTranslateY }],
                         },
                     ]}
-                    pointerEvents="none"
-                >
+                    pointerEvents="none">
                     <View style={styles.previewLabelRow}>
-                        <ThemedText style={styles.previewLabel}>
-                            {hasEditResult ? "Updated" : "Preview"}
-                        </ThemedText>
+                        <ThemedText style={styles.previewLabel}>{hasEditResult ? "Updated" : "Preview"}</ThemedText>
                         {pendingOpsCount > 1 && (
                             <ThemedText style={styles.stepCounter}>
                                 {currentOpIndex + 1} / {pendingOpsCount}
@@ -833,8 +798,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                 {editResult!.editedCount === 0
                                     ? "No tasks updated"
                                     : editResult!.editedCount === 1
-                                        ? "1 task updated"
-                                        : `${editResult!.editedCount} tasks updated`}
+                                      ? "1 task updated"
+                                      : `${editResult!.editedCount} tasks updated`}
                             </ThemedText>
                             {editResult!.tasks.map((t, i) => (
                                 <ThemedText key={(t as any).id ?? i} style={styles.editResultTaskName}>
@@ -853,28 +818,25 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             {transcription ? (
                                 <>
                                     <ThemedText style={styles.transcriptionText}>
-                                        {isPreviewing ? (
-                                            transcriptionWords.map((word, index) => (
-                                                <Animated.Text
-                                                    key={`${word}-${index}`}
-                                                    style={[
-                                                        styles.transcriptionWord,
-                                                        {
-                                                            opacity: readingProgress.interpolate({
-                                                                inputRange: [index - 1, index, index + 1],
-                                                                outputRange: [0.25, 1, 0.25],
-                                                                extrapolate: "clamp",
-                                                            }),
-                                                        },
-                                                    ]}
-                                                >
-                                                    {word}
-                                                    {index < transcriptionWords.length - 1 ? " " : ""}
-                                                </Animated.Text>
-                                            ))
-                                        ) : (
-                                            transcription
-                                        )}
+                                        {isPreviewing
+                                            ? transcriptionWords.map((word, index) => (
+                                                  <Animated.Text
+                                                      key={`${word}-${index}`}
+                                                      style={[
+                                                          styles.transcriptionWord,
+                                                          {
+                                                              opacity: readingProgress.interpolate({
+                                                                  inputRange: [index - 1, index, index + 1],
+                                                                  outputRange: [0.25, 1, 0.25],
+                                                                  extrapolate: "clamp",
+                                                              }),
+                                                          },
+                                                      ]}>
+                                                      {word}
+                                                      {index < transcriptionWords.length - 1 ? " " : ""}
+                                                  </Animated.Text>
+                                              ))
+                                            : transcription}
                                     </ThemedText>
                                     {isPreviewing && streamMessage && (
                                         <ThemedText
@@ -884,383 +846,330 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                                 color: "rgba(255,255,255,0.5)",
                                                 textAlign: "center",
                                                 marginTop: 8,
-                                            }}
-                                        >
+                                            }}>
                                             {streamMessage}
                                         </ThemedText>
                                     )}
                                 </>
+                            ) : recognizing ? (
+                                <ThemedText style={styles.placeholderText}>Listening for your voice...</ThemedText>
                             ) : (
-                                recognizing ? (
-                                    <ThemedText style={styles.placeholderText}>
-                                        Listening for your voice...
-                                    </ThemedText>
-                                ) : (
-                                    <Animated.Text
-                                        style={[styles.placeholderText, { opacity: suggestionOpacity }]}
-                                    >
-                                        {PLACEHOLDER_SUGGESTIONS[suggestionIndex]}
-                                    </Animated.Text>
-                                )
+                                <Animated.Text style={[styles.placeholderText, { opacity: suggestionOpacity }]}>
+                                    {PLACEHOLDER_SUGGESTIONS[suggestionIndex]}
+                                </Animated.Text>
                             )}
                         </>
                     ) : null}
                 </Animated.View>
-            {(hasPreview || hasDeletePreview) && (
-                <Animated.View
-                    style={[
-                        styles.previewListWrapper,
-                        {
-                            top: insets.top + 60,
-                            opacity: detailOpacity,
-                            transform: [{ translateY: detailTranslateY }],
-                        },
-                    ]}
-                    pointerEvents="auto"
-                >
-                    {hasPreview && (
-                        <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            contentContainerStyle={styles.previewListContent}
-                        >
-                            {pendingOpsCount > 1 && (
-                                <View style={styles.previewLabelRow}>
-                                    <ThemedText style={styles.previewLabel}>Preview</ThemedText>
-                                    <ThemedText style={styles.stepCounter}>
-                                        {currentOpIndex + 1} / {pendingOpsCount}
-                                    </ThemedText>
-                                </View>
-                            )}
-                            {(() => {
-                                let taskIndex = 0;
-                                return groupedCategories.map((category) => (
-                                    <View key={category.categoryId} style={styles.previewCategory}>
-                                        {category.workspace && (
-                                            <ThemedText style={styles.previewWorkspaceLabel}>
-                                                Workspace: {category.workspace}
-                                            </ThemedText>
-                                        )}
-                                        <View style={styles.previewCategoryHeader}>
-                                            <ThemedText style={styles.previewCategoryTitle}>
-                                                {category.categoryName}
-                                            </ThemedText>
-                                            {category.isNew && (
-                                                <View
-                                                    style={[
-                                                        styles.previewNewBadge,
-                                                        { backgroundColor: `${ThemedColor.primary}1F` },
-                                                    ]}
-                                                >
-                                                    <ThemedText
-                                                        style={[
-                                                            styles.previewNewBadgeText,
-                                                            { color: ThemedColor.primary },
-                                                        ]}
-                                                    >
-                                                        NEW
-                                                    </ThemedText>
-                                                </View>
-                                            )}
-                                        </View>
-                                        <View style={styles.previewTasks}>
-                                            {category.tasks.map((task) => {
-                                                const idx = taskIndex++;
-                                                return (
-                                                    <StaggeredTaskCard key={task.id} index={idx}>
-                                                        <TaskCard
-                                                            content={task.content}
-                                                            value={task.value}
-                                                            priority={task.priority as any}
-                                                            id={task.id}
-                                                            categoryId={category.categoryId}
-                                                            redirect={false}
-                                                            task={task}
-                                                        />
-                                                    </StaggeredTaskCard>
-                                                );
-                                            })}
-                                        </View>
-                                    </View>
-                                ));
-                            })()}
-                        </ScrollView>
-                    )}
-
-                {/* Delete preview — inline task rows with checkboxes */}
-                {hasDeletePreview && (
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.deleteListContent}
-                    >
-                        {pendingOpsCount > 1 && (
-                            <View style={styles.previewLabelRow}>
-                                <ThemedText style={styles.previewLabel}>Delete</ThemedText>
-                                <ThemedText style={styles.stepCounter}>
-                                    {currentOpIndex + 1} / {pendingOpsCount}
-                                </ThemedText>
-                            </View>
-                        )}
-                        <ThemedText style={styles.deleteSubtitle}>
-                            Deselect tasks you want to keep.
-                        </ThemedText>
-                        {deletePreviewTasks.map((task) => {
-                            const isChecked = deleteSelected.has(task.id);
-                            return (
-                                <TouchableOpacity
-                                    key={task.id}
-                                    style={[
-                                        styles.deleteTaskRow,
-                                        isChecked && styles.deleteTaskRowSelected,
-                                    ]}
-                                    onPress={() =>
-                                        setDeleteSelected((prev) => {
-                                            const next = new Set(prev);
-                                            if (next.has(task.id)) next.delete(task.id);
-                                            else next.add(task.id);
-                                            return next;
-                                        })
-                                    }
-                                    activeOpacity={0.7}
-                                >
-                                    <View
-                                        style={[
-                                            styles.deleteCheckbox,
-                                            isChecked && styles.deleteCheckboxChecked,
-                                        ]}
-                                    >
-                                        {isChecked && (
-                                            <Check  size={11} color="#fff" />
-                                        )}
-                                    </View>
-                                    <View style={styles.deleteTaskInfo}>
-                                        <ThemedText style={styles.deleteTaskContent} numberOfLines={2}>
-                                            {task.content}
+                {(hasPreview || hasDeletePreview) && (
+                    <Animated.View
+                        style={[
+                            styles.previewListWrapper,
+                            {
+                                top: insets.top + 60,
+                                opacity: detailOpacity,
+                                transform: [{ translateY: detailTranslateY }],
+                            },
+                        ]}
+                        pointerEvents="auto">
+                        {hasPreview && (
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.previewListContent}>
+                                {pendingOpsCount > 1 && (
+                                    <View style={styles.previewLabelRow}>
+                                        <ThemedText style={styles.previewLabel}>Preview</ThemedText>
+                                        <ThemedText style={styles.stepCounter}>
+                                            {currentOpIndex + 1} / {pendingOpsCount}
                                         </ThemedText>
-                                        {(task.priority !== undefined || task.deadline) && (
-                                            <View style={styles.deleteTaskMeta}>
-                                                {task.priority !== undefined && (
-                                                    <ThemedText style={styles.deleteMetaText}>
-                                                        {["Low", "Medium", "High"][task.priority - 1] ?? "—"} priority
-                                                    </ThemedText>
-                                                )}
-                                                {task.deadline && (
-                                                    <ThemedText style={styles.deleteMetaText}>
-                                                        Due {new Date(task.deadline).toLocaleDateString()}
-                                                    </ThemedText>
+                                    </View>
+                                )}
+                                {(() => {
+                                    let taskIndex = 0;
+                                    return groupedCategories.map((category) => (
+                                        <View key={category.categoryId} style={styles.previewCategory}>
+                                            {category.workspace && (
+                                                <ThemedText style={styles.previewWorkspaceLabel}>
+                                                    Workspace: {category.workspace}
+                                                </ThemedText>
+                                            )}
+                                            <View style={styles.previewCategoryHeader}>
+                                                <ThemedText style={styles.previewCategoryTitle}>
+                                                    {category.categoryName}
+                                                </ThemedText>
+                                                {category.isNew && (
+                                                    <View
+                                                        style={[
+                                                            styles.previewNewBadge,
+                                                            { backgroundColor: `${ThemedColor.primary}1F` },
+                                                        ]}>
+                                                        <ThemedText
+                                                            style={[
+                                                                styles.previewNewBadgeText,
+                                                                { color: ThemedColor.primary },
+                                                            ]}>
+                                                            NEW
+                                                        </ThemedText>
+                                                    </View>
                                                 )}
                                             </View>
-                                        )}
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                )}
-                </Animated.View>
-            )}
-
-            {/* Delete action buttons */}
-            {hasDeletePreview && (
-                <Animated.View
-                    style={[
-                        styles.deleteActionsWrapper,
-                        {
-                            bottom: insets.bottom + TAB_BAR_HEIGHT + 20,
-                            opacity: detailOpacity,
-                            transform: [{ translateY: detailTranslateY }],
-                        },
-                    ]}
-                    pointerEvents="auto"
-                >
-                    <TouchableOpacity
-                        onPress={dismissDelete}
-                        style={styles.deleteSkipBtn}
-                        activeOpacity={0.75}
-                        disabled={isDeletingTasks}
-                    >
-                        <ThemedText style={styles.deleteSkipBtnText}>Skip</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => confirmDelete([...deleteSelected])}
-                        style={[
-                            styles.deleteConfirmBtn,
-                            deleteSelected.size === 0 && styles.deleteConfirmBtnDisabled,
-                        ]}
-                        activeOpacity={0.85}
-                        disabled={isDeletingTasks || deleteSelected.size === 0}
-                    >
-                        {isDeletingTasks ? (
-                            <Hourglass  size={18} color="#fff" />
-                        ) : (
-                            <ThemedText style={styles.deleteConfirmBtnText}>
-                                Delete {deleteSelected.size > 0 ? `${deleteSelected.size} ` : ""}
-                                {deleteSelected.size === 1 ? "Task" : "Tasks"}
-                            </ThemedText>
+                                            <View style={styles.previewTasks}>
+                                                {category.tasks.map((task) => {
+                                                    const idx = taskIndex++;
+                                                    return (
+                                                        <StaggeredTaskCard key={task.id} index={idx}>
+                                                            <TaskCard
+                                                                content={task.content}
+                                                                value={task.value}
+                                                                priority={task.priority as any}
+                                                                id={task.id}
+                                                                categoryId={category.categoryId}
+                                                                redirect={false}
+                                                                task={task}
+                                                            />
+                                                        </StaggeredTaskCard>
+                                                    );
+                                                })}
+                                            </View>
+                                        </View>
+                                    ));
+                                })()}
+                            </ScrollView>
                         )}
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
 
-            {hasPreview && (
-                <Animated.View
-                    style={[
-                        styles.generateButtonWrapper,
-                        {
-                            bottom: insets.bottom + TAB_BAR_HEIGHT + 128,
-                            opacity: generateBtnOpacity,
-                            transform: [
-                                {
-                                    translateY: generateBtnOpacity.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [10, 0],
-                                    }),
-                                },
-                            ],
-                        },
-                    ]}
-                    pointerEvents="auto"
-                >
-                    <TouchableOpacity
-                        onPress={confirmCreate}
-                        style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
-                        activeOpacity={0.85}
-                        disabled={isConfirming}
-                    >
-                        <ThemedText style={styles.generateButtonText}>
-                            {isConfirming
-                                ? "Creating..."
-                                : currentOpIndex + 1 < pendingOpsCount
-                                    ? "Confirm & Next"
-                                    : "Confirm Create"}
-                        </ThemedText>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
-
-
-            {/* Stop recording pill — slides up when listening */}
-            <Animated.View
-                style={[
-                    styles.stopPillWrapper,
-                    {
-                        bottom: insets.bottom + TAB_BAR_HEIGHT + 176,
-                        opacity: stopPillOpacity,
-                        transform: [{ translateY: stopPillTranslateY }],
-                    },
-                ]}
-                pointerEvents={!hasPreview && recognizing ? "auto" : "none"}
-            >
-                <TouchableOpacity
-                    onPress={handleStopRecording}
-                    style={styles.stopPill}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons
-                        name="stop-circle"
-                        size={16}
-                        color="#ffffff"
-                        style={{ marginRight: 6 }}
-                    />
-                    <ThemedText style={styles.stopPillText}>Stop Recording</ThemedText>
-                </TouchableOpacity>
-            </Animated.View>
-
-            {/* Mic section */}
-            <Animated.View
-                style={[
-                    styles.micSection,
-                    {
-                        bottom: insets.bottom + TAB_BAR_HEIGHT + 24,
-                        opacity: Animated.multiply(micOpacity, micSectionOpacity),
-                        transform: [{ translateY: micTranslateY }],
-                    },
-                ]}
-                pointerEvents={hasPreview || hasDeletePreview ? "none" : "auto"}
-            >
-                {/* Glow sits behind everything in the mic section, centered on the button */}
-                <View style={styles.micGlowWrap} pointerEvents="none">
-                    <GlowOverlay active={recognizing} />
-                </View>
-                {!transcription && !recognizing ? (
-                    <ThemedText
-                        style={[styles.listeningLabel, { color: "rgba(255,255,255,0.55)" }]}
-                    >
-                        Tap to Speak
-                    </ThemedText>
-                ) : null}
-                {recognizing && (
-                    <VoiceWaveform
-                        level={volumeLevel}
-                        active={recognizing}
-                        style={styles.waveform}
-                    />
-                )}
-                <View style={styles.micButtonStage}>
-                    <Animated.View style={{ transform: [{ scale: micScale }] }}>
-                    <TouchableOpacity
-                        onPress={
-                            transcription && !recognizing
-                                ? handleRetry
-                                : recognizing
-                                    ? handleStopRecording
-                                    : handleMicPress
-                        }
-                        activeOpacity={0.85}
-                        style={[
-                            styles.micButton,
-                            { backgroundColor: ThemedColor.primary },
-                        ]}
-                    >
-                        <Ionicons
-                            name={
-                                transcription && !recognizing
-                                    ? "reload"
-                                    : recognizing
-                                        ? "stop"
-                                        : "mic"
-                            }
-                            size={28}
-                            color="#ffffff"
-                        />
-                    </TouchableOpacity>
+                        {/* Delete preview — inline task rows with checkboxes */}
+                        {hasDeletePreview && (
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={styles.deleteListContent}>
+                                {pendingOpsCount > 1 && (
+                                    <View style={styles.previewLabelRow}>
+                                        <ThemedText style={styles.previewLabel}>Delete</ThemedText>
+                                        <ThemedText style={styles.stepCounter}>
+                                            {currentOpIndex + 1} / {pendingOpsCount}
+                                        </ThemedText>
+                                    </View>
+                                )}
+                                <ThemedText style={styles.deleteSubtitle}>Deselect tasks you want to keep.</ThemedText>
+                                {deletePreviewTasks.map((task) => {
+                                    const isChecked = deleteSelected.has(task.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={task.id}
+                                            style={[styles.deleteTaskRow, isChecked && styles.deleteTaskRowSelected]}
+                                            onPress={() =>
+                                                setDeleteSelected((prev) => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(task.id)) next.delete(task.id);
+                                                    else next.add(task.id);
+                                                    return next;
+                                                })
+                                            }
+                                            activeOpacity={0.7}>
+                                            <View
+                                                style={[
+                                                    styles.deleteCheckbox,
+                                                    isChecked && styles.deleteCheckboxChecked,
+                                                ]}>
+                                                {isChecked && <Check size={11} color="#fff" />}
+                                            </View>
+                                            <View style={styles.deleteTaskInfo}>
+                                                <ThemedText style={styles.deleteTaskContent} numberOfLines={2}>
+                                                    {task.content}
+                                                </ThemedText>
+                                                {(task.priority !== undefined || task.deadline) && (
+                                                    <View style={styles.deleteTaskMeta}>
+                                                        {task.priority !== undefined && (
+                                                            <ThemedText style={styles.deleteMetaText}>
+                                                                {["Low", "Medium", "High"][task.priority - 1] ?? "—"}{" "}
+                                                                priority
+                                                            </ThemedText>
+                                                        )}
+                                                        {task.deadline && (
+                                                            <ThemedText style={styles.deleteMetaText}>
+                                                                Due {new Date(task.deadline).toLocaleDateString()}
+                                                            </ThemedText>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+                        )}
                     </Animated.View>
-                </View>
-            </Animated.View>
+                )}
 
-            {/* Generate / Done button */}
-            {!hasPreview && !hasDeletePreview && (
+                {/* Delete action buttons */}
+                {hasDeletePreview && (
+                    <Animated.View
+                        style={[
+                            styles.deleteActionsWrapper,
+                            {
+                                bottom: insets.bottom + TAB_BAR_HEIGHT + 20,
+                                opacity: detailOpacity,
+                                transform: [{ translateY: detailTranslateY }],
+                            },
+                        ]}
+                        pointerEvents="auto">
+                        <TouchableOpacity
+                            onPress={dismissDelete}
+                            style={styles.deleteSkipBtn}
+                            activeOpacity={0.75}
+                            disabled={isDeletingTasks}>
+                            <ThemedText style={styles.deleteSkipBtnText}>Skip</ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => confirmDelete([...deleteSelected])}
+                            style={[
+                                styles.deleteConfirmBtn,
+                                deleteSelected.size === 0 && styles.deleteConfirmBtnDisabled,
+                            ]}
+                            activeOpacity={0.85}
+                            disabled={isDeletingTasks || deleteSelected.size === 0}>
+                            {isDeletingTasks ? (
+                                <Hourglass size={18} color="#fff" />
+                            ) : (
+                                <ThemedText style={styles.deleteConfirmBtnText}>
+                                    Delete {deleteSelected.size > 0 ? `${deleteSelected.size} ` : ""}
+                                    {deleteSelected.size === 1 ? "Task" : "Tasks"}
+                                </ThemedText>
+                            )}
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {hasPreview && (
+                    <Animated.View
+                        style={[
+                            styles.generateButtonWrapper,
+                            {
+                                bottom: insets.bottom + TAB_BAR_HEIGHT + 128,
+                                opacity: generateBtnOpacity,
+                                transform: [
+                                    {
+                                        translateY: generateBtnOpacity.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [10, 0],
+                                        }),
+                                    },
+                                ],
+                            },
+                        ]}
+                        pointerEvents="auto">
+                        <TouchableOpacity
+                            onPress={confirmCreate}
+                            style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
+                            activeOpacity={0.85}
+                            disabled={isConfirming}>
+                            <ThemedText style={styles.generateButtonText}>
+                                {isConfirming
+                                    ? "Creating..."
+                                    : currentOpIndex + 1 < pendingOpsCount
+                                      ? "Confirm & Next"
+                                      : "Confirm Create"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {/* Stop recording pill — slides up when listening */}
                 <Animated.View
                     style={[
-                        styles.generateButtonWrapper,
+                        styles.stopPillWrapper,
                         {
-                            bottom: insets.bottom + TAB_BAR_HEIGHT + 128,
-                            opacity: generateBtnOpacity,
-                            transform: [
-                                {
-                                    translateY: generateBtnOpacity.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [10, 0],
-                                    }),
-                                },
-                            ],
+                            bottom: insets.bottom + TAB_BAR_HEIGHT + 176,
+                            opacity: stopPillOpacity,
+                            transform: [{ translateY: stopPillTranslateY }],
                         },
                     ]}
-                    pointerEvents={(transcription && !recognizing) || hasEditResult ? "auto" : "none"}
-                >
-                    <TouchableOpacity
-                        onPress={hasEditResult ? dismissEditResult : handleProcessRequest}
-                        style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
-                        activeOpacity={0.85}
-                        disabled={isPreviewing}
-                    >
-                        <ThemedText style={styles.generateButtonText}>
-                            {hasEditResult
-                                ? currentOpIndex + 1 < pendingOpsCount ? "Next" : "Done"
-                                : isPreviewing ? "Processing..." : "Process Request"}
-                        </ThemedText>
+                    pointerEvents={!hasPreview && recognizing ? "auto" : "none"}>
+                    <TouchableOpacity onPress={handleStopRecording} style={styles.stopPill} activeOpacity={0.8}>
+                        <StopCircle weight="fill" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                        <ThemedText style={styles.stopPillText}>Stop Recording</ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
-            )}
+
+                {/* Mic section */}
+                <Animated.View
+                    style={[
+                        styles.micSection,
+                        {
+                            bottom: insets.bottom + TAB_BAR_HEIGHT + 24,
+                            opacity: Animated.multiply(micOpacity, micSectionOpacity),
+                            transform: [{ translateY: micTranslateY }],
+                        },
+                    ]}
+                    pointerEvents={hasPreview || hasDeletePreview ? "none" : "auto"}>
+                    {/* Glow sits behind everything in the mic section, centered on the button */}
+                    <View style={styles.micGlowWrap} pointerEvents="none">
+                        <GlowOverlay active={recognizing} />
+                    </View>
+                    {!transcription && !recognizing ? (
+                        <ThemedText style={[styles.listeningLabel, { color: "rgba(255,255,255,0.55)" }]}>
+                            Tap to Speak
+                        </ThemedText>
+                    ) : null}
+                    {recognizing && <VoiceWaveform level={volumeLevel} active={recognizing} style={styles.waveform} />}
+                    <View style={styles.micButtonStage}>
+                        <Animated.View style={{ transform: [{ scale: micScale }] }}>
+                            <TouchableOpacity
+                                onPress={
+                                    transcription && !recognizing
+                                        ? handleRetry
+                                        : recognizing
+                                          ? handleStopRecording
+                                          : handleMicPress
+                                }
+                                activeOpacity={0.85}
+                                style={[styles.micButton, { backgroundColor: ThemedColor.primary }]}>
+                                <Ionicons
+                                    name={transcription && !recognizing ? "reload" : recognizing ? "stop" : "mic"}
+                                    size={28}
+                                    color="#ffffff"
+                                />
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </View>
+                </Animated.View>
+
+                {/* Generate / Done button */}
+                {!hasPreview && !hasDeletePreview && (
+                    <Animated.View
+                        style={[
+                            styles.generateButtonWrapper,
+                            {
+                                bottom: insets.bottom + TAB_BAR_HEIGHT + 128,
+                                opacity: generateBtnOpacity,
+                                transform: [
+                                    {
+                                        translateY: generateBtnOpacity.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [10, 0],
+                                        }),
+                                    },
+                                ],
+                            },
+                        ]}
+                        pointerEvents={(transcription && !recognizing) || hasEditResult ? "auto" : "none"}>
+                        <TouchableOpacity
+                            onPress={hasEditResult ? dismissEditResult : handleProcessRequest}
+                            style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
+                            activeOpacity={0.85}
+                            disabled={isPreviewing}>
+                            <ThemedText style={styles.generateButtonText}>
+                                {hasEditResult
+                                    ? currentOpIndex + 1 < pendingOpsCount
+                                        ? "Next"
+                                        : "Done"
+                                    : isPreviewing
+                                      ? "Processing..."
+                                      : "Process Request"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
             </View>
         </View>
     );

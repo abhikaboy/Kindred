@@ -1,9 +1,8 @@
-import { CaretLeft } from "phosphor-react-native";
+import { CaretLeft, Info } from "phosphor-react-native";
 import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
@@ -82,7 +81,7 @@ const TextDump = (props: Props) => {
                     newCategories: JSON.stringify(result.newCategories || []),
                     categoriesCreated: result.categoriesCreated,
                     tasksCreated: result.tasksCreated,
-                }
+                },
             });
         } catch (err) {
             // Handle different error types
@@ -114,10 +113,8 @@ const TextDump = (props: Props) => {
                 contentContainerStyle={styles.scrollContent}
                 style={styles.container}>
                 {/* Back Button */}
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    style={styles.backButton}>
-                    <CaretLeft  size={24} color={ThemedColor.text} />
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <CaretLeft size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
                 {/* Header */}
@@ -125,9 +122,7 @@ const TextDump = (props: Props) => {
                     <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                         Text Dump
                     </ThemedText>
-                    <ThemedText
-                        type="default"
-                        style={[styles.subtitle, { color: ThemedColor.caption }]}>
+                    <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
                         Write down your thoughts freely
                     </ThemedText>
                 </View>
@@ -141,7 +136,7 @@ const TextDump = (props: Props) => {
                                 color: ThemedColor.text,
                                 backgroundColor: ThemedColor.background,
                                 borderColor: ThemedColor.tertiary,
-                            }
+                            },
                         ]}
                         multiline
                         placeholder="Start typing here..."
@@ -156,10 +151,8 @@ const TextDump = (props: Props) => {
                 {/* Character Count */}
                 {text.length > 0 && (
                     <View style={styles.characterCountSection}>
-                        <ThemedText
-                            type="default"
-                            style={[styles.characterCount, { color: ThemedColor.caption }]}>
-                            {text.length} character{text.length !== 1 ? 's' : ''}
+                        <ThemedText type="default" style={[styles.characterCount, { color: ThemedColor.caption }]}>
+                            {text.length} character{text.length !== 1 ? "s" : ""}
                         </ThemedText>
                     </View>
                 )}
@@ -191,22 +184,16 @@ const TextDump = (props: Props) => {
                             NATURAL LANGUAGE CREDITS
                         </ThemedText>
                         <View style={styles.creditsValue}>
-                            <ThemedText type="default" style={{ fontWeight: '600' }}>
+                            <ThemedText type="default" style={{ fontWeight: "600" }}>
                                 {credits.naturalLanguage}
                             </ThemedText>
                             <TouchableOpacity
                                 onPress={() => {
-                                    console.log('Info icon pressed, opening sheet');
+                                    console.log("Info icon pressed, opening sheet");
                                     setShowCreditsSheet(true);
                                 }}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                            >
-                                <Ionicons
-                                    name="information-circle-outline"
-                                    size={16}
-                                    color={ThemedColor.caption}
-                                    style={{ marginLeft: 4 }}
-                                />
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                <Info size={16} color={ThemedColor.caption} style={{ marginLeft: 4 }} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -217,7 +204,7 @@ const TextDump = (props: Props) => {
             <CreditsInfoSheet
                 visible={showCreditsSheet}
                 onClose={() => {
-                    console.log('Closing sheet');
+                    console.log("Closing sheet");
                     setShowCreditsSheet(false);
                 }}
                 currentCredits={credits?.naturalLanguage ?? 0}

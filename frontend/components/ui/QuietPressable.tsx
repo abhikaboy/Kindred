@@ -32,7 +32,7 @@ export const QuietPressable = React.forwardRef<any, Props>(
                     pressed.value = withTiming(0, { duration: 180 });
                     onPressOut?.(e);
                 }}
-                style={[style, animatedStyle]}>
+                style={rest.disabled ? style : [style, animatedStyle]}>
                 {children as React.ReactNode}
             </AnimatedPressable>
         );

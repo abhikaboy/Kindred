@@ -13,7 +13,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { assetsToPickedMedia } from "@/api/media";
-import { Play, X, Plus } from "phosphor-react-native";
+import { Play, X, Plus, Camera, Images, Users, CameraRotate } from "phosphor-react-native";
+import { QuietPressable } from "@/components/ui/QuietPressable";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
@@ -61,12 +62,7 @@ export default function Posting() {
         "Capture the moment!",
         "What are you doing?",
     ];
-    const frontCameraMessages = [
-        "Smile!",
-        "Say cheese!",
-        "Look at the camera!",
-        "Show your reaction!",
-    ];
+    const frontCameraMessages = ["Smile!", "Say cheese!", "Look at the camera!", "Show your reaction!"];
 
     useEffect(() => {
         if (viewMode === "preview" && flatListRef.current && photos.length > 0) {
@@ -161,8 +157,9 @@ export default function Posting() {
 
             // Wait for camera ready callback using ref
             let attempts = 0;
-            while (!cameraReadyRef.current && attempts < 50 && !isCancelled) { // Max 5 seconds wait
-                await new Promise(resolve => setTimeout(resolve, 100));
+            while (!cameraReadyRef.current && attempts < 50 && !isCancelled) {
+                // Max 5 seconds wait
+                await new Promise((resolve) => setTimeout(resolve, 100));
                 attempts++;
             }
 
@@ -176,7 +173,7 @@ export default function Posting() {
             setWaitingForCamera(false);
 
             // Additional stabilization time after camera is ready
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise((resolve) => setTimeout(resolve, 800));
 
             if (isCancelled) return;
 
@@ -184,14 +181,14 @@ export default function Posting() {
             for (let i = 3; i > 0; i--) {
                 if (isCancelled) return;
                 setCountdown(i);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 1000));
             }
 
             if (isCancelled) return;
             setCountdown(0);
 
             // Extra delay after countdown before capture
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
 
             // Check if preview camera ref is valid (we use preview camera during dual capture)
             if (!previewCamera.current) {
@@ -207,7 +204,6 @@ export default function Posting() {
             if (photo?.uri && !isCancelled) {
                 setDualPhoto(photo.uri);
             }
-
         } catch (error) {
             console.error("Failed to capture dual photo:", error);
         } finally {
@@ -232,7 +228,7 @@ export default function Posting() {
             // If in preview, temporarily switch to camera
             if (wasInPreview) {
                 setViewMode("camera");
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise((resolve) => setTimeout(resolve, 300));
             }
 
             // Switch to opposite camera
@@ -240,7 +236,7 @@ export default function Posting() {
             setFacing(dualFacing);
 
             // Wait for camera to switch
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise((resolve) => setTimeout(resolve, 800));
 
             // Capture photo
             const photo = await camera.current?.takePictureAsync({
@@ -361,7 +357,7 @@ export default function Posting() {
                         justifyContent: "center",
                         alignItems: "center",
                     }}>
-                    <X  size={16} color="#fff" />
+                    <X size={16} color="#fff" />
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -468,83 +464,24 @@ export default function Posting() {
                                     overflow: "hidden",
                                     backgroundColor: "#111",
                                 }}>
-                            {/* Main camera view - only render when NOT capturing dual */}
-                            {!isCapturingDual && (
-                                <CameraView
-                                    style={{ width: "100%", height: "100%" }}
-                                    facing={facing}
-                                    ref={camera}
-                                    flash={flash}
-                                    zoom={0}
-                                    selectedLens="builtInWideAngleCamera"
-                                    onCameraReady={() => {
-                                        cameraReadyRef.current = true;
-                                        setIsCameraReady(true);
-                                    }}
-                                />
-                            )}
-
-                            {/* Preview box indicator (always visible when dual mode is on and not capturing) */}
-                            {dualModeEnabled && !isCapturingDual && (
-                                <View
-                                    style={{
-                                        position: "absolute",
-                                        top: 16,
-                                        right: 16,
-                                        width: Dimensions.get("window").width * 0.3,
-                                        aspectRatio: 3 / 4,
-                                        borderRadius: 12,
-                                        borderWidth: 3,
-                                        borderColor: "#fff",
-                                        borderStyle: "dashed",
-                                        backgroundColor: "rgba(0, 0, 0, 0.3)",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        zIndex: 10,
-                                    }}>
-                                    <Ionicons
-                                        name="camera-outline"
-                                        size={32}
-                                        color="#fff"
-                                        style={{ opacity: 0.6 }}
-                                    />
-                                </View>
-                            )}
-
-                            {/* BeReal-style capture overlay - replaces camera view */}
-                            {justCapturedPhoto && isCapturingDual && (
-                                <View
-                                    style={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 1000,
-                                    }}>
-                                    {/* Captured photo fills the camera box */}
-                                    <Image
-                                        source={{ uri: justCapturedPhoto }}
-                                        style={{
-                                            width: "100%",
-                                            height: "100%",
-                                        }}
-                                        resizeMode="cover"
-                                    />
-
-                                    {/* Dark overlay for dimming */}
-                                    <View
-                                        style={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                {/* Main camera view - only render when NOT capturing dual */}
+                                {!isCapturingDual && (
+                                    <CameraView
+                                        style={{ width: "100%", height: "100%" }}
+                                        facing={facing}
+                                        ref={camera}
+                                        flash={flash}
+                                        zoom={0}
+                                        selectedLens="builtInWideAngleCamera"
+                                        onCameraReady={() => {
+                                            cameraReadyRef.current = true;
+                                            setIsCameraReady(true);
                                         }}
                                     />
+                                )}
 
-                                    {/* Live preview camera in top-right corner */}
+                                {/* Preview box indicator (always visible when dual mode is on and not capturing) */}
+                                {dualModeEnabled && !isCapturingDual && (
                                     <View
                                         style={{
                                             position: "absolute",
@@ -555,29 +492,18 @@ export default function Posting() {
                                             borderRadius: 12,
                                             borderWidth: 3,
                                             borderColor: "#fff",
-                                            overflow: "hidden",
-                                            shadowColor: "#000",
-                                            shadowOffset: { width: 0, height: 2 },
-                                            shadowOpacity: 0.5,
-                                            shadowRadius: 8,
-                                            elevation: 10,
-                                            zIndex: 1001,
+                                            borderStyle: "dashed",
+                                            backgroundColor: "rgba(0, 0, 0, 0.3)",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            zIndex: 10,
                                         }}>
-                                        <CameraView
-                                            style={{ width: "100%", height: "100%" }}
-                                            facing={facing}
-                                            ref={previewCamera}
-                                            flash={flash}
-                                            zoom={0}
-                                            selectedLens="builtInWideAngleCamera"
-                                            onCameraReady={() => {
-                                                cameraReadyRef.current = true;
-                                                setIsCameraReady(true);
-                                            }}
-                                        />
+                                        <Camera size={32} color="#fff" style={{ opacity: 0.6 }} />
                                     </View>
+                                )}
 
-                                    {/* Centered message and countdown */}
+                                {/* BeReal-style capture overlay - replaces camera view */}
+                                {justCapturedPhoto && isCapturingDual && (
                                     <View
                                         style={{
                                             position: "absolute",
@@ -585,45 +511,110 @@ export default function Posting() {
                                             left: 0,
                                             right: 0,
                                             bottom: 0,
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            paddingHorizontal: 40,
-                                            zIndex: 1002,
+                                            zIndex: 1000,
                                         }}>
-                                        {waitingForCamera ? (
-                                            <ThemedText
-                                                style={{
-                                                    fontSize: 24,
-                                                    fontWeight: "600",
-                                                    color: "#fff",
-                                                    textAlign: "center",
-                                                }}>
-                                                Preparing camera...
-                                            </ThemedText>
-                                        ) : countdown > 0 ? (
-                                            <ThemedText
-                                                style={{
-                                                    fontSize: 120,
-                                                    fontWeight: "900",
-                                                    color: "#fff",
-                                                    textAlign: "center",
-                                                }}>
-                                                {countdown}
-                                            </ThemedText>
-                                        ) : (
-                                            <ThemedText
-                                                style={{
-                                                    fontSize: 36,
-                                                    fontWeight: "700",
-                                                    color: "#fff",
-                                                    textAlign: "center",
-                                                }}>
-                                                {capturingMessage}
-                                            </ThemedText>
-                                        )}
+                                        {/* Captured photo fills the camera box */}
+                                        <Image
+                                            source={{ uri: justCapturedPhoto }}
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                            }}
+                                            resizeMode="cover"
+                                        />
+
+                                        {/* Dark overlay for dimming */}
+                                        <View
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                backgroundColor: "rgba(0, 0, 0, 0.6)",
+                                            }}
+                                        />
+
+                                        {/* Live preview camera in top-right corner */}
+                                        <View
+                                            style={{
+                                                position: "absolute",
+                                                top: 16,
+                                                right: 16,
+                                                width: Dimensions.get("window").width * 0.3,
+                                                aspectRatio: 3 / 4,
+                                                borderRadius: 12,
+                                                borderWidth: 3,
+                                                borderColor: "#fff",
+                                                overflow: "hidden",
+                                                shadowColor: "#000",
+                                                shadowOffset: { width: 0, height: 2 },
+                                                shadowOpacity: 0.5,
+                                                shadowRadius: 8,
+                                                elevation: 10,
+                                                zIndex: 1001,
+                                            }}>
+                                            <CameraView
+                                                style={{ width: "100%", height: "100%" }}
+                                                facing={facing}
+                                                ref={previewCamera}
+                                                flash={flash}
+                                                zoom={0}
+                                                selectedLens="builtInWideAngleCamera"
+                                                onCameraReady={() => {
+                                                    cameraReadyRef.current = true;
+                                                    setIsCameraReady(true);
+                                                }}
+                                            />
+                                        </View>
+
+                                        {/* Centered message and countdown */}
+                                        <View
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                paddingHorizontal: 40,
+                                                zIndex: 1002,
+                                            }}>
+                                            {waitingForCamera ? (
+                                                <ThemedText
+                                                    style={{
+                                                        fontSize: 24,
+                                                        fontWeight: "600",
+                                                        color: "#fff",
+                                                        textAlign: "center",
+                                                    }}>
+                                                    Preparing camera...
+                                                </ThemedText>
+                                            ) : countdown > 0 ? (
+                                                <ThemedText
+                                                    style={{
+                                                        fontSize: 120,
+                                                        fontWeight: "900",
+                                                        color: "#fff",
+                                                        textAlign: "center",
+                                                    }}>
+                                                    {countdown}
+                                                </ThemedText>
+                                            ) : (
+                                                <ThemedText
+                                                    style={{
+                                                        fontSize: 36,
+                                                        fontWeight: "700",
+                                                        color: "#fff",
+                                                        textAlign: "center",
+                                                    }}>
+                                                    {capturingMessage}
+                                                </ThemedText>
+                                            )}
+                                        </View>
                                     </View>
-                                </View>
-                            )}
+                                )}
                             </View>
                         </>
                     )}
@@ -698,10 +689,7 @@ export default function Posting() {
                                             borderStyle: "dashed",
                                             marginLeft: 8,
                                         }}>
-                                        <Plus
-
-                                            size={28}
-                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"} />
+                                        <Plus size={28} color={ThemedColor.background === "#000" ? "#fff" : "#000"} />
                                     </TouchableOpacity>
                                 )}
                             </ScrollView>
@@ -716,18 +704,17 @@ export default function Posting() {
                                             width: 48,
                                             height: 48,
                                             borderRadius: 24,
-                                            backgroundColor:
-                                                "transparent",
+                                            backgroundColor: "transparent",
                                             borderWidth: 0,
                                             borderColor: "#fff",
                                             justifyContent: "center",
                                             alignItems: "center",
                                         }}>
-                                        <Ionicons
-                                            name={dualModeEnabled ? "people" : "people-outline"}
-                                            size={32}
-                                            color="#fff"
-                                        />
+                                        {dualModeEnabled ? (
+                                            <Users weight="fill" size={32} color="#fff" />
+                                        ) : (
+                                            <Users size={32} color="#fff" />
+                                        )}
                                     </TouchableOpacity>
                                     <Ionicons
                                         name={flash === "off" ? "flash-outline" : "flash"}
@@ -774,18 +761,14 @@ export default function Posting() {
                                             )}
                                         </TouchableOpacity>
                                     </View>
-                                    <Ionicons
-                                        name="camera-reverse-outline"
-                                        size={32}
-                                        color="#fff"
+                                    <QuietPressable
                                         onPress={() => setFacing(facing === "back" ? "front" : "back")}
-                                    />
-                                    <Ionicons
-                                        name="images-outline"
-                                        size={32}
-                                        color="#fff"
-                                        onPress={pickImage}
-                                    />
+                                        hitSlop={8}>
+                                        <CameraRotate size={32} color="#fff" />
+                                    </QuietPressable>
+                                    <QuietPressable onPress={pickImage} hitSlop={8}>
+                                        <Images size={32} color="#fff" />
+                                    </QuietPressable>
                                 </View>
 
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "100%" }}>
@@ -814,7 +797,6 @@ export default function Posting() {
                             </>
                         ) : (
                             <>
-
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "100%" }}>
                                     <PrimaryButton
                                         onPress={() => setViewMode("camera")}

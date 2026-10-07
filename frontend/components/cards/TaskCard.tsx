@@ -26,6 +26,7 @@ import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
 import { setWorkingAPI, markInProgressAPI } from "@/api/task";
 import * as Haptics from "expo-haptics";
+import { QuietPressable } from "@/components/ui/QuietPressable";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { useDragActionsOptional } from "@/contexts/dragContext";
@@ -180,7 +181,7 @@ const TaskCard = ({
 
         ActiveTaskActivityFactory.start({
             taskName: task.content,
-            workspaceName: task.workspaceName || 'Tasks',
+            workspaceName: task.workspaceName || "Tasks",
             startTime: now,
             endTime,
             hasEndTime: !!endTime,
@@ -272,55 +273,64 @@ const TaskCard = ({
     const drag = useDragActionsOptional();
     const draggable = Boolean(drag) && Boolean(redirect) && !task?.isPhantom && Boolean(task);
 
-    const onLift = useCallback((absX: number, absY: number) => {
-        if (Platform.OS === "ios") {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }
-        movedRef.current = false;
-        menuOpenedRef.current = false;
-        if (task && drag) drag.beginDrag(task, categoryId, absX, absY);
-        // Held still past ~1s total → surface the menu without waiting for release.
-        menuTimerRef.current = setTimeout(() => {
-            menuTimerRef.current = null;
-            if (movedRef.current) return;
-            menuOpenedRef.current = true;
-            drag?.cancelDrag();
+    const onLift = useCallback(
+        (absX: number, absY: number) => {
             if (Platform.OS === "ios") {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }
-            setEditing(true);
-        }, MENU_HOLD_DELAY_MS);
-    }, [task, categoryId, drag]);
-
-    const onMove = useCallback((x: number, y: number, translationX: number, translationY: number) => {
-        if (menuOpenedRef.current) return;
-        if (!movedRef.current && Math.hypot(translationX, translationY) > DRAG_MOVE_THRESHOLD) {
-            movedRef.current = true;
-            if (menuTimerRef.current) {
-                clearTimeout(menuTimerRef.current);
+            movedRef.current = false;
+            menuOpenedRef.current = false;
+            if (task && drag) drag.beginDrag(task, categoryId, absX, absY);
+            // Held still past ~1s total → surface the menu without waiting for release.
+            menuTimerRef.current = setTimeout(() => {
                 menuTimerRef.current = null;
+                if (movedRef.current) return;
+                menuOpenedRef.current = true;
+                drag?.cancelDrag();
+                if (Platform.OS === "ios") {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                setEditing(true);
+            }, MENU_HOLD_DELAY_MS);
+        },
+        [task, categoryId, drag]
+    );
+
+    const onMove = useCallback(
+        (x: number, y: number, translationX: number, translationY: number) => {
+            if (menuOpenedRef.current) return;
+            if (!movedRef.current && Math.hypot(translationX, translationY) > DRAG_MOVE_THRESHOLD) {
+                movedRef.current = true;
+                if (menuTimerRef.current) {
+                    clearTimeout(menuTimerRef.current);
+                    menuTimerRef.current = null;
+                }
             }
-        }
-        drag?.updateDrag(x, y);
-    }, [drag]);
+            drag?.updateDrag(x, y);
+        },
+        [drag]
+    );
 
     // moved=true → the finger travelled, so treat the release as a drop;
     // moved=false → held and released in place, so open the menu (if the
     // hold-timer hasn't already opened it mid-press).
-    const finishDrag = useCallback((moved: boolean) => {
-        if (menuTimerRef.current) {
-            clearTimeout(menuTimerRef.current);
-            menuTimerRef.current = null;
-        }
-        if (!drag) return;
-        if (menuOpenedRef.current) return;
-        if (moved) {
-            drag.endDrag();
-        } else {
-            drag.cancelDrag();
-            setEditing(true);
-        }
-    }, [drag]);
+    const finishDrag = useCallback(
+        (moved: boolean) => {
+            if (menuTimerRef.current) {
+                clearTimeout(menuTimerRef.current);
+                menuTimerRef.current = null;
+            }
+            if (!drag) return;
+            if (menuOpenedRef.current) return;
+            if (moved) {
+                drag.endDrag();
+            } else {
+                drag.cancelDrag();
+                setEditing(true);
+            }
+        },
+        [drag]
+    );
 
     // Single Pan gesture that activates only after a 350ms hold (RNGH's
     // press-and-hold-then-drag primitive). No shared JS refs cross the worklet
@@ -343,7 +353,8 @@ const TaskCard = ({
     );
 
     const cardBody = (
-        <TouchableOpacity
+        <QuietPressable
+            haptic={false}
             style={[
                 styles.container,
                 encouraged
@@ -358,14 +369,9 @@ const TaskCard = ({
                           borderWidth: 1,
                           borderColor: ThemedColor.tertiary,
                       },
-                task?.isPhantom
-                    ? { opacity: 0.45, borderStyle: "dashed" as const }
-                    : null,
+                task?.isPhantom ? { opacity: 0.45, borderStyle: "dashed" as const } : null,
             ]}
-            disabled={
-                Boolean(task?.isPhantom) ||
-                (!redirect && !encourage && !congratulate)
-            }
+            disabled={Boolean(task?.isPhantom) || (!redirect && !encourage && !congratulate)}
             onPress={handlePress}
             onLongPress={draggable ? undefined : handleLongPress}>
             {editing && (
@@ -452,18 +458,22 @@ const TaskCard = ({
                                 <Sparkle size={20} color={ThemedColor.primary} weight="fill" />
                             ) : (
                                 <View
-                                    style={[styles.circle, { backgroundColor: (task?.active || task?.workingOnSince) ? ThemedColor.primary : someday ? getPriorityColor("none") : getPriorityColor(PRIORITY_MAP[priority]) }]}
+                                    style={[
+                                        styles.circle,
+                                        {
+                                            backgroundColor:
+                                                task?.active || task?.workingOnSince
+                                                    ? ThemedColor.primary
+                                                    : someday
+                                                      ? getPriorityColor("none")
+                                                      : getPriorityColor(PRIORITY_MAP[priority]),
+                                        },
+                                    ]}
                                 />
                             )}
                         </>
                     )}
-                    {encourage && (
-                        <Sparkle
-                            size={24}
-                            color="#9333EA"
-                            weight="regular"
-                        />
-                    )}
+                    {encourage && <Sparkle size={24} color="#9333EA" weight="regular" />}
                     {congratulate && (
                         <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <Path
@@ -474,16 +484,12 @@ const TaskCard = ({
                     )}
                 </View>
             </View>
-        </TouchableOpacity>
+        </QuietPressable>
     );
 
     return (
         <>
-            {draggable ? (
-                <GestureDetector gesture={dragGesture}>{cardBody}</GestureDetector>
-            ) : (
-                cardBody
-            )}
+            {draggable ? <GestureDetector gesture={dragGesture}>{cardBody}</GestureDetector> : cardBody}
 
             {/* Lazy load modals - only render when needed */}
             {showEncourageModal && (
