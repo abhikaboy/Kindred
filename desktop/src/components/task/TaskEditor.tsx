@@ -4,17 +4,14 @@ import {
   ArrowLeft,
   CalendarBlank,
   ChartLineUp,
-  Check,
   Flag,
   Note,
   PencilSimple,
-  Play,
   Repeat,
   Sparkle,
   Trash,
 } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
-import PrimaryButton from "@/components/PrimaryButton";
 import { MentionTextarea } from "@/components/inputs/MentionTextarea";
 import { DataCard } from "@/components/task/DataCard";
 import { TaskTagsCard } from "@/components/task/TaskTagsCard";
@@ -26,6 +23,7 @@ import { ScheduleTimeline } from "@/components/task/ScheduleTimeline";
 import type { PickedDateTime } from "@/components/task/DateTimePicker";
 import { DeleteTaskDialog } from "@/components/task/DeleteTaskDialog";
 import { LogProgressDialog } from "@/components/task/LogProgressDialog";
+import { CompleteCircle, TaskStatusLine } from "@/components/task/TaskHeaderControls";
 import { cn } from "@/lib/utils";
 import { fireConfetti } from "@/lib/confetti";
 import { useCreate } from "@/components/create/CreateContext";
@@ -111,7 +109,7 @@ type TaskEditorProps = {
 export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: TaskEditorProps) {
   const navigate = useNavigate();
   const headerRef = useRef<HTMLDivElement>(null);
-  const completeBtnRef = useRef<HTMLSpanElement>(null);
+  const completeBtnRef = useRef<HTMLButtonElement>(null);
   const initialContent = useRef(task.content).current;
 
   const done = onDone ?? (() => navigate(-1));
@@ -230,7 +228,13 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
       {showBackLink && <BackLink />}
 
       <div className="flex flex-col gap-4">
-        <div ref={headerRef} className="flex items-start gap-2">
+        <div ref={headerRef} className="flex items-start gap-3">
+          <CompleteCircle
+            ref={completeBtnRef}
+            priority={priority}
+            pending={completeTask.isPending}
+            onComplete={handleComplete}
+          />
           <ThemedText
             as="h1"
             type="title"
@@ -261,47 +265,13 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* One accent: completing leads; logging progress never auto-completes. */}
-          <PrimaryButton
-            title={completeTask.isPending ? "Completing" : "Mark complete"}
-            disabled={completeTask.isPending}
-            onClick={handleComplete}
-            className="w-auto h-10 rounded-full px-5 py-0 shadow-[0_6px_10px_-2px_rgba(133,77,255,0.3)] active:scale-[0.98]"
-          >
-            <span ref={completeBtnRef} className="flex items-center">
-              <Check size={16} weight="bold" />
-            </span>
-          </PrimaryButton>
-          <PrimaryButton
-            title="Log progress"
-            ghost
-            onClick={() => setLogProgressOpen(true)}
-            className="w-auto h-10 rounded-full bg-muted px-5 py-0 text-foreground hover:bg-muted/70"
-          >
-            <ChartLineUp size={16} />
-          </PrimaryButton>
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={activateTask.isPending}
-            aria-pressed={isActive}
-            className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-full px-4 transition-colors disabled:opacity-50",
-              isActive
-                ? "bg-primary/10 text-primary hover:bg-primary/15"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
-          >
-            <Play size={14} weight={isActive ? "fill" : "regular"} />
-            <ThemedText
-              type="caption"
-              className={isActive ? "text-primary" : "text-muted-foreground"}
-            >
-              {isActive ? "In progress" : "Start working"}
-            </ThemedText>
-          </button>
-        </div>
+        <TaskStatusLine
+          active={isActive}
+          workingOnSince={task.workingOnSince}
+          pending={activateTask.isPending}
+          onToggleWorking={handleStart}
+          onLogProgress={() => setLogProgressOpen(true)}
+        />
       </div>
 
       <DataCard title="Notes" icon={<Note size={20} weight="regular" className="text-foreground" />}>
