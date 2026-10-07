@@ -14,8 +14,8 @@ export const PropertyPill = React.forwardRef<
     ref={ref}
     type="button"
     className={cn(
-      "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
-      active ? "text-foreground" : "text-muted-foreground",
+      "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-sm transition-colors duration-150 active:scale-[0.97]",
+      active ? "bg-primary/10 text-primary hover:bg-primary/15" : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground",
       className,
     )}
     {...props}

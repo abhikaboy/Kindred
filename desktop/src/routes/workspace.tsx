@@ -153,7 +153,7 @@ export default function WorkspaceScreen() {
         <ThemedText type="titleFraunces" as="h1">
           {workspace.name}
         </ThemedText>
-        <Button variant="outline" size="sm" onClick={() => openCreateCategory(workspace.name)}>
+        <Button variant="ghost" size="sm" onClick={() => openCreateCategory(workspace.name)}>
           <Plus />
           New category
         </Button>
@@ -169,12 +169,12 @@ export default function WorkspaceScreen() {
               onClick={toggleGroupByDay}
               title="Group by day"
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
-                groupByDay ? "border-primary text-primary" : "text-muted-foreground",
+                "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-sm transition-colors duration-150 active:scale-[0.97]",
+                groupByDay ? "bg-primary/10 text-primary hover:bg-primary/15" : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <CalendarBlank size={14} />
-              Group by Day
+              Group by day
             </button>
           </>
         )}
@@ -193,7 +193,7 @@ export default function WorkspaceScreen() {
           title="This workspace is empty"
           description="Add a category to start organizing tasks in this workspace."
           action={
-            <Button variant="outline" size="sm" onClick={() => openCreateCategory(workspace.name)}>
+            <Button variant="ghost" size="sm" onClick={() => openCreateCategory(workspace.name)}>
               <Plus />
               Add category
             </Button>

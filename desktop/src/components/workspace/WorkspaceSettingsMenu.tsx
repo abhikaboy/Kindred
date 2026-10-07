@@ -23,7 +23,7 @@ export function WorkspaceSettingsMenu({
   return (
     <>
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger render={<Button variant="outline" size="icon" />}>
+        <PopoverTrigger render={<Button variant="ghost" size="icon" className="rounded-full" />}>
           <GearSix size={16} />
         </PopoverTrigger>
         <PopoverContent className="w-40 p-1">
