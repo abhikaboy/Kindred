@@ -164,6 +164,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create guest account
+         * @description Creates a credential-less guest account so the app is usable before sign up. Returns tokens in the access_token and refresh_token headers and the user in the body, exactly like register.
+         */
+        post: operations["login-guest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1964,6 +1984,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/friends/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get friends activity
+         * @description Returns open tasks, today's completions and ring state for the given friends in one response. Non-friends are omitted.
+         */
+        post: operations["get-friends-activity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/groups": {
         parameters: {
             query?: never;
@@ -2060,6 +2100,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/mcp-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List recent MCP agent activity
+         * @description Recent create and complete calls made by the caller's connected agents, newest first.
+         */
+        get: operations["list-mcp-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/mcp-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List MCP access tokens */
+        get: operations["list-mcp-tokens"];
+        put?: never;
+        /**
+         * Create MCP access token
+         * @description Mint a personal access token for the MCP server. The raw token is returned only once.
+         */
+        post: operations["create-mcp-token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/mcp-tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke MCP access token */
+        delete: operations["revoke-mcp-token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/notifications": {
         parameters: {
             query?: never;
@@ -2138,6 +2236,128 @@ export interface paths {
          * @description Mark all notifications as read for the authenticated user
          */
         patch: operations["mark-all-notifications-read"];
+        trace?: never;
+    };
+    "/v1/user/oauth/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List connected MCP apps */
+        get: operations["list-oauth-grants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/grants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect an MCP app and revoke its tokens */
+        delete: operations["revoke-oauth-grant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a pending MCP connection request */
+        get: operations["get-oauth-request"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve an MCP connection request */
+        post: operations["approve-oauth-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/{id}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deny an MCP connection request */
+        post: operations["deny-oauth-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/oauth/requests/by-code/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a pending MCP connection request by its user code */
+        get: operations["get-oauth-request-by-code"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link a phone number
+         * @description Attaches an OTP-verified phone number to the signed-in account. Accounts created via Apple or Google start without one, which makes them undiscoverable by contact matching.
+         */
+        post: operations["link-phone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/posts": {
@@ -2362,8 +2582,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Find users by phone numbers
-         * @description Efficiently find users matching any of the provided phone numbers using a single database query
+         * Find users by hashed phone numbers
+         * @description Finds users matching any of the provided hashed contact numbers in a single indexed query, and records the hashes so the caller can be notified when one of those contacts joins
          */
         post: operations["find-users-by-phone-numbers"];
         delete?: never;
@@ -2526,6 +2746,26 @@ export interface paths {
          * @description Report a post for inappropriate content, spam, harassment, or other violations
          */
         post: operations["report-post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/returned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a return after a gap
+         * @description Called when the Welcome back sheet is shown. Sets returnedAt to now unless it was already set in the last 24 hours.
+         */
+        post: operations["mark-returned"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2836,26 +3076,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/user/tasks/auto": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a task without choosing a category
-         * @description Create a task without choosing a category in a specific category
-         */
-        post: operations["create-task-auto"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/user/tasks/{category}/{id}": {
         parameters: {
             query?: never;
@@ -2878,6 +3098,26 @@ export interface paths {
          * @description Update a task record
          */
         patch: operations["update-task"];
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/breakdown-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest small first steps
+         * @description Suggests 2-4 tiny first steps that fit the chosen size. Consumes no credits and returns an empty list when AI is unavailable.
+         */
+        post: operations["breakdown-suggestions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/tasks/{category}/{id}/checklist": {
@@ -2960,6 +3200,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/{category}/{id}/park": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Park a task */
+        post: operations["park-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a task plan
+         * @description Commits a small next step. Moves the task's start to the plan time, adds one reminder there, and optionally appends breakdown steps to the checklist. Replacing a plan counts a replan.
+         */
+        put: operations["put-task-plan"];
+        post?: never;
+        /**
+         * Clear a task plan
+         * @description Removes the plan and its pending reminder.
+         */
+        delete: operations["clear-task-plan"];
+        options?: never;
+        head?: never;
+        /**
+         * Set a task plan
+         * @description Commits a small next step. Moves the task's start to the plan time, adds one reminder there, and optionally appends breakdown steps to the checklist. Replacing a plan counts a replan.
+         */
+        patch: operations["patch-task-plan"];
+        trace?: never;
+    };
     "/v1/user/tasks/{category}/{id}/progress": {
         parameters: {
             query?: never;
@@ -2975,6 +3260,47 @@ export interface paths {
          */
         post: operations["log-progress"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release a task
+         * @description Hides the task from every list, reminder and count. Recoverable with unrelease.
+         */
+        post: operations["release-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/someday": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a task to Someday
+         * @description Clears the task's start date, start time, deadline, plan and unsent reminders. Optionally appends breakdown steps to the checklist.
+         */
+        post: operations["set-task-someday"];
+        /** Take a task out of Someday */
+        delete: operations["clear-task-someday"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2998,6 +3324,40 @@ export interface paths {
          * @description Replace the set of friends tagged on a task
          */
         patch: operations["update-task-tags"];
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/unpark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unpark a task */
+        post: operations["unpark-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/{category}/{id}/unrelease": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a released task */
+        post: operations["unrelease-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/user/tasks/{id}/progress": {
@@ -3034,6 +3394,26 @@ export interface paths {
          * @description Change the active status of a task
          */
         post: operations["activate-task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a task without choosing a category
+         * @description Create a task in the user's Inbox and queue it for automatic categorization
+         */
+        post: operations["create-task-auto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3132,6 +3512,66 @@ export interface paths {
          * @description Retrieve completed tasks for a specific date
          */
         get: operations["get-completed-tasks-by-date"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/enrich/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply auto enrichment
+         * @description Applies the previewed changes the user kept. Only schedule, due date, priority, difficulty and title can change.
+         */
+        post: operations["apply-enrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/enrich/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview auto enrichment
+         * @description Proposes schedules, due dates, priority, difficulty and title cleanups for unscheduled tasks, with a reason for each. Changes nothing.
+         */
+        post: operations["preview-enrich"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/enrich/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check whether auto enrichment is worth offering
+         * @description Counts open tasks with no schedule or a stale one. Does not call AI.
+         */
+        get: operations["get-enrich-status"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3300,6 +3740,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Predict tasks the user will need next
+         * @description Mines the user's category rhythms, weekday habits, upcoming deadlines and recent completions, then suggests new tasks grounded in them. Never replays an existing or past task. Returns an empty list when AI is unavailable, and consumes no credits.
+         */
+        get: operations["get-task-predictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/query": {
         parameters: {
             query?: never;
@@ -3314,6 +3774,66 @@ export interface paths {
          * @description Query tasks for the authenticated user with advanced filtering options
          */
         post: operations["query-tasks-by-user"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/release-bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release many tasks
+         * @description Releases a batch of tasks at once. Released tasks are kept and can be restored.
+         */
+        post: operations["bulk-release-tasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/released": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List released tasks
+         * @description Tasks the user let go, most recent first.
+         */
+        get: operations["get-released-tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/user/tasks/someday": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Someday tasks
+         * @description Undated tasks the user moved to Someday, most recent first. Released tasks are left out.
+         */
+        get: operations["get-someday-tasks"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3768,6 +4288,19 @@ export interface components {
             /** Format: int64 */
             year: number;
         };
+        ActivityItem: {
+            /** Format: date-time */
+            created_at: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            id: string;
+            ok: boolean;
+            /** @example Created task "Buy milk" in Groceries */
+            summary: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            target_id?: string;
+            /** @example create_task */
+            tool: string;
+        };
         AddCommentOutputBody: {
             /**
              * Format: uri
@@ -4051,6 +4584,26 @@ export interface components {
             status: string;
             workspace: string;
         };
+        ApplyEnrichInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyEnrichInputBody.json
+             */
+            readonly $schema?: string;
+            changes: components["schemas"]["Item"][];
+        };
+        ApplyEnrichOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApplyEnrichOutputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            editedCount: number;
+            tasks: components["schemas"]["TaskDocument"][];
+        };
         ApplyReferralCodeInputBody: {
             /**
              * Format: uri
@@ -4070,6 +4623,16 @@ export interface components {
             message: string;
             referrer?: components["schemas"]["ReferrerInfo"];
             success: boolean;
+        };
+        ApproveRequestInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ApproveRequestInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Scopes to grant; a non-empty subset of the requested scopes */
+            scopes: string[];
         };
         BlockUserOutputBody: {
             /**
@@ -4240,6 +4803,35 @@ export interface components {
              */
             timestamp: string;
         };
+        BreakdownSuggestionsInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BreakdownSuggestionsInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description How much time the user has for the first step
+             * @enum {string}
+             */
+            size: "2m" | "10m" | "full";
+        };
+        BreakdownSuggestionsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BreakdownSuggestionsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description 2-4 small first steps; empty when none could be suggested */
+            steps: string[];
+            /** @description Optional one-line hint about a good time to try */
+            whenHint?: string;
+        };
+        BrowserView: {
+            ip: string;
+            user_agent: string;
+        };
         BulkCompleteTaskInputBody: {
             /**
              * Format: uri
@@ -4356,6 +4948,30 @@ export interface components {
              */
             totalFailed: number;
         };
+        BulkReleaseTasksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkReleaseTasksInputBody.json
+             */
+            readonly $schema?: string;
+            tasks: components["schemas"]["ReleaseTaskItem"][];
+        };
+        BulkReleaseTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BulkReleaseTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Tasks that were not found or already released */
+            failedTaskIds: string[];
+            /**
+             * Format: int64
+             * @description How many tasks were released
+             */
+            released: number;
+        };
         CalendarConnection: {
             /** Format: date-time */
             created_at: string;
@@ -4454,6 +5070,18 @@ export interface components {
             /** Format: int64 */
             amount: number;
             credit_type: string;
+        };
+        ClientView: {
+            /** @example claude.ai */
+            host: string;
+            /** @example https://claude.ai/oauth/mcp-oauth-client-metadata */
+            id: string;
+            logo_uri?: string;
+            /** @example Claude */
+            name: string;
+            /** @enum {string} */
+            registration: "cimd" | "dcr";
+            verified: boolean;
         };
         CommentDocumentAPI: {
             content: string;
@@ -5204,8 +5832,17 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs attached to the task, from the notes or added by hand */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
+            origin?: components["schemas"]["TaskOrigin"];
+            /**
+             * Format: date-time
+             * @description When the user set this task aside
+             */
+            parkedAt?: string;
+            /** @description The next small step the user committed to */
+            plan?: components["schemas"]["TaskPlan"];
             posted: boolean;
             /** Format: int64 */
             priority: number;
@@ -5217,6 +5854,11 @@ export interface components {
             recurFrequency?: string;
             recurType?: string;
             recurring: boolean;
+            /**
+             * Format: date-time
+             * @description When the user let this task go; released tasks are hidden until restored
+             */
+            releasedAt?: string;
             reminders?: components["schemas"]["Reminder"][];
             /** Format: int64 */
             rescheduleCount?: number;
@@ -5225,6 +5867,11 @@ export interface components {
             sessionNote?: string;
             sessionPhoto?: string;
             sessionTrackable?: boolean;
+            /**
+             * Format: date-time
+             * @description When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+             */
+            somedayAt?: string;
             source?: string;
             /** Format: date-time */
             startDate: string;
@@ -5261,7 +5908,8 @@ export interface components {
             /** Format: date-time */
             deadline?: string;
             integration?: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs to attach; links found in the notes are added automatically */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -5271,6 +5919,8 @@ export interface components {
             recurring: boolean;
             reminders?: components["schemas"]["Reminder"][];
             sessionTrackable?: boolean;
+            /** @description Create the task as Someday: undated, with no default start date */
+            someday?: boolean;
             /** Format: date-time */
             startDate?: string;
             /** Format: date-time */
@@ -5278,6 +5928,34 @@ export interface components {
             taggedUserIds?: string[];
             /** Format: double */
             value: number;
+        };
+        CreateTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            metadata: components["schemas"]["TokenMetadata"];
+            /** @description Raw token. Shown only once; store it securely. */
+            token: string;
+        };
+        CreateTokenParams: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateTokenParams.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Days until the token expires. Omit or 0 for no expiry
+             */
+            expires_in_days?: number;
+            /** @example Claude Desktop */
+            name: string;
+            /** @description Scopes to grant. Omit for all scopes */
+            scopes?: ("kindred:read" | "kindred:write" | "kindred:complete")[];
         };
         CreateWaitlistParams: {
             /**
@@ -5534,6 +6212,20 @@ export interface components {
             /** @description Edited recurring template tasks */
             templates: components["schemas"]["TemplateTaskDocument"][];
         };
+        EditTaskUpdatesLocal: {
+            active?: boolean;
+            content?: string;
+            deadline?: string;
+            notes?: string;
+            /** Format: int64 */
+            priority?: number;
+            recurFrequency?: string;
+            recurType?: string;
+            startDate?: string;
+            startTime?: string;
+            /** Format: double */
+            value?: number;
+        };
         EditTasksNaturalLanguageInputBody: {
             /**
              * Format: uri
@@ -5689,6 +6381,21 @@ export interface components {
             id: string;
             isPublic: boolean;
         };
+        EnrichChange: {
+            categoryId: string;
+            categoryName: string;
+            /** @description The field behind each summary entry, in the same order: content, start, deadline, priority or value. Lets the user drop one part of a change. */
+            fields: string[];
+            /** @description Why the change is proposed */
+            reason: string;
+            /** @description Plain descriptions of each field change, e.g. 'Start Tue, Sep 29' */
+            summary: string[];
+            taskId: string;
+            /** @description The task's current title */
+            taskName: string;
+            /** @description Fields that would change; time fields are RFC3339 */
+            updates: components["schemas"]["EditTaskUpdatesLocal"];
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -5802,8 +6509,8 @@ export interface components {
              * @example https://example.com/schemas/FindUsersByPhoneNumbersInputBody.json
              */
             readonly $schema?: string;
-            /** @description List of phone numbers to search for */
-            numbers: string[];
+            /** @description Salted SHA-256 hashes of E.164 contact phone numbers */
+            phone_hashes: string[];
         };
         FlexDetails: {
             period: string;
@@ -5910,6 +6617,12 @@ export interface components {
             /** @example 507f1f77bcf86cd799439011 */
             userId: string;
         };
+        FriendActivity: {
+            completed_tasks: components["schemas"]["TaskDocument"][];
+            ring_state?: components["schemas"]["RingState"];
+            tasks: components["schemas"]["TaskDocument"][];
+            user_id: string;
+        };
         FriendReference: {
             /**
              * @description User ID
@@ -5945,8 +6658,8 @@ export interface components {
             profile_picture: string;
             /**
              * Format: int64
-             * @description Current streak
-             * @example 5
+             * @description Always 0: streaks are only visible to their owner
+             * @example 0
              */
             streak: number;
             /**
@@ -6042,6 +6755,26 @@ export interface components {
             readonly $schema?: string;
             connections: components["schemas"]["CalendarConnection"][];
         };
+        GetEnrichStatusOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetEnrichStatusOutputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Open tasks with no schedule, or a stale one
+             */
+            candidateCount: number;
+            /** @description Whether enough tasks need attention to offer auto enrichment */
+            eligible: boolean;
+            /**
+             * Format: int64
+             * @description Candidates whose planned day passed without being done
+             */
+            staleCount: number;
+        };
         GetEventsOutputBody: {
             /**
              * Format: uri
@@ -6072,6 +6805,25 @@ export interface components {
              * @description Total number of feed items available
              */
             total: number;
+        };
+        GetFriendsActivityInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFriendsActivityInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Friend user IDs to load activity for */
+            user_ids: string[];
+        };
+        GetFriendsActivityOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetFriendsActivityOutputBody.json
+             */
+            readonly $schema?: string;
+            friends: components["schemas"]["FriendActivity"][];
         };
         GetFriendsPostsOutputBody: {
             /**
@@ -6175,6 +6927,15 @@ export interface components {
             /** Format: int64 */
             unlocksRemaining: number;
         };
+        GetReleasedTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetReleasedTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            tasks: components["schemas"]["TaskDocument"][];
+        };
         GetReportsOutputBody: {
             /**
              * Format: uri
@@ -6185,6 +6946,25 @@ export interface components {
             reports: components["schemas"]["ReportDocumentAPI"][];
             /** Format: int64 */
             total: number;
+        };
+        GetSomedayTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetSomedayTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            tasks: components["schemas"]["TaskDocument"][];
+        };
+        GetTaskPredictionsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GetTaskPredictionsOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Up to three tasks the user will likely need next, each with the reason */
+            predictions: components["schemas"]["TaskPrediction"][];
         };
         GetTaskProgressOutputBody: {
             /**
@@ -6289,6 +7069,15 @@ export interface components {
             readonly $schema?: string;
             users: components["schemas"]["UserExtendedReference"][];
         };
+        GrantView: {
+            client: components["schemas"]["ClientView"];
+            /** Format: date-time */
+            created_at: string;
+            id: string;
+            /** Format: date-time */
+            last_used_at: string;
+            scopes: components["schemas"]["ScopeView"][];
+        };
         GroupDocumentAPI: {
             /**
              * Format: uri
@@ -6308,6 +7097,18 @@ export interface components {
             isDeleted: boolean;
             /** Format: date-time */
             updatedAt: string;
+        };
+        GuestLoginRequest: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GuestLoginRequest.json
+             */
+            readonly $schema?: string;
+            /** @description Stable per-install identifier, stored for cleanup and analytics */
+            deviceId?: string;
+            /** @description IANA timezone, defaults to UTC */
+            timezone?: string;
         };
         HealthOutputBody: {
             /**
@@ -6365,6 +7166,10 @@ export interface components {
             /** @description Ordered list of decomposed operations. Edits are already applied; deletes and creates need frontend confirmation. */
             ops: components["schemas"]["IntentOpResponse"][];
         };
+        Item: {
+            taskId: string;
+            updates: components["schemas"]["EditTaskUpdatesLocal"];
+        };
         KudosRewards: {
             /**
              * Format: int64
@@ -6382,6 +7187,39 @@ export interface components {
             icon: string;
             id: string;
             name: string;
+        };
+        LinkPhoneInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LinkPhoneInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description OTP code previously sent to this number
+             * @example 1234
+             */
+            code: string;
+            /**
+             * @description Phone number to link, in any common format
+             * @example +15551234567
+             */
+            phone_number: string;
+        };
+        LinkPhoneOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LinkPhoneOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Phone number linked successfully */
+            message: string;
+            /**
+             * @description The linked number, normalized to E.164
+             * @example +15551234567
+             */
+            phone: string;
         };
         ListCalendarsOutputBody: {
             /**
@@ -6619,6 +7457,29 @@ export interface components {
             /** @example Notifications marked as read successfully */
             message: string;
         };
+        MarkReturnedInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkReturnedInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description Whole days since the user was last active, as computed by the client
+             */
+            gapDays: number;
+        };
+        MarkReturnedOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/MarkReturnedOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Whether this call recorded a new return */
+            recorded: boolean;
+        };
         MediaItem: {
             /** Format: int64 */
             bytes?: number;
@@ -6708,6 +7569,7 @@ export interface components {
             checkin_frequency: string;
             comments: boolean;
             congratulations: boolean;
+            contact_joins: boolean;
             encouragements: boolean;
             friend_activity: boolean;
             friend_posts: boolean;
@@ -6825,6 +7687,27 @@ export interface components {
             content: string;
             id: string;
             status?: string;
+        };
+        PreviewEnrichInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewEnrichInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description User's timezone (IANA format) */
+            timezone?: string;
+        };
+        PreviewEnrichOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PreviewEnrichOutputBody.json
+             */
+            readonly $schema?: string;
+            changes: components["schemas"]["EnrichChange"][];
+            /** @description Plain explanation of what applying would do */
+            overview: string;
         };
         PreviewTaskFromImageInputBody: {
             /**
@@ -7192,6 +8075,12 @@ export interface components {
             score: number;
             status: string;
         };
+        ReleaseTaskItem: {
+            /** @example 507f1f77bcf86cd799439011 */
+            categoryId: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            taskId: string;
+        };
         Reminder: {
             afterDeadline: boolean;
             afterStart: boolean;
@@ -7316,6 +8205,24 @@ export interface components {
              */
             reason: string;
         };
+        RequestView: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RequestView.json
+             */
+            readonly $schema?: string;
+            browser: components["schemas"]["BrowserView"];
+            client: components["schemas"]["ClientView"];
+            /** Format: date-time */
+            expires_at: string;
+            id: string;
+            /** Format: date-time */
+            requested_at: string;
+            scopes: components["schemas"]["ScopeView"][];
+            /** @enum {string} */
+            status: "pending" | "approved" | "denied" | "expired";
+        };
         ResetTemplateMetricsOutputBody: {
             /**
              * Format: uri
@@ -7365,6 +8272,26 @@ export interface components {
             purchased_at_ms: number;
             store: string;
             type: string;
+        };
+        RevokeGrantOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RevokeGrantOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Connection revoked */
+            message: string;
+        };
+        RevokeTokenOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/RevokeTokenOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Token revoked */
+            message: string;
         };
         RingDelta: {
             all_closed: boolean;
@@ -7422,6 +8349,7 @@ export interface components {
             first_all_rings_closed_at?: string;
             friends: string[];
             handle: string;
+            isGuest: boolean;
             kudosRewards: components["schemas"]["KudosRewards"];
             /** Format: int64 */
             points: number;
@@ -7453,6 +8381,14 @@ export interface components {
             keys: string[];
             /** @example Preferences saved */
             message: string;
+        };
+        ScopeView: {
+            /** @example See your workspaces, categories and tasks. */
+            description: string;
+            /** @example kindred:read */
+            id: string;
+            /** @example View your tasks */
+            title: string;
         };
         SendBeakCongratulationParams: {
             /**
@@ -7512,6 +8448,38 @@ export interface components {
              */
             readonly $schema?: string;
             phone_number: string;
+        };
+        SetTaskPlanBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetTaskPlanBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @description When to try it; the task's start moves here
+             */
+            at: string;
+            /**
+             * @description How long the step takes
+             * @enum {string}
+             */
+            size: "2m" | "10m" | "full";
+            /** @description The first small step to try */
+            step: string;
+            /** @description Extra breakdown steps to append to the checklist after the plan step */
+            steps?: string[];
+        };
+        SetTaskSomedayInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SetTaskSomedayInputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Breakdown steps to append to the checklist */
+            steps?: string[];
         };
         SetWorkspacePushEnabledInputBody: {
             /**
@@ -7606,6 +8574,16 @@ export interface components {
              * @enum {string}
              */
             tone?: "encouraging" | "direct" | "playful";
+        };
+        StatusBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StatusBody.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "denied" | "expired";
         };
         SubscribeToBlueprintOutputBody: {
             /**
@@ -7711,14 +8689,6 @@ export interface components {
             id: string;
             profile_picture: string;
         };
-        TaskLink: {
-            /** @description Where the link came from */
-            source?: "notes" | "manual";
-            /** @description Display label; defaults to the link host */
-            title?: string;
-            /** @description Absolute URL of the link */
-            url: string;
-        };
         TaskDocument: {
             /**
              * Format: uri
@@ -7754,8 +8724,17 @@ export interface components {
             integration?: string;
             /** Format: date-time */
             lastEdited: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            /** @description URLs attached to the task, from the notes or added by hand */
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
+            origin?: components["schemas"]["TaskOrigin"];
+            /**
+             * Format: date-time
+             * @description When the user set this task aside
+             */
+            parkedAt?: string;
+            /** @description The next small step the user committed to */
+            plan?: components["schemas"]["TaskPlan"];
             posted: boolean;
             /** Format: int64 */
             priority: number;
@@ -7767,12 +8746,22 @@ export interface components {
             recurFrequency?: string;
             recurType?: string;
             recurring: boolean;
+            /**
+             * Format: date-time
+             * @description When the user let this task go; released tasks are hidden until restored
+             */
+            releasedAt?: string;
             reminders?: components["schemas"]["Reminder"][];
             /** Format: int64 */
             rescheduleCount?: number;
             sessionNote?: string;
             sessionPhoto?: string;
             sessionTrackable?: boolean;
+            /**
+             * Format: date-time
+             * @description When the user moved this task to Someday; Someday tasks are undated and never counted as waiting
+             */
+            somedayAt?: string;
             source?: string;
             /** Format: date-time */
             startDate: string;
@@ -7794,6 +8783,16 @@ export interface components {
             /** Format: date-time */
             workingOnSince?: string;
         };
+        TaskGraceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TaskGraceOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @example Task updated */
+            message: string;
+        };
         TaskKudos: {
             /** Format: int64 */
             durationMs?: number;
@@ -7804,6 +8803,60 @@ export interface components {
             /** Format: date-time */
             timestamp: string;
             type: string;
+        };
+        TaskLink: {
+            /**
+             * @description Where the link came from
+             * @enum {string}
+             */
+            source?: "notes" | "manual";
+            /** @description Display label; defaults to the link host */
+            title?: string;
+            /** @description Absolute URL of the link */
+            url: string;
+        };
+        TaskOrigin: {
+            /** Format: date-time */
+            at: string;
+            client_id?: string;
+            client_name?: string;
+            connection_id: string;
+            /** @example mcp */
+            kind: string;
+        };
+        TaskPlan: {
+            /**
+             * Format: date-time
+             * @description When the user plans to try it
+             */
+            at: string;
+            /**
+             * Format: date-time
+             * @description When this plan was set
+             */
+            committedAt: string;
+            /**
+             * Format: int64
+             * @description How many times the plan was replaced
+             */
+            replans: number;
+            /**
+             * @description How long the step takes
+             * @enum {string}
+             */
+            size: "2m" | "10m" | "full";
+            /** @description The first small step to try */
+            step: string;
+        };
+        TaskPrediction: {
+            /** @description Category the task most likely belongs in */
+            categoryId?: string;
+            /** @description Suggested task text, ready to drop into the composer */
+            content: string;
+            /** @description Signal behind the suggestion: follow_up, deadline, category_rhythm or weekday */
+            kind: string;
+            /** @description Why this is suggested now */
+            reason: string;
         };
         TaskQueryFilters: {
             /**
@@ -7964,6 +9017,31 @@ export interface components {
             readonly $schema?: string;
             /** @example Authorized! */
             message: string;
+        };
+        TokenMetadata: {
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the token stops working; absent means never
+             */
+            expires_at?: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            id: string;
+            /** Format: date-time */
+            last_used_at: string;
+            /** @example Claude Desktop */
+            name: string;
+            /** @example kdr_AbCdEfGh */
+            prefix: string;
+            /**
+             * @description Scopes the token grants
+             * @example [
+             *       "kindred:read",
+             *       "kindred:write"
+             *     ]
+             */
+            scopes: string[];
         };
         UnblockUserOutputBody: {
             /**
@@ -8423,7 +9501,7 @@ export interface components {
             deadline?: string;
             generateTemplate?: boolean;
             integration?: string;
-            links?: components["schemas"]["TaskLink"][] | null;
+            links?: components["schemas"]["TaskLink"][];
             notes?: string;
             /** Format: int64 */
             priority: number;
@@ -8449,7 +9527,8 @@ export interface components {
              * @example https://example.com/schemas/UpdateTaskLinksDocument.json
              */
             readonly $schema?: string;
-            links: components["schemas"]["TaskLink"][] | null;
+            /** @description Full replacement link list */
+            links: components["schemas"]["TaskLink"][];
         };
         UpdateTaskLinksOutputBody: {
             /**
@@ -8693,7 +9772,7 @@ export interface components {
              */
             profile_picture: string;
         };
-        UserExtendedReferenceWithPhone: {
+        UserMatch: {
             /**
              * @description User ID
              * @example 507f1f77bcf86cd799439011
@@ -8709,11 +9788,8 @@ export interface components {
              * @example johndoe
              */
             handle: string;
-            /**
-             * @description User phone number
-             * @example +1234567890
-             */
-            phone: string;
+            /** @description Hash of the contact number that matched this user */
+            phone_hash: string;
             /**
              * @description Profile picture URL
              * @example https://example.com/avatar.jpg
@@ -9109,6 +10185,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "login-guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GuestLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    access_token?: string;
+                    refresh_token?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafeUser"];
                 };
             };
             /** @description Error */
@@ -12701,6 +13812,42 @@ export interface operations {
             };
         };
     };
+    "get-friends-activity": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetFriendsActivityInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetFriendsActivityOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-groups": {
         parameters: {
             query?: never;
@@ -12982,6 +14129,142 @@ export interface operations {
             };
         };
     };
+    "list-mcp-activity": {
+        parameters: {
+            query?: {
+                /** @description Only activity from this token or OAuth grant id */
+                connection_id?: string;
+                /** @description Entries to return, default 20, max 100 */
+                limit?: number;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityItem"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-mcp-tokens": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenMetadata"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-mcp-token": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTokenParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTokenOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "revoke-mcp-token": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeTokenOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "get-notifications": {
         parameters: {
             query?: {
@@ -13123,6 +14406,246 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkAllNotificationsReadOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "list-oauth-grants": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantView"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "revoke-oauth-grant": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeGrantOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "approve-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveRequestInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "deny-oauth-request": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-oauth-request-by-code": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /**
+                 * @description User code shown in the browser; case-insensitive, dash optional
+                 * @example K7QX-2MPA
+                 */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestView"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "link-phone": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkPhoneInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkPhoneOutputBody"];
                 };
             };
             /** @description Error */
@@ -13620,7 +15143,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserExtendedReferenceWithPhone"][];
+                    "application/json": components["schemas"]["UserMatch"][];
                 };
             };
             /** @description Error */
@@ -13901,6 +15424,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportPostOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "mark-returned": {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer token for authentication */
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkReturnedInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkReturnedOutputBody"];
                 };
             };
             /** @description Error */
@@ -14460,41 +16019,6 @@ export interface operations {
             };
         };
     };
-    "create-task-auto": {
-        parameters: {
-            query?: never;
-            header: {
-                Authorization: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateTaskParams"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateTaskOutputBody"];
-                };
-            };
-            /** @description Error */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorModel"];
-                };
-            };
-        };
-    };
     "delete-task": {
         parameters: {
             query?: {
@@ -14564,6 +16088,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "breakdown-suggestions": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakdownSuggestionsInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakdownSuggestionsOutputBody"];
                 };
             };
             /** @description Error */
@@ -14743,6 +16307,158 @@ export interface operations {
             };
         };
     };
+    "park-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskGraceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "put-task-plan": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTaskPlanBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "clear-task-plan": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "patch-task-plan": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTaskPlanBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "log-progress": {
         parameters: {
             query?: never;
@@ -14783,6 +16499,118 @@ export interface operations {
             };
         };
     };
+    "release-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskGraceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "set-task-someday": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetTaskSomedayInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "clear-task-someday": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDocument"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "update-task-tags": {
         parameters: {
             query?: never;
@@ -14810,6 +16638,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateTaskTagsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "unpark-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskGraceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "unrelease-task": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path: {
+                /** @example 507f1f77bcf86cd799439011 */
+                category: string;
+                /** @example 507f1f77bcf86cd799439011 */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskGraceOutputBody"];
                 };
             };
             /** @description Error */
@@ -14883,6 +16783,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivateTaskOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "create-task-auto": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTaskParams"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTaskOutputBody"];
                 };
             };
             /** @description Error */
@@ -15071,6 +17006,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetCompletedTasksByDateOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "apply-enrich": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyEnrichInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyEnrichOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "preview-enrich": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewEnrichInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewEnrichOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-enrich-status": {
+        parameters: {
+            query?: {
+                /**
+                 * @description User's timezone (IANA format)
+                 * @example America/New_York
+                 */
+                timezone?: string;
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetEnrichStatusOutputBody"];
                 };
             };
             /** @description Error */
@@ -15364,6 +17406,47 @@ export interface operations {
             };
         };
     };
+    "get-task-predictions": {
+        parameters: {
+            query?: {
+                /**
+                 * @description User's timezone (IANA format)
+                 * @example America/New_York
+                 */
+                timezone?: string;
+                /** @description Skip the cache and ask for a fresh set */
+                refresh?: boolean;
+                /** @description Suggestion titles the user dismissed or has already seen; never returned */
+                exclude?: string[];
+            };
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTaskPredictionsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "query-tasks-by-user": {
         parameters: {
             query?: never;
@@ -15386,6 +17469,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskDocument"][];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "bulk-release-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkReleaseTasksInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkReleaseTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-released-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetReleasedTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-someday-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetSomedayTasksOutputBody"];
                 };
             };
             /** @description Error */

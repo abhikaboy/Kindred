@@ -9,6 +9,7 @@ import { useRingsToday } from "@/hooks/useRings";
 import { StageGlow } from "./StageGlow";
 import { FocusView } from "./FocusView";
 import { StageCardStack } from "./StageCardStack";
+import { EnrichOffer } from "@/components/enrich/EnrichOffer";
 import { useStageQueue, type StageTask } from "./useStageQueue";
 
 const greetingFor = (h: number) => (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
@@ -130,6 +131,7 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
           </div>
 
           <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center gap-4 pb-4 animate-in fade-in duration-700">
+            <EnrichOffer />
             <div className="w-full">
               <QuickCapture />
             </div>
