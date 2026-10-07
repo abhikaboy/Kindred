@@ -1,11 +1,12 @@
 import { useState, type JSX } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, CheckCircle, Fire, HandsClapping, LockSimple, UserPlus, Users } from "@phosphor-icons/react";
+import { Check, CheckCircle, LockSimple, UserPlus, Users } from "@phosphor-icons/react";
 import { $api } from "@/lib/api/query";
 import { ThemedText } from "@/components/ThemedText";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHero } from "@/components/profile/ProfileHero";
+import { CheerButton } from "@/components/kudos/CheerButton";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { FriendshipMeter } from "@/components/profile/FriendshipMeter";
 import { TaskItem } from "@/components/TaskItem";
@@ -37,12 +38,9 @@ function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element 
   const friends = status === "connected";
 
   const cheer = (
-    <button type="button" onClick={() => setKudosOpen(true)} className={friends ? PRIMARY : QUIET}>
-      <HandsClapping size={16} weight="fill" />
-      <ThemedText type="caption" className="text-inherit">
-        Cheer {profile.display_name.split(" ")[0]} on
-      </ThemedText>
-    </button>
+    <CheerButton onClick={() => setKudosOpen(true)} primary={friends}>
+      Cheer {profile.display_name.split(" ")[0]} on
+    </CheerButton>
   );
 
   const relation = friends ? (
@@ -158,7 +156,6 @@ export default function AccountScreen() {
         song={profile.song}
         showPhotos={canView}
         stats={[
-          { icon: Fire, value: profile.streak, label: "day streak" },
           { icon: CheckCircle, value: profile.tasks_complete, label: "done" },
           { icon: Users, value: profile.friends.length, label: "friends" },
         ]}

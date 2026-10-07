@@ -1,5 +1,6 @@
 import { MagicWand, Play, Sparkle } from "@phosphor-icons/react";
 import { TaskMeta, PRIORITY_DOT } from "@/components/task/TaskMeta";
+import { CheerIcon } from "@/components/kudos/CheerButton";
 import { useNavigate } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,7 @@ export function TaskItem({
         encouraged ? "bg-primary/5" : "bg-background dark:bg-card",
         (encourageMode || clickable) &&
           "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_44px_-14px_rgba(0,0,0,0.18)] active:scale-[0.995]",
+        encourageMode && "cheer group/cheer hover:-translate-y-0.5 hover:bg-primary/[0.04]",
         task.isPhantom && "border border-dashed border-border opacity-45 shadow-none"
       )}
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
@@ -83,7 +85,17 @@ export function TaskItem({
             {(encourageMode || encouraged) && (
               <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
                 {encouraged && <EncouragerAvatars encouragements={encouragements} />}
-                <Sparkle size={18} weight="fill" className="text-primary" />
+                {encourageMode ? (
+                  // Icon at rest; the label slides out on hover so the card invites the click.
+                  <span className="inline-flex h-8 items-center gap-0 rounded-full bg-primary/10 px-2 text-primary transition-[gap,padding,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover/cheer:gap-1.5 group-hover/cheer:bg-primary group-hover/cheer:px-3 group-hover/cheer:text-primary-foreground">
+                    <CheerIcon />
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/cheer:max-w-24 group-hover/cheer:opacity-100">
+                      <ThemedText type="caption" className="text-inherit">Cheer on</ThemedText>
+                    </span>
+                  </span>
+                ) : (
+                  <Sparkle size={18} weight="fill" className="text-primary" />
+                )}
               </div>
             )}
           </div>

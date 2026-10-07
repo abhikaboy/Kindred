@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Fire, HandsClapping, PencilSimple, Users } from "@phosphor-icons/react";
+import { CheckCircle, HandsClapping, PencilSimple, Users } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth";
 import { ThemedText } from "@/components/ThemedText";
 import { ProfileHero } from "@/components/profile/ProfileHero";
@@ -9,12 +9,10 @@ import { ProfileTasks } from "@/components/profile/ProfileTasks";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { ProfileKudos } from "@/components/profile/ProfileKudos";
 import { useRingsToday } from "@/hooks/useRings";
-import { useKudos } from "@/hooks/useKudos";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
   const { data: rings } = useRingsToday();
-  const { encouragements, congratulations } = useKudos();
 
   if (!user) return null;
   return (
@@ -28,8 +26,8 @@ export default function ProfileScreen() {
         song={user.song}
         editable
         stats={[
-          { icon: Fire, value: rings?.current_streak ?? 0, label: "day streak" },
-          { icon: HandsClapping, value: encouragements.length + congratulations.length, label: "kudos" },
+          { icon: CheckCircle, value: user.tasks_complete, label: "done" },
+          { icon: HandsClapping, value: user.encouragements + user.congratulations, label: "kudos" },
           { icon: Users, value: user.friends.length, label: "friends", to: "/search" },
         ]}
         actions={
