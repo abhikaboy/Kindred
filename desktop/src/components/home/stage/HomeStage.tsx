@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { Link } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { ConcentricRings } from "@/components/rings/ConcentricRings";
 import { QuickCapture } from "@/components/home/QuickCapture";
@@ -110,9 +111,21 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
                   <button type="button" aria-label="Previous workspace" onClick={() => shiftWorkspace(-1)} className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground">
                     <CaretLeft size={12} />
                   </button>
-                  <ThemedText key={wsLabel} type="caption" className="min-w-32 text-center animate-in fade-in duration-200">
-                    {wsLabel}
-                  </ThemedText>
+                  {wsIndex < 0 ? (
+                    <ThemedText key={wsLabel} type="caption" className="min-w-32 text-center animate-in fade-in duration-200">
+                      {wsLabel}
+                    </ThemedText>
+                  ) : (
+                    <Link
+                      key={wsLabel}
+                      to={`/workspace/${encodeURIComponent(wsLabel)}`}
+                      className="min-w-32 text-center text-muted-foreground underline-offset-2 transition-colors duration-150 animate-in fade-in hover:text-foreground hover:underline"
+                    >
+                      <ThemedText type="caption" className="text-inherit">
+                        {wsLabel}
+                      </ThemedText>
+                    </Link>
+                  )}
                   <button type="button" aria-label="Next workspace" onClick={() => shiftWorkspace(1)} className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground">
                     <CaretRight size={12} />
                   </button>
