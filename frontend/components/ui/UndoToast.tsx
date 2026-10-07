@@ -64,9 +64,9 @@ export default function UndoToast({ onUndo, count }: UndoToastProps) {
                 opacity.value = withTiming(0, { duration: 200 });
                 runOnJS(hideToastable)();
             } else {
-                translateX.value = withSpring(0, { damping: 20, stiffness: 300 });
-                translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-                opacity.value = withSpring(1, { damping: 20, stiffness: 300 });
+                translateX.value = withTiming(0, { duration: 200 });
+                translateY.value = withTiming(0, { duration: 200 });
+                opacity.value = withTiming(1, { duration: 200 });
             }
         });
 

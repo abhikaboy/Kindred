@@ -1,21 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
+    Easing,
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { hapticSelect } from "@/utils/haptics";
 
-const SPRING_CONFIG = {
-    damping: 20,
-    stiffness: 200,
-    mass: 0.5,
-};
+const TIMING_CONFIG = { duration: 220, easing: Easing.out(Easing.cubic) };
 
 type AnimatedTabBarProps = {
     tabs: string[];
@@ -49,8 +46,8 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: 
     useEffect(() => {
         const layout = tabLayouts.current[activeTab];
         if (layout && initialized.current) {
-            indicatorX.value = withSpring(layout.x, SPRING_CONFIG);
-            indicatorWidth.value = withSpring(layout.width, SPRING_CONFIG);
+            indicatorX.value = withTiming(layout.x, TIMING_CONFIG);
+            indicatorWidth.value = withTiming(layout.width, TIMING_CONFIG);
         }
     }, [activeTab, indicatorX, indicatorWidth]);
 
@@ -132,7 +129,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
     useEffect(() => {
         if (layoutWidth > 0) {
             widthSV.value = layoutWidth;
-            translateX.value = withSpring(-activeTab * layoutWidth, SPRING_CONFIG);
+            translateX.value = withTiming(-activeTab * layoutWidth, TIMING_CONFIG);
         }
     }, [activeTab, layoutWidth, translateX, widthSV]);
 
@@ -153,7 +150,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
             const current = activeTabSV.value;
 
             if (!setActiveTab) {
-                translateX.value = withSpring(-current * w, SPRING_CONFIG);
+                translateX.value = withTiming(-current * w, TIMING_CONFIG);
                 return;
             }
 
@@ -167,7 +164,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
                 nextTab = nextTab - 1;
             }
 
-            translateX.value = withSpring(-nextTab * w, SPRING_CONFIG);
+            translateX.value = withTiming(-nextTab * w, TIMING_CONFIG);
             if (nextTab !== current) {
                 activeTabSV.value = nextTab;
                 runOnJS(hapticSelect)();
