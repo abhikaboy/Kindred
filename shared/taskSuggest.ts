@@ -71,10 +71,41 @@ function matchRecurrence(text: string, now: Date): { recurrence: ParsedRecurrenc
   return null;
 }
 
+// Blank out the recurrence phrase and "@" (as in "@ 9am") with same-length spaces, so
+// chrono reads the rest and its match index still points into the original text.
+function prepare(text: string, recurMatch?: string): string {
+  let out = text.replace(/@/g, " ");
+  if (recurMatch) {
+    const i = out.indexOf(recurMatch);
+    if (i >= 0) out = out.slice(0, i) + " ".repeat(recurMatch.length) + out.slice(i + recurMatch.length);
+  }
+  return out;
+}
+
+export type TextSpan = { start: number; end: number };
+
+/** Where the date and repeat phrases sit in `text`, for highlighting what the parser understood. */
+export function scheduleSpans(text: string, now: Date): TextSpan[] {
+  const spans: TextSpan[] = [];
+  const recur = matchRecurrence(text, now);
+  if (recur) {
+    const i = text.indexOf(recur.match);
+    if (i >= 0) spans.push({ start: i, end: i + recur.match.length });
+  }
+  const [result] = parse(prepare(text, recur?.match), now);
+  if (result) {
+    let start = result.index;
+    // Pull a leading "@" into the highlight so "@8pm" reads as one token.
+    if (start > 0 && text[start - 1] === "@") start -= 1;
+    spans.push({ start, end: result.index + result.text.length });
+  }
+  return spans.sort((a, b) => a.start - b.start);
+}
+
 export function parseSchedule(text: string, now: Date): ParsedSchedule | null {
   // Recurrence words parse as dates on their own ("every monday" -> last Monday), so cut them first.
   const recur = matchRecurrence(text, now);
-  const [result] = parse(recur ? text.replace(recur.match, " ") : text, now);
+  const [result] = parse(prepare(text, recur?.match), now);
   if (!result) return null;
 
   const start = result.start.date().toISOString();

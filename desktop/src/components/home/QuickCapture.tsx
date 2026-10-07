@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, CalendarBlank, Check, Plus } from "@phosphor-icons/react";
+import { ArrowUp, CalendarBlank, Check, Flag, Plus, X } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingUpdate } from "@/components/rings/RingUpdateContext";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
@@ -13,12 +13,30 @@ import {
   useCreateTaskAuto,
   CREATE_AUTH,
 } from "@/hooks/useCreateActions";
-import { describeSchedule } from "@shared/taskSuggest";
+import { describeSchedule, scheduleSpans } from "@shared/taskSuggest";
 import { describeEnrichment } from "@shared/quickCapture";
 
 // How long the "created" line sticks around. Long enough to read and catch a
 // wrong date, short enough that it doesn't become furniture.
 const RECEIPT_MS = 8000;
+
+// Same quick dates as mobile's capture chips; offered until the text already has a date.
+const QUICK_WHEN = ["today", "tonight", "tomorrow", "this weekend", "next week", "every day"];
+const PRIORITY_LABEL: Record<number, string> = { 1: "Low priority", 2: "Medium priority", 3: "High priority" };
+
+// Splits text into plain and recognized runs for the highlight mirror.
+function segment(text: string, spans: { start: number; end: number }[]) {
+  const out: { text: string; hit: boolean }[] = [];
+  let at = 0;
+  for (const { start, end } of spans) {
+    if (start < at) continue;
+    if (start > at) out.push({ text: text.slice(at, start), hit: false });
+    out.push({ text: text.slice(start, end), hit: true });
+    at = end;
+  }
+  if (at < text.length) out.push({ text: text.slice(at), hit: false });
+  return out;
+}
 
 type Receipt = {
   content: string;
@@ -39,7 +57,23 @@ export function QuickCapture() {
   const createTaskAuto = useCreateTaskAuto();
   const qc = useQueryClient();
   const { showRingUpdate } = useRingUpdate();
-  const { schedule, recurrence, fuzzy } = useTaskSuggestions(text);
+  const { schedule, recurrence, fuzzy, dismiss } = useTaskSuggestions(text);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
+  const parsed = Boolean(schedule || recurrence);
+  const segments = useMemo(
+    () => (parsed ? segment(text, scheduleSpans(text, new Date())) : [{ text, hit: false }]),
+    [text, parsed]
+  );
+  // Keep the mirror aligned once the input scrolls horizontally on long text.
+  const syncScroll = () => {
+    if (mirrorRef.current && inputRef.current) mirrorRef.current.scrollLeft = inputRef.current.scrollLeft;
+  };
+  useEffect(syncScroll, [text]);
+  const appendWhen = (phrase: string) => {
+    setText((prev) => (prev.trim() ? `${prev.trimEnd()} ${phrase}` : prev));
+    inputRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!receipt) return;
@@ -95,14 +129,35 @@ export function QuickCapture() {
     <div className="flex flex-col gap-2">
       <div className="flex min-h-12 items-center gap-3 rounded-full bg-background py-2 pl-5 pr-2 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.12)] transition-shadow duration-200 focus-within:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.18)] dark:bg-card">
         <Plus size={18} weight="bold" className="shrink-0 text-primary" />
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Add a task"
-          aria-label="Quick add a task"
-          className="min-w-0 flex-1 bg-transparent text-base font-light text-foreground outline-none placeholder:text-muted-foreground"
-        />
+        <div className="relative min-w-0 flex-1">
+          {/* Mirror draws the text so recognized dates can be colored; the input above is transparent but owns the caret. */}
+          <div
+            ref={mirrorRef}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre font-sans text-base font-light leading-[inherit] text-foreground"
+          >
+            {segments.map((seg, i) =>
+              seg.hit ? (
+                <span key={`${i}-${seg.text}`} className="rounded-md bg-primary/10 text-primary shadow-[0_0_0_2px_color-mix(in_oklab,var(--color-primary)_10%,transparent)] animate-in fade-in duration-200">
+                  {seg.text}
+                </span>
+              ) : (
+                <span key={i}>{seg.text}</span>
+              )
+            )}
+          </div>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={onKeyDown}
+            onScroll={syncScroll}
+            onSelect={syncScroll}
+            placeholder="Add a task, like gym @7am tomorrow"
+            aria-label="Quick add a task"
+            className="relative w-full bg-transparent font-sans text-base font-light text-transparent caret-foreground outline-none placeholder:text-muted-foreground selection:bg-primary/20 selection:text-foreground"
+          />
+        </div>
         {(canSubmit || createTaskAuto.isPending) && (
           <button
             type="button"
@@ -116,12 +171,48 @@ export function QuickCapture() {
         )}
       </div>
 
-      {preview !== "" && (
-        <div className="flex items-center gap-1 self-start rounded-full bg-primary/[0.08] px-3 py-1 text-primary">
-          <CalendarBlank size={14} weight="bold" />
-          <ThemedText type="caption" className="text-primary">
-            {preview}
-          </ThemedText>
+      {text.trim() !== "" && (
+        <div className="flex flex-wrap items-center gap-2 px-2 animate-in fade-in duration-200">
+          {preview !== "" && (
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 pl-3 pr-1 text-primary animate-in fade-in zoom-in-95 duration-200">
+              <CalendarBlank size={14} weight="bold" />
+              <ThemedText type="caption" className="text-primary">
+                {preview}
+              </ThemedText>
+              <button
+                type="button"
+                aria-label="Ignore this date"
+                onClick={() => {
+                  dismiss();
+                  inputRef.current?.focus();
+                }}
+                className="grid size-6 place-items-center rounded-full text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <X size={11} weight="bold" />
+              </button>
+            </span>
+          )}
+          {fuzzy?.priority !== undefined && PRIORITY_LABEL[fuzzy.priority] && (
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted/70 px-3 text-muted-foreground animate-in fade-in duration-200">
+              <Flag size={14} />
+              <ThemedText type="caption" className="text-inherit">
+                {PRIORITY_LABEL[fuzzy.priority]}
+              </ThemedText>
+            </span>
+          )}
+          {preview === "" &&
+            QUICK_WHEN.map((phrase) => (
+              <button
+                key={phrase}
+                type="button"
+                onClick={() => appendWhen(phrase)}
+                className="inline-flex h-8 items-center rounded-full bg-muted/70 px-3 text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.97]"
+              >
+                <ThemedText type="caption" className="text-inherit">
+                  {phrase.charAt(0).toUpperCase() + phrase.slice(1)}
+                </ThemedText>
+              </button>
+            ))}
         </div>
       )}
 

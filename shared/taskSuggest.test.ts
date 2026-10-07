@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRecurrence, parseSchedule, type ParsedRecurrence, type ParsedSchedule } from "./taskSuggest";
+import { parseRecurrence, parseSchedule, scheduleSpans, type ParsedRecurrence, type ParsedSchedule } from "./taskSuggest";
 
 // Thursday, 30 July 2026, 09:00 local. Local-time construction keeps the
 // expectations timezone-independent, since chrono resolves in local time too.
@@ -97,5 +97,27 @@ describe("parseRecurrence", () => {
     expect(recurDetails.daysOfWeek.every((v) => v === 0 || v === 1)).toBe(true);
     if (recurFrequency === "weekly") expect(recurDetails.daysOfWeek.filter((v) => v === 1).length).toBeGreaterThan(0);
     if (recurFrequency === "monthly") expect(recurDetails.daysOfMonth?.length).toBeGreaterThan(0);
+  });
+});
+
+describe("@ times", () => {
+  it("reads '@ 9am' the same as 'at 9am'", () => {
+    expect(parseSchedule("call mom tomorrow @ 9am", NOW)).toEqual(parseSchedule("call mom tomorrow at 9am", NOW));
+  });
+  it("reads '@8pm'", () => {
+    expect(parseSchedule("gym @8pm", NOW)).toEqual(parseSchedule("gym at 8pm", NOW));
+  });
+});
+
+describe("scheduleSpans", () => {
+  const slice = (text: string) => scheduleSpans(text, NOW).map((s) => text.slice(s.start, s.end));
+  it("covers an @ time including the @", () => {
+    expect(slice("gym @8pm")).toEqual(["@8pm"]);
+  });
+  it("covers both the repeat and the time", () => {
+    expect(slice("standup every monday at 9am")).toEqual(["every monday", "at 9am"]);
+  });
+  it("is empty when nothing parses", () => {
+    expect(scheduleSpans("everything counts", NOW)).toEqual([]);
   });
 });
