@@ -201,3 +201,49 @@
   [data-brand-orb] { animation: none !important; }
   [data-brand-parallax] { transform: none !important; }
 }
+
+/* Home stage wash, ported from mobile GlowBackground. Same timeline in both themes;
+   dark keeps the hue saturated and runs at 45% peak. */
+:root {
+  --wash-tint: 233 223 255;
+  --wash-dot: 188 157 255;
+  --wash-peak: 1;
+}
+.dark {
+  --wash-tint: 146 95 255;
+  --wash-dot: 176 139 255;
+  --wash-peak: 0.45;
+}
+.stage-wash-drop {
+  opacity: var(--wash-peak);
+  animation: stage-wash-sink 1400ms cubic-bezier(0.33, 1, 0.68, 1) 250ms both;
+}
+.stage-wash-drop.stage-wash-lifted {
+  animation: none;
+  transform: translate3d(0, -6%, 0);
+}
+.stage-wash-breathe {
+  animation: stage-wash-breathe 6400ms cubic-bezier(0.37, 0, 0.63, 1) 1650ms infinite;
+}
+.stage-wash-dots {
+  opacity: 0;
+  animation: stage-wash-dots 3250ms cubic-bezier(0.2, 0, 0, 1) 100ms both;
+}
+@keyframes stage-wash-sink {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, 20%, 0); }
+}
+@keyframes stage-wash-breathe {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.9; }
+  50% { transform: translate3d(0, -3%, 0); opacity: 1; }
+}
+@keyframes stage-wash-dots {
+  0% { opacity: 0; }
+  10.8% { opacity: 1; }
+  53.8% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-wash-drop { animation: none; transform: translate3d(0, 20%, 0); }
+  .stage-wash-breathe, .stage-wash-dots { animation: none; }
+}
