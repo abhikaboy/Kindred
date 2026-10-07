@@ -1,8 +1,8 @@
+import { CaretLeft, CalendarBlank, CaretRight } from "phosphor-react-native";
 import { StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -195,14 +195,14 @@ const Activity = () => {
                 showsVerticalScrollIndicator={false}>
                 <View style={styles.yearSelector}>
                     <TouchableOpacity onPress={() => setYearWithinBounds(year - 1)}>
-                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                        <CaretLeft  size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <View style={styles.yearContainer}>
-                        <Ionicons name="calendar" size={24} color={ThemedColor.text} />
+                        <CalendarBlank weight="fill" size={24} color={ThemedColor.text} />
                         <ThemedText type="lightBody">{year}</ThemedText>
                     </View>
                     <TouchableOpacity onPress={() => setYearWithinBounds(year + 1)}>
-                        <Ionicons name="chevron-forward" size={24} color={ThemedColor.text} />
+                        <CaretRight  size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                 </View>
 

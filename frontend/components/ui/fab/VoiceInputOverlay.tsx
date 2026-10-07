@@ -1,3 +1,4 @@
+import { X, Check, Hourglass } from "phosphor-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
@@ -789,7 +790,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
                         <View style={styles.closeButtonInner}>
-                            <Ionicons name="close" size={20} color="#ffffff" />
+                            <X  size={20} color="#ffffff" />
                         </View>
                     </TouchableOpacity>
                 </Animated.View>
@@ -1028,7 +1029,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                         ]}
                                     >
                                         {isChecked && (
-                                            <Ionicons name="checkmark" size={11} color="#fff" />
+                                            <Check  size={11} color="#fff" />
                                         )}
                                     </View>
                                     <View style={styles.deleteTaskInfo}>
@@ -1089,7 +1090,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         disabled={isDeletingTasks || deleteSelected.size === 0}
                     >
                         {isDeletingTasks ? (
-                            <Ionicons name="hourglass-outline" size={18} color="#fff" />
+                            <Hourglass  size={18} color="#fff" />
                         ) : (
                             <ThemedText style={styles.deleteConfirmBtnText}>
                                 Delete {deleteSelected.size > 0 ? `${deleteSelected.size} ` : ""}
@@ -1329,14 +1330,11 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: "600",
         color: "rgba(255,255,255,0.45)",
-        letterSpacing: 1.2,
-        textTransform: "uppercase",
     },
     stepCounter: {
         fontSize: 11,
         fontWeight: "600",
         color: "rgba(255,255,255,0.25)",
-        letterSpacing: 0.6,
     },
     errorBanner: {
         marginTop: 10,
@@ -1408,13 +1406,10 @@ const styles = StyleSheet.create({
     previewNewBadgeText: {
         fontSize: 10,
         fontWeight: "600",
-        letterSpacing: 0.8,
     },
     previewWorkspaceLabel: {
         fontSize: 12,
         fontWeight: "600",
-        letterSpacing: 0.6,
-        textTransform: "uppercase",
         color: "rgba(255,255,255,0.55)",
     },
     previewTasks: {

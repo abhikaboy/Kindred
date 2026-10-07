@@ -1,8 +1,8 @@
+import { X, Heart, Barbell } from "phosphor-react-native";
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Dimensions, Animated } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { BlurView } from 'expo-blur';
 
 interface CreditsInfoSheetProps {
@@ -93,7 +93,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                             Natural Language Credits
                         </ThemedText>
                         <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <Ionicons name="close" size={24} color={ThemedColor.text} />
+                            <X  size={24} color={ThemedColor.text} />
                         </TouchableOpacity>
                     </View>
 
@@ -122,7 +122,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                             {/* Send Kudos */}
                             <View style={[styles.methodCard, { backgroundColor: ThemedColor.lightenedCard }]}>
                                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + '20' }]}>
-                                    <Ionicons name="heart" size={20} color={ThemedColor.primary} />
+                                    <Heart weight="fill" size={20} color={ThemedColor.primary} />
                                 </View>
                                 <View style={styles.methodContent}>
                                     <ThemedText type="defaultSemiBold">
@@ -137,7 +137,7 @@ export const CreditsInfoSheet: React.FC<CreditsInfoSheetProps> = ({
                             {/* Close Rings */}
                             <View style={[styles.methodCard, { backgroundColor: ThemedColor.lightenedCard }]}>
                                 <View style={[styles.iconCircle, { backgroundColor: '#34C759' + '20' }]}>
-                                    <Ionicons name="fitness" size={20} color="#34C759" />
+                                    <Barbell weight="fill" size={20} color="#34C759" />
                                 </View>
                                 <View style={styles.methodContent}>
                                     <ThemedText type="defaultSemiBold">

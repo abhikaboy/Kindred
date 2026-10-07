@@ -8,12 +8,11 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { SpeakerHigh, SpeakerSlash } from "phosphor-react-native";
+import { SpeakerHigh, SpeakerSlash, X } from "phosphor-react-native";
 import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Carousel from "react-native-reanimated-carousel";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import type { components } from "@/api/generated/types";
 import type { MediaItem } from "@/api/media";
 
@@ -235,7 +234,7 @@ const PostCardMedia = ({
                         onPress={onDualRemove}
                         style={styles.dualRemoveButton}
                     >
-                        <Ionicons name="close" size={14} color="#fff" />
+                        <X  size={14} color="#fff" />
                     </TouchableOpacity>
                 )}
             </>

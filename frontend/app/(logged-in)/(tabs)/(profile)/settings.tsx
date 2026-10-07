@@ -1,3 +1,4 @@
+import { CaretLeft, CalendarBlank, CaretRight, Link, PlusCircle } from "phosphor-react-native";
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -6,7 +7,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import * as StoreReview from 'expo-store-review';
 import { deleteAccount } from '@/api/auth';
 import { showToast } from '@/utils/showToast';
@@ -407,7 +407,7 @@ export default function Settings() {
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    <CaretLeft  size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
                 <ThemedText
@@ -531,7 +531,7 @@ export default function Settings() {
                                 disabled={isConnectingCalendar || isLoadingCalendar}
                             >
                                 <View style={styles.integrationIconContainer}>
-                                    <Ionicons name="calendar" size={24} color={ThemedColor.warning} />
+                                    <CalendarBlank weight="fill" size={24} color={ThemedColor.warning} />
                                 </View>
                                 <View style={styles.integrationContent}>
                                     <View style={styles.integrationHeader}>
@@ -553,7 +553,7 @@ export default function Settings() {
                                     </ThemedText>
                                 </View>
                                 <View style={styles.integrationAction}>
-                                    <Ionicons name="chevron-forward" size={20} color={ThemedColor.caption} />
+                                    <CaretRight  size={20} color={ThemedColor.caption} />
                                 </View>
                             </TouchableOpacity>
                         )}
@@ -572,7 +572,7 @@ export default function Settings() {
                                 disabled={isLoadingCalendar}
                             >
                                 <View style={styles.integrationIconContainer}>
-                                    <Ionicons name="calendar" size={24} color={ThemedColor.primary} />
+                                    <CalendarBlank weight="fill" size={24} color={ThemedColor.primary} />
                                 </View>
                                 <View style={styles.integrationContent}>
                                     <View style={styles.integrationHeader}>
@@ -597,7 +597,7 @@ export default function Settings() {
                                     {isLoadingCalendar ? (
                                         <ActivityIndicator size="small" color={ThemedColor.caption} />
                                     ) : (
-                                        <Ionicons name="link-outline" size={22} color={ThemedColor.caption} style={{ transform: [{ rotate: '-45deg' }] }} />
+                                        <Link  size={22} color={ThemedColor.caption} style={{ transform: [{ rotate: '-45deg' }] }} />
                                     )}
                                 </View>
                             </TouchableOpacity>
@@ -612,7 +612,7 @@ export default function Settings() {
                                 {isConnectingCalendar ? (
                                     <ActivityIndicator size="small" color={ThemedColor.caption} />
                                 ) : (
-                                    <Ionicons name="calendar-outline" size={24} color={ThemedColor.caption} />
+                                    <CalendarBlank  size={24} color={ThemedColor.caption} />
                                 )}
                             </View>
                             <View style={styles.integrationContent}>
@@ -624,7 +624,7 @@ export default function Settings() {
                                 </ThemedText>
                             </View>
                             <View style={styles.integrationAction}>
-                                <Ionicons name="add-circle-outline" size={22} color={ThemedColor.caption} />
+                                <PlusCircle  size={22} color={ThemedColor.caption} />
                             </View>
                         </TouchableOpacity>
                     </SettingsCard>

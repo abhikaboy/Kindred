@@ -1,8 +1,8 @@
+import { Check } from "phosphor-react-native";
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Ionicons } from "@expo/vector-icons";
 
 interface GroupMember {
     _id: string;
@@ -17,15 +17,15 @@ interface GroupListItemProps {
     onPress: () => void;
 }
 
-export default function GroupListItem({ 
-    groupName, 
-    members, 
+export default function GroupListItem({
+    groupName,
+    members,
     memberCount,
-    isSelected = false, 
-    onPress 
+    isSelected = false,
+    onPress
 }: GroupListItemProps) {
     const ThemedColor = useThemeColor();
-    
+
     // Show up to 3 member avatars plus count if more
     const displayMembers = members.slice(0, 3);
     const remainingCount = (memberCount || members.length) - displayMembers.length;
@@ -34,7 +34,7 @@ export default function GroupListItem({
         <TouchableOpacity
             style={[
                 styles.container,
-                { 
+                {
                     borderBottomWidth: 1,
                     borderBottomColor: ThemedColor.lightened,
                 }
@@ -58,14 +58,14 @@ export default function GroupListItem({
                             ]}
                         >
                             {member.profile_picture ? (
-                                <Image 
-                                    source={{ uri: member.profile_picture }} 
+                                <Image
+                                    source={{ uri: member.profile_picture }}
                                     style={styles.avatarImage}
                                 />
                             ) : null}
                         </View>
                     ))}
-                    
+
                     {remainingCount > 0 && (
                         <View
                             style={[
@@ -93,11 +93,10 @@ export default function GroupListItem({
 
             {/* Check Icon */}
             {isSelected && (
-                <Ionicons 
-                    name="checkmark" 
-                    size={24} 
-                    color={ThemedColor.primary} 
-                />
+                <Check
+
+                    size={24}
+                    color={ThemedColor.primary} />
             )}
         </TouchableOpacity>
     );
@@ -147,4 +146,3 @@ const styles = StyleSheet.create({
         // Using default type via ThemedText
     },
 });
-

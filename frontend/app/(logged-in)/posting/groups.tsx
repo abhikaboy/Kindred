@@ -1,3 +1,4 @@
+import { ArrowLeft } from "phosphor-react-native";
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
@@ -9,7 +10,6 @@ import GroupListItem from "@/components/posting/GroupListItem";
 import GroupInfoBanner from "@/components/posting/GroupInfoBanner";
 import { useGroups } from "@/hooks/useGroups";
 import { useSelectedGroup } from "@/contexts/SelectedGroupContext";
-import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { getFriendsAPI } from "@/api/connection";
 
@@ -65,7 +65,7 @@ export default function GroupSelection() {
                         style={styles.backButton}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={20} color={ThemedColor.text} />
+                        <ArrowLeft  size={20} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <ThemedText type="subtitle" style={styles.headerTitle}>Groups</ThemedText>
                     <View style={styles.headerSpacer} />

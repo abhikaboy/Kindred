@@ -506,8 +506,6 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 12,
             fontWeight: "600" as const,
             opacity: 0.5,
-            textTransform: "uppercase" as const,
-            letterSpacing: 0.5,
         },
         container: {
             flexDirection: "row",

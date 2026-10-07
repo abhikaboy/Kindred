@@ -30,7 +30,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { Ionicons } from "@expo/vector-icons";
-import { Plus } from "phosphor-react-native";
+import { Plus, CaretRight } from "phosphor-react-native";
 import { useTasks } from "@/contexts/tasksContext";
 import { updateTaskAPI, markAsCompletedAPI } from "@/api/task";
 import { Task } from "@/api/types";
@@ -816,11 +816,10 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                         >
                             See More
                         </ThemedText>
-                        <Ionicons
-                            name="chevron-forward"
+                        <CaretRight
+
                             size={20}
-                            color={ThemedColor.caption}
-                        />
+                            color={ThemedColor.caption} />
                     </TouchableOpacity>
 
                     {selectedTask?.workspaceName && (
@@ -844,11 +843,10 @@ const CalendarViewComponent = forwardRef<CalendarViewHandle, CalendarViewProps>(
                                     {selectedTask.workspaceName}
                                 </ThemedText>
                             </View>
-                            <Ionicons
-                                name="chevron-forward"
+                            <CaretRight
+
                                 size={20}
-                                color={ThemedColor.caption}
-                            />
+                                color={ThemedColor.caption} />
                         </TouchableOpacity>
                     )}
 

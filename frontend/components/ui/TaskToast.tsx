@@ -3,7 +3,7 @@ import React, { useRef } from "react";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ProgressBar from "./ProgressBar";
-import Entypo from "@expo/vector-icons/Entypo";
+import { CaretRight, Confetti } from "phosphor-react-native";
 import { hideToastable, ToastableBodyParams } from "react-native-toastable";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Reanimated, {
@@ -149,10 +149,10 @@ export default function TaskToast(props: TaskToastProps) {
                                 padding: 20,
                             }}>
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "80%" }}>
-                                <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
+                                <Confetti size={24} color={ThemedColor.primary} weight="fill" />
                                 <ThemedText>{props.message}</ThemedText>
                             </View>
-                            <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
+                            <CaretRight size={18} color={ThemedColor.caption} />
                         </View>
                         <ProgressBar start={0} bar={ThemedColor.success} />
                     </Animated.View>

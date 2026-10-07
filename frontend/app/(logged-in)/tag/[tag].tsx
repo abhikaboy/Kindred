@@ -3,8 +3,7 @@ import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { FunnelSimple, SortAscending } from "phosphor-react-native";
+import { FunnelSimple, SortAscending, CaretLeft } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { Category } from "@/components/category";
 import { useTasks } from "@/contexts/tasksContext";
@@ -67,7 +66,7 @@ export default function TagView() {
                 }}>
                 {router.canGoBack() && (
                     <TouchableOpacity onPress={() => router.back()} hitSlop={8} accessibilityLabel="Go back">
-                        <Ionicons name="chevron-back" size={28} color={ThemedColor.text} />
+                        <CaretLeft  size={28} color={ThemedColor.text} />
                     </TouchableOpacity>
                 )}
                 <ThemedText type="title" style={{ flex: 1 }}>

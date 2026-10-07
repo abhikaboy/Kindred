@@ -1,8 +1,8 @@
+import { CaretLeft } from "phosphor-react-native";
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -307,7 +307,7 @@ const Preview = (props: Props) => {
                 style={styles.container}>
                 {/* Back Button */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    <CaretLeft  size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
                 {/* Header */}

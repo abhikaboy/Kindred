@@ -15,7 +15,6 @@ import TaskFeedCard from "@/components/cards/TaskFeedCard";
 import RingsClosedFeedCard from "@/components/cards/RingsClosedFeedCard";
 import ComposePostCard from "@/components/cards/ComposePostCard";
 import { Icons } from "@/constants/Icons";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
@@ -39,7 +38,7 @@ import { getUserSubscribedBlueprints } from "@/api/blueprint";
 import { showToast } from "@/utils/showToast";
 import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
-import { HeartStraightIcon } from "phosphor-react-native";
+import { HeartStraightIcon, Heart } from "phosphor-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { Handshake } from "phosphor-react-native";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
@@ -712,7 +711,7 @@ export default function Feed() {
         if (!hasMore && renderedCount > 0) {
             return (
                 <View style={styles.endOfFeedContainer}>
-                    <ThemedText style={styles.endOfFeedText}>You've reached the end! 🎉</ThemedText>
+                    <ThemedText style={styles.endOfFeedText}>You're all caught up</ThemedText>
                 </View>
             );
         }
@@ -802,7 +801,7 @@ export default function Feed() {
                             activeOpacity={0.8}
                             onPress={() => pagerRef.current?.setPage(1)}
                             style={{ position: "relative", marginLeft: 12 }}>
-                            <Ionicons name="heart-outline" size={32} color={ThemedColor.text} />
+                            <Heart  size={32} color={ThemedColor.text} />
                             <View style={{ position: "absolute", top: -8, right: -8 }}>
                                 <NotificationBadge />
                             </View>

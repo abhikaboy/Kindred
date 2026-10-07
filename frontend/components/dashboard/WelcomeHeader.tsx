@@ -1,8 +1,10 @@
 import React, { useRef } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { ThemedText } from "@/components/ThemedText";
 import { GearSix, Moon } from "phosphor-react-native";
 import { setFocusButtonRect } from "@/hooks/useFocusButtonRect";
+import { QuietPressable } from "@/components/ui/QuietPressable";
 
 interface WelcomeHeaderProps {
     userName?: string;
@@ -12,6 +14,8 @@ interface WelcomeHeaderProps {
     onToggleFocusMode: () => void;
 }
 
+const greetingFor = (hour: number) => (hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
+
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     userName,
     ThemedColor,
@@ -19,7 +23,6 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     focusMode,
     onToggleFocusMode,
 }) => {
-    const currentHour = new Date().getHours();
     const focusBtnRef = useRef<View>(null);
     // Publish where the moon button sits so the intro tour can point at it
     const publishFocusRect = () => {
@@ -27,87 +30,65 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
             if (width > 0) setFocusButtonRect({ x, y, width, height });
         });
     };
-
-    let greeting;
-    if (currentHour < 12) {
-        greeting = "It's Coffee Time,";
-    } else if (currentHour < 18) {
-        greeting = "Keep that energy going,";
-    } else {
-        greeting = "Time to unwind,";
-    }
+    const greeting = greetingFor(new Date().getHours());
 
     return (
-        <View style={styles.headerContainer}>
-            <View style={styles.topRow}>
-                <View style={styles.headerRow}>
-                    <ThemedText type="subheading" style={[styles.title, { color: ThemedColor.text }]}>
-                        {greeting}
-                    </ThemedText>
-                    <ThemedText type="title" style={[styles.title, { color: ThemedColor.text, fontSize: 24, letterSpacing: -1 }]}>
-                        {userName ? `${userName}!` : "there!"}{" "}
-                        {currentHour < 12 ? "☕" : currentHour < 18 ? "🌤️" : "🌙"}
-                    </ThemedText>
-                </View>
-
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        ref={focusBtnRef}
-                        onLayout={publishFocusRect}
-                        onPress={onToggleFocusMode}
-                        hitSlop={8}
-                        activeOpacity={0.7}
-                        style={styles.gearBtn}>
-                        <Moon
-                            size={22}
-                            color={focusMode ? ThemedColor.primary : ThemedColor.caption}
-                            weight={focusMode ? "fill" : "regular"}
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={onSettingsPress} hitSlop={8} activeOpacity={0.7} style={styles.gearBtn}>
-                        <GearSix size={22} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                </View>
+        <Animated.View entering={FadeIn.duration(240)} style={styles.headerContainer}>
+            <View style={styles.headerRow}>
+                <ThemedText type="caption">{greeting}</ThemedText>
+                <ThemedText type="titleFraunces" numberOfLines={1}>
+                    {userName || "there"}
+                </ThemedText>
             </View>
-        </View>
+
+            <View style={styles.actions}>
+                <QuietPressable
+                    ref={focusBtnRef}
+                    onLayout={publishFocusRect}
+                    onPress={onToggleFocusMode}
+                    hitSlop={8}
+                    accessibilityLabel="Focus mode"
+                    style={[styles.iconBtn, { backgroundColor: focusMode ? ThemedColor.primary + "14" : "transparent" }]}>
+                    <Moon
+                        size={20}
+                        color={focusMode ? ThemedColor.primary : ThemedColor.caption}
+                        weight={focusMode ? "fill" : "regular"}
+                    />
+                </QuietPressable>
+                <QuietPressable
+                    onPress={onSettingsPress}
+                    hitSlop={8}
+                    accessibilityLabel="Settings"
+                    style={styles.iconBtn}>
+                    <GearSix size={20} color={ThemedColor.caption} />
+                </QuietPressable>
+            </View>
+        </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     headerContainer: {
-        paddingBottom: 16,
-        paddingTop: 20,
-    },
-    topRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "flex-start",
+        alignItems: "flex-end",
+        paddingTop: 24,
+        paddingBottom: 16,
     },
     headerRow: {
         flex: 1,
-        flexDirection: "column",
-        alignItems: "flex-start",
-        flexWrap: "wrap",
-    },
-    title: {
-        fontWeight: "600",
-        fontSize: 20,
+        gap: 4,
     },
     actions: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        marginTop: 2,
-    },
-    gearBtn: {
-        padding: 4,
-    },
-    chip: {
-        flexDirection: "row",
-        alignItems: "center",
         gap: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 100,
+    },
+    iconBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

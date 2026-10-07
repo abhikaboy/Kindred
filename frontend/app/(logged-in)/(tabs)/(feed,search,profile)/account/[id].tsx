@@ -1,3 +1,4 @@
+import { CaretLeft } from "phosphor-react-native";
 import {
     StyleSheet,
     ScrollView,
@@ -13,7 +14,6 @@ import { ThemedText } from "@/components/ThemedText";
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icons } from "@/constants/Icons";
 import { SvgUri } from "react-native-svg";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityPoint from "@/components/profile/ActivityPoint";
@@ -58,7 +58,7 @@ function FloatingBackButton({ scrollRef }: { scrollRef: AnimatedRef<Animated.Scr
             style={[styles.floatingBack, { top: insets.top + 8 }, animatedStyle]}
             hitSlop={10}
             accessibilityLabel="Go back">
-            <Ionicons name="chevron-back" size={24} color="white" />
+            <CaretLeft  size={24} color="white" />
         </AnimatedTouchable>
     );
 }

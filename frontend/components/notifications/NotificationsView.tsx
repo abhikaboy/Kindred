@@ -1,8 +1,8 @@
+import { CaretLeft, GearSix } from "phosphor-react-native";
 import { Dimensions, StyleSheet, View, SectionList, TouchableOpacity, ActivityIndicator, Animated, InteractionManager, RefreshControl, ScrollView } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserInfoCommentNotification from "@/components/UserInfo/UserInfoCommentNotification";
 import UserInfoEncouragementNotification from "@/components/UserInfo/UserInfoEncouragementNotification";
@@ -615,7 +615,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
             <GlowBackground blobs={NOTIFICATIONS_GLOW} />
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={onBack} style={styles.headerSide}>
-                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
+                    <CaretLeft  size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={styles.headerTitle}>Notifications</ThemedText>
                 <TouchableOpacity
@@ -623,7 +623,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
                     style={[styles.headerSide, styles.headerSideRight]}
                     accessibilityRole="button"
                     accessibilityLabel="Notification settings">
-                    <Ionicons name="settings-outline" size={24} color={ThemedColor.text} />
+                    <GearSix  size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
             </View>
             <View style={styles.tabsWrapper}>

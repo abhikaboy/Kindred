@@ -1,7 +1,7 @@
+import { Sparkle } from "phosphor-react-native";
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import type { ForYouCard as ForYouCardModel } from "@/api/forYou";
@@ -30,7 +30,7 @@ export default function WeeklyRecapCard({ card, elevated }: Props) {
             accessibilityLabel={card.title}>
             <View style={styles.header}>
                 <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + "20" }]}>
-                    <Ionicons name="sparkles" size={20} color={ThemedColor.primary} />
+                    <Sparkle weight="fill" size={20} color={ThemedColor.primary} />
                 </View>
                 <ThemedText type="defaultSemiBold">{card.title}</ThemedText>
             </View>

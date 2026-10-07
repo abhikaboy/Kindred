@@ -64,8 +64,6 @@ const styles = StyleSheet.create({
         lineHeight: 40 * scale,
     },
     label: {
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
         fontSize: 11 * scale,
     },
 });

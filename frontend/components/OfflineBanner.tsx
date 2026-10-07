@@ -1,6 +1,6 @@
+import { CloudSlash } from "phosphor-react-native";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useConnectivity } from "@/hooks/useConnectivity";
 import { useTasks } from "@/contexts/tasksContext";
@@ -40,7 +40,7 @@ export default function OfflineBanner() {
                 styles.container,
                 { paddingTop: insets.top + 8, backgroundColor: ThemedColor.lightened },
             ]}>
-            <Ionicons name="cloud-offline-outline" size={16} color={ThemedColor.caption} />
+            <CloudSlash  size={16} color={ThemedColor.caption} />
             <Text style={[styles.text, { color: ThemedColor.caption }]}>
                 {age ? `You're offline — last synced ${age}` : "You're offline"}
             </Text>

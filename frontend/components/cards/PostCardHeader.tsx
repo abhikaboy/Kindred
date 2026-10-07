@@ -1,10 +1,10 @@
+import { DotsThree } from "phosphor-react-native";
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import CachedImage from "../CachedImage";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import type { TaggedUser } from "./types";
@@ -171,7 +171,7 @@ const PostCardHeader = ({
                         style={styles.menuButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                        <Ionicons name="ellipsis-horizontal" size={20} color={ThemedColor.caption} />
+                        <DotsThree weight="bold" size={20} color={ThemedColor.caption} />
                     </TouchableOpacity>
                 ) : null}
                 <ThemedText type="caption" style={[styles.timeText, { color: ThemedColor.caption }]}>

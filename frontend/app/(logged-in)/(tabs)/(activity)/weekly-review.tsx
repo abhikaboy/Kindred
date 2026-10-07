@@ -37,7 +37,7 @@ export default function WeeklyReview() {
                 ) : (
                     <>
                         <ThemedText type="fancyFrauncesHeading" style={styles.hero}>
-                            {data.progress.total > 0 ? "Nice week 🎉" : "A fresh start"}
+                            {data.progress.total > 0 ? "Nice week" : "A fresh start"}
                         </ThemedText>
                         <ThemedText type="caption" style={styles.heroSub}>
                             {data.progress.total > 0

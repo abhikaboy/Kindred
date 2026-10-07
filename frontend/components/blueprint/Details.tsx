@@ -1,3 +1,4 @@
+import { Camera, Trash, Plus } from "phosphor-react-native";
 import React, { useState } from "react";
 import { View, StyleSheet, Image, TouchableOpacity, Alert, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
@@ -6,7 +7,6 @@ import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
 import { uploadImageSmart } from "@/api/upload";
-import { Ionicons } from "@expo/vector-icons";
 import { ObjectId } from "bson";
 import CachedImage from "../CachedImage";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
@@ -40,14 +40,14 @@ const Details = ({ data, onUpdate }: Props) => {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
     const [showCustomCategory, setShowCustomCategory] = useState(false);
-    
+
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
-    
+
     // Initialize selected category
     const [selectedCategory, setSelectedCategory] = useState(() => {
         if (data.category) {
             // Find existing category in predefined list
-            const existingCategory = HABIT_CATEGORIES.find(cat => 
+            const existingCategory = HABIT_CATEGORIES.find(cat =>
                 cat.label === data.category || cat.id === data.category
             );
             if (existingCategory) {
@@ -65,13 +65,13 @@ const Details = ({ data, onUpdate }: Props) => {
 
     const handleCategoryChange = (category: { label: string; id: string; special?: boolean }) => {
         setSelectedCategory(category);
-        
+
         if (category.special && category.id === "custom") {
             // Show custom input
             setShowCustomCategory(true);
             return;
         }
-        
+
         // Update with predefined category
         onUpdate({ category: category.label });
     };
@@ -182,7 +182,7 @@ const Details = ({ data, onUpdate }: Props) => {
                                 onPress={pickImage}
                                 disabled={isUploading}
                                 style={[styles.overlayButton, isUploading && styles.disabledButton]}>
-                                <Ionicons name="camera" size={24} color={ThemedColor.background} />
+                                <Camera weight="fill" size={24} color={ThemedColor.background} />
                                 <ThemedText type="lightBody" style={styles.overlayButtonText}>
                                     {isUploading ? "Uploading..." : "Change Image"}
                                 </ThemedText>
@@ -191,7 +191,7 @@ const Details = ({ data, onUpdate }: Props) => {
                                 onPress={removeBannerImage}
                                 disabled={isUploading}
                                 style={[styles.removeButton, isUploading && styles.disabledButton]}>
-                                <Ionicons name="trash" size={20} color="#FF4444" />
+                                <Trash weight="fill" size={20} color="#FF4444" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -200,7 +200,7 @@ const Details = ({ data, onUpdate }: Props) => {
                         onPress={pickImage}
                         disabled={isUploading}
                         style={[styles.uploadButton, isUploading && styles.disabledButton]}>
-                        <Ionicons name="add" size={32} color={ThemedColor.text} />
+                        <Plus  size={32} color={ThemedColor.text} />
                         <ThemedText type="lightBody" style={styles.uploadButtonText}>
                             {isUploading ? "Uploading..." : "Add Banner Image"}
                         </ThemedText>

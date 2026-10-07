@@ -1,3 +1,4 @@
+import { CaretRight } from "phosphor-react-native";
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -27,7 +28,7 @@ export const SettingsActionRow = ({ label, onPress, icon, iconColor, showChevron
                     {label}
                 </ThemedText>
                 {icon && <Ionicons name={icon} size={24} color={finalIconColor} />}
-                {showChevron && <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />}
+                {showChevron && <CaretRight  size={20} color={ThemedColor.text + '60'} />}
             </View>
         </TouchableOpacity>
     );

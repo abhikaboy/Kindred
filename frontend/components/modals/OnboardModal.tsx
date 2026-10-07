@@ -532,8 +532,6 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 11,
             fontWeight: "600",
             fontFamily: "Outfit",
-            letterSpacing: 0.3,
-            textTransform: "uppercase",
         },
         phoneButton: {
             backgroundColor: ThemedColor.primary,

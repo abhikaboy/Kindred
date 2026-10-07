@@ -393,7 +393,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             activeOpacity={1}
                                         >
                                             <ThemedText type="title" style={styles.title}>
-                                                {selected || "Good Morning! ☀"}
+                                                {selected || "Good morning"}
                                             </ThemedText>
                                         </TouchableOpacity>
                                     </View>

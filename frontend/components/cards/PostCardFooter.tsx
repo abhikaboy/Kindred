@@ -126,7 +126,6 @@ const PostCardFooter = ({
                     disabled={readOnly}
                 >
                     <ThemedText style={styles.commentText}>
-                        💬{" "}
                         <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
                             {commentCount === 0 ? "Leave a comment" : `View ${commentCount} comment${commentCount === 1 ? "" : "s"}`}{" "}
                         </ThemedText>

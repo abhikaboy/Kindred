@@ -419,8 +419,6 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         balanceLabel: {
             fontSize: 13,
             opacity: 0.6,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
         },
         balanceRow: {
             flexDirection: "row",

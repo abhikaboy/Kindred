@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { assetsToPickedMedia } from "@/api/media";
-import { Play } from "phosphor-react-native";
+import { Play, X, Plus } from "phosphor-react-native";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
@@ -361,7 +361,7 @@ export default function Posting() {
                         justifyContent: "center",
                         alignItems: "center",
                     }}>
-                    <Ionicons name="close" size={16} color="#fff" />
+                    <X  size={16} color="#fff" />
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -698,11 +698,10 @@ export default function Posting() {
                                             borderStyle: "dashed",
                                             marginLeft: 8,
                                         }}>
-                                        <Ionicons
-                                            name="add"
+                                        <Plus
+
                                             size={28}
-                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"}
-                                        />
+                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"} />
                                     </TouchableOpacity>
                                 )}
                             </ScrollView>

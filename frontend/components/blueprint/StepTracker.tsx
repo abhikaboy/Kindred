@@ -29,14 +29,14 @@ const StepProgress = ({ steps, currentStep }: Props) => {
                     {steps[currentStep - 1]?.title}
                 </ThemedText>
             </View>
-            
+
             <View style={styles.progressBarContainer}>
                 <View style={styles.progressBarBackground}>
-                    <View 
+                    <View
                         style={[
                             styles.progressBarFill,
                             { width: `${(currentStep / steps.length) * 100}%` }
-                        ]} 
+                        ]}
                     />
                 </View>
             </View>
@@ -60,8 +60,6 @@ const createStyles = (ThemedColor: any) => StyleSheet.create({
         fontFamily: "Outfit",
         color: ThemedColor.caption,
         fontWeight: "500",
-        letterSpacing: 0.5,
-        textTransform: "uppercase",
     },
     stepTitle: {
         fontSize: 14,

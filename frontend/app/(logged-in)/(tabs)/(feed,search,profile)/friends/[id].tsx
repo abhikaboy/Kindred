@@ -249,9 +249,7 @@ const styles = StyleSheet.create({
     sectionHeader: {
         fontSize: 12,
         fontWeight: "400",
-        letterSpacing: 0.5,
         marginBottom: 16,
-        textTransform: "uppercase",
     },
     friendItem: {
         marginBottom: 12,

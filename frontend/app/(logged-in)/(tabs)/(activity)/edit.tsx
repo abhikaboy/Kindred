@@ -128,8 +128,6 @@ const stylesheet = (ThemedColor: any) =>
             marginTop: 12,
             marginBottom: 8,
             fontSize: 13,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
             color: ThemedColor.caption,
         },
         row: {
