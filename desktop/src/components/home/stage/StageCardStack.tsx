@@ -7,7 +7,7 @@ import { TaskMeta, PRIORITY_DOT } from "@/components/task/TaskMeta";
 import type { StageTask } from "./useStageQueue";
 
 // Wheel distance (px of deltaY) to flip one card; past half of it on release also flips.
-const WHEEL_STEP = 220;
+const WHEEL_STEP = 170;
 // Settle wait after the last wheel event, and the pause after a flip that swallows trackpad momentum.
 const WHEEL_IDLE = 140;
 const FLIP_REST = 320;
