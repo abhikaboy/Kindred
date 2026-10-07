@@ -42,15 +42,15 @@ import {
   useUpdateTaskTags,
 } from "@/hooks/useTaskActions";
 
-const PRIORITIES: { value: number; label: string; active: string }[] = [
-  { value: 1, label: "Low", active: "bg-emerald-500 text-white border-emerald-500" },
-  { value: 2, label: "Medium", active: "bg-amber-500 text-white border-amber-500" },
-  { value: 3, label: "High", active: "bg-destructive text-white border-destructive" },
+const PRIORITIES: { value: number; label: string; dot: string; active: string }[] = [
+  { value: 1, label: "Low", dot: "bg-emerald-500", active: "bg-emerald-500/10 text-foreground" },
+  { value: 2, label: "Medium", dot: "bg-amber-500", active: "bg-amber-500/10 text-foreground" },
+  { value: 3, label: "High", dot: "bg-destructive", active: "bg-destructive/10 text-foreground" },
 ];
 
 function PrioritySelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-1">
       {PRIORITIES.map((p) => {
         const isActive = value === p.value;
         return (
@@ -59,11 +59,14 @@ function PrioritySelector({ value, onChange }: { value: number; onChange: (v: nu
             type="button"
             onClick={() => onChange(p.value)}
             className={cn(
-              "flex-1 rounded-full border px-4 py-2 text-[15px] font-medium transition-colors",
-              isActive ? p.active : "border-border text-muted-foreground hover:bg-secondary"
+              "inline-flex h-9 items-center gap-2 rounded-full px-4 transition-colors duration-150 active:scale-[0.97]",
+              isActive ? p.active : "text-muted-foreground hover:bg-muted"
             )}
           >
-            {p.label}
+            <span className={cn("size-2 rounded-full transition-opacity", p.dot, !isActive && "opacity-40")} />
+            <ThemedText type="caption" className="text-inherit">
+              {p.label}
+            </ThemedText>
           </button>
         );
       })}
@@ -258,49 +261,46 @@ export function TaskEditor({ task, categoryId, onDone, showBackLink = true }: Ta
           </button>
         </div>
 
-        {/* In-progress toggle — the tag itself starts/stops working (no separate button). */}
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={activateTask.isPending}
-          aria-pressed={isActive}
-          className={cn(
-            "inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 transition-colors disabled:opacity-50",
-            isActive
-              ? "bg-primary/10 text-primary hover:bg-primary/15"
-              : "bg-muted text-muted-foreground hover:bg-muted/70"
-          )}
-        >
-          <Play size={14} weight={isActive ? "fill" : "regular"} />
-          <ThemedText
-            type="caption"
-            className={isActive ? "text-primary" : "text-muted-foreground"}
-          >
-            {isActive ? "In Progress" : "Start Working"}
-          </ThemedText>
-        </button>
-
         <div className="flex flex-wrap items-center gap-2">
-          {/* Peers, same secondary weight — logging progress never auto-completes the task. */}
+          {/* One accent: completing leads; logging progress never auto-completes. */}
           <PrimaryButton
-            title="Log Progress"
-            secondary
-            onClick={() => setLogProgressOpen(true)}
-            className="w-auto px-5 py-2.5"
-          >
-            <ChartLineUp size={16} weight="bold" />
-          </PrimaryButton>
-          <PrimaryButton
-            title={completeTask.isPending ? "Completing…" : "Mark Complete"}
-            secondary
+            title={completeTask.isPending ? "Completing" : "Mark complete"}
             disabled={completeTask.isPending}
             onClick={handleComplete}
-            className="w-auto px-5 py-2.5"
+            className="w-auto h-10 rounded-full px-5 py-0 shadow-[0_6px_10px_-2px_rgba(133,77,255,0.3)] active:scale-[0.98]"
           >
             <span ref={completeBtnRef} className="flex items-center">
               <Check size={16} weight="bold" />
             </span>
           </PrimaryButton>
+          <PrimaryButton
+            title="Log progress"
+            ghost
+            onClick={() => setLogProgressOpen(true)}
+            className="w-auto h-10 rounded-full bg-muted px-5 py-0 text-foreground hover:bg-muted/70"
+          >
+            <ChartLineUp size={16} />
+          </PrimaryButton>
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={activateTask.isPending}
+            aria-pressed={isActive}
+            className={cn(
+              "inline-flex h-10 items-center gap-2 rounded-full px-4 transition-colors disabled:opacity-50",
+              isActive
+                ? "bg-primary/10 text-primary hover:bg-primary/15"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+            )}
+          >
+            <Play size={14} weight={isActive ? "fill" : "regular"} />
+            <ThemedText
+              type="caption"
+              className={isActive ? "text-primary" : "text-muted-foreground"}
+            >
+              {isActive ? "In progress" : "Start working"}
+            </ThemedText>
+          </button>
         </div>
       </div>
 
