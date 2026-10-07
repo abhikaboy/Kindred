@@ -168,7 +168,7 @@ export function CreatePostModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-200"
+        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-xl animate-in fade-in-0 duration-200"
         onClick={(e) => e.stopPropagation()}
         onPaste={onPaste}
         onDragOver={(e) => e.preventDefault()}

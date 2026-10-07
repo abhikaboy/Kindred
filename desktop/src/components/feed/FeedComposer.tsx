@@ -12,7 +12,7 @@ export function FeedComposer(): JSX.Element {
     <button
       type="button"
       onClick={() => openCreatePost()}
-      className="flex items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/40"
+      className="flex items-center gap-3 rounded-full bg-card py-2 pl-2 pr-5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.12)] transition-shadow duration-200 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.18)]"
     >
       {user?.profile_picture ? (
         <img src={user.profile_picture} alt="" className="h-10 w-10 shrink-0 rounded-full bg-muted object-cover" />

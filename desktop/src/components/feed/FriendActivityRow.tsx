@@ -68,7 +68,7 @@ export function FriendActivityRow({
   });
 
   return (
-    <div className="flex flex-col gap-2 py-2">
+    <div className="group flex flex-col py-2">
       <div className="flex items-center gap-3">
         <Link to={`/account/${friend._id}`} className="flex min-w-0 flex-1 items-center gap-3 transition-opacity hover:opacity-80">
           <span className="relative shrink-0">
@@ -100,7 +100,8 @@ export function FriendActivityRow({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity,margin] duration-200 ease-out group-hover:mt-2 group-hover:grid-rows-[1fr] group-hover:opacity-100 group-focus-within:mt-2 group-focus-within:grid-rows-[1fr] group-focus-within:opacity-100">
+        <div className="flex min-h-0 items-center gap-2 overflow-hidden">
         <FriendSupportPicker
           {...pickerFor("nudge")}
           title={`Nudge ${firstName} to...`}
@@ -128,6 +129,7 @@ export function FriendActivityRow({
             </Button>
           }
         />
+        </div>
       </div>
 
       <SendKudosModal

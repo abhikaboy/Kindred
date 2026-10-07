@@ -79,7 +79,7 @@ export function PostCard({ post }: { post: PostDocumentAPI }): JSX.Element {
   const canSendKudos = !!myId && post.user._id !== myId;
 
   return (
-    <div className="rounded-2xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md flex flex-col gap-3">
+    <div className="flex flex-col gap-3 border-b border-border/60 py-6 last:border-b-0 animate-in fade-in duration-300">
       <div className="flex items-center gap-3">
         <Link to={`/account/${post.user._id}`} className="shrink-0">
           <img
