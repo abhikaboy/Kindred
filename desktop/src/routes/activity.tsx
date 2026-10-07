@@ -107,10 +107,10 @@ export default function ActivityScreen() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-12">
           <SignalStrip signals={analytics.data.signals} />
 
-          <section className="rounded-2xl border border-border p-6">
+          <section className="flex flex-col">
             <ThemedText type="subtitle" as="h3" className="mb-1 block">
               Activity graph
             </ThemedText>
@@ -119,7 +119,7 @@ export default function ActivityScreen() {
 
           <ProgressWidget progress={analytics.data.progress} range={range} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
             <CategoryShareWidget
               share={analytics.data.categoryShare}
               range={range}

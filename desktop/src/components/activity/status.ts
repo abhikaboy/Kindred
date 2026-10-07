@@ -41,6 +41,7 @@ export function statusLabel(status: string): string {
 
 export function directionClass(direction: string): string {
   if (direction === "up") return "text-emerald-500";
-  if (direction === "down") return "text-destructive";
+  // Dips stay neutral: a slower week is information, not an alarm.
+  if (direction === "down") return "text-muted-foreground";
   return "text-muted-foreground";
 }

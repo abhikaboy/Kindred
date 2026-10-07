@@ -8,9 +8,9 @@ export function SignalStrip({ signals }: { signals: AnalyticsResponse["signals"]
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       {items.map((signal) => (
-        <div key={signal.label} className="rounded-2xl border border-border p-4">
+        <div key={signal.label} className="flex flex-col gap-1">
           <ThemedText type="caption">{signal.label}</ThemedText>
-          <ThemedText type="fancyFrauncesHeading" className="mt-1 block text-2xl">
+          <ThemedText type="defaultSemiBold" className="block text-2xl tabular-nums">
             {signal.value}
           </ThemedText>
           <ThemedText type="caption" className={directionClass(signal.direction)}>

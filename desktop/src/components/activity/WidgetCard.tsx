@@ -16,7 +16,7 @@ export function WidgetCard({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("flex flex-col rounded-2xl border border-border p-5", className)}>
+    <section className={cn("flex flex-col", className)}>
       <div className="mb-4 flex items-center justify-between gap-2">
         <ThemedText type="subtitle" as="h3">
           {title}

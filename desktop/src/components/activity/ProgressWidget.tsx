@@ -24,7 +24,7 @@ export function ProgressWidget({ progress, range }: { progress: AnalyticsRespons
   return (
     <WidgetCard title={TITLES[range]} takeaway={progress.takeaway}>
       <div className="mb-5 flex items-baseline gap-3">
-        <ThemedText type="fancyFrauncesHeading" className="text-3xl">
+        <ThemedText type="defaultSemiBold" className="text-3xl tabular-nums">
           {progress.total}
         </ThemedText>
         <ThemedText type="caption" className={directionClass(dir)}>
