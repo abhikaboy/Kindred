@@ -18,7 +18,7 @@ export function SegmentedControl({ options, value, onChange, accent, className }
     return (
         <div
             className={cn(
-                "relative flex w-full rounded-full border border-border bg-background p-1",
+                "relative flex w-full rounded-full bg-muted/70 p-1",
                 className,
             )}
         >
@@ -26,7 +26,7 @@ export function SegmentedControl({ options, value, onChange, accent, className }
             <div
                 className={cn(
                     "absolute inset-y-1 rounded-full transition-[left] duration-200 ease-out",
-                    accent ? "bg-primary/15" : "bg-secondary",
+                    "bg-background shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:bg-card",
                 )}
                 style={{
                     width: `calc((100% - 8px) / ${n})`,

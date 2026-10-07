@@ -49,7 +49,7 @@ export function UserRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl border bg-card p-3 transition-colors hover:bg-muted/50",
+        "flex items-center justify-between gap-3 rounded-xl p-2 -mx-2 transition-colors duration-150 hover:bg-muted/60",
         className
       )}
     >
