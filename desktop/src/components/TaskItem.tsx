@@ -1,4 +1,5 @@
-import { CalendarBlank, Clock, MagicWand, Play, Repeat, Sparkle } from "@phosphor-icons/react";
+import { MagicWand, Play, Sparkle } from "@phosphor-icons/react";
+import { TaskMeta, PRIORITY_DOT } from "@/components/task/TaskMeta";
 import { useNavigate } from "react-router-dom";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -12,38 +13,12 @@ import { EncouragerAvatars } from "@/components/EncouragerAvatars";
 // (e.g. profile's accomplished-tasks list) don't bleed into one glowing blob.
 const ENCOURAGED_GLOW = "0 0 10px rgba(133,77,255,0.22), 0 1px 4px rgba(133,77,255,0.12)";
 
-// Priority dot colors, mirroring the mobile card (none→transparent, 1→green, 2→amber, 3→red).
-const PRIORITY_DOT: Record<number, string> = {
-  1: "bg-emerald-500",
-  2: "bg-amber-500",
-  3: "bg-destructive",
-};
-
-function formatDeadline(iso?: string): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function Chip({
-  icon: Icon,
-  label,
-  active,
-}: {
-  icon: React.ComponentType<{ size?: number; weight?: "regular"; className?: string }>;
-  label: string;
-  active?: boolean;
-}) {
+// Live states sit in the meta line in primary, not as chips.
+function StatusLabel({ icon: Icon, label }: { icon: typeof Play; label: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
-        active ? "bg-primary/10" : "bg-muted"
-      )}
-    >
-      <Icon size={12} weight="regular" className={active ? "text-primary" : "text-muted-foreground"} />
-      <ThemedText type="caption" className={active ? "text-primary" : "text-muted-foreground"}>
+    <span className="inline-flex items-center gap-1 text-primary">
+      <Icon size={13} weight="fill" />
+      <ThemedText type="caption" className="text-inherit">
         {label}
       </ThemedText>
     </span>
@@ -69,15 +44,9 @@ export function TaskItem({
   preview?: boolean;
 }) {
   const navigate = useNavigate();
-  // Completed tasks keep the priority dot but drop deadline/recurring/in-progress chips.
+  // Completed tasks keep the priority dot but drop the meta line.
   const working = !completed && Boolean(task.workingOnSince);
-  const deadline = completed ? null : formatDeadline(task.deadline);
-  const scheduledTime =
-    completed || !task.startTime
-      ? null
-      : `${formatDeadline(task.startTime)}, ${new Date(task.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
   const dotColor = working ? "bg-primary" : PRIORITY_DOT[task.priority];
-  const showChips = !completed && (working || Boolean(scheduledTime) || Boolean(deadline) || task.recurring);
   const encouragements = task.encouragements ?? [];
   const encouraged = encouragements.length > 0;
   const encourageMode = Boolean(onEncourage);
@@ -91,44 +60,43 @@ export function TaskItem({
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       className={cn(
-        "rounded-2xl border px-4 py-3.5 transition-[box-shadow,transform,border-color] duration-150 ease-out",
-        encouraged ? "border-border/60 bg-primary/5" : "border-border/60 bg-card",
-        (encourageMode || clickable) ? "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_-12px_rgba(0,0,0,0.12)] active:scale-[0.995]" : "hover:border-border",
-        task.isPhantom && "border-dashed opacity-45 hover:border-border/60"
+        "rounded-2xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_28px_-14px_rgba(0,0,0,0.10)] transition-[box-shadow,transform] duration-150 ease-out",
+        encouraged ? "bg-primary/5" : "bg-background dark:bg-card",
+        (encourageMode || clickable) &&
+          "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_44px_-14px_rgba(0,0,0,0.18)] active:scale-[0.995]",
+        task.isPhantom && "border border-dashed border-border opacity-45 shadow-none"
       )}
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
     >
       <div className="flex items-start gap-3">
         {!completed && !encourageMode && !preview && !task.isPhantom && <CompleteCheckbox className="mt-0.5" />}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <ThemedText type="default" className="break-words leading-6">
+            <div className="flex min-w-0 items-center gap-2">
+              <ThemedText type="larger_default" className="min-w-0 break-words">
                 {task.content || "Untitled task"}
               </ThemedText>
-              {task.notes && (
-                <ThemedText type="caption" className="line-clamp-2 break-words">
-                  {task.notes}
-                </ThemedText>
+              {!encourageMode && !encouraged && dotColor && (
+                <span className={cn("size-2 shrink-0 rounded-full", dotColor)} />
               )}
             </div>
-            <div className="mt-1 flex shrink-0 items-center gap-1.5">
-              {encouraged && <EncouragerAvatars encouragements={encouragements} />}
-              {encourageMode || encouraged ? (
+            {(encourageMode || encouraged) && (
+              <div className="mt-0.5 flex shrink-0 items-center gap-1.5">
+                {encouraged && <EncouragerAvatars encouragements={encouragements} />}
                 <Sparkle size={18} weight="fill" className="text-primary" />
-              ) : (
-                dotColor && <span className={cn("mt-0.5 size-2.5 rounded-full", dotColor)} />
-              )}
-            </div>
+              </div>
+            )}
           </div>
-
-          {showChips && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {scheduledTime && <Chip icon={Clock} label={scheduledTime} />}
-              {deadline && <Chip icon={CalendarBlank} label={`Due ${deadline}`} />}
-              {task.recurring && <Chip icon={Repeat} label="Recurring" />}
-              {task.autoCategorize && <Chip icon={MagicWand} label="Sorting…" active />}
-              {working && <Chip icon={Play} label="in progress" active />}
+          {task.notes && (
+            <ThemedText type="caption" className="line-clamp-2 break-words">
+              {task.notes}
+            </ThemedText>
+          )}
+          {!completed && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 empty:hidden">
+              <TaskMeta task={task} className="contents" />
+              {task.autoCategorize && <StatusLabel icon={MagicWand} label="Sorting…" />}
+              {working && <StatusLabel icon={Play} label="In progress" />}
             </div>
           )}
         </div>
