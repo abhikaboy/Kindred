@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
@@ -6,17 +6,24 @@ import { cn } from "@/lib/utils";
 import { TaskMeta, PRIORITY_DOT } from "@/components/task/TaskMeta";
 import type { StageTask } from "./useStageQueue";
 
-const WHEEL_STEP = 40;
-const WHEEL_COOLDOWN = 140;
+// Wheel distance (px of deltaY) to flip one card; past half of it on release also flips.
+const WHEEL_STEP = 220;
+// Settle wait after the last wheel event, and the pause after a flip that swallows trackpad momentum.
+const WHEEL_IDLE = 140;
+const FLIP_REST = 320;
 
-// Depth -1 is the card that just left (falls forward and fades); 0 is the front; 1–2 peek
+// Continuous depth so cards can sit between slots while the wheel is mid-gesture.
+// -1 is the card that just left (falls forward and fades); 0 is the front; 1–2 peek
 // behind; 3 waits invisible so the next one fades in rather than popping.
-function depthStyle(depth: number): React.CSSProperties {
-  if (depth < 0) return { transform: "translate3d(0, 24px, 0) scale(1.03)", opacity: 0, zIndex: 40 };
+function depthStyle(d: number): React.CSSProperties {
+  if (d < 0) {
+    const t = Math.min(1, -d);
+    return { transform: `translate3d(0, ${24 * t}px, 0) scale(${1 + 0.03 * t})`, opacity: 1 - t, zIndex: 40 };
+  }
   return {
-    transform: `translate3d(0, ${-20 * depth}px, 0) scale(${1 - 0.06 * depth})`,
-    opacity: depth > 2 ? 0 : 1 - 0.2 * depth,
-    zIndex: 30 - depth,
+    transform: `translate3d(0, ${-20 * d}px, 0) scale(${1 - 0.06 * d})`,
+    opacity: d > 2 ? Math.max(0, 0.6 * (3 - d)) : 1 - 0.2 * d,
+    zIndex: 30 - Math.round(d),
   };
 }
 
@@ -34,30 +41,49 @@ export function StageCardStack({
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const n = queue.length;
+  // -1..1 fraction of a flip the wheel has dragged the stack; cards track it 1:1.
+  const [drag, setDrag] = useState(0);
   const latest = useRef({ index, n, onIndexChange });
   latest.current = { index, n, onIndexChange };
 
-  // Non-passive so the page doesn't scroll while flipping; the step threshold keeps
-  // trackpads from skipping several cards per swipe. Input is never locked.
+  // Non-passive so the page doesn't scroll while flipping. Input is never locked:
+  // after a flip, momentum is ignored briefly, then the next gesture starts fresh.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let acc = 0;
-    let last = 0;
-    const onWheel = (e: WheelEvent) => {
+    let restUntil = 0;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const flip = (dir: number) => {
       const { index, n, onIndexChange } = latest.current;
-      if (n < 2) return;
-      e.preventDefault();
-      acc += e.deltaY;
-      const now = performance.now();
-      if (Math.abs(acc) < WHEEL_STEP || now - last < WHEEL_COOLDOWN) return;
-      last = now;
-      onIndexChange((index + (acc > 0 ? 1 : -1) + n) % n);
+      onIndexChange((index + dir + n) % n);
       acc = 0;
+      setDrag(0);
+      restUntil = performance.now() + FLIP_REST;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (latest.current.n < 2) return;
+      e.preventDefault();
+      if (performance.now() < restUntil) return;
+      acc = Math.max(-WHEEL_STEP, Math.min(WHEEL_STEP, acc + e.deltaY));
+      if (Math.abs(acc) >= WHEEL_STEP) return flip(Math.sign(acc));
+      setDrag(acc / WHEEL_STEP);
+      clearTimeout(idle);
+      idle = setTimeout(() => {
+        if (Math.abs(acc) >= WHEEL_STEP / 2) flip(Math.sign(acc));
+        else {
+          acc = 0;
+          setDrag(0);
+        }
+      }, WHEEL_IDLE);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      clearTimeout(idle);
+    };
   }, []);
+  const dragging = drag !== 0;
 
   const seen = new Set<string>();
   const layers: { task: StageTask; depth: number }[] = [];
@@ -84,10 +110,12 @@ export function StageCardStack({
             onClick={depth === 0 ? () => navigate(`/task/${task.id}`) : undefined}
             onKeyDown={depth === 0 ? (e) => e.key === "Enter" && e.target === e.currentTarget && navigate(`/task/${task.id}`) : undefined}
             className={cn(
-              "absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-2xl bg-background/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_12px_40px_-16px_rgba(0,0,0,0.16)] backdrop-blur-md transition-[transform,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.2,0,0,1)] dark:bg-card/95",
-              depth !== 0 ? "pointer-events-none bg-muted! dark:bg-muted!" : "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_44px_-14px_rgba(0,0,0,0.22)]"
+              "absolute inset-x-0 bottom-0 flex flex-col gap-4 rounded-2xl bg-background/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_12px_40px_-16px_rgba(0,0,0,0.16)] backdrop-blur-md transition-[transform,opacity,box-shadow] ease-[cubic-bezier(0.2,0,0,1)]",
+              dragging ? "duration-75" : "duration-300",
+              " dark:bg-card/95",
+              depth !== 0 ? cn("pointer-events-none", depth - drag > 0.5 && "bg-muted! dark:bg-muted!") : "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_44px_-14px_rgba(0,0,0,0.22)]"
             )}
-            style={{ ...depthStyle(depth), transformOrigin: "50% 0%" }}
+            style={{ ...depthStyle(depth - drag), transformOrigin: "50% 0%" }}
           >
             <div className="flex flex-col gap-1">
               <ThemedText type="caption" className="truncate">
