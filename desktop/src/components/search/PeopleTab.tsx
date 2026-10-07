@@ -43,15 +43,16 @@ function RowSkeletons({ count = 3 }: { count?: number }) {
 }
 
 // People half of the combined Search page: find people + browse friends/requests/suggested.
-export function PeopleTab() {
+export function PeopleTab({ chips }: { chips?: React.ReactNode }) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounced(query.trim(), 300);
   const searching = debouncedQuery.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-2xl">
-        <SearchBox value={query} onChange={setQuery} placeholder="Search people" />
+      <div className="flex max-w-2xl flex-col gap-3">
+        <SearchBox value={query} onChange={setQuery} placeholder="Search people by name or handle" autoFocus />
+        {chips}
       </div>
 
       {searching ? <SearchSection query={debouncedQuery} /> : <BrowseSections />}
@@ -92,10 +93,10 @@ function BrowseSections() {
   const friendItems = friends.data ?? [];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-12">
       {requestItems.length > 0 && (
         <section className="flex flex-col gap-4">
-          <SectionHeader title="Requests" />
+          <SectionHeader title={`Requests · ${requestItems.length}`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {requestItems.map((r) => (
               <RequestRow key={r.id} request={r} />
@@ -107,7 +108,7 @@ function BrowseSections() {
       {suggestedItems.length > 0 && (
         <section className="flex flex-col gap-4">
           <SectionHeader title="Suggested" />
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2 [mask-image:linear-gradient(to_right,black_88%,transparent)] [scrollbar-width:none]">
             {suggestedItems.map((u) => (
               <SuggestedCard key={u._id} user={u} />
             ))}
@@ -116,7 +117,7 @@ function BrowseSections() {
       )}
 
       <section className="flex flex-col gap-4">
-        <SectionHeader title="Friends" />
+        <SectionHeader title={friendItems.length ? `Friends · ${friendItems.length}` : "Friends"} />
         {friends.isLoading ? (
           <RowSkeletons />
         ) : friendItems.length === 0 ? (

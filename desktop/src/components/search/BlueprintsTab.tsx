@@ -11,7 +11,7 @@ import {
 } from "@/hooks/useBlueprints";
 
 // Blueprints half of the combined Search page: discover + search blueprints.
-export function BlueprintsTab() {
+export function BlueprintsTab({ chips }: { chips?: React.ReactNode }) {
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
 
@@ -39,7 +39,7 @@ export function BlueprintsTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="max-w-2xl">
+      <div className="flex max-w-2xl flex-col gap-3">
         <SearchBox
           value={input}
           onChange={setInput}
@@ -48,6 +48,7 @@ export function BlueprintsTab() {
           suggestions={suggestions}
           onSelectSuggestion={(s) => setInput(s.title)}
         />
+        {chips}
       </div>
 
       {hasQuery ? (

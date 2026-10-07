@@ -15,7 +15,7 @@ export function SuggestedCard({ user }: { user: UserExtendedReference }): JSX.El
   const [requested, setRequested] = useState(false);
 
   return (
-    <div className="group/card relative aspect-[125/160] w-36 shrink-0 overflow-hidden rounded-xl transition-transform duration-200 ease-out hover:-translate-y-0.5">
+    <div className="group/card relative aspect-[125/160] w-36 shrink-0 snap-start overflow-hidden rounded-xl transition-transform duration-200 ease-out hover:-translate-y-0.5">
       <Link to={`/account/${user._id}`} className="absolute inset-0 block">
         {user.profile_picture ? (
           <img src={user.profile_picture} alt="" className="size-full object-cover" />
