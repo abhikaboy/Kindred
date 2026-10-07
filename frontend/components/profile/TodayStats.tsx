@@ -23,8 +23,6 @@ function StatItem({ icon, label, value, loading = false }: StatItemProps) {
                 styles.statItem,
                 {
                     backgroundColor: "transparent",
-                    borderWidth: 0.5,
-                    borderColor: ThemedColor.tertiary,
                 },
             ]}>
             <View style={styles.iconContainer}>{icon}</View>

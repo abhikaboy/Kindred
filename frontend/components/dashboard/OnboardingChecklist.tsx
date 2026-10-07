@@ -308,25 +308,12 @@ const OnboardingChecklistCard: React.FC<OnboardingChecklistProps & { onFinished:
         <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18, opacity: cardOpacity }}>
             <View
                 onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
-                style={{
-                    backgroundColor: ThemedColor.background,
-                    borderRadius: 20,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
-                    overflow: 'hidden',
-                }}>
+                style={{ overflow: 'hidden' }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <ThemedText type="subtitle">{celebrating ? "You're all set!" : 'Get started'}</ThemedText>
                     {!celebrating && (
-                        <View
-                            style={{
-                                backgroundColor: ThemedColor.primary + '20',
-                                paddingHorizontal: 10,
-                                paddingVertical: 4,
-                                borderRadius: 100,
-                            }}>
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                        <View>
+                            <ThemedText type="caption">
                                 {remaining} left
                             </ThemedText>
                         </View>

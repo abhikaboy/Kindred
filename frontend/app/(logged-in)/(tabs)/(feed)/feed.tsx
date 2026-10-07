@@ -910,21 +910,11 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             paddingHorizontal: 8,
         },
         feedTab: {
-            backgroundColor: ThemedColor.background,
+            backgroundColor: ThemedColor.lightened,
             paddingHorizontal: 16,
             paddingVertical: 8,
-            borderRadius: 8,
+            borderRadius: 999,
             marginRight: 8,
-            boxShadow: ThemedColor.smallShadow,
-            borderWidth: 0.5,
-            borderColor: ThemedColor.tertiary,
-            shadowOffset: {
-                width: 0,
-                height: 1,
-            },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
         },
         feedTabActive: {
             backgroundColor: ThemedColor.primary,

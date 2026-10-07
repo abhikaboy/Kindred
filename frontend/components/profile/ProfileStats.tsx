@@ -41,9 +41,6 @@ export default function ProfileStats({
             <View
                 style={{
                     width: "48%",
-                    backgroundColor: "transparent",
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
                     borderRadius: 12,
                     alignItems: "center",
                     justifyContent: "center",
@@ -56,9 +53,7 @@ export default function ProfileStats({
                 disabled={!canViewFriends}
                 style={{
                     width: "48%",
-                    backgroundColor: canViewFriends ? ThemedColor.lightenedCard : "transparent",
-                    borderWidth: 1,
-                    borderColor: ThemedColor.tertiary,
+                    backgroundColor: ThemedColor.lightened,
                     paddingVertical: 8,
                     borderRadius: 12,
                     alignItems: "center",

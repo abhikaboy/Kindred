@@ -318,7 +318,7 @@ function ChangeRow({ change, onDismiss, onDismissPart }: { change: EnrichChange;
             </View>
             <View style={styles.parts}>
                 {change.summary.map((label, index) => (
-                    <View key={label} style={[styles.part, { borderColor: ThemedColor.tertiary }]}>
+                    <View key={label} style={[styles.part, { backgroundColor: ThemedColor.primary + "14" }]}>
                         <ThemedText type="default" style={{ fontSize: 14, color: ThemedColor.primary }}>
                             {label}
                         </ThemedText>
@@ -403,8 +403,7 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingVertical: 4,
         paddingHorizontal: 8,
-        borderRadius: 8,
-        borderWidth: 1,
+        borderRadius: 999,
     },
     restore: {
         alignSelf: "center",
