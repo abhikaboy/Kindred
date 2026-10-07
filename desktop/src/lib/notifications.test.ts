@@ -131,7 +131,7 @@ describe("groupByTimePeriod", () => {
         ];
 
         const groups = groupByTimePeriod(list);
-        expect(groups.map((g) => g.title)).toEqual(["Today", "This Week", "This Month", "Older"]);
+        expect(groups.map((g) => g.title)).toEqual(["Today", "This week", "This month", "Older"]);
         expect(groups[0].data[0].id).toBe("today");
         expect(groups[1].data[0].id).toBe("week");
         expect(groups[2].data[0].id).toBe("month");

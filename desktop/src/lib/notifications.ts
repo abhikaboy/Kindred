@@ -136,11 +136,11 @@ export function groupByTimePeriod(
     const groups = [
         { title: "Today", data: list.filter((n) => n.time >= todayMidnight) },
         {
-            title: "This Week",
+            title: "This week",
             data: list.filter((n) => n.time >= now - ONE_WEEK && n.time < todayMidnight),
         },
         {
-            title: "This Month",
+            title: "This month",
             data: list.filter((n) => n.time >= now - ONE_MONTH && n.time < now - ONE_WEEK),
         },
         { title: "Older", data: list.filter((n) => n.time < now - ONE_MONTH) },

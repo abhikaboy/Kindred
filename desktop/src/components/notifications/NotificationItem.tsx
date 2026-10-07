@@ -155,7 +155,7 @@ function RingsClosedCard({ n }: { n: ProcessedNotification }): JSX.Element {
   const sentence = (
     <SentenceText>
       <SentenceBold>{n.name}</SentenceBold>
-      {" closed all their rings 🎉"}
+      {" closed all their rings"}
     </SentenceText>
   );
 
