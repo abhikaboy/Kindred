@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { Eye, EyeSlash, Sparkle } from "@phosphor-icons/react";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import PrimaryButton from "@/components/PrimaryButton";
@@ -143,25 +143,31 @@ export function CreateTaskDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="gap-0" onKeyDown={onKeyDown}>
-                <div className="flex items-center gap-4 pb-3">
-                    <button type="button" onClick={() => setMode("Manual")} className="cursor-pointer">
-                        <ThemedText
-                            type={mode === "Manual" ? "defaultSemiBold" : "default"}
-                            className={cn("text-sm", mode === "Manual" ? "text-foreground" : "text-muted-foreground")}
+            <DialogContent
+                className={cn(
+                    "gap-0 transition-[background-color,color] duration-300",
+                    mode === "AI" &&
+                        "dark border-0 bg-[linear-gradient(180deg,#05050c_0%,#0c0c1a_100%)] text-foreground shadow-[0_24px_80px_-20px_rgba(0,0,0,0.6)]"
+                )}
+                onKeyDown={onKeyDown}
+            >
+                {/* Selected option is solid foreground on either stage, per the composer palette. */}
+                <div className="flex items-center gap-1 pb-4">
+                    {(["Manual", "AI"] as const).map((m) => (
+                        <button
+                            key={m}
+                            type="button"
+                            onClick={() => setMode(m)}
+                            className={cn(
+                                "inline-flex h-8 cursor-pointer items-center rounded-full px-3 transition-colors duration-150",
+                                mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
                         >
-                            Manual
-                        </ThemedText>
-                    </button>
-                    <button type="button" onClick={() => setMode("AI")} className="inline-flex cursor-pointer items-center gap-1">
-                        <Sparkle size={13} weight={mode === "AI" ? "fill" : "regular"} className={mode === "AI" ? "text-primary" : "text-muted-foreground"} />
-                        <ThemedText
-                            type={mode === "AI" ? "defaultSemiBold" : "default"}
-                            className={cn("text-sm", mode === "AI" ? "text-primary" : "text-muted-foreground")}
-                        >
-                            AI
-                        </ThemedText>
-                    </button>
+                            <ThemedText type="caption" className="text-inherit">
+                                {m === "Manual" ? "One task" : "Several at once"}
+                            </ThemedText>
+                        </button>
+                    ))}
                 </div>
                 {mode === "AI" ? (
                     <AiTaskPanel onClose={() => onOpenChange(false)} />

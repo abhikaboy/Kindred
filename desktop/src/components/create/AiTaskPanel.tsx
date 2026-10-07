@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, KeyboardEvent } from "react";
-import { Sparkle, X, PencilSimple, ArrowLeft, Image as ImageIcon, Clipboard } from "@phosphor-icons/react";
+import { X, PencilSimple, ArrowLeft, ArrowUpRight, Image as ImageIcon, Clipboard } from "@phosphor-icons/react";
+import { TaskMeta } from "@/components/task/TaskMeta";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ThemedText } from "@/components/ThemedText";
-import PrimaryButton from "@/components/PrimaryButton";
-import { TaskItem } from "@/components/TaskItem";
 import {
   usePreviewTasksAI,
   useImagePreviewTasksAI,
@@ -31,7 +28,7 @@ const TIMEZONE = (() => {
   }
 })();
 
-// Rotating example prompts shown in the empty prompt box (no em dashes in copy).
+// Example prompts offered as one-tap starters on the empty stage (no em dashes in copy).
 const PLACEHOLDERS = [
   "gym at 7am tomorrow, finish the quarterly report by friday, call the dentist",
   "plan mom's birthday dinner, book flights for the trip, renew car insurance",
@@ -94,10 +91,11 @@ function PreviewTaskRow({
   };
 
   return (
-    <div className="flex items-start gap-2">
-      <div className="min-w-0 flex-1">
+    <div className="group flex items-start gap-3 rounded-xl bg-white/[0.06] px-4 py-3 transition-colors duration-150 animate-in fade-in slide-in-from-bottom-1 duration-300 hover:bg-white/[0.09]">
+      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {editing ? (
-          <Input
+          <input
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -106,20 +104,28 @@ function PreviewTaskRow({
               if (e.key === "Enter") { e.preventDefault(); commit(); }
               if (e.key === "Escape") { setDraft(task.content); setEditing(false); }
             }}
+            className="w-full bg-transparent font-sans font-light text-base text-foreground outline-none"
           />
         ) : (
-          <TaskItem preview task={toDisplayTask(task, keyId)} />
+          <button
+            type="button"
+            onClick={() => { setDraft(task.content); setEditing(true); }}
+            className="text-left"
+          >
+            <ThemedText type="default" className="break-words">{task.content}</ThemedText>
+          </button>
         )}
+        <TaskMeta task={toDisplayTask(task, keyId)} />
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1 opacity-50 transition-opacity duration-150 group-hover:opacity-100">
         {!editing && (
-          <Button variant="ghost" size="icon" aria-label="Edit title" onClick={() => { setDraft(task.content); setEditing(true); }}>
-            <PencilSimple size={16} />
-          </Button>
+          <button type="button" aria-label="Edit title" onClick={() => { setDraft(task.content); setEditing(true); }} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
+            <PencilSimple size={14} />
+          </button>
         )}
-        <Button variant="ghost" size="icon" aria-label="Remove task" onClick={onRemove}>
-          <X size={16} />
-        </Button>
+        <button type="button" aria-label="Remove task" onClick={onRemove} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
+          <X size={14} />
+        </button>
       </div>
     </div>
   );
@@ -131,15 +137,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   const [image, setImage] = useState<string | null>(null); // data URL, for preview + upload
   const [payload, setPayload] = useState<AiPreviewPayload>({ categories: [], tasks: [] });
   const [error, setError] = useState<string | null>(null);
-  const [phIndex, setPhIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Cycle the example placeholder while on the prompt stage.
-  useEffect(() => {
-    if (stage !== "prompt") return;
-    const id = setInterval(() => setPhIndex((i) => (i + 1) % PLACEHOLDERS.length), 3500);
-    return () => clearInterval(id);
-  }, [stage]);
 
   const preview = usePreviewTasksAI();
   const imagePreview = useImagePreviewTasksAI();
@@ -240,69 +238,82 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
 
   if (stage === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-16">
-        <Sparkle size={32} weight="fill" className="animate-pulse text-primary" />
-        <ThemedText type="default" className="text-muted-foreground">Generating tasks…</ThemedText>
+      <div className="flex flex-col gap-3 py-2">
+        <ThemedText type="fancyFrauncesSubheading" className="text-foreground/40">
+          {text.trim() || "Reading your image"}
+        </ThemedText>
+        <div className="mt-2 flex flex-col gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-12 animate-pulse rounded-xl bg-white/[0.06]"
+              style={{ animationDelay: `${i * 150}ms`, width: `${100 - i * 12}%` }}
+            />
+          ))}
+        </div>
+        <ThemedText type="caption">Sorting that into tasks</ThemedText>
       </div>
     );
   }
 
   if (stage === "preview") {
     return (
-      <div className="flex flex-col gap-4 py-2">
-        {payload.categories.map((cat, ci) => (
-          <div key={`cat-${ci}`} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <ThemedText type="defaultSemiBold">{cat.name}</ThemedText>
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5">
-                <ThemedText type="caption" className="text-primary">NEW</ThemedText>
-              </span>
-              <ThemedText type="caption" className="text-muted-foreground">{cat.workspaceName}</ThemedText>
-            </div>
-            {cat.tasks.map((t, ti) => (
-              <PreviewTaskRow
-                key={`cat-${ci}-${ti}`}
-                keyId={`cat-${ci}-${ti}`}
-                task={t}
-                onEditTitle={(content) => editTitle({ kind: "cat", ci, ti }, content)}
-                onRemove={() => removeAt({ kind: "cat", ci, ti })}
-              />
-            ))}
-          </div>
-        ))}
-        {payload.tasks.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {payload.tasks.map((pair, pi) => (
-              <div key={`pair-${pi}`} className="flex flex-col gap-2">
-                {pair.categoryName && (
-                  <ThemedText type="defaultSemiBold">{pair.categoryName}</ThemedText>
-                )}
-                <PreviewTaskRow
-                  keyId={`pair-${pi}`}
-                  task={pair.task}
-                  onEditTitle={(content) => editTitle({ kind: "pair", pi }, content)}
-                  onRemove={() => removeAt({ kind: "pair", pi })}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        {count === 0 && (
-          <ThemedText type="caption" className="text-muted-foreground">
-            Nothing to create. Go back and refine your prompt.
+      <div className="flex flex-col gap-6 py-2">
+        <div className="flex flex-col gap-1">
+          <ThemedText type="fancyFrauncesSubheading">
+            {count > 0 ? `${count} task${count === 1 ? "" : "s"} ready` : "Nothing to add"}
           </ThemedText>
-        )}
+          <ThemedText type="caption">Click a title to edit it. Remove anything you don't want.</ThemedText>
+        </div>
+        <div className="flex max-h-[45vh] flex-col gap-5 overflow-y-auto pr-1">
+          {payload.categories.map((cat, ci) => (
+            <section key={`cat-${ci}`} className="flex flex-col gap-2">
+              <ThemedText type="caption">
+                <span className="text-foreground">{cat.name}</span> · New in {cat.workspaceName}
+              </ThemedText>
+              {cat.tasks.map((t, ti) => (
+                <PreviewTaskRow
+                  key={`cat-${ci}-${ti}`}
+                  keyId={`cat-${ci}-${ti}`}
+                  task={t}
+                  onEditTitle={(content) => editTitle({ kind: "cat", ci, ti }, content)}
+                  onRemove={() => removeAt({ kind: "cat", ci, ti })}
+                />
+              ))}
+            </section>
+          ))}
+          {payload.tasks.length > 0 && (
+            <section className="flex flex-col gap-2">
+              {payload.tasks.map((pair, pi) => (
+                <div key={`pair-${pi}`} className="flex flex-col gap-2">
+                  {pair.categoryName && pair.categoryName !== payload.tasks[pi - 1]?.categoryName && (
+                    <ThemedText type="caption" className="mt-1 text-foreground">{pair.categoryName}</ThemedText>
+                  )}
+                  <PreviewTaskRow
+                    keyId={`pair-${pi}`}
+                    task={pair.task}
+                    onEditTitle={(content) => editTitle({ kind: "pair", pi }, content)}
+                    onRemove={() => removeAt({ kind: "pair", pi })}
+                  />
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
         {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
-        <div className="mt-2 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => { setError(null); setStage("prompt"); }} className="gap-1.5">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => { setError(null); setStage("prompt"); }}
+            className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-muted-foreground transition-colors duration-150 hover:bg-white/10 hover:text-foreground"
+          >
             <ArrowLeft size={14} />
-            Edit prompt
-          </Button>
-          <PrimaryButton
-            title={count > 0 ? `Create ${count} tasks` : "Nothing to create"}
+            <ThemedText type="caption" className="text-inherit">Edit what I wrote</ThemedText>
+          </button>
+          <GlowButton
+            label={confirm.isPending ? "Adding" : count > 0 ? `Add ${count} task${count === 1 ? "" : "s"}` : "Nothing to add"}
             onClick={create}
             disabled={count === 0 || confirm.isPending}
-            className="w-auto px-5 py-2"
           />
         </div>
       </div>
@@ -310,68 +321,92 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
   }
 
   // stage === "prompt"
+  const empty = !text.trim() && !image;
   return (
-    <div className="flex flex-col gap-3 py-2">
+    <div className="flex flex-col gap-5 py-2">
       {image ? (
-        <div className="relative w-fit">
-          <img src={image} alt="Attached" className="max-h-48 rounded-2xl border border-border object-contain" />
-          <Button
-            variant="secondary"
-            size="icon"
+        <div className="relative w-fit animate-in fade-in duration-200">
+          <img src={image} alt="Attached" className="max-h-48 rounded-2xl object-contain" />
+          <button
+            type="button"
             aria-label="Remove image"
             onClick={() => setImage(null)}
-            className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
+            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-white text-black shadow"
           >
-            <X size={14} />
-          </Button>
+            <X size={12} weight="bold" />
+          </button>
         </div>
       ) : (
         <textarea
           autoFocus
-          rows={4}
+          rows={3}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onPromptKey}
           onPaste={onPromptPaste}
-          placeholder={PLACEHOLDERS[phIndex]}
-          className="min-h-28 w-full resize-none rounded-2xl border border-border bg-transparent p-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/60"
+          placeholder="What's on your plate?"
+          className="min-h-24 w-full resize-none bg-transparent font-heading text-2xl font-semibold leading-snug tracking-[-1px] text-foreground outline-none placeholder:text-foreground/30"
         />
       )}
-      {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={onFileChange}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Attach image from files"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImageIcon size={18} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Paste image from clipboard"
-            onClick={pasteFromClipboard}
-          >
-            <Clipboard size={18} />
-          </Button>
+
+      {empty && (
+        <div className="flex flex-col gap-1 animate-in fade-in duration-300">
+          <ThemedText type="caption" className="mb-1">Try something like</ThemedText>
+          {PLACEHOLDERS.slice(0, 3).map((example) => (
+            <button
+              key={example}
+              type="button"
+              onClick={() => setText(example)}
+              className="group -mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-muted-foreground transition-colors duration-150 hover:bg-white/[0.06] hover:text-foreground"
+            >
+              <ArrowUpRight size={14} className="shrink-0 transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              <ThemedText type="caption" className="truncate text-inherit">{example}</ThemedText>
+            </button>
+          ))}
         </div>
-        <PrimaryButton
-          title="Generate"
-          onClick={generate}
-          disabled={!canGenerate}
-          className="w-auto px-5 py-2"
-        />
+      )}
+
+      {error && <ThemedText type="caption" className="text-destructive">{error}</ThemedText>}
+      <div className="flex items-center gap-2">
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+        <button
+          type="button"
+          aria-label="Attach image from files"
+          onClick={() => fileInputRef.current?.click()}
+          className="grid size-10 place-items-center rounded-full bg-white/10 text-foreground transition-colors duration-150 hover:bg-white/[0.16]"
+        >
+          <ImageIcon size={18} />
+        </button>
+        <button
+          type="button"
+          aria-label="Paste image from clipboard"
+          onClick={pasteFromClipboard}
+          className="grid size-10 place-items-center rounded-full bg-white/10 text-foreground transition-colors duration-150 hover:bg-white/[0.16]"
+        >
+          <Clipboard size={18} />
+        </button>
+        <ThemedText type="caption" className="ml-2 hidden sm:block">
+          Enter to sort · Shift+Enter for a new line
+        </ThemedText>
+        <div className="ml-auto">
+          <GlowButton label="Sort into tasks" onClick={generate} disabled={!canGenerate} />
+        </div>
       </div>
     </div>
+  );
+}
+
+// The stage's single main action: primary pill with the hero glow.
+function GlowButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-primary-foreground shadow-[0_6px_10px_-2px_rgba(133,77,255,0.35)] transition-[transform,opacity,box-shadow] duration-150 hover:opacity-95 active:scale-[0.97] disabled:bg-white/10 disabled:text-foreground/40 disabled:shadow-none"
+    >
+      <ThemedText type="defaultSemiBold" className="text-sm text-inherit">{label}</ThemedText>
+    </button>
   );
 }
 
