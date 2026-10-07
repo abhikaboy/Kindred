@@ -9,8 +9,8 @@ type Props = {
 
 export function SettingsSection({ title, children, className }: Props) {
     return (
-        <section className={cn("mb-10", className)}>
-            <ThemedText as="h2" type="caption" className="mb-4 block tracking-wider">
+        <section className={cn("mb-12", className)}>
+            <ThemedText as="h2" type="larger_default" className="mb-3 block">
                 {title}
             </ThemedText>
             {children}

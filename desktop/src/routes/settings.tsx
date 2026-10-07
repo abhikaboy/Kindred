@@ -82,7 +82,7 @@ export default function SettingsScreen() {
                 Settings
             </ThemedText>
 
-            <SettingsSection title="APPEARANCE">
+            <SettingsSection title="Appearance">
                 <ThemedText>Theme</ThemedText>
                 <ThemedText type="caption" className="mb-3 mt-1 block">
                     System follows your device setting
@@ -95,15 +95,15 @@ export default function SettingsScreen() {
             </SettingsSection>
 
             {settingsError ? (
-                <SettingsSection title="PREFERENCES">
+                <SettingsSection title="Preferences">
                     <ThemedText type="caption">
                         Couldn’t load your settings. Please try again later.
                     </ThemedText>
                 </SettingsSection>
             ) : (
                 <>
-                    <SettingsSection title="NOTIFICATIONS">
-                        <ThemedText>Check-in Frequency</ThemedText>
+                    <SettingsSection title="Notifications">
+                        <ThemedText>Check-in frequency</ThemedText>
                         <ThemedText type="caption" className="mb-3 mt-1 block">
                             How often you’d like reminders about overdue tasks
                         </ThemedText>
@@ -122,27 +122,27 @@ export default function SettingsScreen() {
                         )}
                     </SettingsSection>
 
-                    <SettingsSection title="DISPLAY">
+                    <SettingsSection title="Display">
                         <SettingsCard>
                             {settings ? (
                                 <>
                                     <SettingsToggleRow
-                                        label="Friend Activity"
+                                        label="Friend activity"
                                         checked={settings.display.friend_activity_feed}
                                         onCheckedChange={() => toggleDisplay("friend_activity_feed")}
                                     />
                                     <SettingsToggleRow
-                                        label="Near Deadlines"
+                                        label="Near deadlines"
                                         checked={settings.display.near_deadlines_widget}
                                         onCheckedChange={() => toggleDisplay("near_deadlines_widget")}
                                     />
                                     <SettingsToggleRow
-                                        label="Show Task Details"
+                                        label="Show task details"
                                         checked={settings.display.show_task_details}
                                         onCheckedChange={() => toggleDisplay("show_task_details")}
                                     />
                                     <SettingsToggleRow
-                                        label="Recent Workspaces"
+                                        label="Recent workspaces"
                                         checked={settings.display.recent_workspaces}
                                         onCheckedChange={() => toggleDisplay("recent_workspaces")}
                                         isLast
@@ -158,11 +158,11 @@ export default function SettingsScreen() {
                         </SettingsCard>
                     </SettingsSection>
 
-                    <SettingsSection title="PRIVACY & DATA">
+                    <SettingsSection title="Privacy and data">
                         <SettingsCard>
                             {settings ? (
                                 <SettingsToggleRow
-                                    label="Content Filter"
+                                    label="Content filter"
                                     checked={settings.display.content_filter}
                                     onCheckedChange={() => toggleDisplay("content_filter")}
                                     isLast
@@ -175,29 +175,29 @@ export default function SettingsScreen() {
                 </>
             )}
 
-            <SettingsSection title="LEGAL">
+            <SettingsSection title="Legal">
                 <SettingsActionRow
-                    label="Privacy Policy"
+                    label="Privacy policy"
                     onClick={() => window.open(PRIVACY_URL, "_blank", "noopener,noreferrer")}
                     icon={<ArrowSquareOut className="size-5 text-muted-foreground" />}
                 />
                 <SettingsActionRow
-                    label="Terms & Conditions"
+                    label="Terms and conditions"
                     onClick={() => window.open(TERMS_URL, "_blank", "noopener,noreferrer")}
                     icon={<ArrowSquareOut className="size-5 text-muted-foreground" />}
                 />
             </SettingsSection>
 
-            <SettingsSection title="ACCOUNT">
+            <SettingsSection title="Account">
                 <SettingsActionRow
-                    label="Delete Account"
+                    label="Delete account"
                     onClick={handleDeleteAccount}
                     destructive
                     disabled={deleteAccount.isPending}
                     icon={<Trash className="size-5 text-destructive" />}
                 />
                 <SettingsActionRow
-                    label="Log Out"
+                    label="Log out"
                     onClick={handleLogout}
                     destructive
                     icon={<SignOut className="size-5 text-destructive" />}
