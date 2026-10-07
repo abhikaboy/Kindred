@@ -464,16 +464,13 @@ export function CalendarConnectionsDrawer() {
                     <button
                         type="button"
                         className={cn(
-                            "flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors hover:bg-muted",
-                            linkedCount > 0
-                                ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-                                : "border-border text-muted-foreground"
+                            "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                         )}
                     />
                 }
             >
                 <CalendarBlank size={15} />
-                <ThemedText type="caption" className={linkedCount > 0 ? "text-primary" : undefined}>
+                <ThemedText type="caption" className="text-inherit">
                     Calendars
                 </ThemedText>
                 {linkedCount > 0 && (

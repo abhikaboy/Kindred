@@ -136,12 +136,12 @@ function DayColumn({ day, tasks, edges, onCreateRange, onReschedule, onOpenTask 
     <div
       ref={setCol}
       data-weekcol={dayKey(day)}
-      className={cn("relative min-w-0 flex-1 border-l border-border", hot && "bg-primary/5")}
+      className={cn("relative min-w-0 flex-1 border-l border-border/40", hot && "bg-primary/5")}
       style={{ height: HOUR_HEIGHT * 24 }}
       onPointerDown={onColPointerDown}
     >
       {HOURS.map((h) => (
-        <div key={h} className="absolute inset-x-0 border-t border-border/60" style={{ top: minutesToY(h * 60) }} />
+        <div key={h} className="absolute inset-x-0 border-t border-border/40" style={{ top: minutesToY(h * 60) }} />
       ))}
       {isToday(day) && (
         <div className="absolute inset-x-0 z-10 border-t-2 border-destructive" style={{ top: minutesToY(nowMinutes()) }} />
@@ -197,7 +197,7 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Day headers */}
-      <div className="flex border-b border-border pl-12">
+      <div className="flex border-b border-border/60 pl-12">
         {days.map((day) => (
           <button
             key={day.toISOString()}
@@ -217,7 +217,7 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
         ))}
       </div>
       {/* All-day row */}
-      <div className="border-b border-border">
+      <div className="border-b border-border/60">
         {/* Spanning multi-day bars — positioned relative to the 7-column area */}
         <div className="pl-12">
           <SpanningBars bars={spanning} dayCount={dayCount} onOpen={openTask} />
@@ -229,7 +229,7 @@ export function WeekGrid({ weekStart, dayCount = 7, week, spanning, edges, selec
             const shown = allDayExpanded ? allDay : allDay.slice(0, ALL_DAY_LIMIT);
             const hidden = allDay.length - shown.length;
             return (
-              <div key={day.toISOString()} className="flex min-w-0 flex-1 flex-col gap-0.5 border-l border-border p-1">
+              <div key={day.toISOString()} className="flex min-w-0 flex-1 flex-col gap-0.5 border-l border-border/40 p-1">
                 {shown.map((t) => (
                   <button
                     key={t.id}

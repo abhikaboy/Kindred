@@ -92,7 +92,7 @@ export function AgendaPanel({ buckets, selectedDate, onAddTask }: { buckets: Dai
               <button
                 type="button"
                 onClick={onAddTask}
-                className="flex flex-col items-start gap-1 rounded-xl border border-dashed p-4 text-left transition-colors hover:bg-muted/50"
+                className="group flex flex-col items-start gap-1 py-2 text-left"
               >
                 <ThemedText type="caption">Nothing planned yet</ThemedText>
                 <ThemedText type="caption" className="text-primary">+ Add a task</ThemedText>
