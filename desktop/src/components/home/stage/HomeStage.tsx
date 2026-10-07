@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowRight, ArrowsClockwise, Play } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { ConcentricRings } from "@/components/rings/ConcentricRings";
 import { QuickCapture } from "@/components/home/QuickCapture";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/auth";
 import { useRingsToday } from "@/hooks/useRings";
 import { StageGlow } from "./StageGlow";
 import { FocusView } from "./FocusView";
+import { StageCardStack } from "./StageCardStack";
 import { useStageQueue, type StageTask } from "./useStageQueue";
 
 const greetingFor = (h: number) => (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
@@ -21,7 +22,36 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
   const [focusTask, setFocusTask] = useState<StageTask | null>(null);
   const [replay, setReplay] = useState(0);
 
-  const task = queue.length ? queue[index % queue.length] : null;
+  const [wsIndex, setWsIndex] = useState(-1);
+  const workspaces = useMemo(() => [...new Set(queue.map((t) => t.workspaceName))], [queue]);
+  const shown = wsIndex < 0 ? queue : queue.filter((t) => t.workspaceName === workspaces[wsIndex]);
+  const task = shown.length ? shown[index % shown.length] : null;
+  const wsLabel = wsIndex < 0 ? "All workspaces" : workspaces[wsIndex];
+  // -1 is "all"; wraps through each workspace and back.
+  const shiftWorkspace = (dir: 1 | -1) => {
+    const span = workspaces.length + 1;
+    setWsIndex((w) => ((w + 1 + dir + span) % span) - 1);
+    setIndex(0);
+  };
+
+  useEffect(() => {
+    if (focusTask) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest("input, textarea, [contenteditable=true]") || e.metaKey || e.ctrlKey || e.altKey) return;
+      const n = shown.length;
+      if (e.key === "ArrowDown" && n > 1) setIndex((i) => (i % n + 1) % n);
+      else if (e.key === "ArrowUp" && n > 1) setIndex((i) => (i % n - 1 + n) % n);
+      else if (e.key === "ArrowRight" && workspaces.length > 1) shiftWorkspace(1);
+      else if (e.key === "ArrowLeft" && workspaces.length > 1) shiftWorkspace(-1);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+
   const streak = rings?.current_streak ?? 0;
   const dueToday = queue.filter((t) => t.reason === "Due today" || t.reason === "Overdue").length;
   const facts = [dueToday > 0 && `${dueToday} due today`, streak > 0 && `${streak} day streak`].filter(Boolean);
@@ -74,45 +104,25 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
             {isLoading ? (
               <Skeleton className="h-32 w-full max-w-md rounded-2xl" />
             ) : task ? (
-              <div
-                key={task.id}
-                className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-background/70 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_12px_40px_-16px_rgba(0,0,0,0.16)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-1 duration-300 dark:bg-card/70"
-              >
-                <div className="flex flex-col gap-1">
-                  <ThemedText type="caption">
-                    {[task.reason, task.workspaceName].filter(Boolean).join(" · ")}
-                  </ThemedText>
-                  <ThemedText type="larger_default" className="break-words">
-                    {task.content || "Untitled task"}
-                  </ThemedText>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFocusTask(task)}
-                    className="flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-primary-foreground shadow-[0_6px_10px_-2px_rgba(133,77,255,0.3)] transition-[transform,opacity] duration-150 hover:opacity-95 active:scale-[0.97]"
-                  >
-                    <Play size={14} weight="fill" />
-                    <ThemedText type="defaultSemiBold" className="text-sm text-primary-foreground">
-                      Start
-                    </ThemedText>
+              <div className="flex w-full max-w-md flex-col items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <button type="button" aria-label="Previous workspace" onClick={() => shiftWorkspace(-1)} className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground">
+                    <CaretLeft size={12} />
                   </button>
-                  {queue.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setIndex((i) => i + 1)}
-                      className="group flex h-10 items-center gap-2 rounded-full px-4 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-                    >
-                      <ArrowsClockwise size={14} className="transition-transform duration-300 group-active:rotate-180" />
-                      <ThemedText type="caption" className="text-inherit">
-                        Something else
-                      </ThemedText>
-                    </button>
-                  )}
-                  <ThemedText type="caption" className="ml-auto tabular-nums">
-                    {(index % queue.length) + 1} of {queue.length}
+                  <ThemedText key={wsLabel} type="caption" className="min-w-32 text-center animate-in fade-in duration-200">
+                    {wsLabel}
                   </ThemedText>
+                  <button type="button" aria-label="Next workspace" onClick={() => shiftWorkspace(1)} className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground">
+                    <CaretRight size={12} />
+                  </button>
                 </div>
+                <StageCardStack
+                key={wsLabel}
+                queue={shown}
+                index={index % shown.length}
+                onIndexChange={setIndex}
+                onStart={setFocusTask}
+              />
               </div>
             ) : (
               <ThemedText type="caption">Nothing on your plate. Add something below.</ThemedText>
