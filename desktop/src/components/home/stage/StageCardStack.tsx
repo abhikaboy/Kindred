@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Play } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { cn } from "@/lib/utils";
@@ -119,7 +119,15 @@ export function StageCardStack({
           >
             <div className="flex flex-col gap-1">
               <ThemedText type="caption" className="truncate">
-                {[task.reason, task.workspaceName].filter(Boolean).join(" · ")}
+                {task.reason && `${task.reason} · `}
+                <Link
+                  to={`/workspace/${encodeURIComponent(task.workspaceName)}`}
+                  tabIndex={depth === 0 ? 0 : -1}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-inherit underline-offset-2 transition-colors duration-150 hover:text-foreground hover:underline"
+                >
+                  {task.workspaceName}
+                </Link>
               </ThemedText>
               <div className="flex items-center gap-2">
                 <ThemedText type="larger_default" className="min-w-0 truncate">

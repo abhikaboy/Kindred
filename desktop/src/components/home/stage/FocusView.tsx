@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check } from "@phosphor-icons/react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ThemedText } from "@/components/ThemedText";
 import { ConcentricRings } from "@/components/rings/ConcentricRings";
@@ -94,7 +95,14 @@ export function FocusView({ task, onExit, onDone }: { task: StageTask; onExit: (
       </div>
 
       <div className="flex max-w-xl flex-col items-center gap-2 text-center">
-        <ThemedText type="caption">{task.workspaceName}</ThemedText>
+        <Link
+          to={`/workspace/${encodeURIComponent(task.workspaceName)}`}
+          className="text-muted-foreground underline-offset-2 transition-colors duration-150 hover:text-foreground hover:underline"
+        >
+          <ThemedText type="caption" className="text-inherit">
+            {task.workspaceName}
+          </ThemedText>
+        </Link>
         <ThemedText type="fancyFrauncesSubheading" as="h2" className="break-words">
           {task.content || "Untitled task"}
         </ThemedText>
