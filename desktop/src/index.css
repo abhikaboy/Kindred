@@ -247,3 +247,15 @@
   .stage-wash-drop { animation: none; transform: translate3d(0, 20%, 0); }
   .stage-wash-breathe, .stage-wash-dots { animation: none; }
 }
+
+/* Profile now-playing equalizer. */
+@keyframes eq-bounce {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+.eq-bar {
+  animation: eq-bounce 700ms ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq-bar { animation: none; height: 8px; }
+}

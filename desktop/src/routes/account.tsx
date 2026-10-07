@@ -1,13 +1,11 @@
 import { useState, type JSX } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Sparkle, Check, LockSimple } from "@phosphor-icons/react";
+import { Check, CheckCircle, Fire, HandsClapping, LockSimple, UserPlus, Users } from "@phosphor-icons/react";
 import { $api } from "@/lib/api/query";
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/ui/button";
-import PrimaryButton from "@/components/PrimaryButton";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProfileIdentity } from "@/components/profile/ProfileIdentity";
+import { ProfileHero } from "@/components/profile/ProfileHero";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { FriendshipMeter } from "@/components/profile/FriendshipMeter";
 import { TaskItem } from "@/components/TaskItem";
@@ -23,18 +21,11 @@ import {
 // Connection mutations require both auth headers; the client middleware fills the real tokens.
 const AUTH = { Authorization: "", refresh_token: "" };
 
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col">
-      <ThemedText type="defaultSemiBold" className="text-lg">
-        {value}
-      </ThemedText>
-      <ThemedText type="caption">{label}</ThemedText>
-    </div>
-  );
-}
+const PILL = "inline-flex h-9 items-center gap-1.5 rounded-full px-4 transition-[background-color,color,opacity,transform] duration-150 active:scale-[0.97] disabled:opacity-50";
+const PRIMARY = `${PILL} bg-primary text-primary-foreground shadow-[0_6px_10px_-2px_rgba(133,77,255,0.3)] hover:opacity-95`;
+const QUIET = `${PILL} bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground`;
 
-// Relationship button (Add / Requested / Accept / Friends) + an Encourage kudos CTA.
+// Friends: cheering them on is the main action. Not yet friends: connecting leads.
 function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element {
   const send = useSendRequest();
   const accept = useAcceptRequest();
@@ -43,44 +34,66 @@ function AccountActions({ profile }: { profile: ProfileDocument }): JSX.Element 
   const busy = send.isPending || accept.isPending || remove.isPending;
   const status = profile.relationship?.status ?? "none";
   const requestId = profile.relationship?.request_id;
+  const friends = status === "connected";
+
+  const cheer = (
+    <button type="button" onClick={() => setKudosOpen(true)} className={friends ? PRIMARY : QUIET}>
+      <HandsClapping size={16} weight="fill" />
+      <ThemedText type="caption" className="text-inherit">
+        Cheer {profile.display_name.split(" ")[0]} on
+      </ThemedText>
+    </button>
+  );
+
+  const relation = friends ? (
+    <span className={`${PILL} text-muted-foreground`}>
+      <Check size={14} weight="bold" />
+      <ThemedText type="caption" className="text-inherit">Friends</ThemedText>
+    </span>
+  ) : status === "requested" ? (
+    <button
+      type="button"
+      className={QUIET}
+      disabled={busy || !requestId}
+      onClick={() => requestId && remove.mutate({ params: { header: AUTH, path: { id: requestId } } })}
+    >
+      <ThemedText type="caption" className="text-inherit">Requested</ThemedText>
+    </button>
+  ) : status === "received" ? (
+    <button
+      type="button"
+      className={PRIMARY}
+      disabled={busy || !requestId}
+      onClick={() => requestId && accept.mutate({ params: { header: AUTH, path: { id: requestId } } })}
+    >
+      <UserPlus size={16} weight="bold" />
+      <ThemedText type="caption" className="text-inherit">Accept request</ThemedText>
+    </button>
+  ) : (
+    <button
+      type="button"
+      className={PRIMARY}
+      disabled={busy}
+      onClick={() => send.mutate({ params: { header: AUTH }, body: { receiver_id: profile.id } })}
+    >
+      <UserPlus size={16} weight="bold" />
+      <ThemedText type="caption" className="text-inherit">Add friend</ThemedText>
+    </button>
+  );
 
   return (
-    <div className={busy ? "flex gap-3 opacity-50" : "flex gap-3"}>
-      {status === "connected" ? (
-        <span className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-primary/15 px-5 text-primary">
-          <Check size={16} weight="bold" />
-          <ThemedText type="defaultSemiBold" className="text-primary">
-            Friends
-          </ThemedText>
-        </span>
-      ) : status === "requested" ? (
-        <PrimaryButton
-          title="Requested"
-          secondary
-          className="h-11 w-auto px-5 py-0"
-          disabled={busy || !requestId}
-          onClick={() => requestId && remove.mutate({ params: { header: AUTH, path: { id: requestId } } })}
-        />
-      ) : status === "received" ? (
-        <PrimaryButton
-          title="Accept"
-          className="h-11 w-auto px-5 py-0"
-          disabled={busy || !requestId}
-          onClick={() => requestId && accept.mutate({ params: { header: AUTH, path: { id: requestId } } })}
-        />
+    <div className="flex flex-wrap items-center gap-2">
+      {friends ? (
+        <>
+          {cheer}
+          {relation}
+        </>
       ) : (
-        <PrimaryButton
-          title="Add friend"
-          className="h-11 w-auto px-5 py-0"
-          disabled={busy}
-          onClick={() => send.mutate({ params: { header: AUTH }, body: { receiver_id: profile.id } })}
-        />
+        <>
+          {relation}
+          {cheer}
+        </>
       )}
-
-      <Button variant="outline" onClick={() => setKudosOpen(true)} className="h-11 px-5">
-        <Sparkle weight="duotone" /> Encourage
-      </Button>
-
       <SendKudosModal
         open={kudosOpen}
         onClose={() => setKudosOpen(false)}
@@ -132,52 +145,61 @@ export default function AccountScreen() {
   const canView = profile.relationship?.status === "connected";
   const activeTasks = (profile.tasks ?? []).filter((t) => t.public);
 
+  const firstName = profile.display_name.split(" ")[0];
+
   return (
-    <div className="mx-auto max-w-5xl pt-6">
-      <ProfileIdentity
+    <div className="mx-auto flex max-w-5xl flex-col gap-12 pt-6">
+      <ProfileHero
+        userId={profile.id}
         displayName={profile.display_name}
         handle={profile.handle}
-        profilePicture={profile.profile_picture}
+        picture={profile.profile_picture}
+        rings={canView ? profile.ring_state : null}
+        song={profile.song}
+        showPhotos={canView}
+        stats={[
+          { icon: Fire, value: profile.streak, label: "day streak" },
+          { icon: CheckCircle, value: profile.tasks_complete, label: "done" },
+          { icon: Users, value: profile.friends.length, label: "friends" },
+        ]}
         actions={<AccountActions profile={profile} />}
       />
 
-      <div className="mt-6 flex gap-8 px-2">
-        <Stat value={profile.tasks_complete} label="Completed" />
-        <Stat value={profile.posts_made} label="Posts" />
-        <Stat value={profile.friends.length} label="Friends" />
-      </div>
-
       {canView ? (
-        <div className="mt-6 px-2">
+        <>
           <FriendshipMeter score={profile.relationship?.score ?? 0} name={profile.display_name} />
-        </div>
-      ) : null}
 
-      {canView ? (
-        <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="flex flex-col gap-3">
-            <ThemedText type="subtitle" as="h3">
-              Tasks
+          <section className="flex flex-col gap-3">
+            <ThemedText type="subtitle" as="h2">
+              Gallery
             </ThemedText>
+            <ProfileGallery userId={profile.id} />
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <ThemedText type="subtitle" as="h2">
+                Cheer {firstName} on
+              </ThemedText>
+              {activeTasks.length > 0 && (
+                <ThemedText type="caption">
+                  {activeTasks.length} task{activeTasks.length === 1 ? "" : "s"} {firstName} is working on. Pick one to send kudos.
+                </ThemedText>
+              )}
+            </div>
             {activeTasks.length === 0 ? (
               <ThemedText type="caption">Nothing public right now.</ThemedText>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 {activeTasks.map((task) => (
                   <TaskItem key={task.id} task={task} onEncourage={() => setEncourageTask(task)} />
                 ))}
               </div>
             )}
-          </div>
-          <div className="flex flex-col gap-3">
-            <ThemedText type="subtitle" as="h3">
-              Gallery
-            </ThemedText>
-            <ProfileGallery userId={profile.id} />
-          </div>
-        </div>
+          </section>
+        </>
       ) : (
-        <div className="mt-12 flex flex-col items-center gap-2 py-16 text-center">
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
           <LockSimple size={28} className="text-muted-foreground" />
           <ThemedText type="subtitle" as="h3">
             This profile is private
