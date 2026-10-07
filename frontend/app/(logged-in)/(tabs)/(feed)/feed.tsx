@@ -40,7 +40,8 @@ import NotificationBadge from "@/components/NotificationBadge";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { HeartStraightIcon, Heart } from "phosphor-react-native";
 import { useAuth } from "@/hooks/useAuth";
-import { Handshake } from "phosphor-react-native";
+import { CheckCircle, Handshake } from "phosphor-react-native";
+import Reanimated, { FadeIn } from "react-native-reanimated";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import HintBubble from "@/components/ui/HintBubble";
@@ -710,9 +711,10 @@ export default function Feed() {
         const renderedCount = currentFeed.id === "feed" ? filteredFeedItems.length : sortedPosts.length;
         if (!hasMore && renderedCount > 0) {
             return (
-                <View style={styles.endOfFeedContainer}>
-                    <ThemedText style={styles.endOfFeedText}>You're all caught up</ThemedText>
-                </View>
+                <Reanimated.View entering={FadeIn.duration(240)} style={styles.endOfFeedContainer}>
+                    <CheckCircle size={20} color={ThemedColor.primary} weight="fill" />
+                    <ThemedText type="caption">You're all caught up</ThemedText>
+                </Reanimated.View>
             );
         }
 
@@ -994,6 +996,7 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         endOfFeedContainer: {
             paddingVertical: 32,
             alignItems: "center",
+            gap: 8,
         },
         endOfFeedText: {
             fontSize: 16,
