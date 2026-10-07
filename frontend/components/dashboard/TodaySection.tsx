@@ -4,7 +4,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasks } from "@/contexts/tasksContext";
 import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import SwipableTaskCard from "@/components/cards/SwipableTaskCard";
 import { Task } from "@/contexts/tasksContext";
 
@@ -32,8 +31,8 @@ const TodaySection = () => {
         <View style={styles.container}>
             <View style={styles.tasksContainer}>
                 {todayTasks.map((task, index) => (
-                    <SwipableTaskCard 
-                        key={task._id || index} 
+                    <SwipableTaskCard
+                        key={task._id || index}
                         redirect={true}
                         categoryId={task.categoryID}
                         task={task}

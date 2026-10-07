@@ -1,4 +1,4 @@
-import { CaretLeft, CalendarBlank, CaretRight, Link, PlusCircle } from "phosphor-react-native";
+import { CaretLeft, CalendarBlank, CaretRight, Link, PlusCircle, Users, Prohibit, Archive, Star, ArrowSquareOut, ArrowClockwise, Trash, SignOut } from "phosphor-react-native";
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -646,17 +646,17 @@ export default function Settings() {
                     <SettingsActionRow
                         label={`Phone Contacts${hasConsent === true ? ' — Enabled' : hasConsent === false ? ' — Disabled' : ''}`}
                         onPress={handleResetContactConsent}
-                        icon="people-outline"
+                        icon={Users}
                     />
                     <SettingsActionRow
                         label="Blocked Users"
                         onPress={() => router.push('/(logged-in)/(tabs)/(profile)/blocked-users')}
-                        icon="ban-outline"
+                        icon={Prohibit}
                     />
                     <SettingsActionRow
                         label="Released tasks"
                         onPress={() => router.push('/(logged-in)/(tabs)/(profile)/released')}
-                        icon="archive-outline"
+                        icon={Archive}
                     />
                 </SettingsSection>
 
@@ -668,7 +668,7 @@ export default function Settings() {
                     <SettingsActionRow
                         label="Rate Kindred"
                         onPress={handleRateKindred}
-                        icon="star-outline"
+                        icon={Star}
                     />
                 </SettingsSection>
 
@@ -676,13 +676,13 @@ export default function Settings() {
                     <SettingsActionRow
                         label="Privacy Policy"
                         onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
-                        icon="open-outline"
+                        icon={ArrowSquareOut}
                         iconColor={ThemedColor.text + '60'}
                     />
                     <SettingsActionRow
                         label="Terms & Conditions"
                         onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
-                        icon="open-outline"
+                        icon={ArrowSquareOut}
                         iconColor={ThemedColor.text + '60'}
                     />
                 </SettingsSection>
@@ -692,7 +692,7 @@ export default function Settings() {
                         <SettingsActionRow
                             label="Reset to first launch"
                             onPress={handleResetFirstLaunch}
-                            icon="refresh-outline"
+                            icon={ArrowClockwise}
                         />
                     </SettingsSection>
                 )}
@@ -701,13 +701,13 @@ export default function Settings() {
                     <SettingsActionRow
                         label="Delete Account"
                         onPress={handleDeleteAccount}
-                        icon="trash-outline"
+                        icon={Trash}
                         iconColor={ThemedColor.error}
                     />
                     <SettingsActionRow
                         label="Logout"
                         onPress={handleLogout}
-                        icon="log-out-outline"
+                        icon={SignOut}
                         iconColor={ThemedColor.error}
                     />
                 </SettingsSection>

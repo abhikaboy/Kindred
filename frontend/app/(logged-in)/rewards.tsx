@@ -1,4 +1,4 @@
-import { Export, Check, Copy } from "phosphor-react-native";
+import { Export, Check, Copy, DotsThreeCircle, ChartBar, Microphone, Image as ImageIcon, Medal, type IconProps } from "phosphor-react-native";
 import React, { useState } from "react";
 import { StyleSheet, View, ScrollView, Dimensions, Share, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,14 +7,13 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TouchableOpacity } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Clipboard from "expo-clipboard";
 import { useReferral } from "@/hooks/useReferral";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type RewardItem = {
     id: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: React.ComponentType<IconProps>;
     title: string;
     description: string;
     unlocked?: boolean;
@@ -23,31 +22,31 @@ type RewardItem = {
 const REWARDS_DATA: RewardItem[] = [
     {
         id: "circles",
-        icon: "ellipsis-horizontal-circle-outline",
+        icon: DotsThreeCircle,
         title: "2 Groups Credits",
         description: "Post to sub groups of your close friends instead of everyone on your friends list!",
     },
     {
         id: "analytics",
-        icon: "stats-chart-outline",
+        icon: ChartBar,
         title: "Productivity Analytics",
         description: "Track your productivity trends and gain insights into your task completion patterns over time.",
     },
     {
         id: "voice",
-        icon: "mic-outline",
+        icon: Microphone,
         title: "5 Voice Dump Credits",
         description: "Record 5 voice notes to quickly capture your thoughts and ideas on the go.",
     },
     {
         id: "giphy",
-        icon: "image-outline",
+        icon: ImageIcon,
         title: "Unlimited Giphy Usage",
         description: "Express yourself with unlimited access to GIFs and animated reactions in your posts.",
     },
     {
         id: "badge",
-        icon: "ribbon-outline",
+        icon: Medal,
         title: "Profile Badge",
         description: "Show off your supporter status with an exclusive badge displayed on your profile.",
     },
@@ -211,8 +210,7 @@ export default function Rewards() {
                                 },
                             ]}>
                             <View style={styles.rewardContent}>
-                                <Ionicons
-                                    name={reward.icon}
+                                <reward.icon
                                     size={32}
                                     color={ThemedColor.primary}
                                     style={styles.icon}

@@ -7,13 +7,12 @@ import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { CameraView, CameraType, FlashMode, useCameraPermissions } from "expo-camera";
 import { PermissionStatus } from "expo-camera";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { Ionicons } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router, useLocalSearchParams } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { assetsToPickedMedia } from "@/api/media";
-import { Play, X, Plus, Camera, Images, Users, CameraRotate } from "phosphor-react-native";
+import { Play, X, Plus, Camera, Images, Users, CameraRotate, Lightning } from "phosphor-react-native";
 import { QuietPressable } from "@/components/ui/QuietPressable";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
@@ -716,12 +715,9 @@ export default function Posting() {
                                             <Users size={32} color="#fff" />
                                         )}
                                     </TouchableOpacity>
-                                    <Ionicons
-                                        name={flash === "off" ? "flash-outline" : "flash"}
-                                        size={32}
-                                        color="#fff"
-                                        onPress={() => setFlash(flash === "off" ? "on" : "off")}
-                                    />
+                                    <QuietPressable onPress={() => setFlash(flash === "off" ? "on" : "off")} hitSlop={8}>
+                                        <Lightning size={32} color="#fff" weight={flash === "off" ? "regular" : "fill"} />
+                                    </QuietPressable>
                                     <View
                                         style={{
                                             borderRadius: 302,

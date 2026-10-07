@@ -1,4 +1,4 @@
-import { X, Check, Hourglass, StopCircle } from "phosphor-react-native";
+import { X, Check, Hourglass, StopCircle, ArrowClockwise, Stop, Microphone } from "phosphor-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Alert,
@@ -14,7 +14,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import {
     ENABLE_SPEECH_RECOGNITION,
     ExpoSpeechRecognitionModule,
@@ -1124,11 +1123,13 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                 }
                                 activeOpacity={0.85}
                                 style={[styles.micButton, { backgroundColor: ThemedColor.primary }]}>
-                                <Ionicons
-                                    name={transcription && !recognizing ? "reload" : recognizing ? "stop" : "mic"}
-                                    size={28}
-                                    color="#ffffff"
-                                />
+                                {transcription && !recognizing ? (
+                                    <ArrowClockwise size={28} color="#ffffff" weight="bold" />
+                                ) : recognizing ? (
+                                    <Stop size={28} color="#ffffff" weight="fill" />
+                                ) : (
+                                    <Microphone size={28} color="#ffffff" weight="fill" />
+                                )}
                             </TouchableOpacity>
                         </Animated.View>
                     </View>

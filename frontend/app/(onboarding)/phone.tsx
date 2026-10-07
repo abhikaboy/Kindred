@@ -15,7 +15,6 @@ import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useVerification } from "@/hooks/useVerification";
 import { useAuth } from "@/hooks/useAuth";
-import { Ionicons } from "@expo/vector-icons";
 import { OtpInput } from "react-native-otp-entry";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";

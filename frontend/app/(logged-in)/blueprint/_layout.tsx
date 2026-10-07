@@ -4,7 +4,6 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Ionicons } from "@expo/vector-icons";
 import Instructions from "@/components/blueprint/Instruction";
 import Details from "@/components/blueprint/Details";
 import Tasks from "@/components/blueprint/Tasks";
