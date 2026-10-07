@@ -261,19 +261,19 @@ const Search = (props: Props) => {
 
     // Autocomplete function with debouncing - only fetch, don't update main results
     const handleAutocomplete = useCallback(async (query: string) => {
-        console.log("handleAutocomplete called with query:", query);
+        console.log("🔍 handleAutocomplete called with query:", query);
         if (!query.trim() || query.trim().length < 2) {
-            console.log("Query too short, clearing autocomplete");
+            console.log("🔍 Query too short, clearing autocomplete");
             setAutocompleteSuggestions([]);
             setShowAutocomplete(false);
             return;
         }
 
         try {
-            console.log("Calling autocompleteProfiles API with query:", query);
+            console.log("🔍 Calling autocompleteProfiles API with query:", query);
             // Prioritize users for autocomplete
             const userResults = await autocompleteProfiles(query);
-            console.log("API returned userResults:", userResults);
+            console.log("🔍 API returned userResults:", userResults);
 
             // Convert to autocomplete suggestions format
             const suggestions: AutocompleteSuggestion[] = userResults.map((user) => ({
@@ -284,10 +284,10 @@ const Search = (props: Props) => {
                 type: "user" as const,
             }));
 
-            console.log("Autocomplete suggestions:", suggestions);
+            console.log("🔍 Autocomplete suggestions:", suggestions);
             setAutocompleteSuggestions(suggestions);
             setShowAutocomplete(true);
-            console.log("showAutocomplete set to true, suggestions count:", suggestions.length);
+            console.log("🔍 showAutocomplete set to true, suggestions count:", suggestions.length);
         } catch (error) {
             console.error("Autocomplete error:", error);
             setAutocompleteSuggestions([]);
@@ -297,7 +297,7 @@ const Search = (props: Props) => {
     // Full search function for submit
     // In your Search component (search.tsx), update handleSearch:
     const handleSearch = useCallback(async (query: string) => {
-        console.log("handleSearch called with query:", query);
+        console.log("🔎 handleSearch called with query:", query);
 
         if (!query.trim()) {
             dispatch({ type: "CLEAR_SEARCH" });
@@ -316,7 +316,7 @@ const Search = (props: Props) => {
                 autocompleteProfiles(query), // Using autocomplete which works
             ]);
 
-            console.log("Search Results:");
+            console.log("🔎 Search Results:");
             console.log("  - Blueprints found:", blueprintResults?.length || 0);
             console.log("  - Users found:", userResults?.length || 0);
 
@@ -332,7 +332,7 @@ const Search = (props: Props) => {
                 result_count: (blueprintResults?.length ?? 0) + (userResults?.length ?? 0),
             });
         } catch (error) {
-            console.error("Search error:", error);
+            console.error("🔎 Search error:", error);
             dispatch({ type: "SEARCH_ERROR", payload: error.message });
         }
     }, []);
@@ -436,7 +436,7 @@ const Search = (props: Props) => {
     const handleSubmit = useCallback(
         (searchText?: string) => {
             const textToSearch = searchText || searchTerm;
-            console.log("handleSubmit called with:", textToSearch);
+            console.log("🔎 handleSubmit called with:", textToSearch);
 
             // If we have a searchText parameter, we're selecting from recents
             if (searchText) {
@@ -455,11 +455,11 @@ const Search = (props: Props) => {
 
             // Only search if we have text
             if (textToSearch.trim()) {
-                console.log("Calling handleSearch from handleSubmit with:", textToSearch);
+                console.log("🔎 Calling handleSearch from handleSubmit with:", textToSearch);
                 setFocused(false);
                 handleSearch(textToSearch);
             } else {
-                console.log("No text to search");
+                console.log("🔎 No text to search");
             }
         },
         [handleSearch, searchTerm]

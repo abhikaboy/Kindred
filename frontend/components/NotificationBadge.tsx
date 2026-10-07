@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
+import { View, Text, StyleSheet } from 'react-native';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -18,9 +17,9 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ showZero =
 
     return (
         <View style={[styles.badge, { backgroundColor: themedColor.error }]}>
-            <ThemedText type="defaultSemiBold" style={[styles.badgeText, { color: 'white' }]}>
+            <Text style={[styles.badgeText, { color: 'white' }]}>
                 {unreadCount > 99 ? '99+' : unreadCount.toString()}
-            </ThemedText>
+            </Text>
         </View>
     );
 };
@@ -36,6 +35,7 @@ const styles = StyleSheet.create({
     },
     badgeText: {
         fontSize: 12,
+        fontWeight: 'bold',
         textAlign: 'center',
     },
 });

@@ -108,8 +108,8 @@ const UserInfoFollowRequest = ({ name, username, icon, userId, connectionID, onR
                         <ThemedText
                             numberOfLines={1}
                             ellipsizeMode="tail"
-                            style={{ fontSize: 14 }}
-                            type="defaultSemiBold">
+                            style={{ fontWeight: 500 }}
+                            type="smallerDefault">
                             {name}
                         </ThemedText>
                     </View>

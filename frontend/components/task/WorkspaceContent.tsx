@@ -392,8 +392,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             onLongPress={reopenWorkspaceSettings}
                                             activeOpacity={1}
                                         >
-                                            <ThemedText type="title">
-                                                {selected || "Good morning"}
+                                            <ThemedText type="title" style={styles.title}>
+                                                {selected || "Good Morning! ☀"}
                                             </ThemedText>
                                         </TouchableOpacity>
                                     </View>
@@ -585,6 +585,9 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
         paddingTop: 20,
         // paddingRight: HORIZONTAL_PADDING,
+    },
+    title: {
+        fontWeight: "600",
     },
     categoriesContainer: {
         gap: 16,

@@ -84,6 +84,8 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             gap: 8,
             padding: 12,
             borderRadius: 12,
+            borderWidth: 1,
+            borderColor: ThemedColor.tertiary,
             backgroundColor: ThemedColor.lightenedCard,
         },
         headerRow: {
@@ -98,7 +100,9 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             flexDirection: "row",
             alignItems: "center",
             gap: 12,
-            paddingVertical: 12,
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: ThemedColor.lightenedCard,
         },
         actionContent: { flex: 1 },
         iconCircle: {

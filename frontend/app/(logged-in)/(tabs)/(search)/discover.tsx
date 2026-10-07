@@ -1,9 +1,9 @@
-import { CaretLeft } from "phosphor-react-native";
 import React, { useCallback, useMemo } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Dimensions } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import ContactCard from "@/components/cards/ContactCard";
@@ -54,7 +54,7 @@ export default function DiscoverPeople() {
         <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerSide}>
-                    <CaretLeft  size={24} color={ThemedColor.text} />
+                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={styles.headerTitle}>
                     Discover People

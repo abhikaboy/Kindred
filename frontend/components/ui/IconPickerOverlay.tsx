@@ -1,4 +1,3 @@
-import { X, MagnifyingGlass } from "phosphor-react-native";
 import React, { memo, useRef, useEffect, useState, useCallback } from "react";
 import {
     Animated,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import * as PhosphorIcons from "phosphor-react-native";
 import Popover, { Rect } from "react-native-popover-view";
 
@@ -269,7 +269,7 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
                             onPress={handleClose}
                             hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}>
                             <View style={styles.closeButtonInner}>
-                                <X  size={20} color="#ffffff" />
+                                <Ionicons name="close" size={20} color="#ffffff" />
                             </View>
                         </TouchableOpacity>
                     </Animated.View>
@@ -288,7 +288,7 @@ export const IconPickerOverlay: React.FC<IconPickerOverlayProps> = ({
                         pointerEvents="auto">
                         {/* Search bar */}
                         <View style={styles.searchContainer}>
-                            <MagnifyingGlass  size={16} color="rgba(255,255,255,0.5)" />
+                            <Ionicons name="search" size={16} color="rgba(255,255,255,0.5)" />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder="Search icons..."

@@ -96,7 +96,7 @@ const BetterTogetherCard = ({ onSyncContacts, isLoadingContacts, isFindingFriend
 
     return (
         <View style={rootStyles.container}>
-            <ThemedText type="subtitle" style={[rootStyles.heading, { fontSize: 24 }]}>
+            <ThemedText type="subtitle" style={[rootStyles.heading, { fontSize: 24, fontWeight: 500 }]}>
                 Find Your People
             </ThemedText>
             <ThemedText type="lightBody" style={rootStyles.subtitle}>

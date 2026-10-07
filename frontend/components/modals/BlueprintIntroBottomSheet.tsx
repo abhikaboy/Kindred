@@ -67,8 +67,8 @@ export default function BlueprintIntroBottomSheet({
             <BottomSheetView style={styles.container}>
                 {/* Title */}
                 <View style={styles.titleContainer}>
-                    <ThemedText type="titleFraunces" style={styles.title}>Introducing Blueprints</ThemedText>
-                    <ThemedText type="default" style={styles.subtitle}>Shareable to-do lists for everyone</ThemedText>
+                    <ThemedText style={styles.title}>Introducing Blueprints</ThemedText>
+                    <ThemedText style={styles.subtitle}>Shareable to-do lists for everyone</ThemedText>
                 </View>
 
                 {/* Image Container */}
@@ -85,24 +85,24 @@ export default function BlueprintIntroBottomSheet({
                 {/* Description */}
                 <View style={styles.descriptionContainer}>
                     <ThemedText type="subtitle_subtle">WHAT ARE BLUEPRINTS?</ThemedText>
-                    <ThemedText type="default" style={styles.description}>
-                        Blueprints are <ThemedText type="defaultSemiBold" style={styles.bold}>static, shareable to-do lists</ThemedText> that anyone can subscribe to and use as their own!
+                    <ThemedText style={styles.description}>
+                        Blueprints are <ThemedText style={styles.bold}>static, shareable to-do lists</ThemedText> that anyone can subscribe to and use as their own!
                     </ThemedText>
                 </View>
 
                 {/* Features */}
                 <View style={styles.featuresContainer}>
                     <View style={styles.featureRow}>
-                        <ThemedText type="defaultSemiBold" style={styles.bullet}>•</ThemedText>
-                        <ThemedText type="default" style={styles.featureText}>Subscribe to others' lists and make them yours</ThemedText>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Subscribe to others' lists and make them yours</ThemedText>
                     </View>
                     <View style={styles.featureRow}>
-                        <ThemedText type="defaultSemiBold" style={styles.bullet}>•</ThemedText>
-                        <ThemedText type="default" style={styles.featureText}>Create your own and share with the community</ThemedText>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Create your own and share with the community</ThemedText>
                     </View>
                     <View style={styles.featureRow}>
-                        <ThemedText type="defaultSemiBold" style={styles.bullet}>•</ThemedText>
-                        <ThemedText type="default" style={styles.featureText}>Build accountability through shared goals</ThemedText>
+                        <ThemedText style={styles.bullet}>•</ThemedText>
+                        <ThemedText style={styles.featureText}>Build accountability through shared goals</ThemedText>
                     </View>
                 </View>
 
@@ -135,7 +135,9 @@ const stylesheet = (ThemedColor: any) =>
         },
         title: {
             fontSize: 28,
+            fontWeight: "700",
             color: ThemedColor.text,
+            fontFamily: "Fraunces",
             letterSpacing: -1,
             textAlign: "center",
             marginBottom: 4,
@@ -143,6 +145,7 @@ const stylesheet = (ThemedColor: any) =>
         subtitle: {
             fontSize: 16,
             color: ThemedColor.caption,
+            fontFamily: "Outfit",
             textAlign: "center",
         },
         imageContainer: {
@@ -165,10 +168,12 @@ const stylesheet = (ThemedColor: any) =>
         description: {
             fontSize: 15,
             color: ThemedColor.text,
+            fontFamily: "Outfit",
             lineHeight: 22,
             marginTop: 8,
         },
         bold: {
+            fontWeight: "600",
             color: ThemedColor.primary,
         },
         featuresContainer: {
@@ -183,12 +188,14 @@ const stylesheet = (ThemedColor: any) =>
         bullet: {
             fontSize: 18,
             color: ThemedColor.primary,
+            fontWeight: "bold",
             marginTop: 2,
         },
         featureText: {
             flex: 1,
             fontSize: 15,
             color: ThemedColor.text,
+            fontFamily: "Outfit",
             lineHeight: 22,
         },
         button: {

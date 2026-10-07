@@ -394,6 +394,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         benefitsTitle: {
             fontSize: 16,
             color: ThemedColor.primary,
+            fontWeight: "500",
         },
         benefitsDescription: {
             fontSize: 16,
@@ -418,6 +419,8 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         balanceLabel: {
             fontSize: 13,
             opacity: 0.6,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
         },
         balanceRow: {
             flexDirection: "row",
@@ -436,6 +439,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         },
         balanceAmount: {
             fontSize: 28,
+            fontWeight: "700",
         },
         balanceType: {
             fontSize: 12,
@@ -476,6 +480,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         },
         costText: {
             fontSize: 12,
+            fontWeight: "600",
         },
         claimButton: {
             marginTop: 4,
@@ -483,6 +488,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, insets: any
         },
         claimButtonText: {
             fontSize: 13,
+            fontWeight: "600",
         },
         disabledClaimButton: {
             opacity: 0.5,

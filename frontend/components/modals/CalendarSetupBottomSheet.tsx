@@ -1,4 +1,3 @@
-import { Check } from "phosphor-react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, TouchableOpacity, Switch, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
 import { getConnectionCalendars, setupCalendarWorkspaces, disconnectCalendar, CalendarInfo } from "@/api/calendar";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
@@ -145,7 +145,7 @@ export default function CalendarSetupBottomSheet({
                                 borderWidth: isSelected ? 0 : 1.5,
                             },
                         ]}>
-                        {isSelected && <Check  size={18} color="#FFFFFF" />}
+                        {isSelected && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
                     </View>
                 </View>
             </TouchableOpacity>

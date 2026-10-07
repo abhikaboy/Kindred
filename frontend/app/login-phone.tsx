@@ -1,13 +1,4 @@
-import { EyeSlash, Eye } from "phosphor-react-native";
-import {
-    View,
-    Dimensions,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    TouchableOpacity,
-} from "react-native";
+import { View, Dimensions, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from "react-native";
 import React, { useState, useEffect } from "react";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { useRouter } from "expo-router";
@@ -22,6 +13,7 @@ import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics
 import { useVerification } from "@/hooks/useVerification";
 import { normalizeE164 } from "@/utils/phone";
 import { OtpInput } from "react-native-otp-entry";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("screen");
 
@@ -111,11 +103,9 @@ const LoginPhone = () => {
             } else {
                 // Surface the API error message if it's descriptive, otherwise use fallback
                 const msg = err?.message;
-                setError(
-                    msg && msg !== "INVALID_OTP" && msg !== "ACCOUNT_NOT_FOUND"
-                        ? msg
-                        : "Login failed. Please try again."
-                );
+                setError(msg && msg !== "INVALID_OTP" && msg !== "ACCOUNT_NOT_FOUND"
+                    ? msg
+                    : "Login failed. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -140,9 +130,9 @@ const LoginPhone = () => {
             } else {
                 // Surface the API error message if descriptive
                 const msg = err?.message;
-                setError(
-                    msg && msg !== "ACCOUNT_NOT_FOUND" ? msg : "Invalid phone number or password. Please try again."
-                );
+                setError(msg && msg !== "ACCOUNT_NOT_FOUND"
+                    ? msg
+                    : "Invalid phone number or password. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -192,7 +182,10 @@ const LoginPhone = () => {
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ flex: 1, backgroundColor: ThemedColor.background }}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}>
                 <View style={[styles.container, { paddingTop: insets.top }]}>
                     <OnboardingBackground variant="default" />
 
@@ -201,8 +194,9 @@ const LoginPhone = () => {
                             testID="back-btn"
                             onPress={handleBack}
                             style={styles.backButton}
-                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <ThemedText type="defaultSemiBold" style={styles.backButtonText}>← Back</ThemedText>
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                            <ThemedText style={styles.backButtonText}>← Back</ThemedText>
                         </TouchableOpacity>
 
                         <ThemedText type="titleFraunces" style={styles.title}>
@@ -217,7 +211,7 @@ const LoginPhone = () => {
                                         onChangeText={setPhoneNumber}
                                         placeholder="(555) 123-4567"
                                     />
-                                    <ThemedText type="defaultSemiBold" style={styles.helperText}>
+                                    <ThemedText style={styles.helperText}>
                                         {loginMode === "otp"
                                             ? "We'll send you a verification code"
                                             : "Enter the phone number for your account"}
@@ -226,17 +220,16 @@ const LoginPhone = () => {
 
                                 <PrimaryButton
                                     testID="send-code-btn"
-                                    title={loginMode === "otp" ? (sendingOTP ? "Sending..." : "Send Code") : "Continue"}
+                                    title={loginMode === "otp"
+                                        ? (sendingOTP ? "Sending..." : "Send Code")
+                                        : "Continue"}
                                     onPress={handleContinuePhone}
                                     disabled={loading || sendingOTP || !phoneNumber}
                                     style={styles.continueButton}
                                 />
 
-                                <TouchableOpacity
-                                    testID="toggle-login-mode"
-                                    onPress={toggleLoginMode}
-                                    style={styles.toggleModeButton}>
-                                    <ThemedText type="defaultSemiBold" style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
+                                <TouchableOpacity testID="toggle-login-mode" onPress={toggleLoginMode} style={styles.toggleModeButton}>
+                                    <ThemedText style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
                                         {loginMode === "otp"
                                             ? "Use a password instead"
                                             : "Use a verification code instead"}
@@ -248,7 +241,7 @@ const LoginPhone = () => {
                         {step === "otp" && (
                             <>
                                 <View style={styles.otpContainer}>
-                                    <ThemedText type="defaultSemiBold" style={styles.subtitleText}>
+                                    <ThemedText style={styles.subtitleText}>
                                         Enter the 4-digit code sent to your phone
                                     </ThemedText>
 
@@ -265,38 +258,39 @@ const LoginPhone = () => {
                                                 backgroundColor: ThemedColor.lightened,
                                                 borderRadius: 16,
                                                 width: width * 0.18,
-                                                height: width * 0.2,
+                                                height: width * 0.20,
                                                 borderWidth: 2,
-                                                borderColor: "transparent",
+                                                borderColor: 'transparent',
                                             },
                                             pinCodeTextStyle: {
                                                 color: ThemedColor.text,
                                                 fontSize: 28,
-                                                fontFamily: "Outfit",
+                                                fontFamily: 'Outfit',
+                                                fontWeight: '600',
                                             },
                                             focusedPinCodeContainerStyle: {
                                                 borderColor: ThemedColor.tint,
                                                 borderWidth: 2,
                                             },
                                             filledPinCodeContainerStyle: {
-                                                borderColor: "transparent",
+                                                borderColor: 'transparent',
                                             },
                                         }}
                                         disabled={loading}
                                     />
 
                                     <View style={styles.resendContainer}>
-                                        <ThemedText type="caption" style={[styles.resendText, { color: ThemedColor.caption }]}>
-                                            Didn't receive a code?{" "}
+                                        <ThemedText style={[styles.resendText, { color: ThemedColor.caption }]}>
+                                            Didn't receive a code?{' '}
                                         </ThemedText>
                                         {canResend ? (
                                             <TouchableOpacity onPress={handleResend} disabled={sendingOTP}>
-                                                <ThemedText type="defaultSemiBold" style={[styles.resendButton, { color: ThemedColor.tint }]}>
+                                                <ThemedText style={[styles.resendButton, { color: ThemedColor.tint }]}>
                                                     Resend
                                                 </ThemedText>
                                             </TouchableOpacity>
                                         ) : (
-                                            <ThemedText type="caption" style={[styles.resendTimer, { color: ThemedColor.caption }]}>
+                                            <ThemedText style={[styles.resendTimer, { color: ThemedColor.caption }]}>
                                                 Resend in {resendTimer}s
                                             </ThemedText>
                                         )}
@@ -329,11 +323,11 @@ const LoginPhone = () => {
                                         autoFocus
                                         suffix={
                                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                                {showPassword ? (
-                                                    <EyeSlash size={22} color={ThemedColor.caption} />
-                                                ) : (
-                                                    <Eye size={22} color={ThemedColor.caption} />
-                                                )}
+                                                <Ionicons
+                                                    name={showPassword ? "eye-off" : "eye"}
+                                                    size={22}
+                                                    color={ThemedColor.caption}
+                                                />
                                             </TouchableOpacity>
                                         }
                                     />
@@ -351,7 +345,9 @@ const LoginPhone = () => {
 
                         {(error || sendOTPError) && (
                             <View style={styles.errorContainer}>
-                                <ThemedText type="defaultSemiBold" style={styles.errorText}>{error || sendOTPError}</ThemedText>
+                                <ThemedText style={styles.errorText}>
+                                    {error || sendOTPError}
+                                </ThemedText>
                             </View>
                         )}
                     </View>
@@ -375,19 +371,24 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginBottom: 8,
-        alignSelf: "flex-start",
+        alignSelf: 'flex-start',
     },
     backButtonText: {
         fontSize: 16,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
         opacity: 0.7,
     },
     title: {
         fontSize: 32,
+        fontWeight: "600",
         letterSpacing: -1,
         lineHeight: 38,
     },
     subtitleText: {
         fontSize: 16,
+        fontFamily: 'Outfit',
+        fontWeight: '400',
         opacity: 0.6,
         marginBottom: 24,
     },
@@ -397,30 +398,35 @@ const styles = StyleSheet.create({
     },
     helperText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
         opacity: 0.6,
         marginTop: 8,
     },
     otpContainer: {
-        alignItems: "flex-start",
+        alignItems: 'flex-start',
         gap: 16,
-        width: "100%",
+        width: '100%',
     },
     otpInputContainer: {
         gap: 8,
     },
     resendContainer: {
-        flexDirection: "row",
-        alignItems: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
         marginTop: 8,
     },
     resendText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
     },
     resendButton: {
         fontSize: 14,
+        fontFamily: 'Outfit',
+        fontWeight: '600',
     },
     resendTimer: {
         fontSize: 14,
+        fontFamily: 'Outfit',
     },
     continueButton: {
         width: "100%",
@@ -429,19 +435,23 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     toggleModeButton: {
-        alignItems: "center",
+        alignItems: 'center',
         marginTop: -8,
     },
     toggleModeText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
     },
     errorContainer: {
         width: "100%",
     },
     errorText: {
         fontSize: 14,
-        color: "#ff3b30",
-        textAlign: "center",
+        fontFamily: "Outfit",
+        fontWeight: "500",
+        color: '#ff3b30',
+        textAlign: 'center',
     },
 });
 

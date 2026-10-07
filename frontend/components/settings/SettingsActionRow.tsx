@@ -1,18 +1,18 @@
-import { CaretRight, type IconProps } from "phosphor-react-native";
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 type Props = {
     label: string;
     onPress: () => void;
-    icon?: React.ComponentType<IconProps>;
+    icon?: keyof typeof Ionicons.glyphMap;
     iconColor?: string;
     showChevron?: boolean;
 };
 
-export const SettingsActionRow = ({ label, onPress, icon: Icon, iconColor, showChevron = false }: Props) => {
+export const SettingsActionRow = ({ label, onPress, icon, iconColor, showChevron = false }: Props) => {
     const ThemedColor = useThemeColor();
     const finalIconColor = iconColor || ThemedColor.text;
 
@@ -26,8 +26,8 @@ export const SettingsActionRow = ({ label, onPress, icon: Icon, iconColor, showC
                 <ThemedText type="default">
                     {label}
                 </ThemedText>
-                {Icon && <Icon size={24} color={finalIconColor} />}
-                {showChevron && <CaretRight  size={20} color={ThemedColor.text + '60'} />}
+                {icon && <Ionicons name={icon} size={24} color={finalIconColor} />}
+                {showChevron && <Ionicons name="chevron-forward" size={20} color={ThemedColor.text + '60'} />}
             </View>
         </TouchableOpacity>
     );

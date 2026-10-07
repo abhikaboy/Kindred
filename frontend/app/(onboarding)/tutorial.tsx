@@ -772,7 +772,7 @@ export default function TutorialOnboarding() {
                                     ],
                                 },
                             ]}>
-                            <ThemedText type="title">
+                            <ThemedText type="title" style={{ fontWeight: "600" }}>
                                 {DISPLAY_WORKSPACE}
                             </ThemedText>
                         </Animated.View>
@@ -878,7 +878,7 @@ export default function TutorialOnboarding() {
                                 <PhaseProgress label="Share it" current={0} />
                             )}
                         </View>
-                        <ThemedText type="title" style={{ marginBottom: 8 }}>
+                        <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 8 }}>
                             Meet your daily rings
                         </ThemedText>
                         <ThemedText type="default">
@@ -958,7 +958,7 @@ export default function TutorialOnboarding() {
                 {/* Share step — "posted" phase shows the share ring closing */}
                 {step === STEP_SHARE && sharePhase === "posted" && (
                     <View style={styles.ringsStep}>
-                        <ThemedText type="title" style={{ marginBottom: 6 }}>
+                        <ThemedText type="title" style={{ fontWeight: "600", marginBottom: 6 }}>
                             Share ring closed!
                         </ThemedText>
                         <ThemedText type="default" style={{ color: ThemedColor.caption }}>
@@ -984,10 +984,10 @@ export default function TutorialOnboarding() {
                         transform: [{ translateY: promptSlide }],
                         backgroundColor: ThemedColor.lightened,
                     }]}>
-                        <ThemedText type="fancyFrauncesSubheading" style={[styles.promptTitle, { color: ThemedColor.text }]}>
+                        <ThemedText style={[styles.promptTitle, { color: ThemedColor.text }]}>
                             {prompts[step].title}
                         </ThemedText>
-                        <ThemedText type="defaultSemiBold" style={[styles.promptSubtitle, { color: ThemedColor.caption }]}>
+                        <ThemedText style={[styles.promptSubtitle, { color: ThemedColor.caption }]}>
                             {prompts[step].subtitle}
                         </ThemedText>
 
@@ -1430,10 +1430,14 @@ const styles = StyleSheet.create({
     },
     promptTitle: {
         fontSize: 24,
+        fontFamily: "Fraunces",
+        fontWeight: "600",
         letterSpacing: -0.5,
     },
     promptSubtitle: {
         fontSize: 15,
+        fontFamily: "Outfit",
+        fontWeight: "400",
         lineHeight: 21,
     },
 

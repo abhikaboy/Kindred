@@ -110,9 +110,9 @@ function SwitcherRow({ label, icon, onPress, count, selected, tint }: RowProps) 
             ]}>
             <View style={styles.iconWrap}>{icon}</View>
             <ThemedText
-                type={tint ? "defaultSemiBold" : "default"}
+                type="default"
                 numberOfLines={1}
-                style={[styles.label, tint ? { color: "#FFFFFF" } : undefined]}>
+                style={[styles.label, tint ? { color: "#FFFFFF", fontWeight: "600" } : undefined]}>
                 {label}
             </ThemedText>
             {count !== undefined && (

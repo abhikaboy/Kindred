@@ -1,7 +1,7 @@
-import { WarningCircle } from "phosphor-react-native";
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 
 type Props = {
@@ -11,7 +11,7 @@ type Props = {
 export const TaskGenerationError = ({ message }: Props) => {
     return (
         <View style={styles.errorContainer}>
-            <WarningCircle weight="fill" size={20} color="#ef4444" style={styles.errorIcon} />
+            <Ionicons name="alert-circle" size={20} color="#ef4444" style={styles.errorIcon} />
             <ThemedText style={styles.errorText}>
                 {message}
             </ThemedText>
@@ -35,3 +35,4 @@ const styles = StyleSheet.create({
         color: "#ef4444",
     },
 });
+

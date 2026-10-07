@@ -34,7 +34,7 @@ export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
                             borderColor: ThemedColor.tertiary,
                         },
                     ]}>
-                    <ThemedText type="defaultSemiBold" style={styles.friendsText}>
+                    <ThemedText type="lightBody" style={styles.friendsText}>
                         {friendsCount} Friends
                     </ThemedText>
                 </TouchableOpacity>
@@ -71,5 +71,6 @@ const styles = StyleSheet.create({
     friendsText: {
         width: "100%",
         textAlign: "center",
+        fontWeight: "500",
     },
 });

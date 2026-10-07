@@ -178,8 +178,8 @@ export default function WorkspaceSelectionBottomSheet({
             <BottomSheetView style={styles.container}>
                 {/* Title */}
                 <View style={styles.titleContainer}>
-                    <ThemedText type="titleFraunces" style={styles.title}>Let's get started with a few workspaces</ThemedText>
-                    <ThemedText type="default" style={styles.subtitle}>
+                    <ThemedText style={styles.title}>Let's get started with a few workspaces</ThemedText>
+                    <ThemedText style={styles.subtitle}>
                         Select which workspaces you'd like to start off with
                     </ThemedText>
                 </View>
@@ -205,7 +205,7 @@ export default function WorkspaceSelectionBottomSheet({
                                     activeOpacity={0.7}>
                                     <View style={styles.cardRow}>
                                         {Icon && <Icon size={22} color={workspace.color} weight="fill" />}
-                                        <ThemedText type="defaultSemiBold" style={styles.workspaceText}>{workspace.name}</ThemedText>
+                                        <ThemedText style={styles.workspaceText}>{workspace.name}</ThemedText>
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -216,7 +216,7 @@ export default function WorkspaceSelectionBottomSheet({
                 {/* Buttons */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-                        <ThemedText type="defaultSemiBold" style={styles.skipText}>Skip for now</ThemedText>
+                        <ThemedText style={styles.skipText}>Skip for now</ThemedText>
                     </TouchableOpacity>
                     <PrimaryButton
                         title={isCreating ? "Creating..." : "Continue"}
@@ -253,13 +253,16 @@ const stylesheet = (ThemedColor: any) =>
         },
         title: {
             fontSize: 32,
+            fontWeight: "600",
             color: ThemedColor.text,
+            fontFamily: "Fraunces",
             letterSpacing: -1.28,
             lineHeight: 38.4,
         },
         subtitle: {
             fontSize: 16,
             color: ThemedColor.text,
+            fontFamily: "Outfit",
             lineHeight: 24,
         },
         scrollView: {
@@ -305,6 +308,7 @@ const stylesheet = (ThemedColor: any) =>
         workspaceText: {
             fontSize: 16,
             color: ThemedColor.text,
+            fontFamily: "Outfit",
         },
         buttonContainer: {
             gap: 12,
@@ -316,6 +320,7 @@ const stylesheet = (ThemedColor: any) =>
         skipText: {
             fontSize: 16,
             color: ThemedColor.caption,
+            fontFamily: "Outfit",
         },
         button: {
             borderRadius: 12,

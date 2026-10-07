@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     },
     suggestion: { color: ON_DARK },
     suggestionReason: { color: ON_DARK_MUTED },
-    starter: { color: ON_DARK_MUTED, opacity: 0.8 },
+    starter: { color: ON_DARK_MUTED, opacity: 0.8, fontFamily: "OutfitLight" },
     hint: { color: ON_DARK_MUTED },
     // No card: the text sits straight on the gradient, like a heading being written
     composer: {

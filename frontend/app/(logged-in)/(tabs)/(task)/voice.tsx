@@ -1,8 +1,8 @@
-import { CaretLeft, Info, Stop, Microphone } from "phosphor-react-native";
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
@@ -148,7 +148,7 @@ const VoiceDump = (props: Props) => {
                     newCategories: JSON.stringify(result.newCategories || []),
                     categoriesCreated: result.categoriesCreated,
                     tasksCreated: result.tasksCreated,
-                },
+                }
             });
         } catch (err) {
             // Handle different error types
@@ -179,8 +179,10 @@ const VoiceDump = (props: Props) => {
                 contentContainerStyle={styles.scrollContent}
                 style={styles.container}>
                 {/* Back Button */}
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <CaretLeft size={24} color={ThemedColor.text} />
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
                 {/* Header */}
@@ -228,16 +230,22 @@ const VoiceDump = (props: Props) => {
                             NATURAL LANGUAGE CREDITS
                         </ThemedText>
                         <View style={styles.creditsValue}>
-                            <ThemedText type="defaultSemiBold">
+                            <ThemedText type="default" style={{ fontWeight: '600' }}>
                                 {credits.naturalLanguage}
                             </ThemedText>
                             <TouchableOpacity
                                 onPress={() => {
-                                    console.log("Info icon pressed, opening sheet");
+                                    console.log('Info icon pressed, opening sheet');
                                     setShowCreditsSheet(true);
                                 }}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                <Info size={16} color={ThemedColor.caption} style={{ marginLeft: 4 }} />
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <Ionicons
+                                    name="information-circle-outline"
+                                    size={16}
+                                    color={ThemedColor.caption}
+                                    style={{ marginLeft: 4 }}
+                                />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -245,7 +253,9 @@ const VoiceDump = (props: Props) => {
 
                 {/* Microphone Button Section */}
                 <View style={styles.microphoneSection}>
-                    <ThemedText type="default" style={[styles.tapToSpeakText, { color: ThemedColor.caption }]}>
+                    <ThemedText
+                        type="default"
+                        style={[styles.tapToSpeakText, { color: ThemedColor.caption }]}>
                         {recognizing ? "Listening..." : "Tap to Speak"}
                     </ThemedText>
                     <TouchableOpacity
@@ -255,23 +265,23 @@ const VoiceDump = (props: Props) => {
                             styles.microphoneButton,
                             transcription && !recognizing
                                 ? {
-                                      backgroundColor: "transparent",
-                                      borderColor: ThemedColor.primary,
-                                      borderWidth: 2,
-                                      transform: [{ scale: 1 }],
-                                  }
+                                    backgroundColor: "transparent",
+                                    borderColor: ThemedColor.primary,
+                                    borderWidth: 2,
+                                    transform: [{ scale: 1 }],
+                                }
                                 : {
-                                      backgroundColor: recognizing ? ThemedColor.error : ThemedColor.primary,
-                                      borderColor: "transparent",
-                                      borderWidth: 0,
-                                      transform: recognizing ? [{ scale: 1.1 }] : [{ scale: 1 }],
-                                  },
+                                    backgroundColor: recognizing ? ThemedColor.error : ThemedColor.primary,
+                                    borderColor: "transparent",
+                                    borderWidth: 0,
+                                    transform: recognizing ? [{ scale: 1.1 }] : [{ scale: 1 }],
+                                }
                         ]}>
-                        {recognizing ? (
-                            <Stop weight="fill" size={32} color="#ffffff" />
-                        ) : (
-                            <Microphone weight="fill" size={32} color="#ffffff" />
-                        )}
+                        <Ionicons
+                            name={recognizing ? "stop" : "mic"}
+                            size={32}
+                            color="#ffffff"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -290,7 +300,7 @@ const VoiceDump = (props: Props) => {
             <CreditsInfoSheet
                 visible={showCreditsSheet}
                 onClose={() => {
-                    console.log("Closing sheet");
+                    console.log('Closing sheet');
                     setShowCreditsSheet(false);
                 }}
                 currentCredits={credits?.naturalLanguage ?? 0}
@@ -318,7 +328,9 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         gap: 8,
     },
-    title: {},
+    title: {
+        fontWeight: "600",
+    },
     creditsContainer: {
         flexDirection: "row",
         alignItems: "center",
@@ -328,6 +340,7 @@ const styles = StyleSheet.create({
     },
     creditsLabel: {
         fontSize: 11,
+        fontWeight: "600",
     },
     creditsValue: {
         flexDirection: "row",
@@ -337,7 +350,9 @@ const styles = StyleSheet.create({
         gap: 16,
         marginBottom: 24,
     },
-    previewLabel: {},
+    previewLabel: {
+        fontWeight: "400",
+    },
     transcriptionText: {
         lineHeight: 24,
     },

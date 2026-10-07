@@ -1,9 +1,9 @@
-import { Check, CalendarBlank } from "phosphor-react-native";
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity, FlatList, ScrollView } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import DefaultModal from "./DefaultModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
 
 interface TemplateWithCategory {
     id: string;
@@ -100,7 +100,7 @@ export default function RecurringTasksSelectionModal({
                                 borderWidth: isSelected ? 0 : 1.5,
                             },
                         ]}>
-                        {isSelected && <Check  size={18} color="#FFFFFF" />}
+                        {isSelected && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -119,7 +119,7 @@ export default function RecurringTasksSelectionModal({
 
                 {templates.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <CalendarBlank  size={48} color={ThemedColor.caption} />
+                        <Ionicons name="calendar-outline" size={48} color={ThemedColor.caption} />
                         <ThemedText type="default" style={{ color: ThemedColor.caption, marginTop: 16 }}>
                             No recurring tasks found
                         </ThemedText>
@@ -220,3 +220,4 @@ const styles = StyleSheet.create({
         // backgroundColor set dynamically
     },
 });
+

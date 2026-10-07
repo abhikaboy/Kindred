@@ -19,12 +19,13 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { Ionicons } from "@expo/vector-icons";
 import PostCardHeader from "@/components/cards/PostCardHeader";
 import PostCardMedia from "@/components/cards/PostCardMedia";
 import PostCardFooter from "@/components/cards/PostCardFooter";
 import { usePostComposer } from "@/contexts/PostComposerContext";
 import SongPickerModal from "@/components/profile/song/SongPickerModal";
-import { MusicNote, CaretRight, ArrowLeft } from "phosphor-react-native";
+import { MusicNote, CaretRight } from "phosphor-react-native";
 import { getEncouragementsByTask } from "@/api/encouragement";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import type { Href } from "expo-router";
@@ -259,7 +260,7 @@ export default function Caption() {
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}>
-                            <ArrowLeft  size={20} color={ThemedColor.text} />
+                            <Ionicons name="arrow-back" size={20} color={ThemedColor.text} />
                         </TouchableOpacity>
                         <ThemedText type="subtitle" style={{ marginLeft: 12 }}>
                             New Post
@@ -376,7 +377,7 @@ export default function Caption() {
                                             ? formatHandle(taggedUsers[0].handle)
                                             : `${taggedUsers.length} tagged`}
                                 </ThemedText>
-                                <CaretRight  size={16} color={ThemedColor.primary} />
+                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
                             </View>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -396,7 +397,7 @@ export default function Caption() {
                             <ThemedText>Who can see this post?</ThemedText>
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                                 <ThemedText style={{ color: ThemedColor.primary }}>{groupDisplayText}</ThemedText>
-                                <CaretRight  size={16} color={ThemedColor.primary} />
+                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
                             </View>
                         </TouchableOpacity>
                         <PrimaryButton

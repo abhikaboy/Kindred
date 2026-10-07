@@ -136,10 +136,10 @@ const CalendarOnboarding = () => {
                     opacity: headingFade,
                     transform: [{ translateY: headingSlide }],
                 }]}>
-                    <ThemedText type="titleFraunces" style={styles.titleText}>
+                    <ThemedText style={styles.titleText}>
                         Connect your calendar
                     </ThemedText>
-                    <ThemedText type="default" style={[styles.subtitleText, { color: ThemedColor.text }]}>
+                    <ThemedText style={[styles.subtitleText, { color: ThemedColor.text }]}>
                         See your schedule alongside your tasks so nothing falls through the cracks
                     </ThemedText>
                 </Animated.View>
@@ -151,7 +151,7 @@ const CalendarOnboarding = () => {
                     borderColor: ThemedColor.primary + "20",
                 }]}>
                     <CalendarBlank size={24} color={ThemedColor.primary} weight="fill" />
-                    <ThemedText type="smallerDefault" style={[styles.statText, { color: ThemedColor.text }]}>
+                    <ThemedText style={[styles.statText, { color: ThemedColor.text }]}>
                         Kindred users who connect their calendar complete their tasks 3x as often
                     </ThemedText>
                 </Animated.View>
@@ -169,7 +169,7 @@ const CalendarOnboarding = () => {
                     disabled={loading}
                 />
                 <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-                    <ThemedText type="defaultSemiBold" style={[styles.skipText, { color: ThemedColor.caption }]}>
+                    <ThemedText style={[styles.skipText, { color: ThemedColor.caption }]}>
                         Skip for now
                     </ThemedText>
                 </TouchableOpacity>
@@ -228,12 +228,16 @@ const styles = StyleSheet.create({
     },
     titleText: {
         fontSize: Math.min(screenWidth * 0.085, 32),
+        fontFamily: "Fraunces",
+        fontWeight: "600",
         lineHeight: Math.min(screenWidth * 0.102, 38),
         letterSpacing: -1,
         textAlign: "left",
     },
     subtitleText: {
         fontSize: 16,
+        fontFamily: "Outfit",
+        fontWeight: "400",
         opacity: 0.6,
         textAlign: "left",
         lineHeight: 22,
@@ -248,9 +252,13 @@ const styles = StyleSheet.create({
     },
     statNumber: {
         fontSize: 28,
+        fontFamily: "Outfit",
+        fontWeight: "700",
     },
     statText: {
         fontSize: 14,
+        fontFamily: "Outfit",
+        fontWeight: "400",
         opacity: 0.7,
         flex: 1,
         lineHeight: 20,
@@ -267,6 +275,8 @@ const styles = StyleSheet.create({
     },
     skipText: {
         fontSize: 16,
+        fontFamily: "Outfit",
+        fontWeight: "500",
     },
 });
 

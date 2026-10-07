@@ -32,15 +32,15 @@ const StatItem: React.FC<StatItemProps> = ({ value, label, isSelected, isDimmed,
             activeOpacity={0.7}
         >
             <ThemedText
-                type={isSelected ? "defaultSemiBold" : "caption"}
+                type="caption"
                 style={[
                     styles.label,
-                    isSelected && { color: ThemedColor.primary },
+                    isSelected && { color: ThemedColor.primary, fontWeight: "600" },
                 ]}
             >
                 {label} {isSelected ? "▾" : "▸"}
             </ThemedText>
-            <ThemedText type="defaultSemiBold"
+            <ThemedText
                 style={[styles.number, { color: ThemedColor.header }]}
             >
                 {isLoading ? "—" : value}
@@ -58,10 +58,14 @@ const styles = StyleSheet.create({
         opacity: 0.4,
     },
     number: {
+        fontFamily: "Outfit",
         fontSize: 36 * scale,
+        fontWeight: "600",
         lineHeight: 40 * scale,
     },
     label: {
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
         fontSize: 11 * scale,
     },
 });

@@ -77,11 +77,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                             onPress={() => setActiveTab(index)}
                             activeOpacity={0.7}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <ThemedText type="defaultSemiBold"
+                            <ThemedText
                                 style={[
                                     styles.tabText,
                                     {
                                         color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
+                                        fontWeight: activeTab === index ? "600" : "500",
                                     },
                                 ]}>
                                 {tab}
@@ -223,6 +224,7 @@ const useStyles = (ThemedColor: any) =>
         },
         tabText: {
             fontSize: 18, // Increased for better visibility
+            fontFamily: "Outfit",
             textAlign: "center",
         },
     });

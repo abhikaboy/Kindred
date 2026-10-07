@@ -1,4 +1,3 @@
-import { ArrowLeft, WarningCircle } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -7,6 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import PostCard from "@/components/cards/PostCard";
 import { PostCardSkeleton } from "@/components/ui/SkeletonLoader";
 import { getPostById } from "@/api/post";
+import { Ionicons } from "@expo/vector-icons";
 import { showToast } from "@/utils/showToast";
 import { useNavigation } from "expo-router";
 import { feedActivePost } from "@/utils/feedSongPlayback";
@@ -98,9 +98,9 @@ export default function PostDetail() {
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
-                        <ArrowLeft  size={24} color={ThemedColor.text} />
+                        <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
-                    <ThemedText type="subtitle" style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
+                    <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
                     <View style={{ width: 24 }} />
                 </View>
 
@@ -117,14 +117,14 @@ export default function PostDetail() {
     if (error || !post) {
         return (
             <SafeAreaView style={[styles.container, styles.centerContent]}>
-                <WarningCircle  size={50} color={ThemedColor.error} />
+                <Ionicons name="alert-circle-outline" size={50} color={ThemedColor.error} />
                 <ThemedText style={[styles.errorText, { color: ThemedColor.error }]}>
                     {error || "Post not found"}
                 </ThemedText>
                 <TouchableOpacity
                     style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
                     onPress={handleBack}>
-                    <ThemedText type="defaultSemiBold" style={styles.retryButtonText}>Go Back</ThemedText>
+                    <ThemedText style={styles.retryButtonText}>Go Back</ThemedText>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -134,9 +134,9 @@ export default function PostDetail() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
-                    <ArrowLeft  size={24} color={ThemedColor.text} />
+                    <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <ThemedText type="subtitle" style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
+                <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -210,6 +210,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         headerTitle: {
             fontSize: 18,
+            fontWeight: "600",
         },
         scrollContainer: {
             flex: 1,
@@ -230,5 +231,6 @@ const stylesheet = (ThemedColor: any) =>
         retryButtonText: {
             color: "#ffffff",
             fontSize: 16,
+            fontWeight: "600",
         },
     });

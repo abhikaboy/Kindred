@@ -1,10 +1,10 @@
-import { Camera, Microphone, PencilSimple } from "phosphor-react-native";
 import React, { useRef, useCallback, useMemo } from "react";
 import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from "@gorhom/bottom-sheet";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 
 interface QuickImportBottomSheetProps {
@@ -88,7 +88,7 @@ export default function QuickImportBottomSheet({ isVisible, onClose }: QuickImpo
                         style={styles.optionCard}
                         onPress={handlePhotoImport}
                         activeOpacity={0.7}>
-                        <Camera weight="fill" size={32} color={ThemedColor.text} style={styles.optionIcon} />
+                        <Ionicons name="camera" size={32} color={ThemedColor.text} style={styles.optionIcon} />
                         <View style={styles.optionTextContainer}>
                             <ThemedText type="defaultSemiBold" style={styles.optionTitle}>
                                 Photo Import
@@ -105,7 +105,7 @@ export default function QuickImportBottomSheet({ isVisible, onClose }: QuickImpo
                         style={styles.optionCard}
                         onPress={handleVoiceImport}
                         activeOpacity={0.7}>
-                        <Microphone weight="fill" size={32} color={ThemedColor.text} style={styles.optionIcon} />
+                        <Ionicons name="mic" size={32} color={ThemedColor.text} style={styles.optionIcon} />
                         <View style={styles.optionTextContainer}>
                             <ThemedText type="defaultSemiBold" style={styles.optionTitle}>
                                 Voice Import
@@ -126,7 +126,7 @@ export default function QuickImportBottomSheet({ isVisible, onClose }: QuickImpo
                         style={styles.optionCard}
                         onPress={handleTextImport}
                         activeOpacity={0.7}>
-                        <PencilSimple  size={32} color={ThemedColor.text} style={styles.optionIcon} />
+                        <Ionicons name="create-outline" size={32} color={ThemedColor.text} style={styles.optionIcon} />
                         <View style={styles.optionTextContainer}>
                             <ThemedText type="defaultSemiBold" style={styles.optionTitle}>
                                 Text Import
@@ -167,7 +167,10 @@ const stylesheet = (ThemedColor: any) =>
             paddingVertical: 4,
         },
         title: {
+            fontSize: 32,
+            fontWeight: "600",
             color: ThemedColor.text,
+            fontFamily: "Fraunces",
             letterSpacing: -1,
         },
         optionsContainer: {
@@ -200,13 +203,16 @@ const stylesheet = (ThemedColor: any) =>
         optionTitle: {
             fontSize: 16,
             color: ThemedColor.text,
+            fontFamily: "Outfit",
         },
         optionDescription: {
             fontSize: 14,
             color: ThemedColor.caption,
+            fontFamily: "Outfit",
             lineHeight: 20,
         },
         exampleText: {
             fontStyle: "italic",
         },
     });
+

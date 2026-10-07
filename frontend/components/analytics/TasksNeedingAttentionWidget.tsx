@@ -11,7 +11,7 @@ export function TasksNeedingAttentionWidget({ attention }: { attention: Analytic
     if (tasks.length === 0) {
         return (
             <WidgetCard title="Tasks needing attention">
-                <ThemedText type="caption">Nothing needs attention right now</ThemedText>
+                <ThemedText type="caption">Nothing needs attention right now. 🎉</ThemedText>
             </WidgetCard>
         );
     }

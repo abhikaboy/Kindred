@@ -1,10 +1,9 @@
-import { Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
-import { ThemedText } from "@/components/ThemedText";
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 type Props = {
     onPress?: () => void;
-    text: string;
+    text: string; 
 };
 
 export default function NextButton({ onPress }: Props) {
@@ -21,14 +20,15 @@ export default function NextButton({ onPress }: Props) {
                 width: Dimensions.get("screen").width * 0.3,
                 minWidth: Dimensions.get("screen").width * 0.3,
             }}>
-            <ThemedText
-                type="defaultSemiBold"
+            <Text
                 style={{
                     color: ThemedColor.text,
+                    fontFamily: "Outfit",
                     textAlign: "center",
+                    fontWeight: 400,
                 }}>
                 Next
-            </ThemedText>
+            </Text>
         </TouchableOpacity>
     );
 }

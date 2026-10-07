@@ -1,4 +1,3 @@
-import { Export, Check, Copy, DotsThreeCircle, ChartBar, Microphone, Image as ImageIcon, Medal, type IconProps } from "phosphor-react-native";
 import React, { useState } from "react";
 import { StyleSheet, View, ScrollView, Dimensions, Share, ActivityIndicator } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,13 +6,14 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TouchableOpacity } from "react-native";
-import * as Clipboard from "expo-clipboard";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Clipboard from 'expo-clipboard';
 import { useReferral } from "@/hooks/useReferral";
 import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 
 type RewardItem = {
     id: string;
-    icon: React.ComponentType<IconProps>;
+    icon: keyof typeof Ionicons.glyphMap;
     title: string;
     description: string;
     unlocked?: boolean;
@@ -22,31 +22,31 @@ type RewardItem = {
 const REWARDS_DATA: RewardItem[] = [
     {
         id: "circles",
-        icon: DotsThreeCircle,
+        icon: "ellipsis-horizontal-circle-outline",
         title: "2 Groups Credits",
         description: "Post to sub groups of your close friends instead of everyone on your friends list!",
     },
     {
         id: "analytics",
-        icon: ChartBar,
+        icon: "stats-chart-outline",
         title: "Productivity Analytics",
         description: "Track your productivity trends and gain insights into your task completion patterns over time.",
     },
     {
         id: "voice",
-        icon: Microphone,
+        icon: "mic-outline",
         title: "5 Voice Dump Credits",
         description: "Record 5 voice notes to quickly capture your thoughts and ideas on the go.",
     },
     {
         id: "giphy",
-        icon: ImageIcon,
+        icon: "image-outline",
         title: "Unlimited Giphy Usage",
         description: "Express yourself with unlimited access to GIFs and animated reactions in your posts.",
     },
     {
         id: "badge",
-        icon: Medal,
+        icon: "ribbon-outline",
         title: "Profile Badge",
         description: "Show off your supporter status with an exclusive badge displayed on your profile.",
     },
@@ -66,11 +66,16 @@ export default function Rewards() {
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
     // Use referral hook to get real data from backend
-    const { referralCode, unlocksRemaining, isLoadingInfo, infoError } = useReferral();
+    const {
+        referralCode,
+        unlocksRemaining,
+        isLoadingInfo,
+        infoError,
+    } = useReferral();
 
     const handleCopyCode = async () => {
         if (!referralCode) return;
-
+        
         try {
             await Clipboard.setStringAsync(referralCode);
             setCopied(true);
@@ -85,7 +90,7 @@ export default function Rewards() {
 
     const handleShareCode = async () => {
         if (!referralCode) return;
-
+        
         try {
             await Share.share({
                 message: `Join me on Kindred! Use my referral code: ${referralCode}`,
@@ -100,24 +105,23 @@ export default function Rewards() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <ThemedText type="default" style={styles.backIcon}>
-                        ←
-                    </ThemedText>
+                    <ThemedText type="default" style={styles.backIcon}>←</ThemedText>
                 </TouchableOpacity>
                 <View style={styles.backButton} />
             </View>
 
-            <ScrollView
+            <ScrollView 
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}>
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Title and Description */}
                 <View style={styles.titleSection}>
                     <ThemedText type="titleFraunces" style={styles.title}>
                         Referral Rewards
                     </ThemedText>
                     <ThemedText type="default" style={styles.subtitle}>
-                        Earn more unlocks when people you refer{"\n"}signup with your referral code!
+                        Earn more unlocks when people you refer{'\n'}signup with your referral code!
                     </ThemedText>
                 </View>
 
@@ -127,14 +131,10 @@ export default function Rewards() {
                         Your Referral Code
                     </ThemedText>
 
-                    <View
-                        style={[
-                            styles.codeContainer,
-                            {
-                                backgroundColor: ThemedColor.lightened,
-                                borderColor: ThemedColor.tertiary,
-                            },
-                        ]}>
+                    <View style={[styles.codeContainer, { 
+                        backgroundColor: ThemedColor.lightened,
+                        borderColor: ThemedColor.tertiary
+                    }]}>
                         {isLoadingInfo ? (
                             <ActivityIndicator size="small" color={ThemedColor.primary} />
                         ) : infoError ? (
@@ -149,40 +149,42 @@ export default function Rewards() {
                     </View>
 
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity
-                            style={[
-                                styles.actionButton,
-                                {
-                                    backgroundColor: ThemedColor.primary,
-                                    opacity: !referralCode || isLoadingInfo ? 0.5 : 1,
-                                },
-                            ]}
+                        <TouchableOpacity 
+                            style={[styles.actionButton, { 
+                                backgroundColor: ThemedColor.primary,
+                                opacity: (!referralCode || isLoadingInfo) ? 0.5 : 1
+                            }]}
                             onPress={handleCopyCode}
-                            disabled={!referralCode || isLoadingInfo}>
-                            {copied ? (
-                                <Check size={18} color={ThemedColor.buttonText} />
-                            ) : (
-                                <Copy size={18} color={ThemedColor.buttonText} />
-                            )}
-                            <ThemedText type="defaultSemiBold" style={[styles.buttonText, { color: ThemedColor.buttonText }]}>
+                            disabled={!referralCode || isLoadingInfo}
+                        >
+                            <Ionicons 
+                                name={copied ? "checkmark" : "copy-outline"} 
+                                size={18} 
+                                color={ThemedColor.buttonText} 
+                            />
+                            <ThemedText style={[styles.buttonText, { color: ThemedColor.buttonText }]}>
                                 {copied ? "Copied!" : "Copy"}
                             </ThemedText>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[
-                                styles.actionButton,
-                                {
-                                    backgroundColor: ThemedColor.lightened,
-                                    borderColor: ThemedColor.primary,
-                                    borderWidth: 1,
-                                    opacity: !referralCode || isLoadingInfo ? 0.5 : 1,
-                                },
-                            ]}
+                        <TouchableOpacity 
+                            style={[styles.actionButton, { 
+                                backgroundColor: ThemedColor.lightened,
+                                borderColor: ThemedColor.primary,
+                                borderWidth: 1,
+                                opacity: (!referralCode || isLoadingInfo) ? 0.5 : 1
+                            }]}
                             onPress={handleShareCode}
-                            disabled={!referralCode || isLoadingInfo}>
-                            <Export size={18} color={ThemedColor.primary} />
-                            <ThemedText type="defaultSemiBold" style={[styles.buttonText, { color: ThemedColor.primary }]}>Share</ThemedText>
+                            disabled={!referralCode || isLoadingInfo}
+                        >
+                            <Ionicons 
+                                name="share-outline" 
+                                size={18} 
+                                color={ThemedColor.primary} 
+                            />
+                            <ThemedText style={[styles.buttonText, { color: ThemedColor.primary }]}>
+                                Share
+                            </ThemedText>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -190,29 +192,28 @@ export default function Rewards() {
                 {/* Unlocks Count */}
                 <View style={styles.unlocksSection}>
                     <ThemedText type="default">
-                        You have{" "}
-                        <ThemedText type="defaultSemiBold" style={[styles.unlocksCount, { color: ThemedColor.primary }]}>
+                        You have <ThemedText style={[styles.unlocksCount, { color: ThemedColor.primary }]}>
                             {isLoadingInfo ? "..." : unlocksRemaining} Unlock(s)
                         </ThemedText>
                     </ThemedText>
                 </View>
 
+
                 {/* Rewards List */}
                 <View style={[styles.rewardsList, unlocksRemaining === 0 && styles.lockedOpacity]}>
                     {REWARDS_DATA.map((reward) => (
-                        <View
-                            key={reward.id}
-                            style={[
-                                styles.rewardCard,
-                                {
-                                    backgroundColor: ThemedColor.lightened,
-                                    shadowColor: ThemedColor.text,
-                                },
-                            ]}>
+                        <View 
+                            key={reward.id} 
+                            style={[styles.rewardCard, { 
+                                backgroundColor: ThemedColor.lightened,
+                                shadowColor: ThemedColor.text
+                            }]}
+                        >
                             <View style={styles.rewardContent}>
-                                <reward.icon
-                                    size={32}
-                                    color={ThemedColor.primary}
+                                <Ionicons 
+                                    name={reward.icon} 
+                                    size={32} 
+                                    color={ThemedColor.primary} 
                                     style={styles.icon}
                                 />
                                 <View style={styles.rewardTextContainer}>
@@ -285,7 +286,10 @@ const useStyles = (ThemedColor: any) => {
         unlocksSection: {
             marginTop: 0,
         },
-        unlocksCount: {},
+        unlocksCount: {
+            fontWeight: "600",
+            fontFamily: "Outfit",
+        },
         referralSection: {
             gap: 12,
         },
@@ -303,6 +307,7 @@ const useStyles = (ThemedColor: any) => {
         codeText: {
             fontSize: 24 * scale,
             letterSpacing: 4,
+            fontFamily: "Outfit",
         },
         buttonRow: {
             flexDirection: "row",
@@ -320,6 +325,8 @@ const useStyles = (ThemedColor: any) => {
         },
         buttonText: {
             fontSize: 14 * scale,
+            fontWeight: "600",
+            fontFamily: "Outfit",
         },
         rewardsList: {
             gap: 12,
@@ -357,3 +364,4 @@ const useStyles = (ThemedColor: any) => {
         },
     });
 };
+

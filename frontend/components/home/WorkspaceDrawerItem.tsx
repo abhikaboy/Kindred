@@ -56,7 +56,7 @@ export const WorkspaceDrawerItem = (props: Props) => {
                     <Feather name="grid" size={16} color={ThemedColor.caption} />
                 )}
             </View>
-            <ThemedText type="defaultSemiBold" style={{ flexShrink: 1 }} numberOfLines={2}>
+            <ThemedText type="default" style={{ flexShrink: 1, fontWeight: "600" }} numberOfLines={2}>
                 {props.title}
             </ThemedText>
             {props.taskCount !== undefined && (

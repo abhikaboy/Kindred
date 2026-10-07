@@ -1,14 +1,4 @@
-import { EyeSlash, Eye } from "phosphor-react-native";
-import {
-    Dimensions,
-    StyleSheet,
-    View,
-    Animated,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    TouchableOpacity,
-} from "react-native";
+import { Dimensions, StyleSheet, View, Animated, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -22,10 +12,11 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { OnboardingBackground } from "@/components/onboarding/BackgroundGraphics";
 import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar";
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { Ionicons } from '@expo/vector-icons';
 import { BigInput } from "@/components/inputs/BigInput";
 import { showToast } from "@/utils/showToast";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const DEFAULT_PICTURE = "https://i.pinimg.com/736x/45/69/cb/4569cb1033f0251fac46f307c3ba495a.jpg";
 
 type Props = {};
@@ -38,7 +29,7 @@ const PasswordOnboarding = (props: Props) => {
     const { capture } = useAnalytics();
 
     const [password, setPasswordLocal] = useState(onboardingData.password);
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const setPassword = (value: string) => {
         setPasswordLocal(value);
@@ -81,19 +72,19 @@ const PasswordOnboarding = (props: Props) => {
         if (!validationErrors.password && isValid && passwordsMatch) {
             try {
                 await registerWithEmail(DEFAULT_PICTURE);
-                showToast("Account created successfully", "success");
+                showToast('Account created successfully', 'success');
                 capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
                     step_name: OnboardingSteps.PASSWORD.name,
                     step_index: OnboardingSteps.PASSWORD.index,
                 });
-                router.replace("/(onboarding)/welcome");
+                router.replace('/(onboarding)/welcome');
             } catch (error: any) {
-                console.error("Registration error:", error);
-                let errorMessage = "Unable to create account. Please try again.";
+                console.error('Registration error:', error);
+                let errorMessage = 'Unable to create account. Please try again.';
                 if (error.message) {
                     errorMessage = error.message;
                 }
-                showToast(errorMessage, "danger");
+                showToast(errorMessage, 'danger');
             }
         }
     };
@@ -103,13 +94,13 @@ const PasswordOnboarding = (props: Props) => {
 
     const themedStyles = styles(ThemedColor);
 
-    const passwordHelperText =
-        !showErrors && password.length > 0 && password.length < 8
-            ? `${8 - password.length} more character${8 - password.length !== 1 ? "s" : ""} needed`
-            : undefined;
+    const passwordHelperText = !showErrors && password.length > 0 && password.length < 8
+        ? `${8 - password.length} more character${8 - password.length !== 1 ? 's' : ''} needed`
+        : undefined;
 
-    const confirmPasswordError =
-        showErrors && confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : undefined;
+    const confirmPasswordError = showErrors && confirmPassword.length > 0 && !passwordsMatch
+        ? "Passwords do not match"
+        : undefined;
 
     return (
         <ThemedView style={themedStyles.mainContainer}>
@@ -119,15 +110,17 @@ const PasswordOnboarding = (props: Props) => {
             </View>
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={themedStyles.keyboardView}
-                keyboardVerticalOffset={Platform.OS === "ios" ? -20 : 0}
-                enabled>
+                keyboardVerticalOffset={Platform.OS === 'ios' ? -20 : 0}
+                enabled
+            >
                 <ScrollView
                     contentContainerStyle={themedStyles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
-                    style={themedStyles.scrollView}>
+                    style={themedStyles.scrollView}
+                >
                     <View style={themedStyles.innerContainer}>
                         {/* Header Section */}
                         <Animated.View
@@ -136,9 +129,12 @@ const PasswordOnboarding = (props: Props) => {
                                 {
                                     opacity: fadeAnimation,
                                     transform: [{ translateY: slideAnimation }],
-                                },
-                            ]}>
-                            <ThemedText type="titleFraunces" style={themedStyles.titleText}>Create a password</ThemedText>
+                                }
+                            ]}
+                        >
+                            <ThemedText style={themedStyles.titleText}>
+                                Create a password
+                            </ThemedText>
                         </Animated.View>
 
                         {/* Input Section */}
@@ -147,8 +143,9 @@ const PasswordOnboarding = (props: Props) => {
                                 themedStyles.inputContainer,
                                 {
                                     opacity: fadeAnimation,
-                                },
-                            ]}>
+                                }
+                            ]}
+                        >
                             <BigInput
                                 label="Password"
                                 value={password}
@@ -160,12 +157,13 @@ const PasswordOnboarding = (props: Props) => {
                                 suffix={
                                     <TouchableOpacity
                                         onPress={() => setShowPassword(!showPassword)}
-                                        activeOpacity={0.7}>
-                                        {showPassword ? (
-                                            <EyeSlash size={24} color={ThemedColor.caption} />
-                                        ) : (
-                                            <Eye size={24} color={ThemedColor.caption} />
-                                        )}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons
+                                            name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                            size={24}
+                                            color={ThemedColor.caption}
+                                        />
                                     </TouchableOpacity>
                                 }
                                 secureTextEntry={!showPassword}
@@ -185,12 +183,13 @@ const PasswordOnboarding = (props: Props) => {
                                 suffix={
                                     <TouchableOpacity
                                         onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        activeOpacity={0.7}>
-                                        {showConfirmPassword ? (
-                                            <EyeSlash size={24} color={ThemedColor.caption} />
-                                        ) : (
-                                            <Eye size={24} color={ThemedColor.caption} />
-                                        )}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons
+                                            name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                            size={24}
+                                            color={ThemedColor.caption}
+                                        />
                                     </TouchableOpacity>
                                 }
                                 secureTextEntry={!showConfirmPassword}
@@ -209,8 +208,9 @@ const PasswordOnboarding = (props: Props) => {
                         {
                             opacity: fadeAnimation,
                             paddingBottom: 24 + insets.bottom,
-                        },
-                    ]}>
+                        }
+                    ]}
+                >
                     <PrimaryButton
                         testID="continue-btn"
                         title={isLoading ? "Creating account..." : "Continue"}
@@ -223,57 +223,60 @@ const PasswordOnboarding = (props: Props) => {
     );
 };
 
-const styles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
-    StyleSheet.create({
-        mainContainer: {
-            flex: 1,
-            position: "relative",
-        },
-        backgroundContainer: {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 0,
-        },
-        keyboardView: {
-            flex: 1,
-        },
-        scrollView: {
-            flex: 1,
-        },
-        scrollContent: {
-            flexGrow: 1,
-        },
-        innerContainer: {
-            paddingHorizontal: HORIZONTAL_PADDING,
-            paddingTop: screenHeight * 0.18,
-            zIndex: 1,
-            paddingBottom: 100,
-        },
-        headerContainer: {
-            gap: 12,
-            marginBottom: 16,
-        },
-        titleText: {
-            fontSize: Math.min(screenWidth * 0.085, 32),
-            lineHeight: Math.min(screenWidth * 0.102, 38),
-            letterSpacing: -1,
-        },
-        subtitleText: {
-            fontSize: 16,
-            opacity: 0.6,
-            marginTop: 8,
-        },
-        inputContainer: {
-            gap: 24,
-        },
-        buttonContainer: {
-            width: "100%",
-            paddingHorizontal: HORIZONTAL_PADDING,
-            paddingBottom: 24,
-        },
-    });
+const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        position: 'relative',
+    },
+    backgroundContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0,
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    innerContainer: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingTop: screenHeight * 0.18,
+        zIndex: 1,
+        paddingBottom: 100,
+    },
+    headerContainer: {
+        gap: 12,
+        marginBottom: 16,
+    },
+    titleText: {
+        fontSize: Math.min(screenWidth * 0.085, 32),
+        fontFamily: 'Fraunces',
+        fontWeight: '600',
+        lineHeight: Math.min(screenWidth * 0.102, 38),
+        letterSpacing: -1,
+    },
+    subtitleText: {
+        fontSize: 16,
+        fontFamily: 'Outfit',
+        fontWeight: '400',
+        opacity: 0.6,
+        marginTop: 8,
+    },
+    inputContainer: {
+        gap: 24,
+    },
+    buttonContainer: {
+        width: '100%',
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingBottom: 24,
+    },
+});
 
 export default PasswordOnboarding;

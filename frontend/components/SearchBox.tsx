@@ -339,7 +339,7 @@ export function SearchBox({
                         <>
                             {suggestionsHeader && (
                                 <View style={styles.suggestionsHeaderContainer}>
-                                    <ThemedText type="defaultSemiBold" style={styles.suggestionsHeaderText}>
+                                    <ThemedText type="default" style={styles.suggestionsHeaderText}>
                                         {suggestionsHeader}
                                     </ThemedText>
                                 </View>
@@ -399,7 +399,7 @@ const SuggestionItem = React.memo(({ item, onPress, ThemedColor, styles }: any) 
                     </View>
                 )}
                 <View style={{ flex: 1 }}>
-                    <ThemedText type="defaultSemiBold">
+                    <ThemedText type="default" style={{ fontWeight: "600" }}>
                         {displayText}
                     </ThemedText>
                     <ThemedText type="default" style={{ fontSize: 12, opacity: 0.7 }}>
@@ -435,7 +435,7 @@ const RecentItem = React.memo(({ item, onPress, onDelete, ThemedColor, styles }:
                     </View>
                 )}
                 <View style={{ flex: 1 }}>
-                    <ThemedText type={isText ? "default" : "defaultSemiBold"}>
+                    <ThemedText type="default" style={{ fontWeight: isText ? "400" : "600" }}>
                         {displayText}
                     </ThemedText>
                     {subtitle && (
@@ -504,7 +504,10 @@ const useStyles = (ThemedColor: any) =>
         },
         suggestionsHeaderText: {
             fontSize: 12,
+            fontWeight: "600" as const,
             opacity: 0.5,
+            textTransform: "uppercase" as const,
+            letterSpacing: 0.5,
         },
         container: {
             flexDirection: "row",

@@ -25,7 +25,7 @@ const WaitingChip = ({ task, several }: Props) => {
             style={[styles.chip, { backgroundColor: ThemedColor.lightened }]}
         >
             <Path size={16} color={ThemedColor.primary} weight="regular" />
-            <ThemedText type="smallerDefault">
+            <ThemedText type="smallerDefault" style={{ fontWeight: "400" }}>
                 {label}
             </ThemedText>
         </TouchableOpacity>

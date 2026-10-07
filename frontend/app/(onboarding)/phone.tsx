@@ -15,6 +15,7 @@ import OnboardingProgressBar from "@/components/onboarding/OnboardingProgressBar
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useVerification } from "@/hooks/useVerification";
 import { useAuth } from "@/hooks/useAuth";
+import { Ionicons } from "@expo/vector-icons";
 import { OtpInput } from "react-native-otp-entry";
 import { showToastable } from "react-native-toastable";
 import DefaultToast from "@/components/ui/DefaultToast";
@@ -293,10 +294,10 @@ const PhoneOnboarding = () => {
                             position: codeSent ? 'absolute' : 'relative',
                             width: '100%',
                         }}>
-                            <ThemedText type="titleFraunces" style={styles.titleText}>
+                            <ThemedText style={styles.titleText}>
                                 What's your phone number?
                             </ThemedText>
-                            <ThemedText type="default" style={styles.subtitleText}>
+                            <ThemedText style={styles.subtitleText}>
                                 We'll send you a verification code
                             </ThemedText>
                         </Animated.View>
@@ -307,15 +308,15 @@ const PhoneOnboarding = () => {
                                 opacity: verifyOpacity,
                                 transform: [{ translateY: verifySlideUp }],
                             }}>
-                                <ThemedText type="titleFraunces" style={styles.titleText}>
+                                <ThemedText style={styles.titleText}>
                                     Enter verification code
                                 </ThemedText>
                                 <View style={styles.changeNumberRow}>
-                                    <ThemedText type="default" style={styles.subtitleText}>
+                                    <ThemedText style={styles.subtitleText}>
                                         Sent to {getFormattedFullNumber()}
                                     </ThemedText>
                                     <TouchableOpacity onPress={handleChangeNumber}>
-                                        <ThemedText type="defaultSemiBold" style={[styles.changeLink, { color: ThemedColor.primary }]}>
+                                        <ThemedText style={[styles.changeLink, { color: ThemedColor.primary }]}>
                                             Change
                                         </ThemedText>
                                     </TouchableOpacity>
@@ -335,7 +336,7 @@ const PhoneOnboarding = () => {
                                     onPress={() => setShowCountryPicker(true)}
                                     activeOpacity={0.7}
                                 >
-                                    <ThemedText type="subtitle" style={styles.countryCodeText}>{countryCode}</ThemedText>
+                                    <ThemedText style={styles.countryCodeText}>{countryCode}</ThemedText>
                                 </TouchableOpacity>
                                 <TextInput
                                     style={[styles.phoneInput, { color: ThemedColor.text }]}
@@ -348,12 +349,12 @@ const PhoneOnboarding = () => {
                                     maxLength={14}
                                 />
                             </View>
-                            <ThemedText type="caption" style={[styles.helperText, { color: ThemedColor.caption }]}>
+                            <ThemedText style={[styles.helperText, { color: ThemedColor.caption }]}>
                                 Standard messaging rates may apply
                             </ThemedText>
 
                             {sendOTPError && (
-                                <ThemedText type="caption" style={styles.errorText}>{sendOTPError}</ThemedText>
+                                <ThemedText style={styles.errorText}>{sendOTPError}</ThemedText>
                             )}
                         </Animated.View>
                     )}
@@ -389,6 +390,7 @@ const PhoneOnboarding = () => {
                                                 color: ThemedColor.text,
                                                 fontSize: 28,
                                                 fontFamily: 'Outfit',
+                                                fontWeight: '600',
                                             },
                                             focusedPinCodeContainerStyle: {
                                                 borderColor: ThemedColor.tint,
@@ -402,24 +404,24 @@ const PhoneOnboarding = () => {
                                     />
 
                                     {verifyOTPError && (
-                                        <ThemedText type="caption" style={styles.errorText}>{verifyOTPError}</ThemedText>
+                                        <ThemedText style={styles.errorText}>{verifyOTPError}</ThemedText>
                                     )}
                                     {sendOTPError && (
-                                        <ThemedText type="caption" style={styles.errorText}>{sendOTPError}</ThemedText>
+                                        <ThemedText style={styles.errorText}>{sendOTPError}</ThemedText>
                                     )}
 
                                     <View style={styles.resendContainer}>
-                                        <ThemedText type="caption" style={[styles.resendText, { color: ThemedColor.caption }]}>
+                                        <ThemedText style={[styles.resendText, { color: ThemedColor.caption }]}>
                                             Didn't receive a code?{' '}
                                         </ThemedText>
                                         {canResend ? (
                                             <TouchableOpacity onPress={handleResend} disabled={sendingOTP}>
-                                                <ThemedText type="defaultSemiBold" style={[styles.resendButton, { color: ThemedColor.tint }]}>
+                                                <ThemedText style={[styles.resendButton, { color: ThemedColor.tint }]}>
                                                     Resend
                                                 </ThemedText>
                                             </TouchableOpacity>
                                         ) : (
-                                            <ThemedText type="caption" style={[styles.resendTimer, { color: ThemedColor.caption }]}>
+                                            <ThemedText style={[styles.resendTimer, { color: ThemedColor.caption }]}>
                                                 Resend in {resendTimer}s
                                             </ThemedText>
                                         )}
@@ -446,10 +448,9 @@ const PhoneOnboarding = () => {
                                     onPress={handleSendCode}
                                     disabled={!canContinue || sendingOTP}
                                 />
-                                <ThemedText type="caption" style={[styles.termsText, { color: ThemedColor.caption }]}>
+                                <ThemedText style={[styles.termsText, { color: ThemedColor.caption }]}>
                                     By continuing, you agree to our{' '}
                                     <ThemedText
-                                        type="defaultSemiBold"
                                         style={[styles.termsLink, { color: ThemedColor.primary }]}
                                         onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Terms-of-Service-342a5d52691580aa94afc9f0b95d5100')}
                                     >
@@ -457,7 +458,6 @@ const PhoneOnboarding = () => {
                                     </ThemedText>
                                     {' '}and{' '}
                                     <ThemedText
-                                        type="defaultSemiBold"
                                         style={[styles.termsLink, { color: ThemedColor.primary }]}
                                         onPress={() => Linking.openURL('https://beaker.notion.site/Kindred-Privacy-Policy-2afa5d52691580a7ac51d34b8e0f427a')}
                                     >
@@ -500,11 +500,15 @@ const styles = StyleSheet.create({
     },
     titleText: {
         fontSize: Math.min(screenWidth * 0.085, 32),
+        fontFamily: 'Fraunces',
+        fontWeight: '600',
         lineHeight: Math.min(screenWidth * 0.102, 38),
         letterSpacing: -1,
     },
     subtitleText: {
         fontSize: 16,
+        fontFamily: 'Outfit',
+        fontWeight: '400',
         opacity: 0.6,
         marginTop: 8,
     },
@@ -516,6 +520,8 @@ const styles = StyleSheet.create({
     },
     changeLink: {
         fontSize: 16,
+        fontFamily: 'Outfit',
+        fontWeight: '600',
     },
     inputContainer: {
         marginTop: 40,
@@ -535,17 +541,21 @@ const styles = StyleSheet.create({
     },
     countryCodeText: {
         fontSize: 18,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
     },
     phoneInput: {
         flex: 1,
         fontSize: 18,
         fontFamily: 'Outfit',
+        fontWeight: '400',
         paddingVertical: 20,
         paddingRight: 24,
         backgroundColor: 'transparent',
     },
     helperText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
         marginTop: 12,
         marginLeft: 4,
     },
@@ -564,11 +574,13 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 16,
+        fontFamily: 'Outfit',
         opacity: 0.6,
     },
     errorText: {
         color: '#ff3b30',
         fontSize: 14,
+        fontFamily: 'Outfit',
         marginTop: 16,
         textAlign: 'center',
     },
@@ -579,12 +591,16 @@ const styles = StyleSheet.create({
     },
     resendText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
     },
     resendButton: {
         fontSize: 14,
+        fontFamily: 'Outfit',
+        fontWeight: '600',
     },
     resendTimer: {
         fontSize: 14,
+        fontFamily: 'Outfit',
     },
     termsContainer: {
         marginTop: 20,
@@ -609,10 +625,12 @@ const styles = StyleSheet.create({
     },
     termsText: {
         fontSize: 12,
+        fontFamily: 'Outfit',
         lineHeight: 16,
         textAlign: 'center',
     },
     termsLink: {
+        fontWeight: '600',
         textDecorationLine: 'underline',
     },
     buttonContainer: {

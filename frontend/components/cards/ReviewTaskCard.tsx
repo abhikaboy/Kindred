@@ -185,6 +185,8 @@ const styles = StyleSheet.create({
     },
     categoryName: {
         fontSize: 12,
+        letterSpacing: 1.2,
+        textTransform: "uppercase",
     },
     taskTitle: {
         fontSize: 30,
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
     },
     notesLabel: {
         fontSize: 11,
+        letterSpacing: 1.2,
     },
     swipeIndicator: {
         position: "absolute",
@@ -223,6 +226,8 @@ const styles = StyleSheet.create({
     swipeIndicatorText: {
         position: "absolute",
         fontSize: 24,
+        fontWeight: "700",
+        letterSpacing: 0.3,
         fontFamily: "Outfit",
         color: "#ffffff",
     },

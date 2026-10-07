@@ -1,4 +1,3 @@
-import { ArrowLeft } from "phosphor-react-native";
 import React, { useState, useMemo } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
@@ -8,6 +7,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { MentionCandidate } from "@/hooks/useFriendsForMention";
 import { usePostComposer } from "@/contexts/PostComposerContext";
+import { Ionicons } from "@expo/vector-icons";
 import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
 import FriendPicker from "@/components/inputs/FriendPicker";
 
@@ -39,7 +39,7 @@ export default function TagPeople() {
         <ThemedView style={{ flex: 1, paddingTop: insets.top }}>
             <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 }}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={8}>
-                    <ArrowLeft  size={22} color={ThemedColor.text} />
+                    <Ionicons name="arrow-back" size={22} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={{ marginLeft: 12, flex: 1 }}>Tag people</ThemedText>
                 <TouchableOpacity onPress={done}>

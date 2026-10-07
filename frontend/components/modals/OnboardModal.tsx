@@ -322,7 +322,7 @@ export const OnboardModal = (props: Props) => {
                                 resizeMode="contain"
                             />
                             <View style={styles.titleSection}>
-                                <ThemedText type="titleFraunces" style={styles.welcomeTitle}>
+                                <ThemedText type="title" style={styles.welcomeTitle}>
                                     {mode === "login" ? "Welcome back" : "Create your account"}
                                 </ThemedText>
                                 <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
@@ -369,7 +369,7 @@ export const OnboardModal = (props: Props) => {
                                         }}>
                                         <View style={styles.buttonContent}>
                                             <AntDesign name="apple" size={20} color={ThemedColor.primary} />
-                                            <ThemedText type="defaultSemiBold" style={styles.appleButtonText}>
+                                            <ThemedText style={styles.appleButtonText}>
                                                 {mode === "register" ? "Continue with Apple" : "Sign in with Apple"}
                                             </ThemedText>
                                         </View>
@@ -391,7 +391,7 @@ export const OnboardModal = (props: Props) => {
                                     >
                                         <View style={styles.buttonContent}>
                                             <AntDesign name="google" size={20} color={ThemedColor.primary} />
-                                            <ThemedText type="defaultSemiBold" style={styles.googleButtonText}>
+                                            <ThemedText style={styles.googleButtonText}>
                                                 {mode === "register" ? "Continue with Google" : "Sign in with Google"}
                                             </ThemedText>
                                         </View>
@@ -410,7 +410,7 @@ export const OnboardModal = (props: Props) => {
                                         onSwitchMode?.(mode === "login" ? "register" : "login");
                                     }}>
                                     <ThemedText
-                                        type="defaultSemiBold"
+                                        type="caption"
                                         style={[styles.footerLink, { color: ThemedColor.primary }]}>
                                         {mode === "login" ? "Sign up" : "Log in"}
                                     </ThemedText>
@@ -451,8 +451,10 @@ const useStyles = (ThemedColor: any) =>
         },
         welcomeTitle: {
             fontSize: 36,
+            fontWeight: "600",
             textAlign: "center",
             color: ThemedColor.text,
+            fontFamily: "Fraunces",
             lineHeight: 42,
             letterSpacing: -2,
         },
@@ -460,6 +462,7 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 15,
             textAlign: "center",
             lineHeight: 22,
+            fontFamily: "Outfit",
         },
         bottomSection: {
             flexShrink: 0,
@@ -482,6 +485,8 @@ const useStyles = (ThemedColor: any) =>
         appleButtonText: {
             color: "#1F1F1F",
             fontSize: 16,
+            fontWeight: "500",
+            fontFamily: "Outfit",
         },
         googleButton: {
             backgroundColor: "#FFFFFF",
@@ -499,6 +504,8 @@ const useStyles = (ThemedColor: any) =>
         googleButtonText: {
             color: "#1F1F1F",
             fontSize: 16,
+            fontWeight: "500",
+            fontFamily: "Outfit",
         },
         buttonContent: {
             flexDirection: "row",
@@ -523,6 +530,10 @@ const useStyles = (ThemedColor: any) =>
         developmentBadgeText: {
             color: "#FFFFFF",
             fontSize: 11,
+            fontWeight: "600",
+            fontFamily: "Outfit",
+            letterSpacing: 0.3,
+            textTransform: "uppercase",
         },
         phoneButton: {
             backgroundColor: ThemedColor.primary,
@@ -537,6 +548,8 @@ const useStyles = (ThemedColor: any) =>
         phoneButtonText: {
             color: "#FFFFFF",
             fontSize: 17,
+            fontWeight: "700",
+            fontFamily: "Outfit",
         },
         footerSection: {
             flexDirection: "row",
@@ -548,10 +561,13 @@ const useStyles = (ThemedColor: any) =>
         },
         footerText: {
             fontSize: 14,
+            fontFamily: "Outfit",
         },
 
         footerLink: {
             fontSize: 14,
+            fontFamily: "Outfit",
+            fontWeight: "600",
         },
         badge: {
             flexDirection: "row",

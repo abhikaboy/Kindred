@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
     },
     titleText: {
         fontSize: 20,
+        fontWeight: "500",
         letterSpacing: 0.2,
     },
     chevron: {

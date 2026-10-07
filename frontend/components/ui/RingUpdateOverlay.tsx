@@ -268,7 +268,7 @@ export const RingUpdateOverlay: React.FC = () => {
                     },
                 ]}
             >
-                <ThemedText type="caption" style={styles.label}>
+                <ThemedText style={styles.label}>
                     {label.toUpperCase()}
                 </ThemedText>
                 <View style={styles.ringWrapper}>
@@ -298,7 +298,7 @@ export const RingUpdateOverlay: React.FC = () => {
                     <Animated.View
                         style={[styles.ringCenter, { opacity: countOpacity }]}
                     >
-                        <ThemedText type="defaultSemiBold" style={styles.ringCount}>
+                        <ThemedText style={styles.ringCount}>
                             {currentDelta.current}/{currentDelta.target}
                         </ThemedText>
                     </Animated.View>
@@ -315,7 +315,7 @@ export const RingUpdateOverlay: React.FC = () => {
                             transform: [{ translateY: celebrationTranslateY }],
                         }}
                     >
-                        <ThemedText type="defaultSemiBold" style={styles.celebrationText}>
+                        <ThemedText style={styles.celebrationText}>
                             {celebrationText}
                         </ThemedText>
                     </Animated.View>
@@ -357,7 +357,9 @@ const styles = StyleSheet.create({
     label: {
         color: "rgba(255,255,255,0.72)",
         fontSize: 11,
+        fontFamily: "Outfit",
         letterSpacing: 1.6,
+        fontWeight: "600",
     },
     ringWrapper: {
         width: RING_SIZE,
@@ -373,10 +375,14 @@ const styles = StyleSheet.create({
     ringCount: {
         color: "#ffffff",
         fontSize: 15,
+        fontFamily: "Outfit",
+        fontWeight: "600",
     },
     celebrationText: {
         color: "#ffffff",
         fontSize: 16,
+        fontFamily: "Outfit",
+        fontWeight: "600",
         letterSpacing: 0.2,
         marginTop: 6,
     },

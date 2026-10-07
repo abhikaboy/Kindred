@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter } from "expo-router";
@@ -15,7 +16,7 @@ import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import ReviewCardStack from "@/components/cards/ReviewCardStack";
 import ReviewTaskCard from "@/components/cards/ReviewTaskCard";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, PlayCircle, Trash, X, CaretLeft } from "phosphor-react-native";
+import { Check, PlayCircle, Trash, X } from "phosphor-react-native";
 import GlowBackground, { GlowBlob } from "@/components/ui/GlowBackground";
 import { hapticCompletionBurst, hapticLight } from "@/utils/haptics";
 import { showToastable } from "react-native-toastable";
@@ -407,10 +408,10 @@ const Review = (props: Props) => {
                 {/* Back button + count */}
                 <View style={styles.topRow}>
                     <TouchableOpacity onPress={goHome}>
-                        <CaretLeft  size={24} color={ThemedColor.text} />
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     {!emptyStack && currentTask != null && (
-                        <ThemedText type="defaultSemiBold" style={[styles.hintCount, { color: ThemedColor.primary}]}>
+                        <ThemedText style={[styles.hintCount, { color: ThemedColor.primary}]}>
                             {cards.length} left
                         </ThemedText>
                     )}
@@ -457,7 +458,7 @@ const Review = (props: Props) => {
 
                 {/* Empty states */}
                 <ConditionalView condition={emptyStack && unnestedTasks.length > 0} style={styles.emptyState}>
-                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>All done</ThemedText>
+                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>🎉 All Done!</ThemedText>
                     <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
                         You've reviewed all {unnestedTasks.length} tasks.
                     </ThemedText>
@@ -534,6 +535,7 @@ const styles = StyleSheet.create({
     },
     hintCount: {
         fontSize: 15,
+        fontWeight: "600",
     },
     emptyState: {
         flex: 1,

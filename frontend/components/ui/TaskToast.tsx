@@ -3,7 +3,7 @@ import React, { useRef } from "react";
 import { ThemedText } from "../ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ProgressBar from "./ProgressBar";
-import { CaretRight, Confetti } from "phosphor-react-native";
+import Entypo from "@expo/vector-icons/Entypo";
 import { hideToastable, ToastableBodyParams } from "react-native-toastable";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Reanimated, {
@@ -94,9 +94,9 @@ export default function TaskToast(props: TaskToastProps) {
                 runOnJS(hideToastable)();
             } else {
                 // Spring back to original position
-                translateX.value = withTiming(0, { duration: 200 });
-                translateY.value = withTiming(0, { duration: 200 });
-                opacity.value = withTiming(1, { duration: 200 });
+                translateX.value = withSpring(0, { damping: 20, stiffness: 300 });
+                translateY.value = withSpring(0, { damping: 20, stiffness: 300 });
+                opacity.value = withSpring(1, { damping: 20, stiffness: 300 });
             }
         });
 
@@ -149,10 +149,10 @@ export default function TaskToast(props: TaskToastProps) {
                                 padding: 20,
                             }}>
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "80%" }}>
-                                <Confetti size={24} color={ThemedColor.primary} weight="fill" />
+                                <Text style={{ fontSize: 30, fontWeight: "bold" }}>🎉</Text>
                                 <ThemedText>{props.message}</ThemedText>
                             </View>
-                            <CaretRight size={18} color={ThemedColor.caption} />
+                            <Entypo name="chevron-right" size={24} color={ThemedColor.text} />
                         </View>
                         <ProgressBar start={0} bar={ThemedColor.success} />
                     </Animated.View>

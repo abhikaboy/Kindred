@@ -40,6 +40,7 @@ const Instructions = ({ data, onUpdate }: Props) => {
                     textStyle={{
                         fontSize: 24,
                         fontFamily: "Outfit",
+                        fontWeight: "500",
                         letterSpacing: -0.2,
                     }}
                     value={data.blueprintName}
@@ -82,6 +83,7 @@ const createStyles = (ThemedColor: any) =>
         },
         fieldLabel: {
             fontSize: 16,
+            fontWeight: "500",
             color: ThemedColor.text,
         },
     });

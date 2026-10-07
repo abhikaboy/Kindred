@@ -4,6 +4,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
 import Instructions from "@/components/blueprint/Instruction";
 import Details from "@/components/blueprint/Details";
 import Tasks from "@/components/blueprint/Tasks";
@@ -277,7 +278,7 @@ const BlueprintCreationLayout = () => {
                             <ThemedText type="fancyFrauncesHeading" style={styles.titleText}>
                                 New Blueprint
                             </ThemedText>
-                            <ThemedText type="caption" style={styles.subtitleText}>
+                            <ThemedText style={styles.subtitleText}>
                                 Create a shareable to-do list
                             </ThemedText>
                         </View>
@@ -369,6 +370,7 @@ const createStyles = (ThemedColor: any, insets: any, isKeyboardVisible: boolean)
         subtitleText: {
             fontSize: 15,
             color: ThemedColor.caption,
+            fontFamily: "Outfit",
             letterSpacing: 0.2,
         },
         backButton: {

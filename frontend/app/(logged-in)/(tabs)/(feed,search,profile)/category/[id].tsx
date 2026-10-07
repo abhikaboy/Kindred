@@ -6,10 +6,11 @@ import { ThemedView } from "@/components/ThemedView";
 import BlueprintCard from "@/components/cards/BlueprintCard";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native";
 import { getBlueprintsByCategoryFromBackend } from "@/api/blueprint";
 import type { components } from "@/api/generated/types";
-import { CaretLeftIcon, CaretLeft, FolderOpen } from "phosphor-react-native";
+import { CaretLeftIcon } from "phosphor-react-native";
 
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type BlueprintCategoryGroup = components["schemas"]["BlueprintCategoryGroup"];
@@ -71,7 +72,7 @@ export default function CategoryScreen() {
             <ThemedView style={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <CaretLeft  size={24} color={ThemedColor.text} />
+                        <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <ThemedText type="subtitle" style={styles.headerTitle}>
                         {displayCategory}
@@ -99,7 +100,7 @@ export default function CategoryScreen() {
                 <View style={styles.errorContainer}>
                     <ThemedText style={styles.errorText}>{error}</ThemedText>
                     <TouchableOpacity onPress={fetchCategoryBlueprints} style={styles.retryButton}>
-                        <ThemedText type="defaultSemiBold" style={styles.retryText}>Try Again</ThemedText>
+                        <ThemedText style={styles.retryText}>Try Again</ThemedText>
                     </TouchableOpacity>
                 </View>
             </ThemedView>
@@ -110,7 +111,7 @@ export default function CategoryScreen() {
         <ThemedView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <CaretLeft  size={24} color={ThemedColor.text} />
+                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={styles.headerTitle}>
                     {displayCategory}
@@ -132,10 +133,10 @@ export default function CategoryScreen() {
                         ))
                     ) : (
                         <View style={styles.emptyContainer}>
-                            <FolderOpen  size={64} color={ThemedColor.tabIconDefault} />
+                            <Ionicons name="folder-open-outline" size={64} color={ThemedColor.tabIconDefault} />
                             <ThemedText style={styles.emptyText}>No blueprints in this category yet</ThemedText>
                             <TouchableOpacity onPress={handleBack} style={styles.browseButton}>
-                                <ThemedText type="defaultSemiBold" style={styles.browseButtonText}>Browse Other Categories</ThemedText>
+                                <ThemedText style={styles.browseButtonText}>Browse Other Categories</ThemedText>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -156,7 +157,7 @@ const useStyles = (ThemedColor: any) =>
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: 16,
-            paddingTop: 60,
+            paddingTop: 60, 
             paddingBottom: 16,
             borderBottomWidth: 1,
             borderBottomColor: ThemedColor.tertiary
@@ -170,7 +171,7 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 20,
         },
         headerSpacer: {
-            width: 40,
+            width: 40, 
         },
         subHeader: {
             paddingHorizontal: 16,
@@ -222,6 +223,7 @@ const useStyles = (ThemedColor: any) =>
         },
         retryText: {
             color: "#FFFFFF",
+            fontWeight: "600",
         },
         emptyContainer: {
             flex: 1,
@@ -244,5 +246,6 @@ const useStyles = (ThemedColor: any) =>
         },
         browseButtonText: {
             color: "#FFFFFF",
+            fontWeight: "600",
         },
     });

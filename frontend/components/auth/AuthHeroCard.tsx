@@ -37,6 +37,7 @@ export function AuthHeroCard({ style }: Props) {
                 type="titleFraunces"
                 style={{
                     color: heroCardText,
+                    fontWeight: 600,
                     letterSpacing: -2,
                     justifyContent: "center",
                     alignItems: "center",
@@ -52,9 +53,10 @@ export function AuthHeroCard({ style }: Props) {
                     marginTop: 8,
                 }}>
                 <ThemedText
-                    type="defaultSemiBold"
+                    type="lightBody"
                     style={{
                         color: heroCardText,
+                        fontFamily: "Outfit",
                         fontSize: 16,
                         textAlign: "center",
                         lineHeight: 22,

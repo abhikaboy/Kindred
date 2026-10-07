@@ -23,6 +23,7 @@ import ConditionalView from "@/components/ui/ConditionalView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDebounce } from "@/hooks/useDebounce";
 import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCategoryAPI, markInProgressAPI, getTaskProgressAPI, type RingDelta } from "@/api/task";
@@ -31,7 +32,7 @@ import Checklist from "@/components/task/Checklist";
 import TaskLinks from "@/components/task/TaskLinks";
 import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, LinkSimple, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp, ArrowLeft, WarningCircle } from "phosphor-react-native";
+import { Note, LinkSimple, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp } from "phosphor-react-native";
 import LogProgressBottomSheetModal from "@/components/modals/LogProgressBottomSheetModal";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
@@ -492,9 +493,9 @@ export default function Task() {
                         paddingVertical: 16,
                         zIndex: 1000,
                     }}>
-                    <ArrowLeft  size={24} color={ThemedColor.text} />
+                    <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <WarningCircle  size={64} color={ThemedColor.caption} />
+                <Ionicons name="alert-circle-outline" size={64} color={ThemedColor.caption} />
                 <ThemedText type="subtitle" style={{ marginTop: 16, textAlign: "center" }}>
                     Task Not Found
                 </ThemedText>
@@ -615,7 +616,7 @@ export default function Task() {
                             paddingVertical: 16,
                             left: 0,
                         }}>
-                        <ArrowLeft  size={24} color={ThemedColor.text} />
+                        <Ionicons name="arrow-back" size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <View
                         style={{

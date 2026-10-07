@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
-    Easing,
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
-    withTiming,
+    withSpring,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { hapticSelect } from "@/utils/haptics";
 
-const TIMING_CONFIG = { duration: 220, easing: Easing.out(Easing.cubic) };
+const SPRING_CONFIG = {
+    damping: 20,
+    stiffness: 200,
+    mass: 0.5,
+};
 
 type AnimatedTabBarProps = {
     tabs: string[];
@@ -46,8 +49,8 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: 
     useEffect(() => {
         const layout = tabLayouts.current[activeTab];
         if (layout && initialized.current) {
-            indicatorX.value = withTiming(layout.x, TIMING_CONFIG);
-            indicatorWidth.value = withTiming(layout.width, TIMING_CONFIG);
+            indicatorX.value = withSpring(layout.x, SPRING_CONFIG);
+            indicatorWidth.value = withSpring(layout.width, SPRING_CONFIG);
         }
     }, [activeTab, indicatorX, indicatorWidth]);
 
@@ -68,11 +71,12 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: 
                         setActiveTab(index);
                     }}>
                     <View style={styles.tabLabelRow}>
-                        <ThemedText type="defaultSemiBold"
+                        <ThemedText
                             style={[
                                 styles.tabText,
                                 {
                                     color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
+                                    fontWeight: activeTab === index ? "600" : "500",
                                 },
                             ]}>
                             {tab}
@@ -128,7 +132,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
     useEffect(() => {
         if (layoutWidth > 0) {
             widthSV.value = layoutWidth;
-            translateX.value = withTiming(-activeTab * layoutWidth, TIMING_CONFIG);
+            translateX.value = withSpring(-activeTab * layoutWidth, SPRING_CONFIG);
         }
     }, [activeTab, layoutWidth, translateX, widthSV]);
 
@@ -149,7 +153,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
             const current = activeTabSV.value;
 
             if (!setActiveTab) {
-                translateX.value = withTiming(-current * w, TIMING_CONFIG);
+                translateX.value = withSpring(-current * w, SPRING_CONFIG);
                 return;
             }
 
@@ -163,7 +167,7 @@ export function AnimatedTabContent({ activeTab, setActiveTab, children, flex, la
                 nextTab = nextTab - 1;
             }
 
-            translateX.value = withTiming(-nextTab * w, TIMING_CONFIG);
+            translateX.value = withSpring(-nextTab * w, SPRING_CONFIG);
             if (nextTab !== current) {
                 activeTabSV.value = nextTab;
                 runOnJS(hapticSelect)();
@@ -219,6 +223,7 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 16,
+        fontFamily: "Outfit",
         textAlign: "center",
     },
     badgeDot: {

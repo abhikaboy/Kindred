@@ -93,5 +93,8 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
         paddingTop: 20,
     },
-    title: {},
+    title: {
+        fontWeight: "600",
+    },
 });
+

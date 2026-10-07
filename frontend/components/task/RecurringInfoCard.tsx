@@ -51,10 +51,10 @@ const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextD
                             ]}
                         >
                             <ThemedText
-                                type={active === 1 ? "defaultSemiBold" : "caption"}
+                                type="caption"
                                 style={{
                                     color: active === 1 ? "#FFFFFF" : ThemedColor.caption,
-                                    fontSize: 14,
+                                    fontWeight: active === 1 ? "bold" : "normal",
                                 }}
                             >
                                 {days[index]}

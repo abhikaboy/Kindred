@@ -1,5 +1,4 @@
-import { Dimensions, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
-import { ThemedText } from "@/components/ThemedText";
+import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
@@ -162,17 +161,18 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                 minWidth: Dimensions.get("screen").width * 0.3,
                 opacity: isLoading ? 0.6 : 1,
             }}>
-            <ThemedText
+            <Text
                 style={{
                     color:
                         relationshipMapping[relationship].color === ThemedColor.lightened || relationshipMapping[relationship].color === ThemedColor.lightenedCard
                             ? ThemedColor.text
                             : ThemedColor.buttonText,
+                    fontFamily: "OutfitLight",
                     fontSize: 16,
                     textAlign: "center",
                 }}>
                 {isLoading ? "Loading..." : relationshipMapping[relationship].text}
-            </ThemedText>
+            </Text>
         </TouchableOpacity>
     );
 }

@@ -47,7 +47,7 @@ const UserInfoRingsClosedNotification = ({
     const sentence = (
         <SentenceText>
             <SentenceBold>{name}</SentenceBold>
-            {" closed all their rings"}
+            {" closed all their rings 🎉"}
         </SentenceText>
     );
 

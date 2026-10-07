@@ -33,12 +33,12 @@ export const BigInput = React.memo(({
     return (
         <View style={themedStyles.fieldContainer}>
             <View style={themedStyles.labelRow}>
-                <ThemedText type="defaultSemiBold" style={themedStyles.labelText}>{label}</ThemedText>
-                <ThemedText type="defaultSemiBold" style={themedStyles.asterisk}>*</ThemedText>
+                <ThemedText style={themedStyles.labelText}>{label}</ThemedText>
+                <ThemedText style={themedStyles.asterisk}>*</ThemedText>
             </View>
             <View style={themedStyles.inputWrapper}>
                 {prefix && (
-                    <ThemedText type="defaultSemiBold" style={themedStyles.prefixText}>{prefix}</ThemedText>
+                    <ThemedText style={themedStyles.prefixText}>{prefix}</ThemedText>
                 )}
                 <TextInput
                     style={[
@@ -59,12 +59,12 @@ export const BigInput = React.memo(({
                 )}
             </View>
             {showError && error && (
-                <ThemedText type="defaultSemiBold" style={themedStyles.errorText}>
+                <ThemedText style={themedStyles.errorText}>
                     {error}
                 </ThemedText>
             )}
             {helperText && !error && (
-                <ThemedText type="defaultSemiBold" style={themedStyles.helperText}>
+                <ThemedText style={themedStyles.helperText}>
                     {helperText}
                 </ThemedText>
             )}
@@ -83,10 +83,14 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.cre
     },
     labelText: {
         fontSize: 12,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
         opacity: 0.7,
     },
     asterisk: {
         fontSize: 14,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
         color: ThemedColor.error,
     },
     inputWrapper: {
@@ -98,6 +102,8 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.cre
     },
     prefixText: {
         fontSize: 20,
+        fontFamily: 'Outfit',
+        fontWeight: '500',
         marginRight: 4,
     },
     input: {
@@ -123,12 +129,14 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) => StyleSheet.cre
     },
     errorText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
         marginTop: 4,
         marginLeft: 4,
         color: ThemedColor.error,
     },
     helperText: {
         fontSize: 14,
+        fontFamily: 'Outfit',
         marginTop: 4,
         marginLeft: 4,
         color: ThemedColor.caption,

@@ -126,6 +126,14 @@ const useStyles = (ThemedColor: any) =>
             borderRadius: 12,
             borderWidth: 1,
             borderColor: ThemedColor.tertiary,
+            shadowColor: "#000",
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            elevation: 2,
         },
         taskContent: {
             flexDirection: "row",

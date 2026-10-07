@@ -1,6 +1,6 @@
-import { CaretLeft } from "phosphor-react-native";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import React from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 
 export default function BackButton() {
@@ -20,7 +20,7 @@ export default function BackButton() {
                 style={{
                     marginLeft: 4,
                 }}>
-                <CaretLeft  size={28} color="white" />
+                <Ionicons name="chevron-back" size={28} color="white" />
             </TouchableOpacity>
         )
     );

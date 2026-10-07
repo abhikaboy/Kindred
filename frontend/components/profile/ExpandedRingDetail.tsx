@@ -150,7 +150,6 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
                                 )}
                             </Svg>
                             <ThemedText
-                                type="caption"
                                 style={[styles.dotLabel, { color: ThemedColor.caption }]}
                             >
                                 {entry.dayLabel}
@@ -168,7 +167,7 @@ const ExpandedRingDetail: React.FC<ExpandedRingDetailProps> = ({
                         onPress={() => router.push(cta.route)}
                         activeOpacity={0.7}
                     >
-                        <ThemedText type="defaultSemiBold" style={styles.ctaText}>{cta.label}</ThemedText>
+                        <ThemedText style={styles.ctaText}>{cta.label}</ThemedText>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -199,6 +198,7 @@ const styles = StyleSheet.create({
     },
     dotLabel: {
         fontSize: 10,
+        fontFamily: "Outfit",
     },
     ctaRow: {
         flexDirection: "row",
@@ -213,6 +213,8 @@ const styles = StyleSheet.create({
     ctaText: {
         color: "#FFFFFF",
         fontSize: 15,
+        fontFamily: "Outfit",
+        fontWeight: "500",
     },
 });
 

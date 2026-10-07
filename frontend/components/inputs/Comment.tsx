@@ -445,7 +445,7 @@ const Comment = ({
     return (
         <BottomSheetView style={styles.modalContainer}>
             <View style={styles.header}>
-                <ThemedText type="subtitle" style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
+                <ThemedText style={styles.commentsTitle}>Comments ({sortedComments?.length || 0})</ThemedText>
             </View>
             <BottomSheetFlatList
                 data={feedItems}
@@ -505,6 +505,7 @@ const stylesheet = (ThemedColor: any) =>
         },
         commentsTitle: {
             fontSize: 18,
+            fontWeight: "600",
             color: ThemedColor.text,
         },
         flatList: {

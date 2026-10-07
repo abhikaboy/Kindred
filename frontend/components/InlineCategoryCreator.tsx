@@ -268,6 +268,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         fontSize: 18 * SCREEN_SCALE,
+        fontWeight: "500",
         fontFamily: "Outfit",
         // multiline: iOS single-line inputs mis-position the variable Outfit font (clipped, offset)
         padding: 0,

@@ -179,14 +179,17 @@ const RingsClosedFeedCard = React.memo(({
         },
         userName: {
             fontSize: 16,
+            fontWeight: "400",
             color: ThemedColor.text,
         },
         userHandle: {
             fontSize: 14,
+            fontWeight: "300",
             color: ThemedColor.caption,
         },
         timeText: {
             fontSize: 12,
+            fontWeight: "400",
             color: ThemedColor.caption,
         },
         ringRow: {

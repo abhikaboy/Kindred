@@ -20,7 +20,7 @@ const UserInfoTaskCopiedNotification = ({ name, userId, content, icon, time, ref
             <SentenceBold>{name}</SentenceBold>
             {" added "}
             {taskName ? <SentenceBold>{taskName}</SentenceBold> : null}
-            {taskName ? " from your blueprint" : "a task from your blueprint"}
+            {taskName ? " from your blueprint 💪" : "a task from your blueprint 💪"}
         </SentenceText>
     );
 

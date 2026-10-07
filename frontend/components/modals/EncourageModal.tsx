@@ -351,7 +351,7 @@ export default function EncourageModal({ visible, setVisible, task, encouragemen
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Title */}
-                <ThemedText type="subtitle" style={styles.titleStyled}>
+                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
                     {isProfileLevel ? "Send Encouragement" : `Encourage ${encouragementConfig?.userHandle || "User"}`}
                 </ThemedText>
                 <ThemedText type="captionLight" style={styles.subtitleStyled}>
@@ -553,11 +553,13 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         title: {
             fontSize: 24,
+            fontWeight: "600",
             textAlign: "center",
             marginBottom: 24,
         },
         titleStyled: {
             fontSize: 24,
+            fontWeight: "600",
             textAlign: "center",
             marginBottom: 4,
             color: ThemedColor.text,
@@ -576,6 +578,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderWidth: 1,
             fontSize: 16,
             fontFamily: "Outfit",
+            fontWeight: "400",
             minHeight: 80,
             textAlignVertical: "top",
         },
@@ -587,6 +590,7 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderWidth: 1,
             fontSize: 15,
             fontFamily: "Outfit",
+            fontWeight: "400",
             minHeight: 72,
             textAlignVertical: "top",
             color: ThemedColor.text,

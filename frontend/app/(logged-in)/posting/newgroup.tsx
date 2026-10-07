@@ -1,4 +1,3 @@
-import { ArrowLeft, Check } from "phosphor-react-native";
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
@@ -10,6 +9,7 @@ import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
 import { formatHandle } from "@/utils/handle";
 import { useGroups } from "@/hooks/useGroups";
 import { getFriendsAPI, type UserExtendedReference } from "@/api/connection";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function NewGroup() {
     const ThemedColor = useThemeColor();
@@ -89,7 +89,7 @@ export default function NewGroup() {
                     ]}
                 >
                     <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
-                        <ArrowLeft  size={20} color={ThemedColor.text} />
+                        <Ionicons name="arrow-back" size={20} color={ThemedColor.text} />
                     </TouchableOpacity>
                     <ThemedText type="subtitle" style={styles.headerTitle}>
                         New Group
@@ -167,7 +167,7 @@ export default function NewGroup() {
                                         id={undefined} // Disable navigation
                                         right={
                                             selectedMembers.has(friend._id) ? (
-                                                <Check  size={20} color={ThemedColor.primary} />
+                                                <Ionicons name="checkmark" size={20} color={ThemedColor.primary} />
                                             ) : null
                                         }
                                     />

@@ -105,5 +105,7 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         text: {
             color: ThemedColor.buttonText,
             fontSize: 15,
+            fontFamily: "Outfit",
+            fontWeight: "500",
         },
     });

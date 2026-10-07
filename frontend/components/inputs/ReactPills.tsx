@@ -36,7 +36,7 @@ const ReactPills = ({ reaction, isHighlighted = false, onPress, onLongPress }: P
                     {reaction?.emoji}
                 </ThemedText>
                 {reaction?.count > 0 && (
-                    <ThemedText type="defaultSemiBold" style={[styles.count, { color: isHighlighted ? "#ffffff" : ThemedColor.buttonText }]}>
+                    <ThemedText style={[styles.count, { color: isHighlighted ? "#ffffff" : ThemedColor.buttonText }]}>
                         {reaction.count}
                     </ThemedText>
                 )}
@@ -73,6 +73,7 @@ const stylesheet = (ThemedColor: any, isHighlighted: boolean) =>
             textAlign: "center",
             lineHeight: 21,
             minWidth: 6,
+            fontWeight: "600",
         },
     });
 

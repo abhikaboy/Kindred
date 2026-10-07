@@ -22,12 +22,14 @@ export default function ReferralCard() {
             style={[
                 styles.container,
                 {
-                    backgroundColor: ThemedColor.lightened,
+                    backgroundColor: "transparent",
+                    borderWidth: 0.5,
+                    borderColor: ThemedColor.tertiary,
                 },
             ]}>
             <View style={styles.content}>
                 <View style={styles.leftSection}>
-                    <View style={[styles.iconContainer, { backgroundColor: ThemedColor.primary + "14" }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: ThemedColor.primary + "20" }]}>
                         <Gift size={24} color={ThemedColor.primary} weight="fill" />
                     </View>
                     <View style={styles.textContainer}>
@@ -80,3 +82,4 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
 });
+

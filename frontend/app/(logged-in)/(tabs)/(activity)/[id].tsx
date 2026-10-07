@@ -1,8 +1,8 @@
-import { CaretUp, CaretDown } from "phosphor-react-native";
 import { StyleSheet, View, ScrollView, TouchableOpacity, Animated } from "react-native";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,18 +20,8 @@ import CalendarMonth, { CELL_SIZE, GRID_GAP } from "@/components/activity/Calend
 import { FriendView } from "@/components/analytics/FriendView";
 
 const month_names = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
 ];
 
 // --- Skeleton Loader ---
@@ -66,7 +56,10 @@ const ActivitySkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
         return (
             <View key={key} style={skeletonStyles.monthContainer}>
                 <Animated.View
-                    style={[skeletonStyles.monthNameSkeleton, { backgroundColor: ThemedColor.tertiary, opacity }]}
+                    style={[
+                        skeletonStyles.monthNameSkeleton,
+                        { backgroundColor: ThemedColor.tertiary, opacity },
+                    ]}
                 />
                 {Array.from({ length: rows }).map((_, rowIndex) => (
                     <View key={rowIndex} style={skeletonStyles.activityRow}>
@@ -116,7 +109,7 @@ const Activity = () => {
     const { workspaces } = useTasks();
 
     const userId = user?._id || (params.id as string);
-    const displayName = (params.displayName as string) || user?.display_name;
+    const displayName = params.displayName as string || user?.display_name;
     const isOwnActivity = !params.displayName;
     const styles = stylesheet(ThemedColor, insets);
 
@@ -156,11 +149,19 @@ const Activity = () => {
         return activities.reduce((sum, a) => sum + (a.totalCount ?? 0), 0);
     }, [activities]);
 
-    const visibleTemplates = showAllTemplates ? templates : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
+    const visibleTemplates = showAllTemplates
+        ? templates
+        : templates.slice(0, INITIAL_TEMPLATES_SHOWN);
 
-    const allCategories = useMemo(() => workspaces.flatMap((ws) => ws.categories ?? []), [workspaces]);
+    const allCategories = useMemo(
+        () => workspaces.flatMap((ws) => ws.categories ?? []),
+        [workspaces],
+    );
 
-    const tagAggregates = useMemo(() => buildTagAggregates(templates, allCategories), [templates, allCategories]);
+    const tagAggregates = useMemo(
+        () => buildTagAggregates(templates, allCategories),
+        [templates, allCategories],
+    );
 
     const effectiveTemplateIds = useMemo(() => {
         const tagIds = selectedTagTemplateIds(selectedTags, templates, allCategories);
@@ -170,7 +171,9 @@ const Activity = () => {
     const breakdownMode = effectiveTemplateIds.length > 0;
 
     const handleToggleTag = (tag: string) => {
-        setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+        setSelectedTags((prev) =>
+            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+        );
     };
 
     const getBreakdownActivityLevels = (targetMonth: number): number[] => {
@@ -196,9 +199,9 @@ const Activity = () => {
     };
 
     const handleToggleTemplate = (templateId: string) => {
-        setSelectedTemplateIds((prev) => {
+        setSelectedTemplateIds(prev => {
             if (prev.includes(templateId)) {
-                return prev.filter((id) => id !== templateId);
+                return prev.filter(id => id !== templateId);
             }
             return [...prev, templateId];
         });
@@ -215,7 +218,8 @@ const Activity = () => {
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}>
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Lifetime Stats */}
                 {!loading && !error && userId && (
                     <View style={styles.statsCard}>
@@ -230,7 +234,11 @@ const Activity = () => {
 
                 {/* Tag Breakdown - only for own activity */}
                 {isOwnActivity && tagAggregates.length > 0 && (
-                    <TagBreakdownRow tags={tagAggregates} selectedTags={selectedTags} onToggle={handleToggleTag} />
+                    <TagBreakdownRow
+                        tags={tagAggregates}
+                        selectedTags={selectedTags}
+                        onToggle={handleToggleTag}
+                    />
                 )}
 
                 {/* Recurring Tasks Section - only for own activity */}
@@ -239,17 +247,16 @@ const Activity = () => {
                         <TouchableOpacity
                             style={styles.sectionHeader}
                             onPress={() => setRecurringTasksExpanded(!recurringTasksExpanded)}
-                            activeOpacity={0.7}>
+                            activeOpacity={0.7}
+                        >
                             <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                                {recurringTasksExpanded
-                                    ? "TAP TO FILTER"
-                                    : `${templates.length} RECURRING TASK${templates.length !== 1 ? "S" : ""}`}
+                                {recurringTasksExpanded ? "TAP TO FILTER" : `${templates.length} RECURRING TASK${templates.length !== 1 ? 'S' : ''}`}
                             </ThemedText>
-                            {recurringTasksExpanded ? (
-                                <CaretUp size={16} color={ThemedColor.caption} />
-                            ) : (
-                                <CaretDown size={16} color={ThemedColor.caption} />
-                            )}
+                            <Ionicons
+                                name={recurringTasksExpanded ? "chevron-up" : "chevron-down"}
+                                size={16}
+                                color={ThemedColor.caption}
+                            />
                         </TouchableOpacity>
 
                         {recurringTasksExpanded && (
@@ -271,19 +278,11 @@ const Activity = () => {
                                         timesMissed={template.timesMissed}
                                         onToggle={handleToggleTemplate}
                                         onMetricsReset={(id) => {
-                                            setTemplates((prev) =>
-                                                prev.map((t) =>
-                                                    t.id === id
-                                                        ? {
-                                                              ...t,
-                                                              streak: 0,
-                                                              timesCompleted: 0,
-                                                              timesMissed: 0,
-                                                              completionDates: [],
-                                                          }
-                                                        : t
-                                                )
-                                            );
+                                            setTemplates(prev => prev.map(t =>
+                                                t.id === id
+                                                    ? { ...t, streak: 0, timesCompleted: 0, timesMissed: 0, completionDates: [] }
+                                                    : t
+                                            ));
                                         }}
                                     />
                                 ))}
@@ -291,9 +290,12 @@ const Activity = () => {
                                     <TouchableOpacity
                                         onPress={() => setShowAllTemplates(!showAllTemplates)}
                                         style={styles.showMoreButton}
-                                        activeOpacity={0.7}>
+                                        activeOpacity={0.7}
+                                    >
                                         <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                            {showAllTemplates ? "Show less" : `Show all ${templates.length} tasks`}
+                                            {showAllTemplates
+                                                ? "Show less"
+                                                : `Show all ${templates.length} tasks`}
                                         </ThemedText>
                                     </TouchableOpacity>
                                 )}
@@ -341,7 +343,7 @@ const Activity = () => {
                                 ? getBreakdownActivityLevels(monthNumber)
                                 : getMonthlyActivityLevels(activities, year, monthNumber);
 
-                            const monthData = activities.find((a) => a.year === year && a.month === monthNumber);
+                            const monthData = activities.find(a => a.year === year && a.month === monthNumber);
                             const monthTotal = monthData?.totalCount ?? 0;
 
                             return (
@@ -364,7 +366,11 @@ const Activity = () => {
                 )}
             </ScrollView>
 
-            <CompletedTasksBottomSheetModal visible={modalVisible} setVisible={setModalVisible} date={selectedDate} />
+            <CompletedTasksBottomSheetModal
+                visible={modalVisible}
+                setVisible={setModalVisible}
+                date={selectedDate}
+            />
             <RecurringTasksSelectionModal
                 visible={breakdownModalVisible}
                 setVisible={setBreakdownModalVisible}

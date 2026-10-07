@@ -45,14 +45,14 @@ export function AuthCtaBlock({ onJoin, onLogin, promptColor = Colors.light.text,
                         alignItems: "center",
                     }}
                     onPress={onLogin}>
-                    <ThemedText
-                        type="defaultSemiBold"
+                    <Text
                         style={{
+                            fontWeight: 800,
                             color: ThemedColor.primary,
                             marginBottom: -3,
                         }}>
                         Log in
-                    </ThemedText>
+                    </Text>
                 </TouchableOpacity>
             </ThemedText>
             {children}

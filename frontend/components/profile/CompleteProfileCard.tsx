@@ -74,11 +74,11 @@ export default function CompleteProfileCard({ onPhotoUpdated }: CompleteProfileC
                 )}
             </View>
             <View style={styles.textContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.title}>
+                <ThemedText type="default" style={styles.title}>
                     {isUploadingPhoto ? "Uploading photo..." : "Add a profile photo"}
                 </ThemedText>
                 {!isUploadingPhoto && (
-                    <ThemedText type="caption" style={[styles.subtitle, { color: ThemedColor.caption }]}>
+                    <ThemedText style={[styles.subtitle, { color: ThemedColor.caption }]}>
                         Stand out with a real photo
                     </ThemedText>
                 )}
@@ -110,8 +110,11 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 14,
+        fontFamily: "Outfit",
+        fontWeight: "400",
     },
     subtitle: {
         fontSize: 12,
+        fontFamily: "Outfit",
     },
 });

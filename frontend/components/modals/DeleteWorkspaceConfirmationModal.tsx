@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 24,
+        fontWeight: "bold",
         marginBottom: 8,
         textAlign: "center",
     },
@@ -106,6 +107,7 @@ const styles = StyleSheet.create({
     },
     cancelButtonText: {
         fontSize: 16,
+        fontWeight: "600",
     },
     deleteButton: {
         flex: 1,
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
     deleteButtonText: {
         color: "white",
         fontSize: 16,
+        fontWeight: "600",
     },
 });
 

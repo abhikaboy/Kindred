@@ -126,6 +126,7 @@ const PostCardFooter = ({
                     disabled={readOnly}
                 >
                     <ThemedText style={styles.commentText}>
+                        💬{" "}
                         <ThemedText style={[styles.commentText, { color: ThemedColor.caption }]}>
                             {commentCount === 0 ? "Leave a comment" : `View ${commentCount} comment${commentCount === 1 ? "" : "s"}`}{" "}
                         </ThemedText>
@@ -160,6 +161,7 @@ const styles = StyleSheet.create({
     },
     categoryText: {
         fontSize: 16,
+        fontWeight: "400",
         letterSpacing: -0.16,
     },
     captionSection: {
@@ -168,6 +170,7 @@ const styles = StyleSheet.create({
     },
     caption: {
         fontSize: 16,
+        fontWeight: "400",
         lineHeight: 20,
     },
     reactionsRow: {
@@ -185,6 +188,7 @@ const styles = StyleSheet.create({
     },
     commentText: {
         fontSize: 14,
+        fontWeight: "400",
     },
 });
 

@@ -108,7 +108,7 @@ export default function Friends() {
                             ←
                         </ThemedText>
                     </TouchableOpacity>
-                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                    <ThemedText type="subtitle" style={styles.headerTitle}>
                         Friends
                     </ThemedText>
                     <View style={styles.backButton} />
@@ -156,7 +156,7 @@ export default function Friends() {
                             ←
                         </ThemedText>
                     </TouchableOpacity>
-                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                    <ThemedText type="subtitle" style={styles.headerTitle}>
                         Friends
                     </ThemedText>
                     <View style={styles.backButton} />
@@ -183,7 +183,7 @@ export default function Friends() {
                         ←
                     </ThemedText>
                 </TouchableOpacity>
-                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                <ThemedText type="subtitle" style={styles.headerTitle}>
                     Friends
                 </ThemedText>
                 <View style={styles.backButton} />
@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
+        fontWeight: "400",
         textAlign: "center",
     },
     searchContainer: {
@@ -276,7 +277,10 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         fontSize: 12,
+        fontWeight: "400",
+        letterSpacing: 0.5,
         marginBottom: 16,
+        textTransform: "uppercase",
     },
     friendsList: {
         flex: 1,

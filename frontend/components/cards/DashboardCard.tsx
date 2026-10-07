@@ -42,8 +42,9 @@ const DashboardCard = (props: Props) => {
                     paddingVertical: 2,
                     borderRadius: 4,
                 }}>
-                    <ThemedText type="defaultSemiBold" style={{
+                    <ThemedText style={{
                         fontSize: 10,
+                        fontWeight: '600',
                         color: ThemedColor.primary,
                     }}>
                         {badge}

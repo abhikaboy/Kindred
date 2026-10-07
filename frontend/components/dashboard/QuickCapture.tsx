@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
     placeholder: {
         flex: 1,
         fontSize: 16,
+        fontFamily: "OutfitLight",
     },
     receipt: {
         flexDirection: "row",

@@ -1,4 +1,3 @@
-import { Camera, Trash, Plus } from "phosphor-react-native";
 import React, { useState } from "react";
 import { View, StyleSheet, Image, TouchableOpacity, Alert, Dimensions } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
@@ -7,6 +6,7 @@ import ThemedInput from "@/components/inputs/ThemedInput";
 import Dropdown from "@/components/inputs/Dropdown";
 import { BlueprintData } from "@/app/(logged-in)/blueprint/_layout";
 import { uploadImageSmart } from "@/api/upload";
+import { Ionicons } from "@expo/vector-icons";
 import { ObjectId } from "bson";
 import CachedImage from "../CachedImage";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
@@ -40,14 +40,14 @@ const Details = ({ data, onUpdate }: Props) => {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
     const [showCustomCategory, setShowCustomCategory] = useState(false);
-
+    
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
-
+    
     // Initialize selected category
     const [selectedCategory, setSelectedCategory] = useState(() => {
         if (data.category) {
             // Find existing category in predefined list
-            const existingCategory = HABIT_CATEGORIES.find(cat =>
+            const existingCategory = HABIT_CATEGORIES.find(cat => 
                 cat.label === data.category || cat.id === data.category
             );
             if (existingCategory) {
@@ -65,13 +65,13 @@ const Details = ({ data, onUpdate }: Props) => {
 
     const handleCategoryChange = (category: { label: string; id: string; special?: boolean }) => {
         setSelectedCategory(category);
-
+        
         if (category.special && category.id === "custom") {
             // Show custom input
             setShowCustomCategory(true);
             return;
         }
-
+        
         // Update with predefined category
         onUpdate({ category: category.label });
     };
@@ -126,7 +126,7 @@ const Details = ({ data, onUpdate }: Props) => {
     return (
         <View style={styles.stepContent}>
             <View style={styles.fieldContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
+                <ThemedText type="lightBody" style={styles.fieldLabel}>
                     Frequency or Duration
                 </ThemedText>
                 <ThemedInput
@@ -137,7 +137,7 @@ const Details = ({ data, onUpdate }: Props) => {
             </View>
 
             <View style={styles.fieldContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
+                <ThemedText type="lightBody" style={styles.fieldLabel}>
                     Category
                 </ThemedText>
                 {showCustomCategory ? (
@@ -170,7 +170,7 @@ const Details = ({ data, onUpdate }: Props) => {
             </View>
 
             <View style={styles.fieldContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
+                <ThemedText type="lightBody" style={styles.fieldLabel}>
                     Banner Image
                 </ThemedText>
 
@@ -182,7 +182,7 @@ const Details = ({ data, onUpdate }: Props) => {
                                 onPress={pickImage}
                                 disabled={isUploading}
                                 style={[styles.overlayButton, isUploading && styles.disabledButton]}>
-                                <Camera weight="fill" size={24} color={ThemedColor.background} />
+                                <Ionicons name="camera" size={24} color={ThemedColor.background} />
                                 <ThemedText type="lightBody" style={styles.overlayButtonText}>
                                     {isUploading ? "Uploading..." : "Change Image"}
                                 </ThemedText>
@@ -191,7 +191,7 @@ const Details = ({ data, onUpdate }: Props) => {
                                 onPress={removeBannerImage}
                                 disabled={isUploading}
                                 style={[styles.removeButton, isUploading && styles.disabledButton]}>
-                                <Trash weight="fill" size={20} color="#FF4444" />
+                                <Ionicons name="trash" size={20} color="#FF4444" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -200,7 +200,7 @@ const Details = ({ data, onUpdate }: Props) => {
                         onPress={pickImage}
                         disabled={isUploading}
                         style={[styles.uploadButton, isUploading && styles.disabledButton]}>
-                        <Plus  size={32} color={ThemedColor.text} />
+                        <Ionicons name="add" size={32} color={ThemedColor.text} />
                         <ThemedText type="lightBody" style={styles.uploadButtonText}>
                             {isUploading ? "Uploading..." : "Add Banner Image"}
                         </ThemedText>
@@ -221,6 +221,7 @@ const createStyles = (ThemedColor: any) =>
         },
         fieldLabel: {
             fontSize: 16,
+            fontWeight: "500",
             color: ThemedColor.text,
         },
         customCategoryContainer: {

@@ -1,8 +1,8 @@
-import { XCircle } from "phosphor-react-native";
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Ionicons } from "@expo/vector-icons";
 import { formatHandle } from "@/utils/handle";
 import CachedImage from "@/components/CachedImage";
 
@@ -51,7 +51,7 @@ const TaggedUsersChips = ({ users, onRemove }: Props) => {
                     )}
                     <ThemedText type="caption">{formatHandle(u.handle)}</ThemedText>
                     <TouchableOpacity onPress={() => onRemove(u.id)} hitSlop={8}>
-                        <XCircle weight="fill" size={16} color={ThemedColor.caption} />
+                        <Ionicons name="close-circle" size={16} color={ThemedColor.caption} />
                     </TouchableOpacity>
                 </View>
             ))}

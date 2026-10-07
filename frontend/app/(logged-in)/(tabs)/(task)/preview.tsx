@@ -1,8 +1,8 @@
-import { CaretLeft } from "phosphor-react-native";
 import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import React, { useMemo } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -307,12 +307,12 @@ const Preview = (props: Props) => {
                 style={styles.container}>
                 {/* Back Button */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <CaretLeft  size={24} color={ThemedColor.text} />
+                    <Ionicons name="chevron-back" size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
 
                 {/* Header */}
                 <View style={styles.headerContainer}>
-                    <ThemedText type="fancyFrauncesHeading">
+                    <ThemedText type="fancyFrauncesHeading" style={styles.title}>
                         Preview
                     </ThemedText>
                     <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
@@ -374,6 +374,9 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         gap: 8,
     },
+    title: {
+        fontWeight: "600",
+    },
     subtitle: {
         fontSize: 14,
         lineHeight: 20,
@@ -396,6 +399,7 @@ const styles = StyleSheet.create({
     },
     categoryTitle: {
         fontSize: 20,
+        fontWeight: "600",
         letterSpacing: -0.5,
     },
     newBadge: {

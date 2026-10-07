@@ -22,21 +22,21 @@ const StepProgress = ({ steps, currentStep }: Props) => {
     return (
         <View style={styles.container}>
             <View style={styles.textContainer}>
-                <ThemedText type="defaultSemiBold" style={styles.stepText}>
+                <ThemedText style={styles.stepText}>
                     Step {currentStep} of {steps.length}
                 </ThemedText>
-                <ThemedText type="defaultSemiBold" style={styles.stepTitle}>
+                <ThemedText style={styles.stepTitle}>
                     {steps[currentStep - 1]?.title}
                 </ThemedText>
             </View>
-
+            
             <View style={styles.progressBarContainer}>
                 <View style={styles.progressBarBackground}>
-                    <View
+                    <View 
                         style={[
                             styles.progressBarFill,
                             { width: `${(currentStep / steps.length) * 100}%` }
-                        ]}
+                        ]} 
                     />
                 </View>
             </View>
@@ -57,11 +57,17 @@ const createStyles = (ThemedColor: any) => StyleSheet.create({
     },
     stepText: {
         fontSize: 11,
+        fontFamily: "Outfit",
         color: ThemedColor.caption,
+        fontWeight: "500",
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
     },
     stepTitle: {
         fontSize: 14,
+        fontFamily: "Outfit",
         color: ThemedColor.text,
+        fontWeight: "500",
     },
     progressBarContainer: {
         width: "100%",

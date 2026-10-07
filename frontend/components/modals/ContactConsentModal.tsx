@@ -1,9 +1,9 @@
-import { Users } from "phosphor-react-native";
 import React from "react";
 import { StyleSheet, View, TouchableOpacity, ScrollView } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import DefaultModal from "./DefaultModal";
 import { ThemedText } from "@/components/ThemedText";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 type Props = {
     visible: boolean;
@@ -13,7 +13,7 @@ type Props = {
 
 /**
  * Contact Consent Modal
- *
+ * 
  * This modal is required for App Store compliance (Guideline 5.1.2).
  * It informs users that their contacts will be uploaded to our server
  * and requests explicit consent before accessing their contacts.
@@ -22,8 +22,8 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
     const ThemedColor = useThemeColor();
 
     return (
-        <DefaultModal
-            visible={visible}
+        <DefaultModal 
+            visible={visible} 
             setVisible={() => {}} // Prevent dismissal by tapping outside
             enableDynamicSizing={true}
             enablePanDownToClose={false}
@@ -31,7 +31,7 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
             <View style={styles.container}>
                 <View style={styles.iconContainer}>
                     <View style={[styles.iconCircle, { backgroundColor: ThemedColor.primary + '20' }]}>
-                        <Users  size={32} color={ThemedColor.primary} />
+                        <Ionicons name="people-outline" size={32} color={ThemedColor.primary} />
                     </View>
                 </View>
 
@@ -51,7 +51,7 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
                             <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
                                 What happens with your contacts:
                             </ThemedText>
-
+                            
                             <View style={styles.bulletPoint}>
                                 <View style={[styles.bullet, { backgroundColor: ThemedColor.primary }]} />
                                 <ThemedText type="default" style={styles.bulletText}>
@@ -82,7 +82,7 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
                         </View>
 
                         <ThemedText type="caption" style={[styles.privacyNote, { color: ThemedColor.text + 'CC' }]}>
-                            By tapping "Allow", you consent to uploading your contacts to our server for friend matching.
+                            By tapping "Allow", you consent to uploading your contacts to our server for friend matching. 
                             For more details, see our{' '}
                             <ThemedText type="caption" style={[styles.link, { color: ThemedColor.primary }]}>
                                 Privacy Policy
@@ -100,8 +100,8 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
                             { backgroundColor: ThemedColor.primary }
                         ]}
                     >
-                        <ThemedText
-                            type="defaultSemiBold"
+                        <ThemedText 
+                            type="defaultSemiBold" 
                             style={[styles.buttonText, { color: '#FFFFFF' }]}
                         >
                             Allow
@@ -113,14 +113,14 @@ const ContactConsentModal = ({ visible, onAccept, onDecline }: Props) => {
                         style={[
                             styles.button,
                             styles.secondaryButton,
-                            {
+                            { 
                                 backgroundColor: ThemedColor.background,
                                 borderColor: ThemedColor.tertiary,
                             }
                         ]}
                     >
-                        <ThemedText
-                            type="defaultSemiBold"
+                        <ThemedText 
+                            type="defaultSemiBold" 
                             style={[styles.buttonText, { color: ThemedColor.text }]}
                         >
                             Not Now

@@ -12,7 +12,7 @@ export default function ReportedPostCard({ onDismiss }: Props) {
 
     return (
         <View style={[styles.container, { backgroundColor: ThemedColor.background, borderBottomColor: ThemedColor.tertiary }]}>
-            <ThemedText type="defaultSemiBold" style={styles.message}>
+            <ThemedText style={styles.message}>
                 Thank you for reporting. We've hidden this post.
             </ThemedText>
             {onDismiss && (
@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
     message: {
         fontSize: 15,
         textAlign: "center",
+        fontWeight: "500",
     },
     dismiss: {
         fontSize: 14,
