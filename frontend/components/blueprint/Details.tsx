@@ -126,7 +126,7 @@ const Details = ({ data, onUpdate }: Props) => {
     return (
         <View style={styles.stepContent}>
             <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
+                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
                     Frequency or Duration
                 </ThemedText>
                 <ThemedInput
@@ -137,7 +137,7 @@ const Details = ({ data, onUpdate }: Props) => {
             </View>
 
             <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
+                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
                     Category
                 </ThemedText>
                 {showCustomCategory ? (
@@ -170,7 +170,7 @@ const Details = ({ data, onUpdate }: Props) => {
             </View>
 
             <View style={styles.fieldContainer}>
-                <ThemedText type="lightBody" style={styles.fieldLabel}>
+                <ThemedText type="defaultSemiBold" style={styles.fieldLabel}>
                     Banner Image
                 </ThemedText>
 
@@ -221,7 +221,6 @@ const createStyles = (ThemedColor: any) =>
         },
         fieldLabel: {
             fontSize: 16,
-            fontWeight: "500",
             color: ThemedColor.text,
         },
         customCategoryContainer: {

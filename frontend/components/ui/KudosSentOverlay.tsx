@@ -155,9 +155,9 @@ export const KudosSentOverlay: React.FC = () => {
                 </View>
                 <View style={styles.sentRow}>
                     <Check size={16} color="#ffffff" weight="bold" />
-                    <ThemedText style={styles.sentText}>{kindLabel} sent</ThemedText>
+                    <ThemedText type="subtitle" style={styles.sentText}>{kindLabel} sent</ThemedText>
                 </View>
-                <ThemedText style={styles.recipientText} numberOfLines={2}>
+                <ThemedText type="defaultSemiBold" style={styles.recipientText} numberOfLines={2}>
                     to {current.recipientName}
                     {current.taskName ? ` · “${current.taskName}”` : ""}
                 </ThemedText>
@@ -170,7 +170,7 @@ export const KudosSentOverlay: React.FC = () => {
                 ) : (
                     !!current.message && (
                         <View style={styles.messageCard}>
-                            <ThemedText
+                            <ThemedText type="default"
                                 style={styles.messageText}
                                 numberOfLines={3}
                             >
@@ -227,15 +227,11 @@ const styles = StyleSheet.create({
     sentText: {
         color: "#ffffff",
         fontSize: 18,
-        fontFamily: "Outfit",
-        fontWeight: "600",
         letterSpacing: 0.2,
     },
     recipientText: {
         color: "rgba(255,255,255,0.72)",
         fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "500",
         textAlign: "center",
     },
     sentImage: {
@@ -271,8 +267,6 @@ const styles = StyleSheet.create({
     messageText: {
         color: "#ffffff",
         fontSize: 15,
-        fontFamily: "Outfit",
-        fontWeight: "400",
         textAlign: "center",
         lineHeight: 21,
     },

@@ -101,7 +101,6 @@ const createStyles = (ThemedColor: any) =>
         },
         sectionTitle: {
             fontSize: 28,
-            fontWeight: "600",
             textAlign: "left",
             marginBottom: 8,
         },
@@ -123,7 +122,6 @@ const createStyles = (ThemedColor: any) =>
         },
         debugTitle: {
             fontSize: 18,
-            fontWeight: "600",
             marginBottom: 8,
         },
         debugText: {

@@ -63,7 +63,6 @@ export default function PrimaryButton({ title, onPress, style, ghost, outline, d
                     color: getTextColor(),
                     textAlign: "center",
                     fontFamily: "Outfit",
-                    fontWeight: 500,
                     fontSize: 15,
                     ...textStyle,
                 }}>

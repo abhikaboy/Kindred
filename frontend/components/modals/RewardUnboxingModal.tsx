@@ -274,7 +274,7 @@ export default function RewardUnboxingModal({
                 <View style={styles.content}>
                     <Animated.View style={[styles.stage, { opacity: stageOpacity }]}>
                         <View style={styles.header}>
-                            <ThemedText type="subtitle" style={[styles.body, { color: current.color }]}>Rings complete</ThemedText>
+                            <ThemedText type="larger_default" style={{ color: current.color }}>Rings complete</ThemedText>
                             <ThemedText type="titleFraunces" style={{ color: current.color }}>
                                 {current.label}
                             </ThemedText>
@@ -349,7 +349,7 @@ export default function RewardUnboxingModal({
                             })}
                         </View>
 
-                        <ThemedText type="subtitle" style={styles.body}>{prompt}</ThemedText>
+                        <ThemedText type="larger_default">{prompt}</ThemedText>
                     </Animated.View>
 
                     {phase === "revealed" && (
@@ -380,7 +380,7 @@ export default function RewardUnboxingModal({
                                 <ThemedText type="titleFraunces">
                                     +{rewardAmount} {winningType.label}
                                 </ThemedText>
-                                <ThemedText type="subtitle" style={[styles.body, { color: current.color }]}>
+                                <ThemedText type="larger_default" style={{ color: current.color }}>
                                     {current.label} reward{newTotal != null ? ` · ${newTotal} total` : ""}
                                 </ThemedText>
                             </View>
@@ -410,7 +410,6 @@ export default function RewardUnboxingModal({
 
 const styles = StyleSheet.create({
     flex: { flex: 1 },
-    body: { fontWeight: "400" },
     content: {
         flex: 1,
         justifyContent: "center",

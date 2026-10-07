@@ -1,4 +1,4 @@
-import { View, Text, Dimensions, Image, TouchableOpacity, FlatList, ScrollView } from "react-native";
+import { View, Dimensions, Image, TouchableOpacity, FlatList, ScrollView } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -582,9 +582,9 @@ export default function Posting() {
                                             }}>
                                             {waitingForCamera ? (
                                                 <ThemedText
+                                                    type="defaultSemiBold"
                                                     style={{
                                                         fontSize: 24,
-                                                        fontWeight: "600",
                                                         color: "#fff",
                                                         textAlign: "center",
                                                     }}>
@@ -592,9 +592,9 @@ export default function Posting() {
                                                 </ThemedText>
                                             ) : countdown > 0 ? (
                                                 <ThemedText
+                                                    type="heading"
                                                     style={{
                                                         fontSize: 120,
-                                                        fontWeight: "900",
                                                         color: "#fff",
                                                         textAlign: "center",
                                                     }}>
@@ -602,9 +602,9 @@ export default function Posting() {
                                                 </ThemedText>
                                             ) : (
                                                 <ThemedText
+                                                    type="heading"
                                                     style={{
                                                         fontSize: 36,
-                                                        fontWeight: "700",
                                                         color: "#fff",
                                                         textAlign: "center",
                                                     }}>
@@ -630,11 +630,11 @@ export default function Posting() {
                                 borderRadius: 16,
                                 zIndex: 10,
                             }}>
-                            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
+                            <ThemedText type="defaultSemiBold" style={{ color: "#fff", fontSize: 14 }}>
                                 {viewMode === "preview"
                                     ? `${currentPhotoIndex + 1} / ${photos.length}`
                                     : `${photos.length} selected`}
-                            </Text>
+                            </ThemedText>
                         </View>
                     )}
 
@@ -750,9 +750,9 @@ export default function Posting() {
                                                         alignItems: "center",
                                                         paddingHorizontal: 6,
                                                     }}>
-                                                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "bold" }}>
+                                                    <ThemedText type="defaultSemiBold" style={{ color: "#fff", fontSize: 12 }}>
                                                         {photos.length}
-                                                    </Text>
+                                                    </ThemedText>
                                                 </View>
                                             )}
                                         </TouchableOpacity>

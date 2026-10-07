@@ -292,7 +292,7 @@ const PostCardMedia = ({
 
                     <View style={styles.imageCounter}>
                         <View style={styles.imageCounterBackground}>
-                            <ThemedText style={styles.imageCounterText}>
+                            <ThemedText type="defaultSemiBold" style={styles.imageCounterText}>
                                 {currentImageIndex + 1}/{items.length}
                             </ThemedText>
                         </View>
@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
     imageCounterText: {
         color: "#ffffff",
         fontSize: 12,
-        fontWeight: "600",
         textAlign: "center",
     },
     dotIndicators: {

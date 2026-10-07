@@ -41,7 +41,7 @@ const Today = () => {
                     <Feather name="menu" size={24} color={ThemedColor.caption} />
                 </TouchableOpacity>
                 <View style={styles.headerContainer}>
-                    <ThemedText type="title" style={styles.title}>
+                    <ThemedText type="title">
                         {dateHeader}
                     </ThemedText>
                     <ThemedText type="lightBody" style={{ lineHeight: 24, marginTop: 4 }}>
@@ -112,9 +112,6 @@ const styles = StyleSheet.create({
     headerContainer: {
         paddingBottom: 24,
         paddingTop: 20,
-    },
-    title: {
-        fontWeight: "600",
     },
     dayOfWeek: {
         marginTop: 4,

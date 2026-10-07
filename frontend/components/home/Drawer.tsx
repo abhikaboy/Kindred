@@ -389,7 +389,7 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
                     {icon}
                 </View>
             )}
-            <ThemedText type="default" style={{ fontFamily: "Outfit", fontWeight: "medium" }} key={title}>
+            <ThemedText type="defaultSemiBold" key={title}>
                 {title}
             </ThemedText>
             {badge && (
@@ -402,9 +402,9 @@ const DrawerItem = React.memo(({ title, selected, onPress, onLongPress, badge, i
                     marginLeft: 4,
                 }}>
                     <ThemedText
+                        type="defaultSemiBold"
                         style={{
                         fontSize: 10,
-                            fontWeight: "600",
                         color: ThemedColor.primary,
                     }}>
                         {badge}

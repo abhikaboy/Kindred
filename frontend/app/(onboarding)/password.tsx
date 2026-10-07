@@ -138,7 +138,7 @@ const PasswordOnboarding = (props: Props) => {
                                     transform: [{ translateY: slideAnimation }],
                                 },
                             ]}>
-                            <ThemedText style={themedStyles.titleText}>Create a password</ThemedText>
+                            <ThemedText type="titleFraunces" style={themedStyles.titleText}>Create a password</ThemedText>
                         </Animated.View>
 
                         {/* Input Section */}
@@ -258,15 +258,11 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         titleText: {
             fontSize: Math.min(screenWidth * 0.085, 32),
-            fontFamily: "Fraunces",
-            fontWeight: "600",
             lineHeight: Math.min(screenWidth * 0.102, 38),
             letterSpacing: -1,
         },
         subtitleText: {
             fontSize: 16,
-            fontFamily: "Outfit",
-            fontWeight: "400",
             opacity: 0.6,
             marginTop: 8,
         },

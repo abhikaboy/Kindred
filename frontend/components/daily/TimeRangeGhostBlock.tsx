@@ -184,6 +184,5 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 13,
         fontFamily: "Outfit",
-        fontWeight: "600",
     },
 });

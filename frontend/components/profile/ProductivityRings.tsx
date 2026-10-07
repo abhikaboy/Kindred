@@ -422,7 +422,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                                     {progress.closed ? (
                                         <Check size={16} color={RING_COLORS[key]} weight="bold" />
                                     ) : (
-                                        <ThemedText style={[styles.ringText, { color: ThemedColor.text }]}>
+                                        <ThemedText type="defaultSemiBold" style={[styles.ringText, { color: ThemedColor.text }]}>
                                             {progress.current}/{progress.target}
                                         </ThemedText>
                                     )}
@@ -543,12 +543,9 @@ const styles = StyleSheet.create({
     },
     ringText: {
         fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "600",
     },
     ringLabel: {
         fontSize: 11,
-        fontFamily: "Outfit",
         letterSpacing: 1,
     },
 });
@@ -604,7 +601,7 @@ const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle
                                 {progress.closed ? (
                                     <Check size={24} color={RING_COLORS[key]} weight="bold" />
                                 ) : (
-                                    <ThemedText
+                                    <ThemedText type="defaultSemiBold"
                                         style={[styles.ringText, { color: ThemedColor.text }]}
                                     >
                                         {progress.current}/{progress.target}
@@ -612,7 +609,7 @@ const FriendRings: React.FC<FriendRingsProps> = ({ ringState, userId, userHandle
                                 )}
                             </View>
                         </View>
-                        <ThemedText
+                        <ThemedText type="caption"
                             style={[styles.ringLabel, { color: ThemedColor.caption }]}
                         >
                             {label.toUpperCase()}

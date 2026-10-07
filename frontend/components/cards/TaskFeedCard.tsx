@@ -144,17 +144,14 @@ const TaskFeedCard = React.memo(({
         },
         userName: {
             fontSize: 16,
-            fontWeight: "400",
             color: ThemedColor.text,
         },
         userHandle: {
             fontSize: 14,
-            fontWeight: "300",
             color: ThemedColor.caption,
         },
         timeText: {
             fontSize: 12,
-            fontWeight: "400",
             color: ThemedColor.caption,
         },
         categoryRow: {
@@ -247,12 +244,12 @@ const TaskFeedCard = React.memo(({
                             <ThemedText style={styles.userName}>
                                 {user.display_name}
                             </ThemedText>
-                            <ThemedText style={styles.userHandle}>
+                            <ThemedText type="caption" style={styles.userHandle}>
                                 {user.handle}
                             </ThemedText>
                         </View>
                     </TouchableOpacity>
-                    <ThemedText style={styles.timeText}>
+                    <ThemedText type="caption" style={styles.timeText}>
                         {timeAgo}
                     </ThemedText>
                 </View>

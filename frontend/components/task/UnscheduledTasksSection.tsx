@@ -138,7 +138,6 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 20,
-        fontWeight: "500",
         letterSpacing: 0.2,
     },
     collapsibleContent: {

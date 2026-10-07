@@ -18,7 +18,7 @@ export const GuestLoginLink = React.memo(function GuestLoginLink() {
             style={styles.row}>
             <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                 Already have an account?{" "}
-                <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "800" }}>
+                <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.primary, fontSize: 14 }}>
                     Log in
                 </ThemedText>
             </ThemedText>

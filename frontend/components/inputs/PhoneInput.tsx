@@ -100,7 +100,7 @@ export const PhoneInput = ({ value, onChangeText, placeholder = "(555) 123-4567"
                     onPress={() => setShow(true)}
                     activeOpacity={0.7}
                 >
-                    <ThemedText style={styles.countryCodeText}>
+                    <ThemedText type="subtitle" style={styles.countryCodeText}>
                         {countryCode}
                     </ThemedText>
                 </TouchableOpacity>
@@ -136,14 +136,11 @@ const styles = StyleSheet.create({
     },
     countryCodeText: {
         fontSize: 18,
-        fontFamily: 'Outfit',
-        fontWeight: '500',
     },
     phoneInput: {
         flex: 1,
         fontSize: 18,
         fontFamily: 'Outfit',
-        fontWeight: '400',
         paddingVertical: 20,
         paddingRight: 24,
         backgroundColor: 'transparent',

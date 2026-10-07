@@ -202,7 +202,7 @@ const LoginPhone = () => {
                             onPress={handleBack}
                             style={styles.backButton}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <ThemedText style={styles.backButtonText}>← Back</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={styles.backButtonText}>← Back</ThemedText>
                         </TouchableOpacity>
 
                         <ThemedText type="titleFraunces" style={styles.title}>
@@ -217,7 +217,7 @@ const LoginPhone = () => {
                                         onChangeText={setPhoneNumber}
                                         placeholder="(555) 123-4567"
                                     />
-                                    <ThemedText style={styles.helperText}>
+                                    <ThemedText type="defaultSemiBold" style={styles.helperText}>
                                         {loginMode === "otp"
                                             ? "We'll send you a verification code"
                                             : "Enter the phone number for your account"}
@@ -236,7 +236,7 @@ const LoginPhone = () => {
                                     testID="toggle-login-mode"
                                     onPress={toggleLoginMode}
                                     style={styles.toggleModeButton}>
-                                    <ThemedText style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
+                                    <ThemedText type="defaultSemiBold" style={[styles.toggleModeText, { color: ThemedColor.tint }]}>
                                         {loginMode === "otp"
                                             ? "Use a password instead"
                                             : "Use a verification code instead"}
@@ -248,7 +248,7 @@ const LoginPhone = () => {
                         {step === "otp" && (
                             <>
                                 <View style={styles.otpContainer}>
-                                    <ThemedText style={styles.subtitleText}>
+                                    <ThemedText type="defaultSemiBold" style={styles.subtitleText}>
                                         Enter the 4-digit code sent to your phone
                                     </ThemedText>
 
@@ -273,7 +273,6 @@ const LoginPhone = () => {
                                                 color: ThemedColor.text,
                                                 fontSize: 28,
                                                 fontFamily: "Outfit",
-                                                fontWeight: "600",
                                             },
                                             focusedPinCodeContainerStyle: {
                                                 borderColor: ThemedColor.tint,
@@ -287,17 +286,17 @@ const LoginPhone = () => {
                                     />
 
                                     <View style={styles.resendContainer}>
-                                        <ThemedText style={[styles.resendText, { color: ThemedColor.caption }]}>
+                                        <ThemedText type="caption" style={[styles.resendText, { color: ThemedColor.caption }]}>
                                             Didn't receive a code?{" "}
                                         </ThemedText>
                                         {canResend ? (
                                             <TouchableOpacity onPress={handleResend} disabled={sendingOTP}>
-                                                <ThemedText style={[styles.resendButton, { color: ThemedColor.tint }]}>
+                                                <ThemedText type="defaultSemiBold" style={[styles.resendButton, { color: ThemedColor.tint }]}>
                                                     Resend
                                                 </ThemedText>
                                             </TouchableOpacity>
                                         ) : (
-                                            <ThemedText style={[styles.resendTimer, { color: ThemedColor.caption }]}>
+                                            <ThemedText type="caption" style={[styles.resendTimer, { color: ThemedColor.caption }]}>
                                                 Resend in {resendTimer}s
                                             </ThemedText>
                                         )}
@@ -352,7 +351,7 @@ const LoginPhone = () => {
 
                         {(error || sendOTPError) && (
                             <View style={styles.errorContainer}>
-                                <ThemedText style={styles.errorText}>{error || sendOTPError}</ThemedText>
+                                <ThemedText type="defaultSemiBold" style={styles.errorText}>{error || sendOTPError}</ThemedText>
                             </View>
                         )}
                     </View>
@@ -380,20 +379,15 @@ const styles = StyleSheet.create({
     },
     backButtonText: {
         fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "500",
         opacity: 0.7,
     },
     title: {
         fontSize: 32,
-        fontWeight: "600",
         letterSpacing: -1,
         lineHeight: 38,
     },
     subtitleText: {
         fontSize: 16,
-        fontFamily: "Outfit",
-        fontWeight: "400",
         opacity: 0.6,
         marginBottom: 24,
     },
@@ -403,7 +397,6 @@ const styles = StyleSheet.create({
     },
     helperText: {
         fontSize: 14,
-        fontFamily: "Outfit",
         opacity: 0.6,
         marginTop: 8,
     },
@@ -422,16 +415,12 @@ const styles = StyleSheet.create({
     },
     resendText: {
         fontSize: 14,
-        fontFamily: "Outfit",
     },
     resendButton: {
         fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "600",
     },
     resendTimer: {
         fontSize: 14,
-        fontFamily: "Outfit",
     },
     continueButton: {
         width: "100%",
@@ -445,16 +434,12 @@ const styles = StyleSheet.create({
     },
     toggleModeText: {
         fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "500",
     },
     errorContainer: {
         width: "100%",
     },
     errorText: {
         fontSize: 14,
-        fontFamily: "Outfit",
-        fontWeight: "500",
         color: "#ff3b30",
         textAlign: "center",
     },

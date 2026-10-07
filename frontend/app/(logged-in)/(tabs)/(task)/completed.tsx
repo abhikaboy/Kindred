@@ -313,7 +313,7 @@ const CompletedTasks = () => {
                                 </TouchableOpacity>
 
                                 <View style={styles.paginationInfo}>
-                                    <ThemedText type="default" style={styles.paginationText}>
+                                    <ThemedText type="defaultSemiBold" style={styles.paginationText}>
                                         Page {paginationData.page} of {paginationData.totalPages}
                                     </ThemedText>
                                     <ThemedText type="caption" style={styles.paginationSubtext}>
@@ -364,9 +364,7 @@ const styles = StyleSheet.create({
         paddingBottom: 24,
         paddingTop: 20,
     },
-    title: {
-        fontWeight: "600",
-    },
+    title: {},
     subtitle: {
         lineHeight: 24,
         marginTop: 8,
@@ -393,9 +391,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingBottom: 8,
     },
-    dateText: {
-        fontWeight: "600",
-    },
+    dateText: {},
     taskCount: {
         fontSize: 14,
     },
@@ -438,7 +434,6 @@ const styles = StyleSheet.create({
     },
     paginationText: {
         fontSize: 14,
-        fontWeight: "600",
     },
     paginationSubtext: {
         fontSize: 12,

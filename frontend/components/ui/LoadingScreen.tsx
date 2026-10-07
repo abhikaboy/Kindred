@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
     },
     brandName: {
         fontSize: 32,
-        fontWeight: "700",
         marginBottom: 8,
         letterSpacing: -1,
     },

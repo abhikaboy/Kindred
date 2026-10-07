@@ -461,7 +461,6 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 20,
-        fontWeight: "600",
         marginBottom: 8,
         textAlign: "center",
     },

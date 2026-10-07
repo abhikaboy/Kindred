@@ -198,10 +198,10 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
                     Something went wrong
                 </ThemedText>
                 <ThemedText style={{ marginTop: 10 }}>{error.message}</ThemedText>
-                <ThemedText style={{ marginTop: 10, fontWeight: "bold" }} onPress={retry}>
+                <ThemedText type="defaultSemiBold" style={{ marginTop: 10 }} onPress={retry}>
                     Try Again
                 </ThemedText>
-                <ThemedText style={{ marginTop: 10, fontWeight: "bold" }} onPress={() => {
+                <ThemedText type="defaultSemiBold" style={{ marginTop: 10 }} onPress={() => {
                     AsyncStorage.clear();
                 }}>
                     Clear Cache

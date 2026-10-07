@@ -164,7 +164,7 @@ export default function Rewards() {
                             ) : (
                                 <Copy size={18} color={ThemedColor.buttonText} />
                             )}
-                            <ThemedText style={[styles.buttonText, { color: ThemedColor.buttonText }]}>
+                            <ThemedText type="defaultSemiBold" style={[styles.buttonText, { color: ThemedColor.buttonText }]}>
                                 {copied ? "Copied!" : "Copy"}
                             </ThemedText>
                         </TouchableOpacity>
@@ -182,7 +182,7 @@ export default function Rewards() {
                             onPress={handleShareCode}
                             disabled={!referralCode || isLoadingInfo}>
                             <Export size={18} color={ThemedColor.primary} />
-                            <ThemedText style={[styles.buttonText, { color: ThemedColor.primary }]}>Share</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={[styles.buttonText, { color: ThemedColor.primary }]}>Share</ThemedText>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -191,7 +191,7 @@ export default function Rewards() {
                 <View style={styles.unlocksSection}>
                     <ThemedText type="default">
                         You have{" "}
-                        <ThemedText style={[styles.unlocksCount, { color: ThemedColor.primary }]}>
+                        <ThemedText type="defaultSemiBold" style={[styles.unlocksCount, { color: ThemedColor.primary }]}>
                             {isLoadingInfo ? "..." : unlocksRemaining} Unlock(s)
                         </ThemedText>
                     </ThemedText>
@@ -285,10 +285,7 @@ const useStyles = (ThemedColor: any) => {
         unlocksSection: {
             marginTop: 0,
         },
-        unlocksCount: {
-            fontWeight: "600",
-            fontFamily: "Outfit",
-        },
+        unlocksCount: {},
         referralSection: {
             gap: 12,
         },
@@ -306,7 +303,6 @@ const useStyles = (ThemedColor: any) => {
         codeText: {
             fontSize: 24 * scale,
             letterSpacing: 4,
-            fontFamily: "Outfit",
         },
         buttonRow: {
             flexDirection: "row",
@@ -324,8 +320,6 @@ const useStyles = (ThemedColor: any) => {
         },
         buttonText: {
             fontSize: 14 * scale,
-            fontWeight: "600",
-            fontFamily: "Outfit",
         },
         rewardsList: {
             gap: 12,

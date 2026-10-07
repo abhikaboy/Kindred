@@ -410,7 +410,7 @@ const Review = (props: Props) => {
                         <CaretLeft  size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
                     {!emptyStack && currentTask != null && (
-                        <ThemedText style={[styles.hintCount, { color: ThemedColor.primary}]}>
+                        <ThemedText type="defaultSemiBold" style={[styles.hintCount, { color: ThemedColor.primary}]}>
                             {cards.length} left
                         </ThemedText>
                     )}
@@ -534,7 +534,6 @@ const styles = StyleSheet.create({
     },
     hintCount: {
         fontSize: 15,
-        fontWeight: "600",
     },
     emptyState: {
         flex: 1,

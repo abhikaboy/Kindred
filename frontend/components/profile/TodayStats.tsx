@@ -29,10 +29,10 @@ function StatItem({ icon, label, value, loading = false }: StatItemProps) {
             ]}>
             <View style={styles.iconContainer}>{icon}</View>
             <View style={styles.textContainer}>
-                <ThemedText type="default" style={[styles.statValue, { color: ThemedColor.text }]}>
+                <ThemedText type="defaultSemiBold" style={[styles.statValue, { color: ThemedColor.text }]}>
                     {loading ? "..." : value}
                 </ThemedText>
-                <ThemedText type="lightBody" style={[styles.statLabel, { color: ThemedColor.text }]}>
+                <ThemedText type="default" style={[styles.statLabel, { color: ThemedColor.text }]}>
                     {label}
                 </ThemedText>
             </View>
@@ -142,13 +142,11 @@ const styles = StyleSheet.create({
         gap: 0,
     },
     statValue: {
-        fontWeight: "500",
         fontSize: 14,
         lineHeight: 18,
         marginBottom: 0,
     },
     statLabel: {
-        fontWeight: "500",
         fontSize: 14,
         lineHeight: 18,
     },

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, TouchableOpacity, Text, StyleSheet, useColorScheme } from "react-native";
+import { View, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
+import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import EmojiPicker from "rn-emoji-keyboard";
 
@@ -49,7 +50,7 @@ const ReactionAction = ({ onAddReaction }: ReactionActionProps) => {
         onPress={() => setShowEmojiSelector(true)}
         style={styles.reactionButton}
       >
-        <Text style={styles.reactionButtonText}>+</Text>
+        <ThemedText style={styles.reactionButtonText}>+</ThemedText>
       </TouchableOpacity>
 
       <EmojiPicker
@@ -85,7 +86,6 @@ const stylesheet = (ThemedColor: any) =>
     reactionButtonText: {
       color: ThemedColor.buttonText,
       fontSize: 20,
-      fontWeight: "300",
     },
   });
 

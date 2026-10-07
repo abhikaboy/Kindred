@@ -130,29 +130,29 @@ const CalendarEventCardComponent: React.FC<CalendarEventCardProps> = ({
                     {sizeCategory === "normal" && (
                         <>
                             {fullTimeDisplay !== '' && (
-                                <ThemedText style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
+                                <ThemedText type="caption" style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
                                     {fullTimeDisplay}
                                 </ThemedText>
                             )}
-                            <ThemedText style={[styles.titleText, { color: textColor, fontSize: 13 }]} numberOfLines={1}>
+                            <ThemedText type="defaultSemiBold" style={[styles.titleText, { color: textColor, fontSize: 13 }]} numberOfLines={1}>
                                 {taskLabel}
                             </ThemedText>
                         </>
                     )}
                     {sizeCategory === "sm" && (
                         <View style={styles.rowLayout}>
-                            <ThemedText style={[styles.titleText, { color: textColor, fontSize: 11, flex: 1 }]} numberOfLines={1}>
+                            <ThemedText type="defaultSemiBold" style={[styles.titleText, { color: textColor, fontSize: 11, flex: 1 }]} numberOfLines={1}>
                                 {taskLabel}
                             </ThemedText>
                             {fullTimeDisplay !== '' && (
-                                <ThemedText style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
+                                <ThemedText type="caption" style={[styles.timeText, { color: textColor, fontSize: 10 }]} numberOfLines={1}>
                                     {fullTimeDisplay}
                                 </ThemedText>
                             )}
                         </View>
                     )}
                     {sizeCategory === "xs" && (
-                        <ThemedText style={[styles.titleText, { color: textColor, fontSize: 11 }]} numberOfLines={1}>
+                        <ThemedText type="defaultSemiBold" style={[styles.titleText, { color: textColor, fontSize: 11 }]} numberOfLines={1}>
                             {taskLabel}
                         </ThemedText>
                     )}
@@ -209,11 +209,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     timeText: {
-        fontFamily: "Outfit",
-        fontWeight: "500",
     },
     titleText: {
-        fontFamily: "Outfit",
-        fontWeight: "600",
     },
 });

@@ -14,9 +14,9 @@ interface KudosProgressCardProps {
   showNavigation?: boolean;
 }
 
-export default function KudosProgressCard({ 
-  current, 
-  max = KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX, 
+export default function KudosProgressCard({
+  current,
+  max = KUDOS_CONSTANTS.ENCOURAGEMENTS_MAX,
   type,
   description,
   showNavigation = true
@@ -49,8 +49,8 @@ export default function KudosProgressCard({
     outputRange: ["0%", "100%"],
   });
 
-  const icon = type === "encouragements" 
-    ? <Sparkle size={18} weight="fill" color={ThemedColor.primary} /> 
+  const icon = type === "encouragements"
+    ? <Sparkle size={18} weight="fill" color={ThemedColor.primary} />
     : <Confetti size={18} weight="fill" color={ThemedColor.primary} />;
 
   return (
@@ -64,7 +64,7 @@ export default function KudosProgressCard({
         </View>
         {showNavigation && (
           <TouchableOpacity onPress={handlePress} activeOpacity={0.7} style={styles.rewardsButton}>
-            <ThemedText type="caption" style={styles.rewardsText}>
+            <ThemedText type={isMaxed ? "defaultSemiBold" : "caption"} style={styles.rewardsText}>
               {isMaxed ? "Claim rewards" : "See rewards"}
             </ThemedText>
             <ArrowRight size={12} weight="bold" color={isMaxed ? ThemedColor.primary : ThemedColor.caption} />
@@ -73,11 +73,11 @@ export default function KudosProgressCard({
       </View>
 
       <View style={styles.progressBarBackground}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.progressBarFill,
             { width: animatedWidthStyle }
-          ]} 
+          ]}
         />
       </View>
 
@@ -135,7 +135,5 @@ const createStyles = (ThemedColor: ReturnType<typeof useThemeColor>, isMaxed: bo
     rewardsText: {
       fontSize: 13,
       color: isMaxed ? ThemedColor.primary : ThemedColor.caption,
-      fontWeight: isMaxed ? "600" : "400",
     },
   });
-

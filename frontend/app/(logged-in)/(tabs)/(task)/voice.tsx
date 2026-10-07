@@ -228,7 +228,7 @@ const VoiceDump = (props: Props) => {
                             NATURAL LANGUAGE CREDITS
                         </ThemedText>
                         <View style={styles.creditsValue}>
-                            <ThemedText type="default" style={{ fontWeight: "600" }}>
+                            <ThemedText type="defaultSemiBold">
                                 {credits.naturalLanguage}
                             </ThemedText>
                             <TouchableOpacity
@@ -318,9 +318,7 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         gap: 8,
     },
-    title: {
-        fontWeight: "600",
-    },
+    title: {},
     creditsContainer: {
         flexDirection: "row",
         alignItems: "center",
@@ -330,7 +328,6 @@ const styles = StyleSheet.create({
     },
     creditsLabel: {
         fontSize: 11,
-        fontWeight: "600",
     },
     creditsValue: {
         flexDirection: "row",
@@ -340,9 +337,7 @@ const styles = StyleSheet.create({
         gap: 16,
         marginBottom: 24,
     },
-    previewLabel: {
-        fontWeight: "400",
-    },
+    previewLabel: {},
     transcriptionText: {
         lineHeight: 24,
     },

@@ -156,7 +156,7 @@ const NameOnboarding = (props: Props) => {
                                     transform: [{ translateY: slideAnimation }],
                                 },
                             ]}>
-                            <ThemedText style={themedStyles.titleText}>Introduce yourself</ThemedText>
+                            <ThemedText type="titleFraunces" style={themedStyles.titleText}>Introduce yourself</ThemedText>
                         </Animated.View>
 
                         {/* Input Section */}
@@ -250,8 +250,6 @@ const styles = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         titleText: {
             fontSize: Math.min(screenWidth * 0.085, 32),
-            fontFamily: "Fraunces",
-            fontWeight: "600",
             lineHeight: Math.min(screenWidth * 0.102, 38),
             letterSpacing: -1,
         },

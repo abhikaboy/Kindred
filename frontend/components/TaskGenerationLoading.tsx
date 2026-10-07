@@ -211,7 +211,7 @@ export const TaskGenerationLoading = ({
                 />
             </Animated.View>
             <ThemedText
-                type="default"
+                type="defaultSemiBold"
                 style={[styles.loadingText, { color: ThemedColor.caption }]}>
                 {message}
             </ThemedText>
@@ -241,7 +241,6 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 16,
-        fontWeight: "500",
     },
     loadingSubtext: {
         fontSize: 14,

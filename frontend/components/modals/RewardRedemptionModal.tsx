@@ -112,7 +112,7 @@ const RewardRedemptionModal = (props: Props) => {
                             </View>
                             {selectedKudosType === "encouragements" && (
                                 <View style={[styles.checkmark, { backgroundColor: ThemedColor.primary }]}>
-                                    <ThemedText style={styles.checkmarkText}>✓</ThemedText>
+                                    <ThemedText type="defaultSemiBold" style={styles.checkmarkText}>✓</ThemedText>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -142,13 +142,13 @@ const RewardRedemptionModal = (props: Props) => {
                             </View>
                             {selectedKudosType === "congratulations" && (
                                 <View style={[styles.checkmark, { backgroundColor: ThemedColor.primary }]}>
-                                    <ThemedText style={styles.checkmarkText}>✓</ThemedText>
+                                    <ThemedText type="defaultSemiBold" style={styles.checkmarkText}>✓</ThemedText>
                                 </View>
                             )}
                         </TouchableOpacity>
 
                         {!canRedeem && (
-                            <ThemedText style={[styles.insufficientText, { color: "#ef4444" }]}>
+                            <ThemedText type="defaultSemiBold" style={[styles.insufficientText, { color: "#ef4444" }]}>
                                 You need {reward.kudosCost} of either kudos type
                             </ThemedText>
                         )}
@@ -229,7 +229,6 @@ const styles = StyleSheet.create({
     },
     insufficientText: {
         fontSize: 13,
-        fontWeight: "600",
         textAlign: "center",
         marginTop: 8,
     },
@@ -276,7 +275,6 @@ const styles = StyleSheet.create({
     checkmarkText: {
         color: "white",
         fontSize: 16,
-        fontWeight: "bold",
     },
     actions: {
         flexDirection: "column",

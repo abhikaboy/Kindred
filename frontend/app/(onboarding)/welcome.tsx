@@ -184,12 +184,12 @@ const WelcomeOnboarding = (props: Props) => {
                         }
                     ]}
                 >
-                    <ThemedText style={[styles.welcomeText, { color: ThemedColor.text }]}>
+                    <ThemedText type="subheading" style={[styles.welcomeText, { color: ThemedColor.text }]}>
                         Welcome!
                     </ThemedText>
-                    <ThemedText style={[styles.familyText, { color: ThemedColor.text }]}>
+                    <ThemedText type="titleFraunces" style={[styles.familyText, { color: ThemedColor.text }]}>
                         You've joined the{' '}
-                        <ThemedText style={[styles.familyText, { color: '#854dff' }]}>
+                        <ThemedText type="titleFraunces" style={[styles.familyText, { color: '#854dff' }]}>
                             kindred
                         </ThemedText>
                         {' '}family
@@ -272,15 +272,11 @@ const styles = StyleSheet.create({
     },
     welcomeText: {
         fontSize: 24,
-        fontFamily: 'Fraunces',
-        fontWeight: '400',
         letterSpacing: -1,
         marginBottom: 8,
     },
     familyText: {
         fontSize: 36,
-        fontFamily: 'Fraunces',
-        fontWeight: '600',
         lineHeight: 44,
         letterSpacing: -1,
     },

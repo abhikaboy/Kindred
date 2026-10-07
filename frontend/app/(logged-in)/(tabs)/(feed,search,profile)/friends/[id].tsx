@@ -111,7 +111,7 @@ export default function UserFriends() {
                     ←
                 </ThemedText>
             </TouchableOpacity>
-            <ThemedText type="subtitle" style={styles.headerTitle} numberOfLines={1}>
+            <ThemedText type="defaultSemiBold" style={styles.headerTitle} numberOfLines={1}>
                 {headerTitle}
             </ThemedText>
             <View style={styles.backButton} />
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 16,
-        fontWeight: "400",
         textAlign: "center",
         flex: 1,
     },
@@ -248,7 +247,6 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         fontSize: 12,
-        fontWeight: "400",
         marginBottom: 16,
     },
     friendItem: {

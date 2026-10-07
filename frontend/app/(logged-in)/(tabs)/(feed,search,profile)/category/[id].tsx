@@ -99,7 +99,7 @@ export default function CategoryScreen() {
                 <View style={styles.errorContainer}>
                     <ThemedText style={styles.errorText}>{error}</ThemedText>
                     <TouchableOpacity onPress={fetchCategoryBlueprints} style={styles.retryButton}>
-                        <ThemedText style={styles.retryText}>Try Again</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={styles.retryText}>Try Again</ThemedText>
                     </TouchableOpacity>
                 </View>
             </ThemedView>
@@ -135,7 +135,7 @@ export default function CategoryScreen() {
                             <FolderOpen  size={64} color={ThemedColor.tabIconDefault} />
                             <ThemedText style={styles.emptyText}>No blueprints in this category yet</ThemedText>
                             <TouchableOpacity onPress={handleBack} style={styles.browseButton}>
-                                <ThemedText style={styles.browseButtonText}>Browse Other Categories</ThemedText>
+                                <ThemedText type="defaultSemiBold" style={styles.browseButtonText}>Browse Other Categories</ThemedText>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -222,7 +222,6 @@ const useStyles = (ThemedColor: any) =>
         },
         retryText: {
             color: "#FFFFFF",
-            fontWeight: "600",
         },
         emptyContainer: {
             flex: 1,
@@ -245,6 +244,5 @@ const useStyles = (ThemedColor: any) =>
         },
         browseButtonText: {
             color: "#FFFFFF",
-            fontWeight: "600",
         },
     });

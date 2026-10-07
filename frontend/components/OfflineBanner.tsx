@@ -1,6 +1,7 @@
 import { CloudSlash } from "phosphor-react-native";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { ThemedText } from "@/components/ThemedText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useConnectivity } from "@/hooks/useConnectivity";
 import { useTasks } from "@/contexts/tasksContext";
@@ -41,9 +42,9 @@ export default function OfflineBanner() {
                 { paddingTop: insets.top + 8, backgroundColor: ThemedColor.lightened },
             ]}>
             <CloudSlash  size={16} color={ThemedColor.caption} />
-            <Text style={[styles.text, { color: ThemedColor.caption }]}>
+            <ThemedText type="caption" style={[styles.text, { color: ThemedColor.caption }]}>
                 {age ? `You're offline — last synced ${age}` : "You're offline"}
-            </Text>
+            </ThemedText>
         </View>
     );
 }
@@ -58,7 +59,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     text: {
-        fontFamily: "Outfit",
         fontSize: 13,
     },
 });

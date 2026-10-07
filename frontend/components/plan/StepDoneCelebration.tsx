@@ -84,7 +84,7 @@ const StepDoneCelebration = () => {
                         onPress={() => act(p?.onDoneForNow)}
                         style={[styles.button, { backgroundColor: ThemedColor.lightened }]}
                     >
-                        <ThemedText type="default" style={{ fontWeight: "400" }}>
+                        <ThemedText type="default">
                             Done for now
                         </ThemedText>
                     </TouchableOpacity>

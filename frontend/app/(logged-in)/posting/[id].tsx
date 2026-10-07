@@ -100,7 +100,7 @@ export default function PostDetail() {
                     <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
                         <ArrowLeft  size={24} color={ThemedColor.text} />
                     </TouchableOpacity>
-                    <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
+                    <ThemedText type="subtitle" style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
                     <View style={{ width: 24 }} />
                 </View>
 
@@ -124,7 +124,7 @@ export default function PostDetail() {
                 <TouchableOpacity
                     style={[styles.retryButton, { backgroundColor: ThemedColor.primary }]}
                     onPress={handleBack}>
-                    <ThemedText style={styles.retryButtonText}>Go Back</ThemedText>
+                    <ThemedText type="defaultSemiBold" style={styles.retryButtonText}>Go Back</ThemedText>
                 </TouchableOpacity>
             </SafeAreaView>
         );
@@ -136,7 +136,7 @@ export default function PostDetail() {
                 <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
                     <ArrowLeft  size={24} color={ThemedColor.text} />
                 </TouchableOpacity>
-                <ThemedText style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
+                <ThemedText type="subtitle" style={[styles.headerTitle, { color: ThemedColor.text }]}>Post</ThemedText>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -210,7 +210,6 @@ const stylesheet = (ThemedColor: any) =>
         },
         headerTitle: {
             fontSize: 18,
-            fontWeight: "600",
         },
         scrollContainer: {
             flex: 1,
@@ -231,6 +230,5 @@ const stylesheet = (ThemedColor: any) =>
         retryButtonText: {
             color: "#ffffff",
             fontSize: 16,
-            fontWeight: "600",
         },
     });

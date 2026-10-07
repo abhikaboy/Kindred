@@ -774,18 +774,18 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     ]}
                     pointerEvents="none">
                     <View style={styles.previewLabelRow}>
-                        <ThemedText style={styles.previewLabel}>{hasEditResult ? "Updated" : "Preview"}</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={styles.previewLabel}>{hasEditResult ? "Updated" : "Preview"}</ThemedText>
                         {pendingOpsCount > 1 && (
-                            <ThemedText style={styles.stepCounter}>
+                            <ThemedText type="defaultSemiBold" style={styles.stepCounter}>
                                 {currentOpIndex + 1} / {pendingOpsCount}
                             </ThemedText>
                         )}
                     </View>
                     {!!errorTitle && (
                         <View style={styles.errorBanner}>
-                            <ThemedText style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={styles.errorBannerTitle}>{errorTitle}</ThemedText>
                             {errorDetails.map((detail, index) => (
-                                <ThemedText key={`${detail}-${index}`} style={styles.errorBannerText}>
+                                <ThemedText type="defaultSemiBold" key={`${detail}-${index}`} style={styles.errorBannerText}>
                                     {detail}
                                 </ThemedText>
                             ))}
@@ -793,7 +793,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     )}
                     {hasEditResult && !hasPreview ? (
                         <>
-                            <ThemedText style={styles.transcriptionText}>
+                            <ThemedText type="defaultSemiBold" style={styles.transcriptionText}>
                                 {editResult!.editedCount === 0
                                     ? "No tasks updated"
                                     : editResult!.editedCount === 1
@@ -816,7 +816,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         <>
                             {transcription ? (
                                 <>
-                                    <ThemedText style={styles.transcriptionText}>
+                                    <ThemedText type="defaultSemiBold" style={styles.transcriptionText}>
                                         {isPreviewing
                                             ? transcriptionWords.map((word, index) => (
                                                   <Animated.Text
@@ -877,8 +877,8 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                 contentContainerStyle={styles.previewListContent}>
                                 {pendingOpsCount > 1 && (
                                     <View style={styles.previewLabelRow}>
-                                        <ThemedText style={styles.previewLabel}>Preview</ThemedText>
-                                        <ThemedText style={styles.stepCounter}>
+                                        <ThemedText type="defaultSemiBold" style={styles.previewLabel}>Preview</ThemedText>
+                                        <ThemedText type="defaultSemiBold" style={styles.stepCounter}>
                                             {currentOpIndex + 1} / {pendingOpsCount}
                                         </ThemedText>
                                     </View>
@@ -888,12 +888,12 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                     return groupedCategories.map((category) => (
                                         <View key={category.categoryId} style={styles.previewCategory}>
                                             {category.workspace && (
-                                                <ThemedText style={styles.previewWorkspaceLabel}>
+                                                <ThemedText type="defaultSemiBold" style={styles.previewWorkspaceLabel}>
                                                     Workspace: {category.workspace}
                                                 </ThemedText>
                                             )}
                                             <View style={styles.previewCategoryHeader}>
-                                                <ThemedText style={styles.previewCategoryTitle}>
+                                                <ThemedText type="defaultSemiBold" style={styles.previewCategoryTitle}>
                                                     {category.categoryName}
                                                 </ThemedText>
                                                 {category.isNew && (
@@ -902,7 +902,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                                             styles.previewNewBadge,
                                                             { backgroundColor: `${ThemedColor.primary}1F` },
                                                         ]}>
-                                                        <ThemedText
+                                                        <ThemedText type="defaultSemiBold"
                                                             style={[
                                                                 styles.previewNewBadgeText,
                                                                 { color: ThemedColor.primary },
@@ -943,13 +943,13 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                 contentContainerStyle={styles.deleteListContent}>
                                 {pendingOpsCount > 1 && (
                                     <View style={styles.previewLabelRow}>
-                                        <ThemedText style={styles.previewLabel}>Delete</ThemedText>
-                                        <ThemedText style={styles.stepCounter}>
+                                        <ThemedText type="defaultSemiBold" style={styles.previewLabel}>Delete</ThemedText>
+                                        <ThemedText type="defaultSemiBold" style={styles.stepCounter}>
                                             {currentOpIndex + 1} / {pendingOpsCount}
                                         </ThemedText>
                                     </View>
                                 )}
-                                <ThemedText style={styles.deleteSubtitle}>Deselect tasks you want to keep.</ThemedText>
+                                <ThemedText type="defaultSemiBold" style={styles.deleteSubtitle}>Deselect tasks you want to keep.</ThemedText>
                                 {deletePreviewTasks.map((task) => {
                                     const isChecked = deleteSelected.has(task.id);
                                     return (
@@ -973,19 +973,19 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                                                 {isChecked && <Check size={11} color="#fff" />}
                                             </View>
                                             <View style={styles.deleteTaskInfo}>
-                                                <ThemedText style={styles.deleteTaskContent} numberOfLines={2}>
+                                                <ThemedText type="defaultSemiBold" style={styles.deleteTaskContent} numberOfLines={2}>
                                                     {task.content}
                                                 </ThemedText>
                                                 {(task.priority !== undefined || task.deadline) && (
                                                     <View style={styles.deleteTaskMeta}>
                                                         {task.priority !== undefined && (
-                                                            <ThemedText style={styles.deleteMetaText}>
+                                                            <ThemedText type="defaultSemiBold" style={styles.deleteMetaText}>
                                                                 {["Low", "Medium", "High"][task.priority - 1] ?? "—"}{" "}
                                                                 priority
                                                             </ThemedText>
                                                         )}
                                                         {task.deadline && (
-                                                            <ThemedText style={styles.deleteMetaText}>
+                                                            <ThemedText type="defaultSemiBold" style={styles.deleteMetaText}>
                                                                 Due {new Date(task.deadline).toLocaleDateString()}
                                                             </ThemedText>
                                                         )}
@@ -1017,7 +1017,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             style={styles.deleteSkipBtn}
                             activeOpacity={0.75}
                             disabled={isDeletingTasks}>
-                            <ThemedText style={styles.deleteSkipBtnText}>Skip</ThemedText>
+                            <ThemedText type="defaultSemiBold" style={styles.deleteSkipBtnText}>Skip</ThemedText>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => confirmDelete([...deleteSelected])}
@@ -1030,7 +1030,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             {isDeletingTasks ? (
                                 <Hourglass size={18} color="#fff" />
                             ) : (
-                                <ThemedText style={styles.deleteConfirmBtnText}>
+                                <ThemedText type="defaultSemiBold" style={styles.deleteConfirmBtnText}>
                                     Delete {deleteSelected.size > 0 ? `${deleteSelected.size} ` : ""}
                                     {deleteSelected.size === 1 ? "Task" : "Tasks"}
                                 </ThemedText>
@@ -1062,7 +1062,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                             activeOpacity={0.85}
                             disabled={isConfirming}>
-                            <ThemedText style={styles.generateButtonText}>
+                            <ThemedText type="defaultSemiBold" style={styles.generateButtonText}>
                                 {isConfirming
                                     ? "Creating..."
                                     : currentOpIndex + 1 < pendingOpsCount
@@ -1086,7 +1086,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                     pointerEvents={!hasPreview && recognizing ? "auto" : "none"}>
                     <TouchableOpacity onPress={handleStopRecording} style={styles.stopPill} activeOpacity={0.8}>
                         <StopCircle weight="fill" size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                        <ThemedText style={styles.stopPillText}>Stop Recording</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={styles.stopPillText}>Stop Recording</ThemedText>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -1106,7 +1106,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                         <GlowOverlay active={recognizing} />
                     </View>
                     {!transcription && !recognizing ? (
-                        <ThemedText style={[styles.listeningLabel, { color: "rgba(255,255,255,0.55)" }]}>
+                        <ThemedText type="defaultSemiBold" style={[styles.listeningLabel, { color: "rgba(255,255,255,0.55)" }]}>
                             Tap to Speak
                         </ThemedText>
                     ) : null}
@@ -1159,7 +1159,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
                             style={[styles.generateButton, { backgroundColor: ThemedColor.primary }]}
                             activeOpacity={0.85}
                             disabled={isPreviewing}>
-                            <ThemedText style={styles.generateButtonText}>
+                            <ThemedText type="defaultSemiBold" style={styles.generateButtonText}>
                                 {hasEditResult
                                     ? currentOpIndex + 1 < pendingOpsCount
                                         ? "Next"
@@ -1238,12 +1238,10 @@ const styles = StyleSheet.create({
     },
     previewLabel: {
         fontSize: 11,
-        fontWeight: "600",
         color: "rgba(255,255,255,0.45)",
     },
     stepCounter: {
         fontSize: 11,
-        fontWeight: "600",
         color: "rgba(255,255,255,0.25)",
     },
     errorBanner: {
@@ -1258,20 +1256,16 @@ const styles = StyleSheet.create({
     },
     errorBannerTitle: {
         fontSize: 13,
-        fontWeight: "700",
         color: "#ffffff",
     },
     errorBannerText: {
         fontSize: 12,
-        fontWeight: "500",
         color: "rgba(255,255,255,0.85)",
     },
     transcriptionText: {
         fontSize: 18,
         lineHeight: 28,
         color: "#ffffff",
-        fontWeight: "500",
-        fontFamily: "Outfit",
     },
     transcriptionWord: {
         color: "#ffffff",
@@ -1304,7 +1298,6 @@ const styles = StyleSheet.create({
     },
     previewCategoryTitle: {
         fontSize: 20,
-        fontWeight: "600",
         letterSpacing: -0.5,
         color: "#ffffff",
     },
@@ -1315,11 +1308,9 @@ const styles = StyleSheet.create({
     },
     previewNewBadgeText: {
         fontSize: 10,
-        fontWeight: "600",
     },
     previewWorkspaceLabel: {
         fontSize: 12,
-        fontWeight: "600",
         color: "rgba(255,255,255,0.55)",
     },
     previewTasks: {
@@ -1346,7 +1337,6 @@ const styles = StyleSheet.create({
     },
     generateButtonText: {
         fontSize: 16,
-        fontWeight: "600",
         color: "#ffffff",
     },
     stopPillWrapper: {
@@ -1368,7 +1358,6 @@ const styles = StyleSheet.create({
     },
     stopPillText: {
         fontSize: 14,
-        fontWeight: "500",
         color: "#ffffff",
     },
     micSection: {
@@ -1380,7 +1369,6 @@ const styles = StyleSheet.create({
     },
     listeningLabel: {
         fontSize: 15,
-        fontWeight: "500",
         letterSpacing: 0.2,
     },
     waveform: {
@@ -1417,12 +1405,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
         color: "rgba(255,255,255,0.6)",
-        fontWeight: "400",
     },
     editResultRecurringTag: {
         fontSize: 14,
         color: "rgba(255,255,255,0.35)",
-        fontWeight: "400",
     },
     // ─── Delete preview ──────────────────────────────────────────────────────
     deleteListContent: {
@@ -1431,7 +1417,6 @@ const styles = StyleSheet.create({
     },
     deleteSubtitle: {
         fontSize: 20,
-        fontWeight: "500",
         color: "rgba(255,255,255,0.65)",
         lineHeight: 28,
         marginBottom: 8,
@@ -1472,7 +1457,6 @@ const styles = StyleSheet.create({
     },
     deleteTaskContent: {
         fontSize: 15,
-        fontWeight: "500",
         lineHeight: 21,
         color: "#ffffff",
     },
@@ -1484,7 +1468,6 @@ const styles = StyleSheet.create({
     deleteMetaText: {
         fontSize: 12,
         color: "rgba(255,255,255,0.4)",
-        fontWeight: "500",
     },
     deleteActionsWrapper: {
         position: "absolute",
@@ -1505,7 +1488,6 @@ const styles = StyleSheet.create({
     },
     deleteSkipBtnText: {
         fontSize: 15,
-        fontWeight: "600",
         color: "rgba(255,255,255,0.6)",
     },
     deleteConfirmBtn: {
@@ -1526,7 +1508,6 @@ const styles = StyleSheet.create({
     },
     deleteConfirmBtnText: {
         fontSize: 15,
-        fontWeight: "600",
         color: "#ffffff",
     },
 });

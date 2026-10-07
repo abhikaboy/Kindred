@@ -77,6 +77,7 @@ const NotificationFilterChips = ({
                             },
                         ]}>
                         <ThemedText
+                            type="defaultSemiBold"
                             style={[
                                 chipStyles.chipText,
                                 { color: isActive ? "#fff" : ThemedColor.text },
@@ -712,7 +713,6 @@ const chipStyles = StyleSheet.create({
     },
     chipText: {
         fontSize: 14,
-        fontFamily: "Outfit",
     },
 });
 

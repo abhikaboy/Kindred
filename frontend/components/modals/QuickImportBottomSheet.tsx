@@ -167,10 +167,7 @@ const stylesheet = (ThemedColor: any) =>
             paddingVertical: 4,
         },
         title: {
-            fontSize: 32,
-            fontWeight: "600",
             color: ThemedColor.text,
-            fontFamily: "Fraunces",
             letterSpacing: -1,
         },
         optionsContainer: {
@@ -203,12 +200,10 @@ const stylesheet = (ThemedColor: any) =>
         optionTitle: {
             fontSize: 16,
             color: ThemedColor.text,
-            fontFamily: "Outfit",
         },
         optionDescription: {
             fontSize: 14,
             color: ThemedColor.caption,
-            fontFamily: "Outfit",
             lineHeight: 20,
         },
         exampleText: {

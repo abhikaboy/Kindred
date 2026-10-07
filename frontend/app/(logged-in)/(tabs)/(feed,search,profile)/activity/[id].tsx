@@ -381,7 +381,6 @@ const stylesheet = (ThemedColor: any, insets: any) =>
             borderRadius: 24,
             borderColor: ThemedColor.text,
             paddingVertical: 12,
-            fontWeight: "300",
         },
         breakdownActiveBar: {
             flexDirection: "row",

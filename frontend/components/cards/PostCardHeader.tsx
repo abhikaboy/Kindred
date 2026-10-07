@@ -218,11 +218,9 @@ const styles = StyleSheet.create({
     },
     userName: {
         fontSize: 16,
-        fontWeight: "400",
     },
     usernameText: {
         fontSize: 14,
-        fontWeight: "300",
     },
     timeAndMenu: {
         flexDirection: "column",
@@ -231,7 +229,6 @@ const styles = StyleSheet.create({
     },
     timeText: {
         fontSize: 12,
-        fontWeight: "400",
     },
     menuButton: {
         padding: 2,

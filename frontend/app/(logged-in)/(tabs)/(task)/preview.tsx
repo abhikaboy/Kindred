@@ -312,7 +312,7 @@ const Preview = (props: Props) => {
 
                 {/* Header */}
                 <View style={styles.headerContainer}>
-                    <ThemedText type="fancyFrauncesHeading" style={styles.title}>
+                    <ThemedText type="fancyFrauncesHeading">
                         Preview
                     </ThemedText>
                     <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
@@ -374,9 +374,6 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         gap: 8,
     },
-    title: {
-        fontWeight: "600",
-    },
     subtitle: {
         fontSize: 14,
         lineHeight: 20,
@@ -399,7 +396,6 @@ const styles = StyleSheet.create({
     },
     categoryTitle: {
         fontSize: 20,
-        fontWeight: "600",
         letterSpacing: -0.5,
     },
     newBadge: {

@@ -119,7 +119,7 @@ const TextDump = (props: Props) => {
 
                 {/* Header */}
                 <View style={styles.headerContainer}>
-                    <ThemedText type="fancyFrauncesHeading" style={styles.title}>
+                    <ThemedText type="fancyFrauncesHeading">
                         Text Dump
                     </ThemedText>
                     <ThemedText type="default" style={[styles.subtitle, { color: ThemedColor.caption }]}>
@@ -184,7 +184,7 @@ const TextDump = (props: Props) => {
                             NATURAL LANGUAGE CREDITS
                         </ThemedText>
                         <View style={styles.creditsValue}>
-                            <ThemedText type="default" style={{ fontWeight: "600" }}>
+                            <ThemedText type="defaultSemiBold">
                                 {credits.naturalLanguage}
                             </ThemedText>
                             <TouchableOpacity
@@ -232,9 +232,6 @@ const styles = StyleSheet.create({
         paddingTop: 4,
         gap: 8,
     },
-    title: {
-        fontWeight: "600",
-    },
     subtitle: {
         fontSize: 14,
     },
@@ -247,7 +244,6 @@ const styles = StyleSheet.create({
     },
     creditsLabel: {
         fontSize: 11,
-        fontWeight: "600",
     },
     creditsValue: {
         flexDirection: "row",

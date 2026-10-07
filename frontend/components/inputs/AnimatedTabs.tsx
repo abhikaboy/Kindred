@@ -68,12 +68,11 @@ export default function AnimatedTabs({ tabs, activeTab, setActiveTab, badges }: 
                         setActiveTab(index);
                     }}>
                     <View style={styles.tabLabelRow}>
-                        <ThemedText
+                        <ThemedText type="defaultSemiBold"
                             style={[
                                 styles.tabText,
                                 {
                                     color: activeTab === index ? ThemedColor.text : ThemedColor.caption,
-                                    fontWeight: activeTab === index ? "600" : "500",
                                 },
                             ]}>
                             {tab}
@@ -220,7 +219,6 @@ const styles = StyleSheet.create({
     },
     tabText: {
         fontSize: 16,
-        fontFamily: "Outfit",
         textAlign: "center",
     },
     badgeDot: {

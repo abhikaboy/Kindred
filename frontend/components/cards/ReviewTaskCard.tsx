@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
     swipeIndicatorText: {
         position: "absolute",
         fontSize: 24,
-        fontWeight: "700",
         fontFamily: "Outfit",
         color: "#ffffff",
     },

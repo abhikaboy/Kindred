@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     title: {
-        fontWeight: "600",
+
     },
     dayOfWeek: {
         marginTop: 4,
@@ -200,7 +200,6 @@ const styles = StyleSheet.create({
     },
     comingSoonTitle: {
         fontSize: 28,
-        fontWeight: "700",
         marginBottom: 12,
         textAlign: "center",
     },

@@ -344,7 +344,7 @@ export default function CongratulateModal({ visible, setVisible, task, congratul
             <DefaultModal visible={visible} setVisible={setVisible} snapPoints={selectedMedia ? ["85%"] : ["55%"]}>
                 <View style={styles.container}>
                 {/* Title */}
-                <ThemedText type="defaultSemiBold" style={styles.titleStyled}>
+                <ThemedText type="fancyFrauncesSubheading" style={styles.titleStyled}>
                     {tutorialPrefill
                         ? `Send ${congratulationConfig?.userHandle || "them"} kudos`
                         : `Congratulate ${congratulationConfig?.userHandle || "User"}`}
@@ -569,7 +569,6 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
         },
         titleStyled: {
             fontSize: 24,
-            fontWeight: "600",
             textAlign: "center",
             marginBottom: 4,
             color: ThemedColor.text,
@@ -590,7 +589,6 @@ const styleSheet = (ThemedColor: ReturnType<typeof useThemeColor>) =>
             borderWidth: 1,
             fontSize: 15,
             fontFamily: "Outfit",
-            fontWeight: "400",
             minHeight: 72,
             textAlignVertical: "top",
             color: ThemedColor.text,

@@ -653,7 +653,7 @@ export default function Feed() {
             if (isBlueprintFeed) {
                 return (
                     <View style={styles.emptyContainer}>
-                        <ThemedText style={[styles.emptyText, { color: ThemedColor.caption }]}>
+                        <ThemedText type="subtitle" style={[styles.emptyText, { color: ThemedColor.caption }]}>
                             No posts in {currentFeed.name} yet
                         </ThemedText>
                         <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
@@ -668,7 +668,7 @@ export default function Feed() {
                     <View style={[styles.emptyIconRow, { backgroundColor: ThemedColor.primary + "10" }]}>
                         <Handshake size={32} color={ThemedColor.primary} weight="duotone" />
                     </View>
-                    <ThemedText style={styles.emptyTitle}>
+                    <ThemedText type="fancyFrauncesSubheading" style={styles.emptyTitle}>
                         {isFriendsFeed ? "It's quiet... too quiet" : "It's quiet... too quiet"}
                     </ThemedText>
                     <ThemedText style={[styles.emptySubtext, { color: ThemedColor.caption }]}>
@@ -931,7 +931,6 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         feedTabText: {
             fontSize: 16,
-            fontWeight: "400",
             color: ThemedColor.text,
             letterSpacing: -0.16,
         },
@@ -940,7 +939,6 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         headerTitle: {
             fontSize: 18,
-            fontWeight: "600",
         },
         flatListContent: {
             paddingBottom: 150,
@@ -973,14 +971,11 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         },
         emptyTitle: {
             fontSize: 24,
-            fontFamily: "Fraunces",
-            fontWeight: "500",
             textAlign: "left",
             letterSpacing: -1,
         },
         emptyText: {
             fontSize: 20,
-            fontWeight: "bold",
             marginTop: 10,
             width: "70%",
         },
@@ -1001,6 +996,5 @@ const stylesheet = (ThemedColor: any, insets: any) =>
         endOfFeedText: {
             fontSize: 16,
             color: ThemedColor.caption,
-            fontWeight: "500",
         },
     });
