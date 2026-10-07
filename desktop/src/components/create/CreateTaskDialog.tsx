@@ -144,14 +144,9 @@ export function CreateTaskDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className={cn(
-                    "gap-0 transition-[background-color,color] duration-300",
-                    mode === "AI" &&
-                        "dark border-0 bg-[linear-gradient(180deg,#05050c_0%,#0c0c1a_100%)] text-foreground shadow-[0_24px_80px_-20px_rgba(0,0,0,0.6)]"
-                )}
+                className="gap-0"
                 onKeyDown={onKeyDown}
             >
-                {/* Selected option is solid foreground on either stage, per the composer palette. */}
                 <div className="flex items-center gap-1 pb-4">
                     {(["Manual", "AI"] as const).map((m) => (
                         <button
@@ -160,7 +155,7 @@ export function CreateTaskDialog({
                             onClick={() => setMode(m)}
                             className={cn(
                                 "inline-flex h-8 cursor-pointer items-center rounded-full px-3 transition-colors duration-150",
-                                mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                mode === m ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             )}
                         >
                             <ThemedText type="caption" className="text-inherit">

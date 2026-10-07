@@ -91,7 +91,7 @@ function PreviewTaskRow({
   };
 
   return (
-    <div className="group flex items-start gap-3 rounded-xl bg-white/[0.06] px-4 py-3 transition-colors duration-150 animate-in fade-in slide-in-from-bottom-1 duration-300 hover:bg-white/[0.09]">
+    <div className="group flex items-start gap-3 rounded-xl bg-muted/50 px-4 py-3 transition-colors duration-150 animate-in fade-in slide-in-from-bottom-1 duration-300 hover:bg-muted">
       <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {editing ? (
@@ -119,11 +119,11 @@ function PreviewTaskRow({
       </div>
       <div className="flex shrink-0 items-center gap-1 opacity-50 transition-opacity duration-150 group-hover:opacity-100">
         {!editing && (
-          <button type="button" aria-label="Edit title" onClick={() => { setDraft(task.content); setEditing(true); }} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
+          <button type="button" aria-label="Edit title" onClick={() => { setDraft(task.content); setEditing(true); }} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
             <PencilSimple size={14} />
           </button>
         )}
-        <button type="button" aria-label="Remove task" onClick={onRemove} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground">
+        <button type="button" aria-label="Remove task" onClick={onRemove} className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
           <X size={14} />
         </button>
       </div>
@@ -246,7 +246,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-12 animate-pulse rounded-xl bg-white/[0.06]"
+              className="h-12 animate-pulse rounded-xl bg-muted"
               style={{ animationDelay: `${i * 150}ms`, width: `${100 - i * 12}%` }}
             />
           ))}
@@ -305,7 +305,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => { setError(null); setStage("prompt"); }}
-            className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-muted-foreground transition-colors duration-150 hover:bg-white/10 hover:text-foreground"
+            className="inline-flex h-10 items-center gap-2 rounded-full px-4 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
           >
             <ArrowLeft size={14} />
             <ThemedText type="caption" className="text-inherit">Edit what I wrote</ThemedText>
@@ -331,7 +331,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
             type="button"
             aria-label="Remove image"
             onClick={() => setImage(null)}
-            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-white text-black shadow"
+            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-foreground text-background shadow"
           >
             <X size={12} weight="bold" />
           </button>
@@ -357,7 +357,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
               key={example}
               type="button"
               onClick={() => setText(example)}
-              className="group -mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-muted-foreground transition-colors duration-150 hover:bg-white/[0.06] hover:text-foreground"
+              className="group -mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-muted-foreground transition-colors duration-150 hover:bg-muted/60 hover:text-foreground"
             >
               <ArrowUpRight size={14} className="shrink-0 transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               <ThemedText type="caption" className="truncate text-inherit">{example}</ThemedText>
@@ -373,7 +373,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           type="button"
           aria-label="Attach image from files"
           onClick={() => fileInputRef.current?.click()}
-          className="grid size-10 place-items-center rounded-full bg-white/10 text-foreground transition-colors duration-150 hover:bg-white/[0.16]"
+          className="grid size-10 place-items-center rounded-full bg-muted text-foreground transition-colors duration-150 hover:bg-muted/70"
         >
           <ImageIcon size={18} />
         </button>
@@ -381,7 +381,7 @@ export function AiTaskPanel({ onClose }: { onClose: () => void }) {
           type="button"
           aria-label="Paste image from clipboard"
           onClick={pasteFromClipboard}
-          className="grid size-10 place-items-center rounded-full bg-white/10 text-foreground transition-colors duration-150 hover:bg-white/[0.16]"
+          className="grid size-10 place-items-center rounded-full bg-muted text-foreground transition-colors duration-150 hover:bg-muted/70"
         >
           <Clipboard size={18} />
         </button>
@@ -403,7 +403,7 @@ function GlowButton({ label, onClick, disabled }: { label: string; onClick: () =
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-primary-foreground shadow-[0_6px_10px_-2px_rgba(133,77,255,0.35)] transition-[transform,opacity,box-shadow] duration-150 hover:opacity-95 active:scale-[0.97] disabled:bg-white/10 disabled:text-foreground/40 disabled:shadow-none"
+      className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-primary-foreground shadow-[0_6px_10px_-2px_rgba(133,77,255,0.35)] transition-[transform,opacity,box-shadow] duration-150 hover:opacity-95 active:scale-[0.97] disabled:bg-muted disabled:text-foreground/40 disabled:shadow-none"
     >
       <ThemedText type="defaultSemiBold" className="text-sm text-inherit">{label}</ThemedText>
     </button>
