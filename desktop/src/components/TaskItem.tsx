@@ -91,9 +91,9 @@ export function TaskItem({
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       className={cn(
-        "rounded-2xl border px-4 py-3.5 transition-colors",
+        "rounded-2xl border px-4 py-3.5 transition-[box-shadow,transform,border-color] duration-150 ease-out",
         encouraged ? "border-border/60 bg-primary/5" : "border-border/60 bg-card",
-        (encourageMode || clickable) ? "cursor-pointer hover:border-primary/60" : "hover:border-border",
+        (encourageMode || clickable) ? "cursor-pointer hover:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_-12px_rgba(0,0,0,0.12)] active:scale-[0.995]" : "hover:border-border",
         task.isPhantom && "border-dashed opacity-45 hover:border-border/60"
       )}
       style={encouraged ? { boxShadow: ENCOURAGED_GLOW } : undefined}
