@@ -201,7 +201,7 @@ function HabitGrid({ grid }: { grid: number[][] }) {
       {grid.map((row, w) => (
         <div key={w} className="flex items-center gap-4">
           <ThemedText type="caption" className="w-14">
-            {w === grid.length - 1 ? "This week" : `Week ${w + 1}`}
+            {`Week ${w + 1}`}
           </ThemedText>
           <div className="flex gap-2">
             {row.map((v, d) => (

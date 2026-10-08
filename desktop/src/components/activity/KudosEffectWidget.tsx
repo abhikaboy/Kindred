@@ -8,7 +8,7 @@ const formatHours = (h: number) => (h < 24 ? `${Math.round(h)}h` : `${Math.round
 export function KudosEffectWidget({ effect }: { effect: AnalyticsResponse["kudosEffect"] }) {
   if (!effect.hasComparison) {
     return (
-      <WidgetCard title="Does support help?" takeaway={effect.takeaway}>
+      <WidgetCard title="Does support help?">
         <ThemedText type="caption">
           Waiting for a fair comparison. We need 3 finished tasks with kudos and 3 without. You're at{" "}
           {effect.withCount} with kudos and {effect.withoutCount} without.

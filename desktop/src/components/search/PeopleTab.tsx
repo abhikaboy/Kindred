@@ -14,7 +14,14 @@ import {
   useReceivedRequests,
   useSuggestedUsers,
   useProfileSearch,
+  usePhoneMatch,
+  useSendRequest,
 } from "@/hooks/useConnections";
+import PrimaryButton from "@/components/PrimaryButton";
+import { hashPhone, looksLikePhone } from "@/lib/contactHash";
+
+// All /v1/user/* ops require both auth headers; the client middleware fills the real tokens.
+const AUTH = { Authorization: "", refresh_token: "" };
 
 // Debounces a value by the given delay (ms).
 function useDebounced<T>(value: T, delay = 300): T {
@@ -51,7 +58,7 @@ export function PeopleTab({ chips, children }: { chips?: React.ReactNode; childr
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <SearchBox value={query} onChange={setQuery} placeholder="Search people by name or handle" autoFocus />
+        <SearchBox value={query} onChange={setQuery} placeholder="Search by name, handle or phone number" autoFocus />
         {chips}
       </div>
 
@@ -61,6 +68,73 @@ export function PeopleTab({ chips, children }: { chips?: React.ReactNode; childr
 }
 
 function SearchSection({ query }: { query: string }) {
+  if (looksLikePhone(query)) return <PhoneSection query={query} />;
+  return <NameSection query={query} />;
+}
+
+// Phone lookup for adding someone you have a number for; never sends the raw number.
+function PhoneSection({ query }: { query: string }) {
+  const [hash, setHash] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    hashPhone(query).then((h) => live && setHash(h));
+    return () => {
+      live = false;
+    };
+  }, [query]);
+  const { data, isLoading } = usePhoneMatch(hash);
+  const friendIds = new Set((useFriends().data ?? []).map((f) => f._id));
+  const send = useSendRequest();
+  const [sent, setSent] = useState<Set<string>>(new Set());
+
+  if (!hash || isLoading) return <RowSkeletons count={1} />;
+  const matches = data ?? [];
+  if (matches.length === 0) {
+    return (
+      <ThemedText type="caption" className="py-8 text-center">
+        No one on Kindred has that number yet
+      </ThemedText>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {matches.map((m) => {
+        const isFriend = friendIds.has(m._id);
+        const requested = sent.has(m._id);
+        return (
+          <UserRow
+            key={m._id}
+            userId={m._id}
+            displayName={m.display_name}
+            handle={m.handle}
+            profilePicture={m.profile_picture}
+            action={
+              isFriend ? (
+                <ThemedText type="caption">Friends</ThemedText>
+              ) : (
+                <PrimaryButton
+                  title={requested ? "Requested" : "Add"}
+                  secondary={requested}
+                  className="w-auto px-5 py-2"
+                  disabled={requested || send.isPending}
+                  onClick={() =>
+                    send.mutate(
+                      { params: { header: AUTH }, body: { receiver_id: m._id } },
+                      { onSuccess: () => setSent((s) => new Set(s).add(m._id)) },
+                    )
+                  }
+                />
+              )
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function NameSection({ query }: { query: string }) {
   const { data, isLoading } = useProfileSearch(query);
   const results = data ?? [];
 
@@ -89,8 +163,9 @@ function BrowseSections({ children }: { children?: React.ReactNode }) {
   const suggested = useSuggestedUsers();
 
   const requestItems = requests.data ?? [];
-  const suggestedItems = suggested.data ?? [];
   const friendItems = friends.data ?? [];
+  const friendIds = new Set(friendItems.map((f) => f._id));
+  const suggestedItems = (suggested.data ?? []).filter((u) => !friendIds.has(u._id));
 
   return (
     <div className="flex flex-col gap-12">

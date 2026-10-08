@@ -109,7 +109,7 @@ func compute(in computeInput) WeekRecapResponse {
 		baseSum += v
 		weeks = append(weeks, WeekRecapBar{Label: ws.Format("Jan 2"), Value: v})
 	}
-	weeks = append(weeks, WeekRecapBar{Label: "This week", Value: cur, Current: true})
+	weeks = append(weeks, WeekRecapBar{Label: start.Format("Jan 2"), Value: cur, Current: true})
 
 	days := make([]WeekRecapBar, 7)
 	bigIdx, bigVal := -1, 0
@@ -643,7 +643,10 @@ func capitalize(s string) string {
 var numberWords = []string{"", "one", "two", "three"}
 
 func teaser(cur int, habit *habitPick, run int, supporters *WeekRecapCard) string {
-	parts := []string{plural(cur, "task", "tasks")}
+	var parts []string
+	if cur > 0 {
+		parts = append(parts, plural(cur, "task", "tasks"))
+	}
 	if habit != nil && run >= 2 {
 		parts = append(parts, fmt.Sprintf("%d weeks of %s", run, habit.title))
 	}
@@ -657,6 +660,9 @@ func teaser(cur int, habit *habitPick, run int, supporters *WeekRecapCard) strin
 		default:
 			parts = append(parts, "friends who showed up")
 		}
+	}
+	if len(parts) == 0 {
+		return "A quieter week. Take a look back."
 	}
 	return capitalize(joinNames(parts)) + "."
 }

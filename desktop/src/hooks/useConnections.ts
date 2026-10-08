@@ -73,3 +73,13 @@ export function useRemoveConnection() {
     },
   });
 }
+
+// Exact phone lookup: the number is hashed on-device; only the salted hash is sent.
+export function usePhoneMatch(hash: string | null): UseQueryResult<components["schemas"]["UserMatch"][]> {
+  return $api.useQuery(
+    "post",
+    "/v1/user/profiles/find-by-phone",
+    { params: { header: AUTH }, body: { phone_hashes: hash ? [hash] : [] } },
+    { enabled: !!hash },
+  ) as UseQueryResult<components["schemas"]["UserMatch"][]>;
+}
