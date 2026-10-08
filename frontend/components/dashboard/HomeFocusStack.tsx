@@ -3,7 +3,8 @@ import { View, Pressable, TouchableOpacity, StyleSheet, Platform, Image, useColo
 import type { SharedValue } from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, CaretLeft, CaretRight, Check, Play } from "phosphor-react-native";
+import { ArrowRight, CaretLeft, CaretRight, Check, ClipboardText, Play } from "phosphor-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTaskActions } from "@/contexts/tasksContext";
@@ -43,6 +44,7 @@ type Props = {
 export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListedChange, availableHeight, accessory }: Props) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
+    const insets = useSafeAreaInsets();
     const { kudos, acknowledge } = useRecentKudos();
     const [wsIndex, setWsIndex] = useState(-1);
     const [current, setCurrent] = useState(0);
@@ -129,6 +131,7 @@ export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListe
                         spill={spill}
                         onListedChange={handleListed}
                         listHeight={availableHeight - stackTop}
+                        listBottomPadding={insets.bottom + 48}
                         listFooter={toggle}
                         renderCard={(item) =>
                             item.kind === "task" ? (
@@ -145,6 +148,9 @@ export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListe
                 <View style={styles.footer}>
                     {n > 1 && (
                         <>
+                            <TouchableOpacity onPress={() => stackRef.current?.prev()} hitSlop={10} accessibilityLabel="Previous card">
+                                <CaretLeft size={14} color={ThemedColor.caption} />
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={() => stackRef.current?.next()} hitSlop={8} accessibilityLabel="Next card">
                                 <ThemedText type="caption" style={{ fontVariant: ["tabular-nums"] }}>
                                     {current + 1} of {n}
@@ -205,6 +211,22 @@ function TaskBody({ task }: { task: StageTask }) {
         markTaskAsCompleted(task.categoryID, task.id, { id: task.id, content: task.content, value: task.value ?? 0 });
     };
 
+    // Quiet complete: for a task that's already done in real life, no timer/confetti ceremony.
+    const log = () => {
+        hapticSelect();
+        if (task.workingOnSince) {
+            ActiveTaskActivityFactory.getInstances().forEach((a) => a.end("default"));
+            setWorkingAPI(task.categoryID, task.id, false).catch(() => {});
+        }
+        markTaskAsCompleted(
+            task.categoryID,
+            task.id,
+            { id: task.id, content: task.content, value: task.value ?? 0 },
+            undefined,
+            { skipConfetti: true }
+        );
+    };
+
     return (
         <Pressable onPress={() => openTask(task)} style={styles.cardInner} accessibilityRole="link">
             <View style={{ gap: 4 }}>
@@ -223,6 +245,15 @@ function TaskBody({ task }: { task: StageTask }) {
                 </View>
             </View>
             <View style={styles.actions}>
+                <TouchableOpacity
+                    onPress={log}
+                    disabled={isCompleting}
+                    activeOpacity={0.7}
+                    hitSlop={8}
+                    style={styles.logAction}
+                    accessibilityLabel="Log as already done">
+                    <ClipboardText size={14} color={ThemedColor.caption} />
+                </TouchableOpacity>
                 <TouchableOpacity
                     onPress={complete}
                     disabled={isCompleting}
@@ -305,7 +336,8 @@ const styles = StyleSheet.create({
     titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     dot: { width: 8, height: 8, borderRadius: 4 },
     avatar: { width: 36, height: 36, borderRadius: 18 },
-    actions: { flexDirection: "row", gap: 8 },
+    actions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    logAction: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
     action: {
         alignSelf: "flex-start",
         flexDirection: "row",

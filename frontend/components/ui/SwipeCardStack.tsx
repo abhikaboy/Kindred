@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View, useWindowDimensions, type ViewStyle } from "react-native";
 import Reanimated, {
     Easing,
@@ -9,6 +9,7 @@ import Reanimated, {
     useAnimatedScrollHandler,
     useAnimatedStyle,
     useSharedValue,
+    withSequence,
     withTiming,
     type SharedValue,
 } from "react-native-reanimated";
@@ -23,9 +24,13 @@ const LIST_GAP = 12;
 const SPILL_STAGGER = 0.06;
 const SPILL_MAX_STAGGERED = 10;
 export const SPILL_DURATION = 460;
+// "Swipe me" nudge: first after 3s idle, then every 10s while the stack is idle.
+const NUDGE_DELAY = 3000;
+const NUDGE_INTERVAL = 10000;
+const NUDGE_DEGREES = 10;
 
 export type StackVariant = "peek" | "fan";
-export type SwipeCardStackHandle = { next: () => void; expand: () => void; collapse: () => void };
+export type SwipeCardStackHandle = { next: () => void; prev: () => void; expand: () => void; collapse: () => void };
 
 type Pose = { y: number; scale: number; rotate: number };
 const PEEK = { y: 18, scale: 0.06 };
@@ -60,6 +65,8 @@ type Props<T> = {
     onListedChange?: (listed: boolean) => void;
     /** height the spilled list may occupy (from the top of the stack) */
     listHeight?: number;
+    /** extra room below the footer, e.g. the device's safe-area bottom inset */
+    listBottomPadding?: number;
     listFooter?: React.ReactNode;
 };
 
@@ -80,6 +87,7 @@ function SwipeCardStackInner<T>(
         spill,
         onListedChange,
         listHeight = 0,
+        listBottomPadding = 24,
         listFooter,
     }: Props<T>,
     ref: React.Ref<SwipeCardStackHandle>
@@ -97,6 +105,7 @@ function SwipeCardStackInner<T>(
     const spillValue = spill ?? localSpill;
     const scrollY = useSharedValue(0);
     const [listed, setListed] = useState(false);
+    const hint = useSharedValue(0);
 
     const lastReset = useRef(resetKey);
     useLayoutEffect(() => {
@@ -129,6 +138,28 @@ function SwipeCardStackInner<T>(
         [pos, commit]
     );
 
+    // Idle hint: a brief rock of the front card, so an untouched stack still reads as swipeable.
+    // First fires after NUDGE_DELAY, then repeats every NUDGE_INTERVAL.
+    useEffect(() => {
+        if (n < 2 || listed) return;
+        let interval: ReturnType<typeof setInterval> | null = null;
+        const nudge = () => {
+            hint.value = withSequence(
+                withTiming(NUDGE_DEGREES, { duration: 150, easing: EASE }),
+                withTiming(-NUDGE_DEGREES, { duration: 260, easing: EASE }),
+                withTiming(0, { duration: 150, easing: EASE })
+            );
+        };
+        const timeout = setTimeout(() => {
+            nudge();
+            interval = setInterval(nudge, NUDGE_INTERVAL);
+        }, NUDGE_DELAY);
+        return () => {
+            clearTimeout(timeout);
+            if (interval) clearInterval(interval);
+        };
+    }, [n, listed, hint]);
+
     const pan = useMemo(
         () =>
             Gesture.Pan()
@@ -136,6 +167,8 @@ function SwipeCardStackInner<T>(
                 .activeOffsetX([-12, 12])
                 .failOffsetY([-14, 14])
                 .onStart(() => {
+                    cancelAnimation(hint);
+                    hint.value = 0;
                     // A new swipe interrupts one still in flight: finish it instantly.
                     const settled = Math.ceil(pos.value - 0.001);
                     if (settled !== pos.value) {
@@ -157,7 +190,7 @@ function SwipeCardStackInner<T>(
                     if (passed) flyTo(base + 1, t);
                     else pos.value = withTiming(base, { duration: 200, easing: EASE });
                 }),
-        [n, listed, width, pos, fly, dragBase, commit, flyTo]
+        [n, listed, width, pos, fly, dragBase, hint, commit, flyTo]
     );
 
     const listScrollRef = useRef<Reanimated.ScrollView>(null);
@@ -166,11 +199,26 @@ function SwipeCardStackInner<T>(
         () => ({
             next: () => {
                 if (n < 2 || listed) return;
+                cancelAnimation(hint);
+                hint.value = 0;
                 const settled = Math.ceil(pos.value - 0.001);
                 cancelAnimation(pos);
                 pos.value = settled;
                 fly.value = -1;
                 flyTo(settled + 1, 0);
+            },
+            prev: () => {
+                if (n < 2 || listed) return;
+                cancelAnimation(hint);
+                hint.value = 0;
+                hapticSelect();
+                const settled = Math.ceil(pos.value - 0.001);
+                cancelAnimation(pos);
+                pos.value = settled;
+                fly.value = 1;
+                const target = settled - 1;
+                setIndex(target);
+                pos.value = withTiming(target, { duration: 220, easing: EASE });
             },
             expand: () => {
                 if (!n) return;
@@ -189,7 +237,7 @@ function SwipeCardStackInner<T>(
                 });
             },
         }),
-        [n, listed, pos, fly, flyTo, scrollY, spillValue, onListedChange]
+        [n, listed, pos, fly, hint, flyTo, scrollY, spillValue, onListedChange]
     );
 
     const onListScroll = useAnimatedScrollHandler((e) => {
@@ -209,7 +257,7 @@ function SwipeCardStackInner<T>(
                     scrollEventThrottle={16}
                     showsVerticalScrollIndicator={false}
                     style={StyleSheet.absoluteFill}
-                    contentContainerStyle={{ paddingBottom: 24 }}>
+                    contentContainerStyle={{ paddingBottom: listBottomPadding }}>
                     <View style={{ height: contentHeight }}>
                         {ordered.map((item, i) => (
                             <SpilledCard
@@ -258,6 +306,7 @@ function SwipeCardStackInner<T>(
                             cardHeight={cardHeight}
                             frontColor={frontColor}
                             backColor={backColor}
+                            hint={depth === 0 ? hint : undefined}
                             style={cardStyle}>
                             {renderCard(item, depth === 0)}
                         </StackedCard>
@@ -282,6 +331,7 @@ function StackedCard({
     cardHeight,
     frontColor,
     backColor,
+    hint,
     style,
     children,
 }: {
@@ -295,6 +345,8 @@ function StackedCard({
     cardHeight: number;
     frontColor: string;
     backColor: string;
+    /** idle "swipe me" rotation, applied to the front card only */
+    hint?: SharedValue<number>;
     style?: ViewStyle;
     children: React.ReactNode;
 }) {
@@ -328,7 +380,11 @@ function StackedCard({
         return {
             opacity: tail * appear.value,
             backgroundColor: interpolateColor(Math.min(rel, 1), [0, 1], [frontColor, backColor]),
-            transform: [{ translateY: pose.y }, { scale: pose.scale }, { rotateZ: `${pose.rotate}deg` }] as any,
+            transform: [
+                { translateY: pose.y },
+                { scale: pose.scale },
+                { rotateZ: `${pose.rotate + (hint?.value ?? 0)}deg` },
+            ] as any,
         };
     });
 
