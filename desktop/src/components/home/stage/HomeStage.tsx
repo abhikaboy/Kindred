@@ -9,7 +9,8 @@ import { useAuth } from "@/contexts/auth";
 import { useRingsToday } from "@/hooks/useRings";
 import { StageGlow } from "./StageGlow";
 import { FocusView } from "./FocusView";
-import { StageCardStack } from "./StageCardStack";
+import { StageCardStack, type StageItem } from "./StageCardStack";
+import { useRecentKudos } from "./useRecentKudos";
 import { EnrichOffer } from "@/components/enrich/EnrichOffer";
 import { useStageQueue, type StageTask } from "./useStageQueue";
 
@@ -19,15 +20,22 @@ const greetingFor = (h: number) => (h < 12 ? "Good morning" : h < 18 ? "Good aft
 export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
   const { user } = useAuth();
   const { data: rings } = useRingsToday();
-  const { queue, isLoading } = useStageQueue();
+  const { queue, isLoading, setStalledBoost } = useStageQueue();
+  const { kudos, acknowledge } = useRecentKudos();
   const [index, setIndex] = useState(0);
   const [focusTask, setFocusTask] = useState<StageTask | null>(null);
   const [replay, setReplay] = useState(0);
 
   const [wsIndex, setWsIndex] = useState(-1);
   const workspaces = useMemo(() => [...new Set(queue.map((t) => t.workspaceName))], [queue]);
-  const shown = wsIndex < 0 ? queue : queue.filter((t) => t.workspaceName === workspaces[wsIndex]);
-  const task = shown.length ? shown[index % shown.length] : null;
+  // Recent kudos lead the "all workspaces" stack; workspace views stay task-only.
+  const shown: StageItem[] = useMemo(() => {
+    const tasks = (wsIndex < 0 ? queue : queue.filter((t) => t.workspaceName === workspaces[wsIndex])).map(
+      (task): StageItem => ({ kind: "task", task }),
+    );
+    return wsIndex < 0 ? [...kudos.map((k): StageItem => ({ kind: "kudos", kudos: k })), ...tasks] : tasks;
+  }, [queue, kudos, wsIndex, workspaces]);
+  const current = shown.length ? shown[index % shown.length] : null;
   const wsLabel = wsIndex < 0 ? "All workspaces" : workspaces[wsIndex];
   // -1 is "all"; wraps through each workspace and back.
   const shiftWorkspace = (dir: 1 | -1) => {
@@ -105,7 +113,7 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
 
             {isLoading ? (
               <Skeleton className="h-32 w-full max-w-md rounded-2xl" />
-            ) : task ? (
+            ) : current ? (
               <div className="flex w-full max-w-md flex-col items-center gap-3">
                 <div className="flex items-center gap-1">
                   <button type="button" aria-label="Previous workspace" onClick={() => shiftWorkspace(-1)} className="grid size-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground">
@@ -132,10 +140,12 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
                 </div>
                 <StageCardStack
                 key={wsLabel}
-                queue={shown}
+                items={shown}
                 index={index % shown.length}
                 onIndexChange={setIndex}
                 onStart={setFocusTask}
+                onAcknowledge={acknowledge}
+                onSetAside={(task) => setStalledBoost(task.id, false)}
               />
               </div>
             ) : (

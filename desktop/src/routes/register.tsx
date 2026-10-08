@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/ThemedInput";
 import PrimaryButton from "@/components/PrimaryButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { PhoneInput } from "@/components/PhoneInput";
 import { OtpInput } from "@/components/OtpInput";
+import { formatPhone } from "@/lib/formatPhone";
 
 type Step = "phone" | "otp" | "profile";
 
@@ -52,8 +54,8 @@ export default function RegisterScreen() {
       setStep("otp");
       setResendTimer(30);
       setCanResend(false);
-    } catch {
-      setError("Failed to send verification code. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't send a code. Give it another try.");
     } finally {
       setLoading(false);
     }
@@ -89,8 +91,8 @@ export default function RegisterScreen() {
     setError("");
     try {
       await sendOTP(phone);
-    } catch {
-      setError("Failed to resend code. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resend the code. Give it another try.");
       setCanResend(true);
       setResendTimer(0);
     }
@@ -127,33 +129,28 @@ export default function RegisterScreen() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-start p-6 sm:p-10">
-      <div className="flex w-full justify-end">
-        <ThemeToggle />
-      </div>
-
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6">
+    <AuthShell>
         {step !== "phone" && (
-          <PrimaryButton
-            ghost
-            title="← Back"
+          <button
+            type="button"
             onClick={handleBack}
-            className="w-auto self-start px-0 py-0"
-          />
+            aria-label="Back"
+            className="-mb-4 -ml-2 grid size-9 place-items-center self-start rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft size={20} />
+          </button>
         )}
 
-        <ThemedText type="titleFraunces" as="h1">
-          {getTitle()}
-        </ThemedText>
+        <div className="flex flex-col gap-2">
+          <ThemedText type="titleFraunces" as="h1">
+            {getTitle()}
+          </ThemedText>
+          {step === "otp" && <ThemedText type="caption">Sent to {formatPhone(phone)}</ThemedText>}
+        </div>
 
         {step === "phone" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <PhoneInput value={phone} onChangeText={setPhone} autoFocus />
-              <ThemedText type="caption">
-                We'll send you a verification code
-              </ThemedText>
-            </div>
+          <div className="flex flex-col gap-3">
+            <PhoneInput value={phone} onChangeText={setPhone} autoFocus />
 
             <PrimaryButton
               title="Send code"
@@ -164,11 +161,7 @@ export default function RegisterScreen() {
         )}
 
         {step === "otp" && (
-          <div className="flex flex-col gap-4">
-            <ThemedText type="caption">
-              Enter the 4-digit code sent to your phone
-            </ThemedText>
-
+          <div className="flex flex-col gap-3">
             <OtpInput
               numberOfDigits={4}
               onTextChange={(text) => {
@@ -180,22 +173,21 @@ export default function RegisterScreen() {
               autoFocus
             />
 
-            <div className="flex flex-row items-center gap-1">
-              <ThemedText type="caption">Didn't receive a code?</ThemedText>
-              {canResend ? (
-                <button type="button" onClick={handleResend}>
-                  <ThemedText type="link">Resend</ThemedText>
-                </button>
-              ) : (
-                <ThemedText type="caption">Resend in {resendTimer}s</ThemedText>
-              )}
-            </div>
-
             <PrimaryButton
               title={loading ? "Verifying…" : "Verify"}
               onClick={() => handleVerifyOtp()}
               disabled={loading || otpCode.length !== 4}
             />
+
+            <div className="flex items-center gap-4">
+              {canResend ? (
+                <button type="button" onClick={handleResend}>
+                  <ThemedText type="caption" className="text-primary">Resend code</ThemedText>
+                </button>
+              ) : (
+                <ThemedText type="caption" className="tabular-nums">Resend code in {resendTimer}s</ThemedText>
+              )}
+            </div>
           </div>
         )}
 
@@ -260,13 +252,14 @@ export default function RegisterScreen() {
           </ThemedText>
         )}
 
-        <div className="flex flex-row items-center gap-1">
-          <ThemedText type="caption">Already have an account?</ThemedText>
-          <Link to="/login">
-            <ThemedText type="link">Sign in</ThemedText>
-          </Link>
-        </div>
-      </div>
-    </div>
+        {step === "phone" && (
+          <div className="flex flex-row items-center gap-1">
+            <ThemedText type="caption">Already have an account?</ThemedText>
+            <Link to="/login">
+              <ThemedText type="link">Sign in</ThemedText>
+            </Link>
+          </div>
+        )}
+    </AuthShell>
   );
 }

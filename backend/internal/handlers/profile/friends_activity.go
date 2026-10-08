@@ -110,7 +110,7 @@ func (h *Handler) GetFriendsActivity(ctx context.Context, input *GetFriendsActiv
 				slog.Error("Failed to get ring state for friend", "friendId", id.Hex(), "error", err)
 				return nil
 			}
-			ringStates[i] = state
+			ringStates[i] = state.ForViewer(false)
 			return nil
 		})
 	}

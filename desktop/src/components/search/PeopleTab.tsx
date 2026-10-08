@@ -28,7 +28,7 @@ function useDebounced<T>(value: T, delay = 300): T {
 
 function RowSkeletons({ count = 3 }: { count?: number }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex items-center gap-3">
           <Skeleton className="size-10 shrink-0 rounded-full" />
@@ -42,20 +42,20 @@ function RowSkeletons({ count = 3 }: { count?: number }) {
   );
 }
 
-// People half of the combined Search page: find people + browse friends/requests/suggested.
-export function PeopleTab({ chips }: { chips?: React.ReactNode }) {
+// People search on Together; when idle, shows requests, the Together sections (children), suggested, then friends.
+export function PeopleTab({ chips, children }: { chips?: React.ReactNode; children?: React.ReactNode }) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounced(query.trim(), 300);
   const searching = debouncedQuery.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex max-w-2xl flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <SearchBox value={query} onChange={setQuery} placeholder="Search people by name or handle" autoFocus />
         {chips}
       </div>
 
-      {searching ? <SearchSection query={debouncedQuery} /> : <BrowseSections />}
+      {searching ? <SearchSection query={debouncedQuery} /> : <BrowseSections>{children}</BrowseSections>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ function SearchSection({ query }: { query: string }) {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="flex flex-col gap-3">
       {results.map((profile) => (
         <SearchResultRow key={profile.id} profile={profile} />
       ))}
@@ -83,7 +83,7 @@ function SearchSection({ query }: { query: string }) {
   );
 }
 
-function BrowseSections() {
+function BrowseSections({ children }: { children?: React.ReactNode }) {
   const friends = useFriends();
   const requests = useReceivedRequests();
   const suggested = useSuggestedUsers();
@@ -97,13 +97,15 @@ function BrowseSections() {
       {requestItems.length > 0 && (
         <section className="flex flex-col gap-4">
           <SectionHeader title={`Requests · ${requestItems.length}`} />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="flex flex-col gap-3">
             {requestItems.map((r) => (
               <RequestRow key={r.id} request={r} />
             ))}
           </div>
         </section>
       )}
+
+      {children}
 
       {suggestedItems.length > 0 && (
         <section className="flex flex-col gap-4">
@@ -127,7 +129,7 @@ function BrowseSections() {
             description="Add friends to see their rings and cheer them on as they get things done. Search above to find people you know."
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="flex flex-col gap-3">
             {friendItems.map((f) => (
               <UserRow
                 key={f._id}

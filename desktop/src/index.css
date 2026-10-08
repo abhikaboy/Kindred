@@ -287,3 +287,12 @@
 @media (prefers-reduced-motion: reduce) {
   .cheer:hover .cheer-icon, .cheer:hover .cheer-spark { animation: none; }
 }
+
+/* Auth page: the corner glow rests faint, flares briefly, then settles. */
+@keyframes auth-flare {
+  0%, 62%, 100% { opacity: 0.35; transform: scale(1); }
+  74% { opacity: 1; transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-auth-flare] { animation: none !important; }
+}

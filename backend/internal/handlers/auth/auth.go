@@ -700,8 +700,16 @@ func (h *Handler) SendOTPHuma(ctx context.Context, input *SendOTPInput) (*SendOT
 		return nil, huma.Error400BadRequest("Please provide a valid phone number", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	// Call the service method which handles the async Sinch API call
-	verificationID, err := h.service.SendOTP(ctx, input.Body.PhoneNumber)
+	phone := input.Body.PhoneNumber
+	if h.smsGuard != nil && phone != testReviewPhone {
+		allowed, err := h.smsGuard.AllowSend(ctx, phone, input.clientIP)
+		if err != nil {
+			return nil, smsGuardError(ctx, err, phone, input.clientIP)
+		}
+		phone = allowed
+	}
+
+	verificationID, err := h.service.SendOTP(ctx, phone)
 	if err != nil {
 		slog.Error("Failed to send OTP", "error", err, "phone", input.Body.PhoneNumber)
 		return nil, huma.Error500InternalServerError("Unable to send verification code. The SMS service may be temporarily unavailable.", err)
@@ -721,7 +729,12 @@ func (h *Handler) VerifyOTPHuma(ctx context.Context, input *VerifyOTPInput) (*Ve
 		return nil, huma.Error400BadRequest("Please provide a valid phone number and verification code", fmt.Errorf("validation errors: %v", errs))
 	}
 
-	// Call the service method which handles the async Sinch API call
+	if h.smsGuard != nil {
+		if err := h.smsGuard.AllowVerify(ctx, input.Body.PhoneNumber); err != nil {
+			return nil, smsGuardError(ctx, err, input.Body.PhoneNumber, input.clientIP)
+		}
+	}
+
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)
 	if err != nil {
 		slog.Error("Failed to verify OTP", "error", err, "phone", input.Body.PhoneNumber)
@@ -746,6 +759,12 @@ func (h *Handler) LoginWithOTPHuma(ctx context.Context, input *LoginWithOTPInput
 	errs := xvalidator.Validator.Validate(input.Body)
 	if len(errs) > 0 {
 		return nil, huma.Error400BadRequest("Please provide a valid phone number and verification code", fmt.Errorf("validation errors: %v", errs))
+	}
+
+	if h.smsGuard != nil {
+		if err := h.smsGuard.AllowVerify(ctx, input.Body.PhoneNumber); err != nil {
+			return nil, smsGuardError(ctx, err, input.Body.PhoneNumber, input.clientIP)
+		}
 	}
 
 	// Step 1: Verify the OTP code
@@ -866,6 +885,12 @@ func (h *Handler) LinkPhoneHuma(ctx context.Context, input *LinkPhoneInput) (*Li
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return nil, huma.Error400BadRequest("Invalid user ID", err)
+	}
+
+	if h.smsGuard != nil {
+		if err := h.smsGuard.AllowVerify(ctx, input.Body.PhoneNumber); err != nil {
+			return nil, smsGuardError(ctx, err, input.Body.PhoneNumber, "")
+		}
 	}
 
 	valid, status, err := h.service.VerifyOTP(ctx, input.Body.PhoneNumber, input.Body.Code)

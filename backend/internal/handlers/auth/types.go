@@ -66,6 +66,9 @@ type Handler struct {
 
 	// guestLimiter caps POST /v1/auth/guest per client IP. Nil disables it.
 	guestLimiter *guestRateLimiter
+
+	// smsGuard rate limits and filters every send-otp and code check. Nil disables it.
+	smsGuard *smsGuard
 }
 
 type TokenResponse struct {

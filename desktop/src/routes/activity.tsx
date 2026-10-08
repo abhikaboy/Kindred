@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ArrowClockwise, CaretDown } from "@phosphor-icons/react";
 import { $api } from "@/lib/api/query";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { ThemedText } from "@/components/ThemedText";
+import { WeekRecapEntry } from "@/components/weekrecap/WeekRecapEntry";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ActivityHeatmap } from "@/components/activity/ActivityHeatmap";
@@ -12,7 +14,13 @@ import { CategoryShareWidget } from "@/components/activity/CategoryShareWidget";
 import { HabitsWidget } from "@/components/activity/HabitsWidget";
 import { CategoryHealthWidget } from "@/components/activity/CategoryHealthWidget";
 import { WorkspaceHealthWidget } from "@/components/activity/WorkspaceHealthWidget";
+import { AttentionWidget } from "@/components/activity/AttentionWidget";
+import { BestTimeWidget } from "@/components/activity/BestTimeWidget";
 import type { AnalyticsRange } from "@/components/activity/types";
+
+// Each view answers one question instead of showing every chart at once.
+const VIEWS = ["Overview", "Patterns"] as const;
+type View = (typeof VIEWS)[number];
 
 const RANGE_OPTIONS: { label: string; value: AnalyticsRange }[] = [
   { label: "Week", value: "week" },
@@ -21,6 +29,9 @@ const RANGE_OPTIONS: { label: string; value: AnalyticsRange }[] = [
 ];
 
 export default function ActivityScreen() {
+  const [params, setParams] = useSearchParams();
+  const view: View = VIEWS.find((v) => v.toLowerCase() === params.get("view")) ?? "Overview";
+  const setView = (v: string) => setParams({ view: v.toLowerCase() }, { replace: true });
   const [range, setRange] = useState<AnalyticsRange>("week");
   const [workspace, setWorkspace] = useState<string | undefined>(undefined);
   const [category, setCategory] = useState<string | undefined>(undefined);
@@ -38,10 +49,13 @@ export default function ActivityScreen() {
 
   return (
     <div className="flex w-full flex-col gap-6 pt-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <ThemedText type="titleFraunces" as="h1">
-          Activity
-        </ThemedText>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-4">
+          <ThemedText type="titleFraunces" as="h1">
+            Activity
+          </ThemedText>
+          <SegmentedControl options={[...VIEWS]} value={view} onChange={setView} className="w-56" />
+        </div>
 
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -72,6 +86,8 @@ export default function ActivityScreen() {
           />
         </div>
       </div>
+
+      <WeekRecapEntry />
 
       {category ? (
         <button
@@ -107,32 +123,39 @@ export default function ActivityScreen() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-12">
-          <SignalStrip signals={analytics.data.signals} />
+        <div key={view} className="flex flex-col gap-12 animate-in fade-in duration-200">
+          {view === "Overview" && (
+            <>
+              <SignalStrip signals={analytics.data.signals} />
+              <AttentionWidget attention={analytics.data.attention} />
+              <ProgressWidget progress={analytics.data.progress} range={range} />
+            </>
+          )}
 
-          <section className="flex flex-col">
-            <ThemedText type="subtitle" as="h3" className="mb-1 block">
-              Activity graph
-            </ThemedText>
-            <ActivityHeatmap heatmap={analytics.data.heatmap} />
-          </section>
-
-          <ProgressWidget progress={analytics.data.progress} range={range} />
-
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-            <CategoryShareWidget
-              share={analytics.data.categoryShare}
-              range={range}
-              activeCategory={category}
-              onSelectCategory={setCategory}
-            />
-            <HabitsWidget habits={analytics.data.habits} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <CategoryHealthWidget categoryHealth={analytics.data.categoryHealth} />
-            <WorkspaceHealthWidget workspaceHealth={analytics.data.workspaceHealth} />
-          </div>
+          {view === "Patterns" && (
+            <>
+              <BestTimeWidget bestTime={analytics.data.bestTime} />
+              <section className="flex flex-col gap-4">
+                <ThemedText type="larger_default" as="h2">
+                  Activity graph
+                </ThemedText>
+                <ActivityHeatmap heatmap={analytics.data.heatmap} />
+              </section>
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+                <CategoryShareWidget
+                  share={analytics.data.categoryShare}
+                  range={range}
+                  activeCategory={category}
+                  onSelectCategory={setCategory}
+                />
+                <HabitsWidget habits={analytics.data.habits} />
+              </div>
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+                <WorkspaceHealthWidget workspaceHealth={analytics.data.workspaceHealth} />
+                <CategoryHealthWidget categoryHealth={analytics.data.categoryHealth} />
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

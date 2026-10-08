@@ -194,7 +194,7 @@ func (h *Handler) GetProfileHuma(ctx context.Context, input *GetProfileInput) (*
 			slog.Error("Failed to get ring state for profile", "profileId", id.Hex(), "error", err)
 			// Non-fatal: continue without ring state
 		} else {
-			profile.RingState = ringState
+			profile.RingState = ringState.ForViewer(relationship.Status == RelationshipSelf)
 		}
 	}
 

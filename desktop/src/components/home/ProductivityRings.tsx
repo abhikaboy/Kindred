@@ -6,6 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ConcentricRings } from "@/components/rings/ConcentricRings";
 import { RingDetail } from "@/components/rings/RingDetail";
 import { ScoreInfoDialog } from "@/components/rings/ScoreInfoDialog";
+import { usePausedToday } from "@/components/rings/LifeHappened";
 import { useRingsToday } from "@/hooks/useRings";
 import { RING_COLORS, type RingKey } from "@shared/rings";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ export function ProductivityRings(): React.JSX.Element {
   const [hovered, setHovered] = useState<RingKey | null>(null);
   const [expanded, setExpanded] = useState<RingKey | null>(null);
   const scoreInfo = useScoreInfo();
+  const paused = usePausedToday();
 
   if (isLoading || !data) {
     return (
@@ -51,8 +53,9 @@ export function ProductivityRings(): React.JSX.Element {
 
   const rings = data.ring_state;
   const focused = expanded ?? hovered;
+  // A paused day holds everything in place; recede rather than ask for anything.
   return (
-    <div className="flex items-center gap-6">
+    <div className={cn("flex items-center gap-6 transition-opacity", paused && "opacity-50")}>
       <ConcentricRings
         rings={rings}
         dimmedExcept={focused}

@@ -5777,6 +5777,63 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/rings/pause:
+        post:
+            tags:
+                - rings
+            summary: Mark a day as life happened
+            description: Privately pauses today or one of the last 2 days. The day holds the run and score, excuses habits due that day, and sends no ring notifications. Never visible to friends.
+            operationId: pause-ring-day
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PauseDayInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PauseDayResponseBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+        delete:
+            tags:
+                - rings
+            summary: Undo a life happened pause
+            description: Removes the pause from today or one of the last 2 days.
+            operationId: unpause-ring-day
+            parameters:
+                - name: days_ago
+                  in: query
+                  description: 0 = today, 1 = yesterday, up to 2 days back
+                  explode: false
+                  schema:
+                    type: integer
+                    description: 0 = today, 1 = yesterday, up to 2 days back
+                    format: int64
+                    default: 0
+                    minimum: 0
+                    maximum: 2
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PauseDayResponseBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/rings/reward:
         post:
             tags:
@@ -8429,6 +8486,26 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/week-recap:
+        get:
+            tags:
+                - Analytics
+            summary: Get the weekly story
+            description: Returns the 'Your week' story cards for the authenticated user, computed in their timezone. On Sunday it covers the current Mon-Sun week; otherwise the last full week.
+            operationId: get-week-recap
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/WeekRecapResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/workspaces:
         get:
             tags:
@@ -8973,8 +9050,15 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/AnalyticsBestTimeCell'
+                hasPattern:
+                    type: boolean
+                    description: False below the minimum sample; the takeaway then makes no claim
                 maxCount:
                     type: integer
+                    format: int64
+                sampleSize:
+                    type: integer
+                    description: Completions the grid is built from
                     format: int64
                 takeaway:
                     type: string
@@ -8982,6 +9066,8 @@ components:
                 - cells
                 - maxCount
                 - takeaway
+                - sampleSize
+                - hasPattern
         AnalyticsBestTimeCell:
             type: object
             additionalProperties: false
@@ -9217,6 +9303,30 @@ components:
                 - categoryId
                 - name
                 - color
+        AnalyticsPeakTime:
+            type: object
+            additionalProperties: false
+            properties:
+                hour:
+                    type: integer
+                    description: Local hour 0-23
+                    format: int64
+                reason:
+                    type: string
+                    description: One-line why, shown on tap
+                sampleSize:
+                    type: integer
+                    format: int64
+                source:
+                    type: string
+                    enum:
+                        - stated
+                        - inferred
+            required:
+                - hour
+                - source
+                - reason
+                - sampleSize
         AnalyticsProgress:
             type: object
             additionalProperties: false
@@ -9318,6 +9428,9 @@ components:
                     $ref: '#/components/schemas/AnalyticsHeatmap'
                 kudosEffect:
                     $ref: '#/components/schemas/AnalyticsKudosEffect'
+                peakTime:
+                    description: Default hour for new tasks; absent when there is not enough data
+                    $ref: '#/components/schemas/AnalyticsPeakTime'
                 progress:
                     $ref: '#/components/schemas/AnalyticsProgress'
                 range:
@@ -14458,6 +14571,48 @@ components:
                 - congratulations
                 - friend_requests
                 - contact_joins
+        PauseDayInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PauseDayInputBody.json
+                    readOnly: true
+                days_ago:
+                    type: integer
+                    description: 0 = today, 1 = yesterday, up to 2 days back
+                    format: int64
+                    minimum: 0
+                    maximum: 2
+                note:
+                    type: string
+                    description: Optional private note
+                    maxLength: 140
+            required:
+                - days_ago
+        PauseDayResponseBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/PauseDayResponseBody.json
+                    readOnly: true
+                productivity_score:
+                    type: integer
+                    format: int64
+                ring_state:
+                    $ref: '#/components/schemas/RingState'
+            required:
+                - ring_state
+                - productivity_score
         PendingTaggedTask:
             type: object
             additionalProperties: false
@@ -15879,6 +16034,14 @@ components:
                 do:
                     $ref: '#/components/schemas/RingProgress'
                 id:
+                    type: string
+                paused:
+                    type: boolean
+                    description: Owner marked this day as life happened; holds the run, score and habits
+                paused_at:
+                    type: string
+                    format: date-time
+                paused_note:
                     type: string
                 plan:
                     $ref: '#/components/schemas/RingProgress'
@@ -18509,6 +18672,193 @@ components:
                     type: boolean
             required:
                 - success
+        WeekRecapAction:
+            type: object
+            additionalProperties: false
+            properties:
+                at:
+                    type: string
+                    description: RFC3339 time, already resolved in the user's timezone
+                categoryId:
+                    type: string
+                done:
+                    type: string
+                    description: Confirmation copy after the action succeeds
+                kind:
+                    type: string
+                    description: plan = PUT the plan below to /v1/user/tasks/{categoryId}/{taskId}/plan
+                    enum:
+                        - plan
+                label:
+                    type: string
+                    description: Button copy
+                size:
+                    type: string
+                    enum:
+                        - 2m
+                        - 10m
+                        - full
+                step:
+                    type: string
+                taskId:
+                    type: string
+            required:
+                - kind
+                - label
+                - taskId
+                - categoryId
+                - step
+                - size
+                - at
+                - done
+        WeekRecapBar:
+            type: object
+            additionalProperties: false
+            properties:
+                current:
+                    type: boolean
+                    description: True for the recap week (or its biggest day)
+                label:
+                    type: string
+                    description: Short label, e.g. 'Sep 7', 'This week', 'M'
+                value:
+                    type: integer
+                    description: Tasks finished
+                    format: int64
+            required:
+                - label
+                - value
+                - current
+        WeekRecapCard:
+            type: object
+            additionalProperties: false
+            properties:
+                action:
+                    $ref: '#/components/schemas/WeekRecapAction'
+                body:
+                    type: string
+                caption:
+                    type: string
+                days:
+                    type: array
+                    description: 'week (first week only): Mon..Sun'
+                    items:
+                        $ref: '#/components/schemas/WeekRecapBar'
+                habitGrid:
+                    type: array
+                    description: 'habit: oldest week first, Mon..Sun; 1 done, 0 not, -1 not yet'
+                    items:
+                        type: array
+                        items:
+                            type: integer
+                            format: int64
+                headline:
+                    type: string
+                hours:
+                    type: array
+                    description: 'peak: 24 completion counts by local hour'
+                    items:
+                        type: integer
+                        format: int64
+                kind:
+                    type: string
+                    enum:
+                        - week
+                        - peak
+                        - habit
+                        - supporters
+                        - slipped
+                        - share
+                peakHour:
+                    type: integer
+                    description: 'peak: local hour 0-23'
+                    format: int64
+                people:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WeekRecapPerson'
+                shareText:
+                    type: string
+                    description: 'share: plain-text version for copying'
+                usual:
+                    type: integer
+                    description: 'week: your own average from prior weeks; absent in the first week'
+                    format: int64
+                weeks:
+                    type: array
+                    description: 'week: your last weeks plus this one'
+                    items:
+                        $ref: '#/components/schemas/WeekRecapBar'
+            required:
+                - kind
+                - headline
+                - body
+        WeekRecapPerson:
+            type: object
+            additionalProperties: false
+            properties:
+                context:
+                    type: string
+                    description: Where and when, e.g. 'on Draft the grant intro · Tue'
+                icon:
+                    type: string
+                id:
+                    type: string
+                line:
+                    type: string
+                    description: What they sent, e.g. a quoted message or 'Sent a photo'
+                name:
+                    type: string
+            required:
+                - id
+                - name
+                - icon
+                - line
+                - context
+        WeekRecapResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/WeekRecapResponse.json
+                    readOnly: true
+                cards:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WeekRecapCard'
+                isFirstWeek:
+                    type: boolean
+                rangeLabel:
+                    type: string
+                    description: e.g. 'Sep 29 – Oct 5'
+                teaser:
+                    type: string
+                    description: One line for the entry point
+                variant:
+                    type: string
+                    enum:
+                        - first
+                        - quieter
+                        - usual
+                        - bigger
+                weekEnd:
+                    type: string
+                    description: Local Sunday, YYYY-MM-DD
+                weekStart:
+                    type: string
+                    description: Local Monday, YYYY-MM-DD
+            required:
+                - weekStart
+                - weekEnd
+                - rangeLabel
+                - variant
+                - isFirstWeek
+                - teaser
+                - cards
         WelcomeOutputBody:
             type: object
             additionalProperties: false

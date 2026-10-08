@@ -8,7 +8,7 @@ import RegisterScreen from "@/routes/register";
 import HomeScreen from "@/routes/home";
 import CalendarScreen from "@/routes/calendar";
 import FeedScreen from "@/routes/feed";
-import SearchScreen from "@/routes/search";
+import TogetherScreen from "@/routes/together";
 import ActivityScreen from "@/routes/activity";
 import NotificationsScreen from "@/routes/notifications";
 import WorkspaceScreen from "@/routes/workspace";
@@ -48,9 +48,10 @@ function App() {
             <Route path="/" element={<HomeScreen />} />
             <Route path="/calendar" element={<CalendarScreen />} />
             <Route path="/feed" element={<FeedScreen />} />
-            <Route path="/search" element={<SearchScreen />} />
-            {/* Friends merged into Search (People tab). */}
-            <Route path="/friends" element={<Navigate to="/search" replace />} />
+            <Route path="/together" element={<TogetherScreen />} />
+            {/* Search and Friends merged into Together. */}
+            <Route path="/search" element={<Navigate to="/together" replace />} />
+            <Route path="/friends" element={<Navigate to="/together" replace />} />
             <Route path="/notifications" element={<NotificationsScreen />} />
             <Route path="/activity" element={<ActivityScreen />} />
             <Route path="/workspace/:name" element={<WorkspaceScreen />} />

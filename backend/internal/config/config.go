@@ -9,6 +9,7 @@ type Config struct {
 	DO             `envPrefix:"DO_"`
 	Twillio        `envPrefix:"TWILLIO_"`
 	Sinch          `envPrefix:"SINCH_"`
+	SMSGuard       `envPrefix:"SMS_"`
 	Unsplash       `envPrefix:"UNSPLASH_"`
 	Posthog        `envPrefix:"POSTHOG_"`
 	Sentry         `envPrefix:"SENTRY_"`

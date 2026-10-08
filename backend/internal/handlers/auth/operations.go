@@ -96,6 +96,14 @@ type UpdatePushTokenOutput struct {
 // Send OTP Operation Types
 type SendOTPInput struct {
 	Body SendOTPRequest `json:"body"`
+
+	clientIP string
+}
+
+// Resolve captures the caller's IP for the SMS guard.
+func (i *SendOTPInput) Resolve(ctx huma.Context) []error {
+	i.clientIP = clientIPFromRequest(ctx.Header, ctx.RemoteAddr())
+	return nil
 }
 
 type SendOTPOutput struct {
@@ -108,6 +116,14 @@ type SendOTPOutput struct {
 // Verify OTP Operation Types
 type VerifyOTPInput struct {
 	Body VerifyOTPRequest `json:"body"`
+
+	clientIP string
+}
+
+// Resolve captures the caller's IP for the SMS guard.
+func (i *VerifyOTPInput) Resolve(ctx huma.Context) []error {
+	i.clientIP = clientIPFromRequest(ctx.Header, ctx.RemoteAddr())
+	return nil
 }
 
 type VerifyOTPOutput struct {
@@ -121,6 +137,14 @@ type VerifyOTPOutput struct {
 // Login with OTP Operation Types
 type LoginWithOTPInput struct {
 	Body LoginWithOTPRequest `json:"body"`
+
+	clientIP string
+}
+
+// Resolve captures the caller's IP for the SMS guard.
+func (i *LoginWithOTPInput) Resolve(ctx huma.Context) []error {
+	i.clientIP = clientIPFromRequest(ctx.Header, ctx.RemoteAddr())
+	return nil
 }
 
 type LoginWithOTPOutput struct {

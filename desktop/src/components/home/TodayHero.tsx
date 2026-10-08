@@ -8,6 +8,7 @@ import {
 import { ProductivityRings } from "@/components/home/ProductivityRings";
 import { QuickCapture } from "@/components/home/QuickCapture";
 import { QuickLogDay } from "@/components/home/QuickLogDay";
+import { LifeHappened } from "@/components/rings/LifeHappened";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingsToday } from "@/hooks/useRings";
 import { useTodayTasks } from "@/hooks/useHomeTasks";
@@ -154,6 +155,7 @@ export function TodayHero() {
             label={`${dueToday} due today`}
             accent={dueToday > 0}
           />
+          <LifeHappened />
         </div>
       </div>
 

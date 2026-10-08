@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, CalendarBlank, Check, Flag, Plus, X } from "@phosphor-icons/react";
+import { ArrowUp, CalendarBlank, Check, Clock, Flag, Info, Plus, X } from "@phosphor-icons/react";
 import { ThemedText } from "@/components/ThemedText";
 import { useRingUpdate } from "@/components/rings/RingUpdateContext";
 import { useTaskSuggestions } from "@/hooks/useTaskSuggestions";
+import { usePeakTimeDefault } from "@/hooks/usePeakTimeDefault";
 import {
   applySchedule,
   buildCreateTaskParams,
@@ -61,6 +62,10 @@ export function QuickCapture() {
   const inputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const parsed = Boolean(schedule || recurrence);
+  const peak = usePeakTimeDefault();
+  const [peakDismissed, setPeakDismissed] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
+  const [optOutNotice, setOptOutNotice] = useState(false);
   const segments = useMemo(
     () => (parsed ? segment(text, scheduleSpans(text, new Date())) : [{ text, hit: false }]),
     [text, parsed]
@@ -75,19 +80,32 @@ export function QuickCapture() {
     inputRef.current?.focus();
   };
 
+  // A dismissal covers the task being typed; the next task gets the default again.
+  useEffect(() => {
+    if (text.trim() === "") {
+      setPeakDismissed(false);
+      setShowWhy(false);
+    }
+  }, [text]);
+
   useEffect(() => {
     if (!receipt) return;
     const timer = setTimeout(() => setReceipt(null), RECEIPT_MS);
     return () => clearTimeout(timer);
   }, [receipt]);
 
+  // Peak-hour default only fills an empty schedule, and is one tap to drop.
+  const peakDefault = text.trim() && !parsed && !peakDismissed ? peak.suggestion : null;
+
   const submit = () => {
     const content = text.trim();
     if (!content || createTaskAuto.isPending) return;
 
+    const usePeak = peakDefault !== null;
+    const effectiveSchedule = usePeak ? peakDefault.schedule : schedule;
     const { form } = applySchedule(
       { ...emptyTaskForm(), content },
-      schedule,
+      effectiveSchedule,
       recurrence,
       noAppliedSuggestion(),
     );
@@ -106,7 +124,7 @@ export function QuickCapture() {
         onSuccess: (data) => {
           showRingUpdate(data?.ringDelta);
           qc.invalidateQueries({ queryKey: ["get", "/v1/user/rings/today"] });
-          setReceipt({ content, details: describeEnrichment(describeSchedule(schedule, recurrence), fuzzy?.priority) });
+          setReceipt({ content, details: describeEnrichment(describeSchedule(effectiveSchedule, recurrence), fuzzy?.priority) });
         },
         // The hook toasts the failure; just give the text back.
         onError: () => setText(content),
@@ -192,6 +210,35 @@ export function QuickCapture() {
               </button>
             </span>
           )}
+          {peakDefault && (
+            <span className="inline-flex h-8 items-center gap-1 rounded-full bg-primary/10 pl-3 pr-1 text-primary animate-in fade-in duration-200">
+              <Clock size={14} weight="bold" />
+              <ThemedText type="caption" className="ml-0.5 text-primary">
+                {peakDefault.label}
+              </ThemedText>
+              <button
+                type="button"
+                aria-label="Why this time"
+                aria-expanded={showWhy}
+                onClick={() => setShowWhy((v) => !v)}
+                className="grid size-6 place-items-center rounded-full text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <Info size={13} weight="bold" />
+              </button>
+              <button
+                type="button"
+                aria-label="No time for this task"
+                onClick={() => {
+                  setPeakDismissed(true);
+                  setShowWhy(false);
+                  inputRef.current?.focus();
+                }}
+                className="grid size-6 place-items-center rounded-full text-primary/60 transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <X size={11} weight="bold" />
+              </button>
+            </span>
+          )}
           {fuzzy?.priority !== undefined && PRIORITY_LABEL[fuzzy.priority] && (
             <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-muted/70 px-3 text-muted-foreground animate-in fade-in duration-200">
               <Flag size={14} />
@@ -213,6 +260,42 @@ export function QuickCapture() {
                 </ThemedText>
               </button>
             ))}
+        </div>
+      )}
+
+      {peakDefault && showWhy && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 animate-in fade-in duration-200">
+          <ThemedText type="caption">{peakDefault.reason}</ThemedText>
+          <button
+            type="button"
+            onClick={() => {
+              peak.setOff(true);
+              setShowWhy(false);
+              setOptOutNotice(true);
+            }}
+            className="underline-offset-4 hover:underline"
+          >
+            <ThemedText type="caption" className="text-foreground">
+              Not for me
+            </ThemedText>
+          </button>
+        </div>
+      )}
+      {optOutNotice && peak.optedOut && (
+        <div className="flex items-center gap-3 px-4" role="status">
+          <ThemedText type="caption">No more suggested times.</ThemedText>
+          <button
+            type="button"
+            onClick={() => {
+              peak.setOff(false);
+              setOptOutNotice(false);
+            }}
+            className="underline-offset-4 hover:underline"
+          >
+            <ThemedText type="caption" className="text-foreground">
+              Undo
+            </ThemedText>
+          </button>
         </div>
       )}
 

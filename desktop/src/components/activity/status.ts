@@ -9,14 +9,6 @@ const STATUS_TEXT: Record<string, string> = {
   slipping: "text-destructive",
 };
 
-const STATUS_PILL: Record<string, string> = {
-  healthy: "bg-emerald-500/10 border-emerald-500/30",
-  steady: "bg-primary/10 border-primary/30",
-  "needs-attention": "bg-amber-500/10 border-amber-500/30",
-  "needs-reset": "bg-amber-500/10 border-amber-500/30",
-  slipping: "bg-destructive/10 border-destructive/30",
-};
-
 const STATUS_LABEL: Record<string, string> = {
   healthy: "Healthy",
   steady: "Steady",
@@ -29,10 +21,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function statusTextClass(status: string): string {
   return STATUS_TEXT[status] ?? "text-muted-foreground";
-}
-
-export function statusPillClass(status: string): string {
-  return STATUS_PILL[status] ?? "bg-muted border-border";
 }
 
 export function statusLabel(status: string): string {

@@ -52,8 +52,15 @@ type RingState struct {
 	RewardClaimed bool               `bson:"reward_claimed" json:"reward_claimed"`
 	RewardType    string             `bson:"reward_type,omitempty" json:"reward_type,omitempty"`
 	RewardAmount  int                `bson:"reward_amount,omitempty" json:"reward_amount,omitempty"`
-	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at"`
+	// "Life happened" pause. Private to the owner: strip with ForViewer before
+	// returning another user's state.
+	Paused      bool       `bson:"paused,omitempty" json:"paused,omitempty" doc:"Owner marked this day as life happened; holds the run, score and habits"`
+	PausedNote  string     `bson:"paused_note,omitempty" json:"paused_note,omitempty"`
+	PausedAt    *time.Time `bson:"paused_at,omitempty" json:"paused_at,omitempty"`
+	RunHeld     int        `bson:"run_held,omitempty" json:"-"`
+	RunRestored bool       `bson:"run_restored,omitempty" json:"-"`
+	CreatedAt   time.Time  `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time  `bson:"updated_at" json:"updated_at"`
 }
 
 // RingDelta describes the result of a single ring increment so the caller can
@@ -117,5 +124,26 @@ type ClaimRewardResponse struct {
 	Body struct {
 		CreditType string `json:"credit_type"`
 		Amount     int    `json:"amount"`
+	}
+}
+
+// PauseDayInput marks today or a recent day as "life happened".
+type PauseDayInput struct {
+	Body struct {
+		DaysAgo int    `json:"days_ago" minimum:"0" maximum:"2" doc:"0 = today, 1 = yesterday, up to 2 days back"`
+		Note    string `json:"note,omitempty" maxLength:"140" doc:"Optional private note"`
+	}
+}
+
+// UnpauseDayInput undoes a pause on today or a recent day.
+type UnpauseDayInput struct {
+	DaysAgo int `query:"days_ago" minimum:"0" maximum:"2" default:"0" doc:"0 = today, 1 = yesterday, up to 2 days back"`
+}
+
+// PauseDayResponse returns the affected day's state and the refreshed score.
+type PauseDayResponse struct {
+	Body struct {
+		RingState         RingState `json:"ring_state"`
+		ProductivityScore int       `json:"productivity_score"`
 	}
 }

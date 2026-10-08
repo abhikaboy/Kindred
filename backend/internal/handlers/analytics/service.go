@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/abhikaboy/Kindred/internal/gemini"
 	"github.com/abhikaboy/Kindred/internal/handlers/types"
 	"github.com/abhikaboy/Kindred/xutils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,6 +28,7 @@ type Service struct {
 	Templates      *mongo.Collection
 	Encouragements *mongo.Collection
 	Users          *mongo.Collection
+	Memory         *mongo.Collection
 }
 
 func newService(collections map[string]*mongo.Collection) *Service {
@@ -36,6 +38,7 @@ func newService(collections map[string]*mongo.Collection) *Service {
 		Templates:      collections["template-tasks"],
 		Encouragements: collections["encouragements"],
 		Users:          collections["users"],
+		Memory:         collections[gemini.UserMemoryCollection],
 	}
 }
 
@@ -76,9 +79,10 @@ func (s *Service) UpdateLayout(userID primitive.ObjectID, layout AnalyticsLayout
 }
 
 // GetAnalytics builds the widget-ready dashboard payload for one user.
-func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, category string) (AnalyticsResponse, error) {
+// Day buckets, week starts and hours are all in the user's timezone, matching rings.
+func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, category, timezone string) (AnalyticsResponse, error) {
 	ctx := context.Background()
-	now := xutils.NowUTC()
+	now := xutils.NowUTC().In(loadLocation(timezone))
 
 	curStart, curEnd, prevStart, prevEnd, _ := windowBounds(rng, now)
 
@@ -116,10 +120,40 @@ func (s *Service) GetAnalytics(userID primitive.ObjectID, rng, workspace, catego
 		ProxyCategoryIDs: proxyIDs,
 		SupportCurrent:   supportCur,
 		SupportPrev:      supportPrev,
+		StatedPeak:       s.loadStatedPeak(ctx, userID),
 	}
 	resp := computeAnalytics(in)
 	resp.TopSupporters = s.loadTopSupporters(ctx, userID, curStart, curEnd)
 	return resp, nil
+}
+
+func loadLocation(timezone string) *time.Location {
+	if timezone == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+// loadStatedPeak returns the peak window the user told us about, if any.
+// Inferred peak-hours rows are ignored here; analytics infers its own from completions.
+func (s *Service) loadStatedPeak(ctx context.Context, userID primitive.ObjectID) *statedPeak {
+	fact, err := gemini.LoadUserFact(ctx, s.Memory, userID, gemini.FactKeyPeakHours)
+	if err != nil {
+		slog.Warn("analytics: peak-hours lookup failed", "error", err)
+		return nil
+	}
+	if fact == nil || fact.Source != "stated" {
+		return nil
+	}
+	ph := gemini.DecodePeakHours(fact)
+	if ph == nil {
+		return nil
+	}
+	return &statedPeak{StartHour: ph.StartHour, EndHour: ph.EndHour}
 }
 
 // loadTopSupporters returns the people who sent the user the most Kudos in the

@@ -27,7 +27,7 @@ func (h *Handler) GetAnalytics(ctx context.Context, input *GetAnalyticsInput) (*
 		rng = RangeWeek
 	}
 
-	resp, err := h.service.GetAnalytics(userID, rng, input.Workspace, input.Category)
+	resp, err := h.service.GetAnalytics(userID, rng, input.Workspace, input.Category, auth.GetTimezoneOrDefault(ctx))
 	if err != nil {
 		slog.Error("analytics: failed to build dashboard", "error", err, "user_id", uid, "range", rng)
 		return nil, huma.Error500InternalServerError("Unable to load analytics. Please try again.", err)

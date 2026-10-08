@@ -61,6 +61,13 @@ type computeInput struct {
 	ProxyCategoryIDs map[string]bool // sentinel "!-proxy-!" categories — excluded everywhere
 	SupportCurrent   int             // kudos received in the current period
 	SupportPrev      int             // kudos received in the previous period
+	StatedPeak       *statedPeak     // peak window the user told us, overrides inferred
+}
+
+// statedPeak is a user-stated focus window in local hours [StartHour, EndHour).
+type statedPeak struct {
+	StartHour int
+	EndHour   int
 }
 
 // --- palette / thresholds ----------------------------------------------------
@@ -82,6 +89,13 @@ const (
 	otherName  = "Other"
 
 	heatmapDays = 91 // trailing 13 weeks
+
+	// Minimum-sample gates: below these we show data but make no claim.
+	bestTimeMinTasks     = 12 // completions in the window before naming a peak
+	bestTimeMinPeakCount = 3  // completions in the peak cell itself
+	peakMinTasks         = 20 // completions (trailing 13 weeks) before inferring a peak window
+	peakMinWindowCount   = 8  // completions inside the 2-hour peak window
+	peakMinShare         = 0.25
 )
 
 func levelForCount(c int) int {
@@ -320,6 +334,7 @@ func sumKudos(tasks []AnalyticsTaskLite) int {
 
 func computeAnalytics(in computeInput) AnalyticsResponse {
 	now := in.Now
+	in.Completed = inLocation(in.Completed, now.Location())
 	curStart, curEnd, prevStart, prevEnd, unit := windowBounds(in.Range, now)
 
 	metaByID := map[string]AnalyticsCategoryMeta{}
@@ -394,6 +409,7 @@ func computeAnalytics(in computeInput) AnalyticsResponse {
 	resp.CategoryHealth = computeCategoryHealth(unit, curStart, nb, cur, orderedCats, colorByID, nameOf, workspaceOf)
 	resp.WorkspaceHealth = computeWorkspaceHealth(cur, workspaceOf)
 	resp.BestTime = computeBestTime(cur, now)
+	resp.PeakTime = computePeakTime(scoped, now, in.StatedPeak)
 	resp.Attention = computeAttention(in.OpenTasks, inScope, nameOf, workspaceOf, now)
 	resp.KudosEffect = computeKudosEffect(cur)
 	resp.SupportCoverage = computeSupportCoverage(cur)
@@ -517,7 +533,17 @@ func computeBestTime(cur []AnalyticsTaskLite, now time.Time) AnalyticsBestTime {
 		}
 	}
 
-	return AnalyticsBestTime{Cells: cells, MaxCount: maxCount, Takeaway: bestTimeTakeaway(peakWd, peakHour, peakCount)}
+	hasPattern := len(cur) >= bestTimeMinTasks && peakCount >= bestTimeMinPeakCount
+	if !hasPattern {
+		peakCount = 0
+	}
+	return AnalyticsBestTime{
+		Cells:      cells,
+		MaxCount:   maxCount,
+		SampleSize: len(cur),
+		HasPattern: hasPattern,
+		Takeaway:   bestTimeTakeaway(peakWd, peakHour, peakCount),
+	}
 }
 
 func bestTimeTakeaway(peakWd, peakHour, peakCount int) string {
@@ -525,6 +551,80 @@ func bestTimeTakeaway(peakWd, peakHour, peakCount int) string {
 		return "Not enough activity yet to find your peak time."
 	}
 	return fmt.Sprintf("Your peak time is %s around %s.", monWeekdayName(peakWd), formatHour12(peakHour))
+}
+
+// inLocation re-expresses completion times in loc so day/week/hour math is local.
+func inLocation(tasks []AnalyticsTaskLite, loc *time.Location) []AnalyticsTaskLite {
+	out := make([]AnalyticsTaskLite, len(tasks))
+	for i, t := range tasks {
+		t.CompletedAt = t.CompletedAt.In(loc)
+		t.CreatedAt = t.CreatedAt.In(loc)
+		out[i] = t
+	}
+	return out
+}
+
+// computePeakTime picks a default hour for new tasks. Stated peak hours win;
+// otherwise it is inferred from the trailing 13 weeks, behind sample gates.
+func computePeakTime(scoped []AnalyticsTaskLite, now time.Time, stated *statedPeak) *AnalyticsPeakTime {
+	start := startOfDay(now).AddDate(0, 0, -(heatmapDays - 1))
+	var hours [24]int
+	total := 0
+	for _, t := range scoped {
+		if t.CompletedAt.Before(start) || t.CompletedAt.After(now) {
+			continue
+		}
+		hours[t.CompletedAt.Hour()]++
+		total++
+	}
+	bestHour, bestCount := -1, 0
+	for h := 0; h < 23; h++ { // 2-hour windows that stay inside one day
+		if c := hours[h] + hours[h+1]; c > bestCount {
+			bestHour, bestCount = h, c
+		}
+	}
+	inferred := total >= peakMinTasks && bestCount >= peakMinWindowCount &&
+		float64(bestCount)/float64(total) >= peakMinShare
+
+	if stated != nil && stated.StartHour >= 0 && stated.StartHour <= 23 {
+		end := stated.EndHour
+		if end <= stated.StartHour || end > 24 {
+			end = stated.StartHour + 3
+		}
+		hour := stated.StartHour + (end-stated.StartHour)/3
+		if inferred && bestHour >= stated.StartHour && bestHour < end {
+			hour = bestHour
+		}
+		return &AnalyticsPeakTime{
+			Hour:       hour,
+			Source:     "stated",
+			SampleSize: total,
+			Reason:     fmt.Sprintf("You told us %s work best for you.", statedWindowName(stated.StartHour)),
+		}
+	}
+	if !inferred {
+		return nil
+	}
+	return &AnalyticsPeakTime{
+		Hour:       bestHour,
+		Source:     "inferred",
+		SampleSize: total,
+		Reason: fmt.Sprintf("You usually finish things around %s. %d of your last %d tasks landed between %s and %s.",
+			formatHour12(bestHour), bestCount, total, formatHour12(bestHour), formatHour12(bestHour+2)),
+	}
+}
+
+func statedWindowName(startHour int) string {
+	switch {
+	case startHour < 12:
+		return "mornings"
+	case startHour < 17:
+		return "afternoons"
+	case startHour < 21:
+		return "evenings"
+	default:
+		return "late nights"
+	}
 }
 
 func monWeekdayName(monIdx int) string {
@@ -543,6 +643,8 @@ func formatHour12(h int) string {
 		return fmt.Sprintf("%d AM", h)
 	case h == 12:
 		return "12 PM"
+	case h >= 24:
+		return formatHour12(h - 24)
 	default:
 		return fmt.Sprintf("%d PM", h-12)
 	}

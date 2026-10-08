@@ -9,6 +9,7 @@ import { WorkingOnRow } from "@/components/home/WorkingOnRow";
 import { TodaySection } from "@/components/home/TodaySection";
 import { PersonalWorkspaces } from "@/components/home/PersonalWorkspaces";
 import { SectionHeader } from "@/components/home/SectionHeader";
+import { WeekRecapEntry } from "@/components/weekrecap/WeekRecapEntry";
 
 // Greeting, then one full-width section per concern stacked top to bottom:
 // activity rings, UPCOMING, WORKING ON, workspaces. No side-by-side columns — a section
@@ -34,6 +35,7 @@ function HomeOverview({ onBack }: { onBack: () => void }) {
         </ThemedText>
       </button>
       <WelcomeHeader />
+      <WeekRecapEntry earlyWeekOnly />
 
       <section className="flex flex-col gap-4">
         <SectionHeader title="Activity Rings" />

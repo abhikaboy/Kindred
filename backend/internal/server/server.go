@@ -34,6 +34,7 @@ import (
 	"github.com/abhikaboy/Kindred/internal/handlers/subscription"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
+	"github.com/abhikaboy/Kindred/internal/handlers/weekrecap"
 	"github.com/abhikaboy/Kindred/internal/jobs"
 	"github.com/abhikaboy/Kindred/internal/posthog"
 	"github.com/abhikaboy/Kindred/internal/xlog"
@@ -154,6 +155,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	oauth.Routes(app, api, oauthService)
 	activity.Routes(api, collections)
 	analytics.Routes(api, collections)
+	weekrecap.Routes(api, collections)
 	profile.Routes(api, collections, ringService)
 	taskService := task.Routes(api, collections, geminiService, ringService)
 

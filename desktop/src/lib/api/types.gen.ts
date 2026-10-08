@@ -2812,6 +2812,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/rings/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a day as life happened
+         * @description Privately pauses today or one of the last 2 days. The day holds the run and score, excuses habits due that day, and sends no ring notifications. Never visible to friends.
+         */
+        post: operations["pause-ring-day"];
+        /**
+         * Undo a life happened pause
+         * @description Removes the pause from today or one of the last 2 days.
+         */
+        delete: operations["unpause-ring-day"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/rings/reward": {
         parameters: {
             query?: never;
@@ -4072,6 +4096,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/week-recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the weekly story
+         * @description Returns the 'Your week' story cards for the authenticated user, computed in their timezone. On Sunday it covers the current Mon-Sun week; otherwise the last full week.
+         */
+        get: operations["get-week-recap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/workspaces": {
         parameters: {
             query?: never;
@@ -4381,8 +4425,15 @@ export interface components {
         };
         AnalyticsBestTime: {
             cells: components["schemas"]["AnalyticsBestTimeCell"][];
+            /** @description False below the minimum sample; the takeaway then makes no claim */
+            hasPattern: boolean;
             /** Format: int64 */
             maxCount: number;
+            /**
+             * Format: int64
+             * @description Completions the grid is built from
+             */
+            sampleSize: number;
             takeaway: string;
         };
         AnalyticsBestTimeCell: {
@@ -4476,6 +4527,19 @@ export interface components {
             color: string;
             name: string;
         };
+        AnalyticsPeakTime: {
+            /**
+             * Format: int64
+             * @description Local hour 0-23
+             */
+            hour: number;
+            /** @description One-line why, shown on tap */
+            reason: string;
+            /** Format: int64 */
+            sampleSize: number;
+            /** @enum {string} */
+            source: "stated" | "inferred";
+        };
         AnalyticsProgress: {
             bucketUnit: string;
             buckets: components["schemas"]["AnalyticsProgressBucket"][];
@@ -4519,6 +4583,8 @@ export interface components {
             habits: components["schemas"]["AnalyticsHabits"];
             heatmap: components["schemas"]["AnalyticsHeatmap"];
             kudosEffect: components["schemas"]["AnalyticsKudosEffect"];
+            /** @description Default hour for new tasks; absent when there is not enough data */
+            peakTime?: components["schemas"]["AnalyticsPeakTime"];
             progress: components["schemas"]["AnalyticsProgress"];
             range: string;
             signals: components["schemas"]["AnalyticsSignals"];
@@ -7577,6 +7643,32 @@ export interface components {
             near_deadlines: boolean;
             reactions: boolean;
         };
+        PauseDayInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PauseDayInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: int64
+             * @description 0 = today, 1 = yesterday, up to 2 days back
+             */
+            days_ago: number;
+            /** @description Optional private note */
+            note?: string;
+        };
+        PauseDayResponseBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PauseDayResponseBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            productivity_score: number;
+            ring_state: components["schemas"]["RingState"];
+        };
         PendingTaggedTask: {
             checklist?: components["schemas"]["ChecklistItem"][];
             content: string;
@@ -8320,6 +8412,11 @@ export interface components {
             date: string;
             do: components["schemas"]["RingProgress"];
             id: string;
+            /** @description Owner marked this day as life happened; holds the run, score and habits */
+            paused?: boolean;
+            /** Format: date-time */
+            paused_at?: string;
+            paused_note?: string;
             plan: components["schemas"]["RingProgress"];
             /** Format: int64 */
             reward_amount?: number;
@@ -9892,6 +9989,93 @@ export interface components {
              */
             readonly $schema?: string;
             success: boolean;
+        };
+        WeekRecapAction: {
+            /** @description RFC3339 time, already resolved in the user's timezone */
+            at: string;
+            categoryId: string;
+            /** @description Confirmation copy after the action succeeds */
+            done: string;
+            /**
+             * @description plan = PUT the plan below to /v1/user/tasks/{categoryId}/{taskId}/plan
+             * @enum {string}
+             */
+            kind: "plan";
+            /** @description Button copy */
+            label: string;
+            /** @enum {string} */
+            size: "2m" | "10m" | "full";
+            step: string;
+            taskId: string;
+        };
+        WeekRecapBar: {
+            /** @description True for the recap week (or its biggest day) */
+            current: boolean;
+            /** @description Short label, e.g. 'Sep 7', 'This week', 'M' */
+            label: string;
+            /**
+             * Format: int64
+             * @description Tasks finished
+             */
+            value: number;
+        };
+        WeekRecapCard: {
+            action?: components["schemas"]["WeekRecapAction"];
+            body: string;
+            caption?: string;
+            /** @description week (first week only): Mon..Sun */
+            days?: components["schemas"]["WeekRecapBar"][];
+            /** @description habit: oldest week first, Mon..Sun; 1 done, 0 not, -1 not yet */
+            habitGrid?: number[][];
+            headline: string;
+            /** @description peak: 24 completion counts by local hour */
+            hours?: number[];
+            /** @enum {string} */
+            kind: "week" | "peak" | "habit" | "supporters" | "slipped" | "share";
+            /**
+             * Format: int64
+             * @description peak: local hour 0-23
+             */
+            peakHour?: number;
+            people?: components["schemas"]["WeekRecapPerson"][];
+            /** @description share: plain-text version for copying */
+            shareText?: string;
+            /**
+             * Format: int64
+             * @description week: your own average from prior weeks; absent in the first week
+             */
+            usual?: number;
+            /** @description week: your last weeks plus this one */
+            weeks?: components["schemas"]["WeekRecapBar"][];
+        };
+        WeekRecapPerson: {
+            /** @description Where and when, e.g. 'on Draft the grant intro · Tue' */
+            context: string;
+            icon: string;
+            id: string;
+            /** @description What they sent, e.g. a quoted message or 'Sent a photo' */
+            line: string;
+            name: string;
+        };
+        WeekRecapResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WeekRecapResponse.json
+             */
+            readonly $schema?: string;
+            cards: components["schemas"]["WeekRecapCard"][];
+            isFirstWeek: boolean;
+            /** @description e.g. 'Sep 29 – Oct 5' */
+            rangeLabel: string;
+            /** @description One line for the entry point */
+            teaser: string;
+            /** @enum {string} */
+            variant: "first" | "quieter" | "usual" | "bigger";
+            /** @description Local Sunday, YYYY-MM-DD */
+            weekEnd: string;
+            /** @description Local Monday, YYYY-MM-DD */
+            weekStart: string;
         };
         WelcomeOutputBody: {
             /**
@@ -15543,6 +15727,71 @@ export interface operations {
             };
         };
     };
+    "pause-ring-day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PauseDayInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseDayResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "unpause-ring-day": {
+        parameters: {
+            query?: {
+                /** @description 0 = today, 1 = yesterday, up to 2 days back */
+                days_ago?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseDayResponseBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     "claim-ring-reward": {
         parameters: {
             query?: never;
@@ -18052,6 +18301,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeleteWaitlistOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-week-recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekRecapResponse"];
                 };
             };
             /** @description Error */

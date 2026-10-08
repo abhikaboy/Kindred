@@ -59,7 +59,10 @@ func TodayInTimezone(timezone string) time.Time {
 // GetOrCreateToday returns today's ring state for the user, creating one with
 // default targets if it does not already exist.
 func (s *RingService) GetOrCreateToday(ctx context.Context, userID primitive.ObjectID, timezone string) (*RingState, error) {
-	today := TodayInTimezone(timezone)
+	return s.getOrCreateForDate(ctx, userID, TodayInTimezone(timezone))
+}
+
+func (s *RingService) getOrCreateForDate(ctx context.Context, userID primitive.ObjectID, today time.Time) (*RingState, error) {
 	now := time.Now()
 
 	filter := bson.M{
@@ -229,10 +232,15 @@ func (s *RingService) CalculateScore(ctx context.Context, userID primitive.Objec
 		return 0, fmt.Errorf("decode ring states: %w", err)
 	}
 
-	// Count total closed rings and active days across the window.
+	// Paused days drop out of the window entirely: neither credit nor a miss.
 	closedRings := 0
 	activeDays := 0
+	pausedDays := 0
 	for _, st := range states {
+		if st.Paused {
+			pausedDays++
+			continue
+		}
 		dayActive := false
 		if st.Plan.Closed {
 			closedRings++
@@ -259,9 +267,14 @@ func (s *RingService) CalculateScore(ctx context.Context, userID primitive.Objec
 	}
 
 	// Formula: base(30) + ring_bonus(up to 55) + streak(up to 7) + consistency(up to 8) = 100 max
-	ringBonus := float64(closedRings) / float64(ScoreMaxRings) * float64(ScoreRingBonus)
+	windowDays := ScoreConsistencyDays - pausedDays
+	if windowDays <= 0 {
+		// Whole window paused: hold the last score.
+		return user.ProductivityScore, nil
+	}
+	ringBonus := float64(closedRings) / float64(windowDays*3) * float64(ScoreRingBonus)
 	streakBonus := math.Min(float64(user.Streak), float64(ScoreMaxStreak))
-	consistencyBonus := float64(activeDays) / float64(ScoreConsistencyDays) * float64(ScoreConsistencyMax)
+	consistencyBonus := float64(activeDays) / float64(windowDays) * float64(ScoreConsistencyMax)
 	score := float64(ScoreBase) + ringBonus + streakBonus + consistencyBonus
 	if score > 100 {
 		score = 100
@@ -436,6 +449,11 @@ func (s *RingService) NotifyAllRingsClosed(userID primitive.ObjectID) {
 		var user types.User
 		if err := s.users.FindOne(ctx, bson.M{"_id": userID}).Decode(&user); err != nil {
 			slog.Error("rings closed notify: failed to fetch user", "error", err, "user_id", userID)
+			return
+		}
+
+		// A paused day is private and quiet: no celebration push, nothing to friends.
+		if s.IsDayPaused(ctx, userID, TodayInTimezone(user.Timezone)) {
 			return
 		}
 

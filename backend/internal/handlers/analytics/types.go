@@ -42,6 +42,7 @@ type AnalyticsResponse struct {
 	CategoryHealth  AnalyticsCategoryHealth  `json:"categoryHealth"`
 	WorkspaceHealth AnalyticsWorkspaceHealth `json:"workspaceHealth"`
 	BestTime        AnalyticsBestTime        `json:"bestTime"`
+	PeakTime        *AnalyticsPeakTime       `json:"peakTime,omitempty" doc:"Default hour for new tasks; absent when there is not enough data"`
 	Attention       AnalyticsAttention       `json:"attention"`
 	KudosEffect     AnalyticsKudosEffect     `json:"kudosEffect"`
 	SupportCoverage AnalyticsSupportCoverage `json:"supportCoverage"`
@@ -88,9 +89,19 @@ type AnalyticsBestTimeCell struct {
 // AnalyticsBestTime backs the hour×weekday "best time of day" heatmap. Only
 // non-zero cells are emitted; the client fills the rest of the grid.
 type AnalyticsBestTime struct {
-	Cells    []AnalyticsBestTimeCell `json:"cells"`
-	MaxCount int                     `json:"maxCount"`
-	Takeaway string                  `json:"takeaway"`
+	Cells      []AnalyticsBestTimeCell `json:"cells"`
+	MaxCount   int                     `json:"maxCount"`
+	Takeaway   string                  `json:"takeaway"`
+	SampleSize int                     `json:"sampleSize" doc:"Completions the grid is built from"`
+	HasPattern bool                    `json:"hasPattern" doc:"False below the minimum sample; the takeaway then makes no claim"`
+}
+
+// AnalyticsPeakTime is the reversible default hour offered in quick add.
+type AnalyticsPeakTime struct {
+	Hour       int    `json:"hour" doc:"Local hour 0-23"`
+	Source     string `json:"source" enum:"stated,inferred"`
+	Reason     string `json:"reason" doc:"One-line why, shown on tap"`
+	SampleSize int    `json:"sampleSize"`
 }
 
 // AnalyticsAttentionTask is one open task flagged as needing attention.

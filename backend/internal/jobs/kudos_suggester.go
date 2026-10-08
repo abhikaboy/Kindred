@@ -381,7 +381,7 @@ func (j *KudosSuggesterJob) detectRingsClosed(ctx context.Context, now time.Time
 	cutoff := now.Add(-j.policy.CongratulationFreshness)
 
 	cur, err := j.ringStates.Find(ctx,
-		bson.M{"all_closed": true, "updated_at": bson.M{"$gte": cutoff}},
+		bson.M{"all_closed": true, "paused": bson.M{"$ne": true}, "updated_at": bson.M{"$gte": cutoff}},
 		options.Find().SetLimit(j.policy.MaxMomentsPerTrigger),
 	)
 	if err != nil {
@@ -598,8 +598,12 @@ func (j *KudosSuggesterJob) detectStreaksAtRisk(ctx context.Context, now time.Ti
 		return nil, fmt.Errorf("decode streaks at risk: %w", err)
 	}
 
+	paused := j.recentlyPausedUsers(ctx, now)
 	moments := make([]KudosMoment, 0, len(rows))
 	for _, r := range rows {
+		if paused[r.UserID] {
+			continue // "life happened" is private; never surface it as a struggle
+		}
 		moments = append(moments, KudosMoment{
 			RecipientID: r.UserID,
 			Trigger:     TriggerStreakAtRisk,
@@ -985,4 +989,28 @@ func loadLocation(timezone string) *time.Location {
 		return time.UTC
 	}
 	return loc
+}
+
+// recentlyPausedUsers returns users who marked today or yesterday (in any
+// timezone) as "life happened".
+func (j *KudosSuggesterJob) recentlyPausedUsers(ctx context.Context, now time.Time) map[primitive.ObjectID]bool {
+	out := map[primitive.ObjectID]bool{}
+	if j.ringStates == nil {
+		return out
+	}
+	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	cur, err := j.ringStates.Find(ctx, bson.M{"paused": true, "date": bson.M{"$gte": day.AddDate(0, 0, -2)}})
+	if err != nil {
+		return out
+	}
+	defer cur.Close(ctx)
+	var rows []struct {
+		UserID primitive.ObjectID `bson:"user_id"`
+	}
+	if err := cur.All(ctx, &rows); err == nil {
+		for _, r := range rows {
+			out[r.UserID] = true
+		}
+	}
+	return out
 }

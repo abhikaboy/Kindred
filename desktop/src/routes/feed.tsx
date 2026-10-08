@@ -9,6 +9,7 @@ import { TaskFeedCard } from "@/components/feed/TaskFeedCard";
 import { RingsClosedFeedCard } from "@/components/feed/RingsClosedFeedCard";
 import { FriendActivityRail } from "@/components/feed/FriendActivityRail";
 import { FeedComposer } from "@/components/feed/FeedComposer";
+import { WeekRecapEntry } from "@/components/weekrecap/WeekRecapEntry";
 
 export default function FeedScreen() {
   const { items, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeed();
@@ -35,6 +36,7 @@ export default function FeedScreen() {
           </ThemedText>
 
           <FeedComposer />
+          <WeekRecapEntry earlyWeekOnly />
 
           {isLoading ? (
             <div className="flex flex-col gap-4">
@@ -51,7 +53,7 @@ export default function FeedScreen() {
               <ThemedText type="caption" className="max-w-xs">
                 When your friends complete tasks and share updates, they'll show up here.
               </ThemedText>
-              <Link to="/search" className="text-primary hover:underline">
+              <Link to="/together" className="text-primary hover:underline">
                 Find friends
               </Link>
             </div>

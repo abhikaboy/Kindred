@@ -305,7 +305,7 @@ func openAPICollections() map[string]*mongo.Collection {
 		"activity", "blueprints", "calendar_connections", "categories",
 		"completed-tasks", "congratulations", "encouragements", "for_you_exposures",
 		"friend-requests", "groups", "health", "notifications", "passwordResets",
-		"posts", "referrals", "reports", "ring_states", "sample", "template-tasks",
+		"posts", "referrals", "reports", "ring_states", "sample", "sms_limits", "template-tasks",
 		"users", "waitlist", "workspaces",
 	}
 	collections := make(map[string]*mongo.Collection, len(names))

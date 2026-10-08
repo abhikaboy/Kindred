@@ -28,7 +28,7 @@ export default function ProfileScreen() {
         stats={[
           { icon: CheckCircle, value: user.tasks_complete, label: "done" },
           { icon: HandsClapping, value: user.encouragements + user.congratulations, label: "kudos" },
-          { icon: Users, value: user.friends.length, label: "friends", to: "/search" },
+          { icon: Users, value: user.friends.length, label: "friends", to: "/together" },
         ]}
         actions={
           <Link

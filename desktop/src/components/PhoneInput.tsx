@@ -1,3 +1,4 @@
+import { CaretDown } from "@phosphor-icons/react";
 import React, { useState } from "react";
 
 type Props = {
@@ -48,10 +49,11 @@ export function PhoneInput({
 
     return (
         <div className="flex items-center bg-secondary rounded-xl pl-4">
+            <div className="relative flex items-center">
             <select
                 value={dialCode}
                 onChange={(e) => handleDialCode(e.target.value)}
-                className="bg-transparent text-foreground font-sans font-medium text-[15px] outline-none py-3 pr-2 cursor-pointer"
+                className="appearance-none bg-transparent text-foreground font-sans font-medium text-[15px] outline-none py-3 pr-6 cursor-pointer"
                 aria-label="Country dial code"
             >
                 {DIAL_CODES.map((opt) => (
@@ -60,6 +62,9 @@ export function PhoneInput({
                     </option>
                 ))}
             </select>
+            <CaretDown size={14} className="pointer-events-none absolute right-0 text-muted-foreground" />
+            </div>
+            <span className="mx-4 h-6 w-px bg-border" />
 
             <input
                 type="tel"
@@ -69,7 +74,7 @@ export function PhoneInput({
                 placeholder={placeholder}
                 autoFocus={autoFocus}
                 maxLength={14}
-                className="flex-1 bg-transparent text-foreground font-sans text-[15px] py-3 pr-4 outline-none placeholder:text-muted-foreground"
+                className="min-w-0 flex-1 bg-transparent text-foreground font-sans text-[15px] py-3 pr-4 outline-none placeholder:text-muted-foreground"
             />
         </div>
     );

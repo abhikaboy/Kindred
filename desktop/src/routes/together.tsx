@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Stack, Users } from "@phosphor-icons/react";
+import { $api } from "@/lib/api/query";
 import { ThemedText } from "@/components/ThemedText";
 import { PeopleTab } from "@/components/search/PeopleTab";
 import { BlueprintsTab } from "@/components/search/BlueprintsTab";
+import { FriendsClosedToday } from "@/components/together/FriendsClosedToday";
+import { SupportersWidget } from "@/components/activity/SupportersWidget";
+import { KudosEffectWidget } from "@/components/activity/KudosEffectWidget";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -11,8 +15,8 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
-// Combined discovery: one search field, with what you're searching as chips beneath it.
-export default function SearchScreen() {
+// Together: find and add people, then who did things alongside you. Never names inactive friends.
+export default function TogetherScreen() {
   const [tab, setTab] = useState<Tab>("People");
 
   const chips = (
@@ -42,13 +46,39 @@ export default function SearchScreen() {
   );
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 pt-6">
-      <ThemedText type="titleFraunces" as="h1">
-        Search
-      </ThemedText>
+    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6 pt-6">
+      <div className="flex flex-col gap-1">
+        <ThemedText type="titleFraunces" as="h1">
+          Together
+        </ThemedText>
+        <ThemedText type="caption">
+          {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+        </ThemedText>
+      </div>
       <div key={tab} className="animate-in fade-in duration-200">
-        {tab === "Blueprints" ? <BlueprintsTab chips={chips} /> : <PeopleTab chips={chips} />}
+        {tab === "Blueprints" ? (
+          <BlueprintsTab chips={chips} />
+        ) : (
+          <PeopleTab chips={chips}>
+            <TogetherSections />
+          </PeopleTab>
+        )}
       </div>
     </div>
+  );
+}
+
+function TogetherSections() {
+  const analytics = $api.useQuery("get", "/v1/user/analytics", { params: { query: { range: "month" } } });
+  const data = analytics.data;
+
+  return (
+    <>
+      <FriendsClosedToday />
+      {data && data.topSupporters?.length ? (
+        <SupportersWidget supporters={data.topSupporters} coverage={data.supportCoverage} />
+      ) : null}
+      {data ? <KudosEffectWidget effect={data.kudosEffect} /> : null}
+    </>
   );
 }

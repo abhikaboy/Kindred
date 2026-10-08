@@ -1,23 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
-import { AppleLogo } from "@phosphor-icons/react";
+import { AppleLogo, ArrowLeft } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/auth";
 import { signInWithApple, appleConfigured } from "@/lib/oauth";
 import { ThemedText } from "@/components/ThemedText";
 import ThemedInput from "@/components/ThemedInput";
 import PrimaryButton from "@/components/PrimaryButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { PhoneInput } from "@/components/PhoneInput";
 import { OtpInput } from "@/components/OtpInput";
 import { cn } from "@/lib/utils";
+import { formatPhone } from "@/lib/formatPhone";
 
 type Step = "phone" | "otp" | "password";
-type LoginMode = "otp" | "password";
 
 // Shared look for the social auth buttons — mirrors mobile's OnboardModal styling.
 const SOCIAL_BUTTON_CLASS =
-  "rounded-[14px] border border-black/10 bg-white py-3 text-[15px] font-medium text-[#1F1F1F] shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:opacity-90";
+  "rounded-xl border border-border bg-background py-3 text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-muted";
 
 // Google's official "G" mark — no brand-color equivalent in phosphor-icons.
 function GoogleGLogo({ size = 20 }: { size?: number }) {
@@ -58,7 +58,6 @@ export default function LoginScreen() {
   const [otpCode, setOtpCode] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<Step>("phone");
-  const [loginMode, setLoginMode] = useState<LoginMode>("otp");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(30);
@@ -78,7 +77,7 @@ export default function LoginScreen() {
   const getTitle = () => {
     if (step === "otp") return "Enter code";
     if (step === "password") return "Enter password";
-    return "Login";
+    return "Welcome back";
   };
 
   const mapLoginError = (err: unknown, fallback: string) => {
@@ -94,11 +93,6 @@ export default function LoginScreen() {
       setError("Please enter your phone number");
       return;
     }
-    if (loginMode === "password") {
-      setError("");
-      setStep("password");
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -106,8 +100,8 @@ export default function LoginScreen() {
       setStep("otp");
       setResendTimer(30);
       setCanResend(false);
-    } catch {
-      setError("Failed to send verification code. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't send a code. Give it another try.");
     } finally {
       setLoading(false);
     }
@@ -185,8 +179,8 @@ export default function LoginScreen() {
     setError("");
     try {
       await sendOTP(phone);
-    } catch {
-      setError("Failed to resend code. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resend the code. Give it another try.");
       setCanResend(true);
       setResendTimer(0);
     }
@@ -199,64 +193,34 @@ export default function LoginScreen() {
     setError("");
   };
 
-  const toggleLoginMode = () => {
-    setLoginMode((m) => (m === "otp" ? "password" : "otp"));
+  const usePassword = () => {
+    setStep("password");
+    setOtpCode("");
     setError("");
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-start p-6 sm:p-10">
-      <div className="flex w-full justify-end">
-        <ThemeToggle />
-      </div>
-
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6">
+    <AuthShell>
         {step !== "phone" && (
-          <PrimaryButton
-            ghost
-            title="← Back"
+          <button
+            type="button"
             onClick={handleBack}
-            className="w-auto self-start px-0 py-0"
-          />
+            aria-label="Back"
+            className="-mb-4 -ml-2 grid size-9 place-items-center self-start rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft size={20} />
+          </button>
         )}
 
-        <ThemedText type="titleFraunces" as="h1">
-          {getTitle()}
-        </ThemedText>
+        <div className="flex flex-col gap-2">
+          <ThemedText type="titleFraunces" as="h1">
+            {getTitle()}
+          </ThemedText>
+          {step === "otp" && <ThemedText type="caption">Sent to {formatPhone(phone)}</ThemedText>}
+        </div>
 
         {step === "phone" && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <PhoneInput value={phone} onChangeText={setPhone} autoFocus />
-              <ThemedText type="caption">
-                {loginMode === "otp"
-                  ? "We'll send you a verification code"
-                  : "Enter the phone number for your account"}
-              </ThemedText>
-            </div>
-
-            <PrimaryButton
-              title={loginMode === "otp" ? "Send Code" : "Continue"}
-              onClick={handleContinuePhone}
-              disabled={loading || !phone}
-            />
-
-            <PrimaryButton
-              ghost
-              title={
-                loginMode === "otp"
-                  ? "Use a password instead"
-                  : "Use a verification code instead"
-              }
-              onClick={toggleLoginMode}
-            />
-
-            <div className="flex items-center gap-3 py-1">
-              <span className="h-px flex-1 bg-border" />
-              <ThemedText type="caption">or</ThemedText>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
+          <div className="flex flex-col gap-3">
             {/* The visible button is a plain look-alike; the real GoogleLogin sits on
                 top, fully transparent, so clicks still trigger Google's real ID-token
                 flow while the styling matches the Apple button below. */}
@@ -269,7 +233,7 @@ export default function LoginScreen() {
               </PrimaryButton>
               <div
                 className={cn(
-                  "absolute inset-0 overflow-hidden rounded-[14px] opacity-0",
+                  "absolute inset-0 overflow-hidden rounded-xl opacity-0",
                   loading && "pointer-events-none",
                 )}
               >
@@ -288,18 +252,27 @@ export default function LoginScreen() {
                 disabled={loading}
                 className={SOCIAL_BUTTON_CLASS}
               >
-                <AppleLogo weight="fill" size={20} className="text-primary" />
+                <AppleLogo weight="fill" size={20} />
               </PrimaryButton>
             )}
+            <div className="my-3 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <ThemedText type="caption">or</ThemedText>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <PhoneInput value={phone} onChangeText={setPhone} autoFocus />
+
+            <PrimaryButton
+              title="Send code"
+              onClick={handleContinuePhone}
+              disabled={loading || !phone}
+            />
           </div>
         )}
 
         {step === "otp" && (
-          <div className="flex flex-col gap-4">
-            <ThemedText type="caption">
-              Enter the 4-digit code sent to your phone
-            </ThemedText>
-
+          <div className="flex flex-col gap-3">
             <OtpInput
               numberOfDigits={4}
               onTextChange={(text) => {
@@ -311,22 +284,26 @@ export default function LoginScreen() {
               autoFocus
             />
 
-            <div className="flex flex-row items-center gap-1">
-              <ThemedText type="caption">Didn't receive a code?</ThemedText>
-              {canResend ? (
-                <button type="button" onClick={handleResend}>
-                  <ThemedText type="link">Resend</ThemedText>
-                </button>
-              ) : (
-                <ThemedText type="caption">Resend in {resendTimer}s</ThemedText>
-              )}
-            </div>
-
             <PrimaryButton
-              title={loading ? "Logging in…" : "Login"}
+              title={loading ? "Logging in…" : "Log in"}
               onClick={() => handleLoginOtp()}
               disabled={loading || otpCode.length !== 4}
             />
+
+            <div className="flex items-center justify-between gap-4">
+              {canResend ? (
+                <button type="button" onClick={handleResend}>
+                  <ThemedText type="caption" className="text-primary">Resend code</ThemedText>
+                </button>
+              ) : (
+                <ThemedText type="caption" className="tabular-nums">Resend code in {resendTimer}s</ThemedText>
+              )}
+              <button type="button" onClick={usePassword} className="group">
+                <ThemedText type="caption" className="transition-colors group-hover:text-foreground">
+                  Use a password instead
+                </ThemedText>
+              </button>
+            </div>
           </div>
         )}
 
@@ -345,7 +322,7 @@ export default function LoginScreen() {
             />
 
             <PrimaryButton
-              title={loading ? "Logging in…" : "Login"}
+              title={loading ? "Logging in…" : "Log in"}
               onClick={handleLoginPassword}
               disabled={loading || !password}
             />
@@ -358,13 +335,14 @@ export default function LoginScreen() {
           </ThemedText>
         )}
 
-        <div className="flex flex-row items-center gap-1">
-          <ThemedText type="caption">Don't have an account?</ThemedText>
-          <Link to="/register">
-            <ThemedText type="link">Create one</ThemedText>
-          </Link>
-        </div>
-      </div>
-    </div>
+        {step === "phone" && (
+          <div className="flex flex-row items-center gap-1">
+            <ThemedText type="caption">Don't have an account?</ThemedText>
+            <Link to="/register">
+              <ThemedText type="link">Create one</ThemedText>
+            </Link>
+          </div>
+        )}
+    </AuthShell>
   );
 }

@@ -87,6 +87,7 @@ var requiredCollections = []string{
 	"oauth_tokens",
 	"oauth_grants",
 	"mcp_audit",
+	"sms_limits",
 }
 
 func setupCollections(ctx context.Context, db *mongo.Database) (map[string]*mongo.Collection, error) {

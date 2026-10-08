@@ -8,15 +8,19 @@ import (
 
 func TestComputeBestTime_Peak(t *testing.T) {
 	wed18 := time.Date(2025, 5, 14, 18, 0, 0, 0, time.UTC) // Wednesday 6 PM
+	completed := []AnalyticsTaskLite{
+		task("school", wed18, nil, 0),
+		task("school", wed18, nil, 0),
+		task("intern", wed18, nil, 0),
+	}
+	for h := 8; h < 17; h++ { // spread filler to clear the minimum-sample gate
+		completed = append(completed, task("gym", time.Date(2025, 5, 12, h, 0, 0, 0, time.UTC), nil, 0))
+	}
 	resp := computeAnalytics(computeInput{
 		Range:      RangeWeek,
 		Now:        fixedNow,
 		Categories: baseCategories(),
-		Completed: []AnalyticsTaskLite{
-			task("school", wed18, nil, 0),
-			task("school", wed18, nil, 0),
-			task("intern", wed18, nil, 0),
-		},
+		Completed:  completed,
 	})
 	if resp.BestTime.MaxCount != 3 {
 		t.Errorf("bestTime.maxCount = %d, want 3", resp.BestTime.MaxCount)

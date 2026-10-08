@@ -93,7 +93,7 @@ export function OtpInput({
     };
 
     return (
-        <div className="flex gap-2 justify-center">
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${numberOfDigits}, minmax(0, 1fr))` }}>
             {chars.map((char, index) => (
                 <input
                     key={index}
@@ -109,9 +109,9 @@ export function OtpInput({
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onFocus={(e) => e.currentTarget.select()}
                     className={cn(
-                        "size-14 rounded-xl bg-secondary border-2 border-transparent",
-                        "text-center text-2xl font-sans font-semibold text-foreground",
-                        "outline-none focus:border-primary transition-colors",
+                        "h-16 w-full rounded-xl bg-secondary border-2 border-transparent",
+                        "text-center text-2xl font-sans font-light text-foreground caret-primary",
+                        "outline-none transition-colors focus:border-primary focus:bg-background",
                         disabled && "opacity-50 cursor-not-allowed"
                     )}
                 />

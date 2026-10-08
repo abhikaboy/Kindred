@@ -42,7 +42,7 @@ export function FriendActivityRail(): JSX.Element {
         ) : list.length === 0 ? (
           <div className="flex flex-col items-start gap-1 px-2 py-3">
             <ThemedText type="caption">No friends yet.</ThemedText>
-            <Link to="/search" className="text-sm text-primary hover:underline">
+            <Link to="/together" className="text-sm text-primary hover:underline">
               Find people you know
             </Link>
           </div>

@@ -28,6 +28,11 @@ func Routes(api huma.API, collections map[string]*mongo.Collection, contactNotif
 		config:       cfg,
 		guestLimiter: newGuestRateLimiter(guestRateLimitPerIP, guestRateLimitWindow),
 	}
+	if coll := collections["sms_limits"]; coll != nil {
+		authHandler.smsGuard = newSMSGuard(newMongoCounterStore(coll), cfg.SMSGuard)
+	} else {
+		log.Fatalf("sms_limits collection missing; refusing to serve unguarded send-otp")
+	}
 
 	RegisterAuthOperations(api, &authHandler)
 }

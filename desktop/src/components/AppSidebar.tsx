@@ -5,7 +5,7 @@ import {
   House,
   CalendarBlank,
   Newspaper,
-  MagnifyingGlass,
+  UsersThree,
   ChartLineUp,
   Plus,
   ListPlus,
@@ -38,8 +38,7 @@ const MAIN = [
   { title: "Home", url: "/", icon: House, shortcut: "⇧H" },
   { title: "Calendar", url: "/calendar", icon: CalendarBlank, shortcut: "⇧C" },
   { title: "Feed", url: "/feed", icon: Newspaper },
-  // Search now covers both people and blueprints (see routes/search.tsx).
-  { title: "Search", url: "/search", icon: MagnifyingGlass },
+  { title: "Together", url: "/together", icon: UsersThree },
   { title: "Activity", url: "/activity", icon: ChartLineUp },
   { title: "Profile", url: "/profile", icon: User },
 ] as const;

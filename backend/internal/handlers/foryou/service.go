@@ -268,7 +268,7 @@ func (s *Service) buildRingProgressCard(ctx context.Context, userID primitive.Ob
 		slog.Warn("failed to fetch ring state for For You", "userId", userID.Hex(), "error", err)
 		return nil
 	}
-	if state == nil || state.AllClosed {
+	if state == nil || state.AllClosed || state.Paused {
 		return nil
 	}
 

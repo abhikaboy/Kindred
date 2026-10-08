@@ -53,8 +53,10 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		return nil, fmt.Errorf("template NextGenerated is nil for template %s", templateId.Hex())
 	}
 
+	previousGeneration := templateDoc.LastGenerated
 	templateDoc.LastGenerated = templateDoc.NextGenerated
 	thisGeneration := *templateDoc.LastGenerated
+	var missedOn []time.Time
 	var nextGeneration time.Time
 	var deletedCount int
 	var skippedOccurrences int // Track if we skipped any occurrences (missed tasks)
@@ -94,6 +96,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 			slog.Info("Skipping past recurrence", "templateID", templateId, "skippedTime", nextGeneration)
 			templateDoc.LastGenerated = &nextGeneration
 			skippedOccurrences++ // Track that we skipped an occurrence
+			missedOn = append(missedOn, nextGeneration)
 			continue
 		}
 
@@ -161,6 +164,19 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 		},
 	}
 
+	if deletedCount > 0 {
+		if previousGeneration != nil {
+			missedOn = append(missedOn, *previousGeneration)
+		} else {
+			missedOn = append(missedOn, thisGeneration)
+		}
+	}
+	// Misses that all fell on "life happened" days are excused: the run holds.
+	excused := (deletedCount > 0 || skippedOccurrences > 0) && s.missesExcused(ctx, templateDoc.UserID, missedOn)
+	if excused {
+		deletedCount, skippedOccurrences = 0, 0
+	}
+
 	missedTotal := deletedCount + skippedOccurrences
 	if missedTotal > 0 {
 		incMap, ok := update["$inc"].(bson.M)
@@ -209,7 +225,7 @@ func (s *Service) CreateTaskFromTemplate(templateId primitive.ObjectID) (*TaskDo
 				}
 			}
 		}()
-	} else if templateDoc.TimesGenerated > 0 {
+	} else if templateDoc.TimesGenerated > 0 && !excused {
 		// No missed tasks: the previous task was completed (not in the active list).
 		// Only send "Great Job!" for rolling/occurrence types (not buildup, where old tasks are kept).
 		isRollingOrOccurrence := templateDoc.RecurType == "OCCURRENCE" ||
@@ -761,4 +777,17 @@ func (s *Service) GetTemplatesByUserWithCategory(userID primitive.ObjectID) ([]T
 		slog.Int("templateCount", len(templates)))
 
 	return templates, nil
+}
+
+// missesExcused reports whether every missed occurrence landed on a day the
+// user paused ("life happened").
+func (s *Service) missesExcused(ctx context.Context, userID primitive.ObjectID, missedOn []time.Time) bool {
+	if s.RingService == nil || s.Users == nil || len(missedOn) == 0 {
+		return false
+	}
+	user, err := s.Users.GetUserByID(ctx, userID)
+	if err != nil || user == nil {
+		return false
+	}
+	return s.RingService.AllDaysPaused(ctx, userID, user.Timezone, missedOn)
 }
