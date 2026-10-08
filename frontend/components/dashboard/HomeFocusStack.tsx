@@ -35,10 +35,12 @@ type Props = {
     onListedChange: (listed: boolean) => void;
     /** room below the top of this component for the spilled list */
     availableHeight: number;
+    /** quick actions (calendar, tidy up) that sit beside View all */
+    accessory?: React.ReactNode;
 };
 
 // Desktop focus stage on mobile: a workspace switcher over a swipeable card stack (kudos lead "All").
-export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListedChange, availableHeight }: Props) {
+export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListedChange, availableHeight, accessory }: Props) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
     const { kudos, acknowledge } = useRecentKudos();
@@ -139,18 +141,23 @@ export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListe
                 </View>
             )}
 
-            {n > 1 && !listed && (
+            {(n > 1 || accessory) && !listed && (
                 <View style={styles.footer}>
-                    <TouchableOpacity onPress={() => stackRef.current?.next()} hitSlop={8} accessibilityLabel="Next card">
-                        <ThemedText type="caption" style={{ fontVariant: ["tabular-nums"] }}>
-                            {current + 1} of {n}
-                        </ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => stackRef.current?.expand()} hitSlop={8}>
-                        <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                            View all
-                        </ThemedText>
-                    </TouchableOpacity>
+                    {n > 1 && (
+                        <>
+                            <TouchableOpacity onPress={() => stackRef.current?.next()} hitSlop={8} accessibilityLabel="Next card">
+                                <ThemedText type="caption" style={{ fontVariant: ["tabular-nums"] }}>
+                                    {current + 1} of {n}
+                                </ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => stackRef.current?.expand()} hitSlop={8}>
+                                <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                    View all
+                                </ThemedText>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                    {accessory}
                 </View>
             )}
         </View>
@@ -207,7 +214,9 @@ function TaskBody({ task }: { task: StageTask }) {
                     </ThemedText>
                 )}
                 <View style={styles.titleRow}>
-                    {priorityColor && <View style={[styles.dot, { backgroundColor: priorityColor }]} />}
+                    {(working || priorityColor) && (
+                        <View style={[styles.dot, { backgroundColor: working ? ThemedColor.primary : priorityColor }]} />
+                    )}
                     <ThemedText type="subtitle" numberOfLines={2} style={{ flex: 1 }}>
                         {task.content}
                     </ThemedText>

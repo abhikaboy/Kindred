@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomSheetFooter, BottomSheetScrollView, type BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
-import { CalendarCheckIcon, MagicWandIcon, XIcon } from "phosphor-react-native";
+import { CalendarDotsIcon, ClockIcon, FlagIcon, MagicWandIcon, TextAaIcon, XIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DefaultModal from "@/components/modals/DefaultModal";
@@ -75,7 +75,7 @@ export default function AutoEnrichCard() {
     return (
         <>
             {visible && (
-                <View style={[styles.chip, { backgroundColor: ThemedColor.primary + "14" }]}>
+                <View style={[styles.chip, { backgroundColor: ThemedColor.primary + "26" }]}>
                     <TouchableOpacity
                         activeOpacity={0.7}
                         onPress={() => {
@@ -205,7 +205,7 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
             if (!button) return null;
             return (
                 <BottomSheetFooter {...props} bottomInset={insets.bottom}>
-                    <View style={[styles.footer, { backgroundColor: ThemedColor.background, borderTopColor: ThemedColor.tertiary }]}>{button}</View>
+                    <View style={[styles.footer, { backgroundColor: ThemedColor.background }]}>{button}</View>
                 </BottomSheetFooter>
             );
         },
@@ -213,17 +213,21 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
     );
 
     const introPoints = useMemo(() => {
+        const n = status.candidateCount;
         const stale = status.staleCount;
         return [
-            `Look over the ${status.candidateCount} open task${status.candidateCount === 1 ? "" : "s"} with no day planned${stale > 0 ? `, including ${stale} that slipped past their day` : ""}.`,
-            "Suggest a day for each over the next two weeks, spread around what you already have planned.",
-            "Add a due date or time only where the title implies one, and set priority or difficulty only where it is obvious.",
-            "Fix small title issues like casing and typos, keeping your words.",
+            {
+                Icon: CalendarDotsIcon,
+                text: `Give your ${n} unplanned task${n === 1 ? "" : "s"} a day in the next two weeks${stale > 0 ? `, ${stale} of them overdue` : ""}`,
+            },
+            { Icon: ClockIcon, text: "Add a time or due date where the title implies one" },
+            { Icon: FlagIcon, text: "Set priority or difficulty when it's obvious" },
+            { Icon: TextAaIcon, text: "Fix casing and typos, keeping your words" },
         ];
     }, [status]);
 
     return (
-        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={["85%"]} topInset={insets.top} footerComponent={renderFooter}>
+        <DefaultModal visible={visible} setVisible={setVisible} snapPoints={stage === "intro" ? ["60%"] : ["85%"]} topInset={insets.top} footerComponent={renderFooter}>
             {/* One scroll view for every stage, so long lists and small screens
                 always reach the end. A flat contentContainerStyle lets gorhom add
                 the footer's height to paddingBottom. */}
@@ -234,19 +238,18 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
                 <MotiView key={stage} from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: "timing", duration: 180 }}>
                     {stage === "intro" && (
                         <View style={styles.section}>
-                            <ThemedText type="default" style={styles.sectionTitle}>
-                                Here is what Kindred will do
-                            </ThemedText>
-                            {introPoints.map((point) => (
-                                <View key={point} style={styles.point}>
-                                    <CalendarCheckIcon size={18} weight="light" color={ThemedColor.primary} />
-                                    <ThemedText type="caption" style={styles.pointText}>
-                                        {point}
+                            {introPoints.map(({ Icon, text }) => (
+                                <View key={text} style={styles.point}>
+                                    <View style={[styles.pointIcon, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                                        <Icon size={18} color={ThemedColor.primary} />
+                                    </View>
+                                    <ThemedText type="default" style={styles.pointText}>
+                                        {text}
                                     </ThemedText>
                                 </View>
                             ))}
                             <ThemedText type="caption" style={styles.note}>
-                                Nothing changes yet. You will see every suggestion and can drop any of them before applying.
+                                You'll review every suggestion before anything changes.
                             </ThemedText>
                         </View>
                     )}
@@ -352,15 +355,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     section: {
-        gap: 12,
+        gap: 16,
     },
-    sectionTitle: {
-        fontSize: 17,
-    },
+    pointIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
     point: {
         flexDirection: "row",
-        gap: 12,
-        alignItems: "flex-start",
+        gap: 14,
+        alignItems: "center",
     },
     pointText: {
         flex: 1,
@@ -414,6 +415,5 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 8,
         paddingHorizontal: 20,
-        borderTopWidth: StyleSheet.hairlineWidth,
     },
 });

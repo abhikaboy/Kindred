@@ -5,20 +5,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
-import { Drawer } from "@/components/home/Drawer";
-import { DrawerLayout } from "react-native-gesture-handler";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { DRAWER_WIDTH, HORIZONTAL_PADDING } from "@/constants/spacing";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDrawer } from "@/contexts/drawerContext";
 import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectionBottomSheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
-import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
 import { HomeScrollContent } from "@/components/dashboard/HomescrollContent";
 import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
@@ -48,7 +44,7 @@ const HOME_INDEX = 1;
 const FRIENDS_INDEX = 2;
 const WORKSPACE_OFFSET = 3;
 // Besides the active page ±1, keep this many recently active pages mounted so
-// jumping back (drawer → workspace → home) doesn't pay a full remount.
+// jumping back (workspace → home) doesn't pay a full remount.
 const EXTRA_RECENT_PAGES = 2;
 const pageKeyOf = (page: Page) => (page.key === "workspace" ? `ws-${page.name}` : page.key);
 
@@ -72,7 +68,6 @@ const Home = (props: Props) => {
     const { fetchKudosData } = useKudos();
 
     const insets = useSafeAreaInsets();
-    const { setIsDrawerOpen } = useDrawer();
 
     // Check if user has completed quick setup
     useEffect(() => {
@@ -120,12 +115,8 @@ const Home = (props: Props) => {
         }
     }, [fetchWorkspaces, fetchKudosData, refresh, queryClient, capture]);
 
-    const drawerRef = useRef<DrawerLayout>(null);
-
     return (
         <HomeContent
-            drawerRef={drawerRef}
-            setIsDrawerOpen={setIsDrawerOpen}
             creatingWorkspace={creatingWorkspace}
             setCreatingWorkspace={setCreatingWorkspace}
             showWorkspaceSelection={showWorkspaceSelection}
@@ -145,8 +136,6 @@ const Home = (props: Props) => {
 };
 
 const HomeContent = React.memo(function HomeContent({
-    drawerRef,
-    setIsDrawerOpen,
     creatingWorkspace,
     setCreatingWorkspace,
     showWorkspaceSelection,
@@ -167,8 +156,6 @@ const HomeContent = React.memo(function HomeContent({
     // home pull-to-refresh drives the tab glow: pull lifts the wash, release replays its opening
     const glowPull = useSharedValue(0);
     const glowReplay = useSharedValue(0);
-    // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
-    const { ready: drawerHintReady, done: drawerHintDone } = useFirstTouchHint("drawer_workspaces");
 
     const homeScrollRef = useRef<any>(null);
 
@@ -329,25 +316,6 @@ const HomeContent = React.memo(function HomeContent({
     }, [isHome]);
     useEffect(() => () => homePageVisibilityEvents.emit(false), []);
 
-    // Drawer content only tracks the selection while it's being shown, so it doesn't
-    // re-render on every swipe while closed.
-    const [drawerLive, setDrawerLive] = useState(false);
-    const closeDrawer = useCallback(() => drawerRef.current?.closeDrawer(), [drawerRef]);
-    const renderNavigationView = useCallback(
-        () => <Drawer close={closeDrawer} live={drawerLive} />,
-        [closeDrawer, drawerLive]
-    );
-    const onDrawerStateChanged = useCallback((state: string) => {
-        if (state !== "Idle") setDrawerLive(true);
-    }, []);
-    const onDrawerOpen = useCallback(() => {
-        setIsDrawerOpen(true);
-        drawerHintDone();
-    }, [setIsDrawerOpen, drawerHintDone]);
-    const onDrawerClose = useCallback(() => {
-        setIsDrawerOpen(false);
-        setDrawerLive(false);
-    }, [setIsDrawerOpen]);
     const closeWorkspaceSelection = useCallback(() => setShowWorkspaceSelection(false), [setShowWorkspaceSelection]);
 
     const onSettingsPress = useCallback(() => router.push("/(logged-in)/(tabs)/(profile)/settings"), []);
@@ -400,17 +368,7 @@ const HomeContent = React.memo(function HomeContent({
     );
 
     return (
-        <DrawerLayout
-            ref={drawerRef}
-            hideStatusBar
-            edgeWidth={50}
-            drawerWidth={DRAWER_WIDTH}
-            renderNavigationView={renderNavigationView}
-            drawerPosition="left"
-            drawerType="front"
-            onDrawerStateChanged={onDrawerStateChanged}
-            onDrawerOpen={onDrawerOpen}
-            onDrawerClose={onDrawerClose}>
+        <>
             {/* Shared modals */}
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
             <WorkspaceSelectionBottomSheet
@@ -485,7 +443,7 @@ const HomeContent = React.memo(function HomeContent({
                     />
                 </View>
             </ThemedView>
-        </DrawerLayout>
+        </>
     );
 });
 

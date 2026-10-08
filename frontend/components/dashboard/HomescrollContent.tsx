@@ -281,7 +281,8 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
             <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
 
             <View style={[styles.stage, { height: viewportHeight || undefined, paddingBottom: dockClearance }]}>
-                <View style={styles.center}>
+                {/* Fuller decks need the room, so the top gap shrinks as cards stack up */}
+                <View style={[styles.center, { paddingTop: queue.length >= 3 ? 12 : queue.length === 2 ? 22 : 32 }]}>
                     {/* Private to the user; live-updates via the useRings cache */}
                     <Reanimated.View
                         ref={(node) => tour.registerSection("rings", node)}
@@ -315,18 +316,8 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                                 spill={spill}
                                 onListedChange={onStackListedChange}
                                 availableHeight={viewportHeight - dockClearance - LIFTED_TOP}
-                            />
-                        </Reanimated.View>
-                    )}
-
-                    {!stackListed && (
-                        <View style={{ width: "100%" }}>
-                            <RingRewardClaim />
-                        </View>
-                    )}
-
-                    {!stackListed && (
-                        <View style={styles.chips}>
+                                accessory={
+<View style={styles.chips}>
                             {!tour.active && !isGuest && <AutoEnrichCard />}
                             {showCalendarChip && (
                                 <TouchableOpacity
@@ -336,7 +327,7 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                                     style={[
                                         styles.chip,
                                         {
-                                            backgroundColor: ThemedColor.primary + "14",
+                                            backgroundColor: ThemedColor.primary + "26",
                                             opacity: calendarLoading ? 0.6 : 1,
                                         },
                                     ]}>
@@ -347,7 +338,17 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                                 </TouchableOpacity>
                             )}
                         </View>
+                                }
+                            />
+                        </Reanimated.View>
                     )}
+
+                    {!stackListed && (
+                        <View style={{ width: "100%" }}>
+                            <RingRewardClaim />
+                        </View>
+                    )}
+
                 </View>
 
                 {!tour.active && showWorkspaces && !stackListed && (
@@ -373,7 +374,9 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                             onPress={onCreateWorkspace}
                             hitSlop={10}
                             accessibilityLabel="Create workspace">
-                            <PlusIcon size={18} weight="light" color={ThemedColor.caption} />
+                            <View style={[styles.addBtn, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                                <PlusIcon size={16} weight="bold" color={ThemedColor.primary} />
+                            </View>
                         </TouchableOpacity>
                     </View>
                     {realWorkspaces.map((workspace: any) => (
@@ -449,16 +452,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 6,
     },
-    chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 },
+    chips: { flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 4 },
     chip: {
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 100,
     },
     rail: { position: "absolute", left: 20, top: 0, bottom: 0, width: 3, borderRadius: 3 },
+    addBtn: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
     sectionHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
