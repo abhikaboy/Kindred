@@ -33,6 +33,7 @@ import (
 	spaces "github.com/abhikaboy/Kindred/internal/handlers/spaces"
 	"github.com/abhikaboy/Kindred/internal/handlers/subscription"
 	task "github.com/abhikaboy/Kindred/internal/handlers/task"
+	"github.com/abhikaboy/Kindred/internal/handlers/userreport"
 	Waitlist "github.com/abhikaboy/Kindred/internal/handlers/waitlist"
 	"github.com/abhikaboy/Kindred/internal/handlers/weekrecap"
 	"github.com/abhikaboy/Kindred/internal/jobs"
@@ -156,6 +157,7 @@ func New(collections map[string]*mongo.Collection, stream *mongo.ChangeStream, g
 	activity.Routes(api, collections)
 	analytics.Routes(api, collections)
 	weekrecap.Routes(api, collections)
+	userreport.Routes(api, collections)
 	profile.Routes(api, collections, ringService)
 	taskService := task.Routes(api, collections, geminiService, ringService)
 

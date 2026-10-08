@@ -5583,6 +5583,26 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/report:
+        get:
+            tags:
+                - Analytics
+            summary: Get the personal report
+            description: What we hold about the user, what we noticed over the last 90 days, and what needs more data. Computed in the user's timezone.
+            operationId: get-user-report
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserReportResponse'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/reports/comment/{commentId}:
         post:
             tags:
@@ -18517,6 +18537,118 @@ components:
                 - display_name
                 - handle
                 - profile_picture
+        UserReportAction:
+            type: object
+            additionalProperties: false
+            properties:
+                kind:
+                    type: string
+                    description: 'task: target is a task id; account: a user id; activity: a view name; home: empty'
+                    enum:
+                        - task
+                        - account
+                        - activity
+                        - home
+                label:
+                    type: string
+                target:
+                    type: string
+            required:
+                - label
+                - kind
+                - target
+        UserReportKnown:
+            type: object
+            additionalProperties: false
+            properties:
+                detail:
+                    type: string
+                label:
+                    type: string
+                source:
+                    type: string
+                    description: stated = you told us; inferred = we worked it out
+                    enum:
+                        - activity
+                        - stated
+                        - inferred
+                value:
+                    type: string
+            required:
+                - label
+                - value
+                - source
+        UserReportNoticed:
+            type: object
+            additionalProperties: false
+            properties:
+                action:
+                    $ref: '#/components/schemas/UserReportAction'
+                evidence:
+                    type: string
+                headline:
+                    type: string
+                kind:
+                    type: string
+                    enum:
+                        - weeks
+                        - habit
+                        - stalled
+                        - supporters
+                        - kudos
+                        - ontime
+                        - peak
+                strength:
+                    type: string
+                    enum:
+                        - strong
+                        - moderate
+            required:
+                - kind
+                - headline
+                - evidence
+                - strength
+        UserReportResponse:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/UserReportResponse.json
+                    readOnly: true
+                generatedAt:
+                    type: string
+                    format: date-time
+                known:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserReportKnown'
+                notYet:
+                    type: array
+                    description: What we could say with more data
+                    items:
+                        type: string
+                noticed:
+                    type: array
+                    description: At most 5, strongest evidence first
+                    items:
+                        $ref: '#/components/schemas/UserReportNoticed'
+                plainText:
+                    type: string
+                    description: The whole report as plain text, for copying
+                rangeLabel:
+                    type: string
+                    description: e.g. 'Jul 11 – Oct 8'
+            required:
+                - generatedAt
+                - rangeLabel
+                - known
+                - noticed
+                - notYet
+                - plainText
         UserSettings:
             type: object
             additionalProperties: false

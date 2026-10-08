@@ -5,6 +5,7 @@ import { $api } from "@/lib/api/query";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { ThemedText } from "@/components/ThemedText";
 import { WeekRecapEntry } from "@/components/weekrecap/WeekRecapEntry";
+import { GenerateReportButton } from "@/components/report/ReportDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { ActivityHeatmap } from "@/components/activity/ActivityHeatmap";
@@ -58,6 +59,7 @@ export default function ActivityScreen() {
         </div>
 
         <div className="flex items-center gap-3">
+          <GenerateReportButton />
           <div className="relative">
             <select
               value={workspace ?? ""}

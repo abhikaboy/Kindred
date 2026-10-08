@@ -2712,6 +2712,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the personal report
+         * @description What we hold about the user, what we noticed over the last 90 days, and what needs more data. Computed in the user's timezone.
+         */
+        get: operations["get-user-report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/reports/comment/{commentId}": {
         parameters: {
             query?: never;
@@ -9899,6 +9919,53 @@ export interface components {
             id: string;
             profile_picture: string;
         };
+        UserReportAction: {
+            /**
+             * @description task: target is a task id; account: a user id; activity: a view name; home: empty
+             * @enum {string}
+             */
+            kind: "task" | "account" | "activity" | "home";
+            label: string;
+            target: string;
+        };
+        UserReportKnown: {
+            detail?: string;
+            label: string;
+            /**
+             * @description stated = you told us; inferred = we worked it out
+             * @enum {string}
+             */
+            source: "activity" | "stated" | "inferred";
+            value: string;
+        };
+        UserReportNoticed: {
+            action?: components["schemas"]["UserReportAction"];
+            evidence: string;
+            headline: string;
+            /** @enum {string} */
+            kind: "weeks" | "habit" | "stalled" | "supporters" | "kudos" | "ontime" | "peak";
+            /** @enum {string} */
+            strength: "strong" | "moderate";
+        };
+        UserReportResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UserReportResponse.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            generatedAt: string;
+            known: components["schemas"]["UserReportKnown"][];
+            /** @description What we could say with more data */
+            notYet: string[];
+            /** @description At most 5, strongest evidence first */
+            noticed: components["schemas"]["UserReportNoticed"][];
+            /** @description The whole report as plain text, for copying */
+            plainText: string;
+            /** @description e.g. 'Jul 11 – Oct 8' */
+            rangeLabel: string;
+        };
         UserSettings: {
             /**
              * Format: uri
@@ -15524,6 +15591,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnlockFeatureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "get-user-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserReportResponse"];
                 };
             };
             /** @description Error */
