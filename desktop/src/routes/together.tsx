@@ -78,7 +78,7 @@ function TogetherSections() {
       {data && data.topSupporters?.length ? (
         <SupportersWidget supporters={data.topSupporters} coverage={data.supportCoverage} />
       ) : null}
-      {data ? <KudosEffectWidget effect={data.kudosEffect} /> : null}
+      {data?.kudosEffect.hasComparison ? <KudosEffectWidget effect={data.kudosEffect} /> : null}
     </>
   );
 }
