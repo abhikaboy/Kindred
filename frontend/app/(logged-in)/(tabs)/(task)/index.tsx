@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ThemedView } from "@/components/ThemedView";
+import { ThemedText } from "@/components/ThemedText";
+import { SomedayList } from "@/components/task/SomedayList";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import CreateWorkspaceBottomSheetModal from "@/components/modals/CreateWorkspaceBottomSheetModal";
@@ -39,7 +41,7 @@ import { hapticSelect } from "@/utils/haptics";
 // re-render every mounted workspace page.
 const MemoWorkspaceContent = React.memo(WorkspaceContent);
 
-type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string };
+type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string } | { key: "someday" };
 const HOME_INDEX = 1;
 const FRIENDS_INDEX = 2;
 const WORKSPACE_OFFSET = 3;
@@ -184,25 +186,34 @@ const HomeContent = React.memo(function HomeContent({
     // Page index is the source of truth; `selected` is kept in sync as the
     // external API. Home + Friends both map to selected "" (Friends is swipe-only).
     const wsPages = React.useMemo(() => (workspaces as any[]).filter((w) => !w.isBlueprint), [workspaces]);
+    const somedayIndex = WORKSPACE_OFFSET + wsPages.length;
     const pages = React.useMemo<Page[]>(
-        () => [{ key: "today" }, { key: "home" }, { key: "friends" }, ...wsPages.map((w) => ({ key: "workspace" as const, name: w.name }))],
+        () => [
+            { key: "today" },
+            { key: "home" },
+            { key: "friends" },
+            ...wsPages.map((w) => ({ key: "workspace" as const, name: w.name })),
+            { key: "someday" },
+        ],
         [wsPages]
     );
     const pageKeys = React.useMemo(() => pages.map(pageKeyOf), [pages]);
     const pageKinds = React.useMemo<PagerKind[]>(() => pages.map((p) => p.key), [pages]);
-    const pageColors = React.useMemo(() => [undefined, undefined, undefined, ...wsPages.map((w) => w.color)], [wsPages]);
+    const pageColors = React.useMemo(() => [undefined, undefined, undefined, ...wsPages.map((w) => w.color), undefined], [wsPages]);
     const selectedToIndex = React.useCallback(
         (sel: string) => {
             if (sel === "Today") return 0;
+            if (sel === "Someday") return somedayIndex;
             if (sel === "") return HOME_INDEX;
             const wi = wsPages.findIndex((w) => w.name === sel);
             return wi >= 0 ? WORKSPACE_OFFSET + wi : HOME_INDEX;
         },
-        [wsPages]
+        [wsPages, somedayIndex]
     );
     const indexToSelected = React.useCallback(
-        (index: number) => (index === 0 ? "Today" : index < WORKSPACE_OFFSET ? "" : wsPages[index - WORKSPACE_OFFSET]?.name ?? ""),
-        [wsPages]
+        (index: number) =>
+            index === 0 ? "Today" : index === somedayIndex ? "Someday" : index < WORKSPACE_OFFSET ? "" : wsPages[index - WORKSPACE_OFFSET]?.name ?? "",
+        [wsPages, somedayIndex]
     );
 
     const pagerRef = useRef<PagerView>(null);
@@ -407,6 +418,17 @@ const HomeContent = React.memo(function HomeContent({
                                         <MemoDaily embedded />
                                     ) : page.key === "friends" ? (
                                         <FriendsContent isActive={index === activeIndex} />
+                                    ) : page.key === "someday" ? (
+                                        <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
+                                            <View style={styles.somedayHeader}>
+                                                <ThemedText type="title" style={{ fontWeight: "600" }}>
+                                                    Someday
+                                                </ThemedText>
+                                            </View>
+                                            <View style={{ flex: 1, paddingHorizontal: HORIZONTAL_PADDING }}>
+                                                <SomedayList />
+                                            </View>
+                                        </View>
                                     ) : (
                                         <MemoWorkspaceContent workspaceName={page.name} />
                                     )}
@@ -460,6 +482,11 @@ const styles = StyleSheet.create({
     },
     viewContainer: {
         flex: 1,
+    },
+    somedayHeader: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingTop: 20,
+        paddingBottom: 24,
     },
     menuButtonContainer: {
         position: "absolute",

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Reanimated from "react-native-reanimated";
-import { CaretLeft, CaretRight } from "phosphor-react-native";
+import { CaretLeft, CaretRight, Planet } from "phosphor-react-native";
 import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { SectionTitle } from "@/components/dashboard/SectionHeader";
@@ -214,6 +214,24 @@ const DatePanel = ({ target, onTargetChange, onTouched, onDone, lockTarget, some
             {step === "day" ? (
                 <Reanimated.View key="day" entering={SOFT_ENTER} style={styles.container}>
                     <View style={styles.wrap}>
+                        {target === "start" && onSomeday && (
+                            <TouchableOpacity
+                                key="someday"
+                                onPress={onSomeday}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: !!someday }}
+                                style={[
+                                    styles.somedayPill,
+                                    someday
+                                        ? { backgroundColor: STAGE.selected, borderColor: STAGE.selected }
+                                        : { borderColor: STAGE.muted },
+                                ]}>
+                                <Planet size={14} weight={someday ? "fill" : "regular"} color={someday ? STAGE.onSelected : STAGE.muted} />
+                                <ThemedText type="lightBody" style={ink(!!someday)}>
+                                    Someday
+                                </ThemedText>
+                            </TouchableOpacity>
+                        )}
                         {quickMoments(now, target).map((m) => {
                             const selected = !!value && value.getTime() === m.at.getTime();
                             return (
@@ -235,18 +253,6 @@ const DatePanel = ({ target, onTargetChange, onTouched, onDone, lockTarget, some
                                 </TouchableOpacity>
                             );
                         })}
-                        {target === "start" && onSomeday && (
-                            <TouchableOpacity
-                                key="someday"
-                                onPress={onSomeday}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: !!someday }}
-                                style={pill(!!someday)}>
-                                <ThemedText type="lightBody" style={ink(!!someday)}>
-                                    Someday
-                                </ThemedText>
-                            </TouchableOpacity>
-                        )}
                     </View>
 
                     <View style={styles.monthHeader}>
@@ -415,6 +421,17 @@ const styles = StyleSheet.create({
     part: { flex: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
     wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     pill: { height: 36, paddingHorizontal: 12, borderRadius: 100, justifyContent: "center" },
+    somedayPill: {
+        height: 36,
+        paddingHorizontal: 12,
+        borderRadius: 100,
+        borderWidth: 1,
+        borderStyle: "dashed",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        justifyContent: "center",
+    },
     monthHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     round: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
     week: { flexDirection: "row", alignSelf: "stretch" },

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { View, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { CalendarBlank, House, UsersThree } from "phosphor-react-native";
+import { CalendarBlank, House, UsersThree, Planet } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hapticSelect } from "@/utils/haptics";
@@ -19,12 +19,13 @@ const DOT_TOUCH_WIDTH = 16;
 const DOT_TOUCH_HEIGHT = 32;
 const INACTIVE_DOT_OPACITY = 0.4;
 
-export type PagerKind = "today" | "home" | "friends" | "workspace";
+export type PagerKind = "today" | "home" | "friends" | "workspace" | "someday";
 
 const SPECIAL_ICONS = {
     today: CalendarBlank,
     home: House,
     friends: UsersThree,
+    someday: Planet,
 } as const;
 
 function getVisibleWindow(indices: number[], active: number): number[] {

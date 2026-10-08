@@ -4,13 +4,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BottomSheetFooter, BottomSheetScrollView, type BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MotiView } from "moti";
-import { CalendarDotsIcon, ClockIcon, FlagIcon, MagicWandIcon, TextAaIcon, XIcon } from "phosphor-react-native";
+import { CalendarDotsIcon, ClockIcon, FlagIcon, MagicWandIcon, PlanetIcon, TextAaIcon, XIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useTaskActions } from "@/contexts/tasksContext";
+import { useSomedayTasks } from "@/hooks/useSomedayTasks";
 import { applyEnrichAPI, getEnrichStatusAPI, previewEnrichAPI, type EnrichChange, type EnrichPreview, type EnrichStatus } from "@/api/task";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { hapticLight } from "@/utils/haptics";
@@ -131,7 +132,9 @@ function dropPart(change: EnrichChange, index: number): EnrichChange | null {
 function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps) {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
-    const { updateTask } = useTaskActions();
+    const { updateTask, setSelected } = useTaskActions();
+    const { groups: somedayGroups } = useSomedayTasks();
+    const somedayCount = useMemo(() => somedayGroups.reduce((n, g) => n + g.tasks.length, 0), [somedayGroups]);
     const [stage, setStage] = useState<Stage>("intro");
     const [preview, setPreview] = useState<EnrichPreview | null>(null);
     // Working copy the user trims down; the preview stays intact for "bring back"
@@ -248,6 +251,24 @@ function AutoEnrichSheet({ visible, setVisible, status, onApplied }: SheetProps)
                                     </ThemedText>
                                 </View>
                             ))}
+                            {somedayCount > 0 && (
+                                <TouchableOpacity
+                                    style={styles.point}
+                                    onPress={() => {
+                                        hapticLight();
+                                        setVisible(false);
+                                        setSelected("Someday");
+                                    }}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`${somedayCount} someday task${somedayCount === 1 ? "" : "s"} might be ready for a day`}>
+                                    <View style={[styles.pointIcon, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                                        <PlanetIcon size={18} color={ThemedColor.primary} />
+                                    </View>
+                                    <ThemedText type="default" style={[styles.pointText, { color: ThemedColor.primary }]}>
+                                        Or take a look at your {somedayCount} someday task{somedayCount === 1 ? "" : "s"} — any ready for a day?
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            )}
                             <ThemedText type="caption" style={styles.note}>
                                 You'll review every suggestion before anything changes.
                             </ThemedText>

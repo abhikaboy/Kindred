@@ -13,12 +13,12 @@ import { Task } from "@/api/types";
 import ConditionalView from "@/components/ui/ConditionalView";
 import IconPickerOverlay from "@/components/ui/IconPickerOverlay";
 import SlidingText from "@/components/ui/SlidingText";
-import { Gear, FolderPlus, CheckSquare } from "phosphor-react-native";
+import { Gear, FolderPlus, CheckSquare, Planet } from "phosphor-react-native";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CategoryComposer from "@/components/modals/create/composer/CategoryComposer";
 import { useWorkspaceFilters } from "@/hooks/useWorkspaceFilters";
-import { sinkSomeday } from "@/hooks/useSomedayTasks";
+import { sinkSomeday, useSomedayTasks } from "@/hooks/useSomedayTasks";
 import { useWorkspaceState } from "@/hooks/useWorkspaceState";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { workspaceStateEvents } from "@/utils/workspaceStateEvents";
@@ -98,7 +98,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     workspaceName,
 }) => {
     const ThemedColor = useThemeColor();
-    const { updateWorkspaceIconColor } = useTaskActions();
+    const { updateWorkspaceIconColor, setSelected } = useTaskActions();
     // Use prop if provided, otherwise fall back to global selected
     const selected = useTasksSelector((s) => workspaceName || s.selected);
     const workspaceIcon = useTasksSelector((s) => (selected ? s.workspaces.find((ws) => ws.name === selected)?.icon : undefined));
@@ -106,6 +106,8 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const WorkspaceIconComponent = workspaceIcon
         ? ((PhosphorIcons as any)[workspaceIcon] as React.ComponentType<{ size?: number; color?: string; weight?: string }> | undefined)
         : undefined;
+    const { groups: somedayGroups } = useSomedayTasks();
+    const somedayCount = somedayGroups.find((g) => g.workspace === selected)?.tasks.length ?? 0;
     // When workspaceName prop is provided, derive categories directly from workspaces
     // to avoid depending on the global categories state (which is tied to globalSelected).
     // Selects an existing reference, so this page only re-renders when its own
@@ -418,6 +420,21 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         >
                                             <CalendarBlank size={20} color={state.groupByDay ? ThemedColor.primary : ThemedColor.caption} weight="regular" />
                                         </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => setSelected("Someday")}
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Someday tasks">
+                                            <View>
+                                                <Planet size={20} color={ThemedColor.caption} weight="regular" />
+                                                {somedayCount > 0 && (
+                                                    <View style={[styles.somedayBadge, { backgroundColor: ThemedColor.primary }]}>
+                                                        <ThemedText type="caption" style={{ color: "white", fontSize: 9, lineHeight: 11 }}>
+                                                            {somedayCount > 9 ? "9+" : somedayCount}
+                                                        </ThemedText>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
                                         <TouchableOpacity onPress={reopenWorkspaceSettings}>
                                             <Gear size={24} color={ThemedColor.text} weight="regular" />
                                         </TouchableOpacity>
@@ -601,6 +618,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 12,
         marginLeft: 12,
+    },
+    somedayBadge: {
+        position: "absolute",
+        top: -4,
+        right: -6,
+        minWidth: 14,
+        height: 14,
+        borderRadius: 7,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 2,
     },
     addButton: {
         alignItems: "center",
