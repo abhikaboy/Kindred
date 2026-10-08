@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { ScrollView, View, TouchableOpacity, RefreshControl, InteractionManager, Platform, StyleSheet } from "react-native";
+import {
+    ScrollView,
+    View,
+    TouchableOpacity,
+    RefreshControl,
+    InteractionManager,
+    Platform,
+    StyleSheet,
+} from "react-native";
 import Reanimated, {
     Easing,
     SharedValue,
@@ -34,6 +42,7 @@ import { useHomeStageQueue } from "@/hooks/useHomeStageQueue";
 import type { HomeTour } from "@/hooks/useHomeTour";
 import { hapticLight } from "@/utils/haptics";
 import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
+import AutoEnrichCard from "@/components/dashboard/AutoEnrichCard";
 
 interface HomeScrollContentProps {
     userName?: string;
@@ -64,7 +73,7 @@ const readCalendarState = async (): Promise<CalendarState> => {
     const { connections } = await getCalendarConnections();
     const completed = connections?.find((c) => c.setup_complete);
     const pending = connections?.find((c) => !c.setup_complete);
-    return { linked: !!completed, pendingId: completed ? null : pending?.id ?? null };
+    return { linked: !!completed, pendingId: completed ? null : (pending?.id ?? null) };
 };
 
 // Calm focus home: rings, greeting, one task, quick add; workspaces below the fold.
@@ -99,14 +108,18 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         [scrollRef]
     );
     const fadeStyle = useAnimatedStyle(() => ({ opacity: interpolate(spill.value, [0, 0.5], [1, 0], "clamp") }));
-    const liftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -spill.value * Math.max(focusY - LIFTED_TOP, 0) }] }));
+    const liftStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: -spill.value * Math.max(focusY - LIFTED_TOP, 0) }],
+    }));
     const faded = stackListed ? "none" : "auto";
 
     // Per-workspace task preview: collapsed by default, persisted locally
     const [expandedPreviews, setExpandedPreviews] = useState<Record<string, boolean>>({});
     const loadedPreviewNamesRef = useRef<Set<string>>(new Set());
     useEffect(() => {
-        const names = workspaces.map((w: any) => w.name).filter((name: string) => !loadedPreviewNamesRef.current.has(name));
+        const names = workspaces
+            .map((w: any) => w.name)
+            .filter((name: string) => !loadedPreviewNamesRef.current.has(name));
         if (names.length === 0) return;
         names.forEach((name: string) => loadedPreviewNamesRef.current.add(name));
         AsyncStorage.multiGet(names.map((name: string) => `workspace-preview-expanded-${name}`))
@@ -153,7 +166,11 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         } catch (error) {
             console.error("Error connecting Google Calendar:", error);
             const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_CONNECT_FAILED);
-            showAlert({ title: errorInfo.title, message: errorInfo.message, buttons: [{ text: "OK", style: "default" }] });
+            showAlert({
+                title: errorInfo.title,
+                message: errorInfo.message,
+                buttons: [{ text: "OK", style: "default" }],
+            });
         } finally {
             setCalendarLoading(false);
         }
@@ -179,7 +196,9 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 buttons: [{ text: "OK", style: "default" }],
             });
         }
-        readCalendarState().then(setCalendar).catch(() => setCalendar({ linked: true, pendingId: null }));
+        readCalendarState()
+            .then(setCalendar)
+            .catch(() => setCalendar({ linked: true, pendingId: null }));
     };
 
     // iOS overscroll lifts the tab glow; release past the threshold refreshes and replays its opening.
@@ -250,7 +269,12 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
             decelerationRate="fast"
             refreshControl={
                 onRefresh && !glowRefresh ? (
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ThemedColor.primary} colors={[ThemedColor.primary]} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={ThemedColor.primary}
+                        colors={[ThemedColor.primary]}
+                    />
                 ) : undefined
             }>
             {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
@@ -263,7 +287,13 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                         ref={(node) => tour.registerSection("rings", node)}
                         pointerEvents={faded}
                         style={[{ width: "100%", zIndex: ringsExpanded ? 999 : 0 }, fadeStyle]}>
-                        <ProductivityRingsCard variant="rings" compact hideClaim expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
+                        <ProductivityRingsCard
+                            variant="rings"
+                            compact
+                            hideClaim
+                            expanded={ringsExpanded}
+                            onExpandChange={setRingsExpanded}
+                        />
                     </Reanimated.View>
 
                     <Reanimated.View pointerEvents={faded} style={[styles.greetingBlock, fadeStyle]}>
@@ -295,22 +325,38 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                         </View>
                     )}
 
-                    {showCalendarChip && !stackListed && (
-                        <TouchableOpacity
-                            onPress={handleConnectCalendar}
-                            disabled={calendarLoading}
-                            activeOpacity={0.7}
-                            style={[styles.chip, { backgroundColor: ThemedColor.primary + "14", opacity: calendarLoading ? 0.6 : 1 }]}>
-                            <CalendarPlus size={16} color={ThemedColor.primary} />
-                            <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
-                                {calendar.pendingId ? "Finish calendar setup" : "Connect calendar"}
-                            </ThemedText>
-                        </TouchableOpacity>
+                    {!stackListed && (
+                        <View style={styles.chips}>
+                            {!tour.active && !isGuest && <AutoEnrichCard />}
+                            {showCalendarChip && (
+                                <TouchableOpacity
+                                    onPress={handleConnectCalendar}
+                                    disabled={calendarLoading}
+                                    activeOpacity={0.7}
+                                    style={[
+                                        styles.chip,
+                                        {
+                                            backgroundColor: ThemedColor.primary + "14",
+                                            opacity: calendarLoading ? 0.6 : 1,
+                                        },
+                                    ]}>
+                                    <CalendarPlus size={16} color={ThemedColor.primary} />
+                                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                                        {calendar.pendingId ? "Finish calendar setup" : "Connect calendar"}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     )}
                 </View>
 
                 {!tour.active && showWorkspaces && !stackListed && (
-                    <TouchableOpacity onPress={toWorkspaces} hitSlop={10} activeOpacity={0.6} style={styles.more} accessibilityLabel="Show workspaces">
+                    <TouchableOpacity
+                        onPress={toWorkspaces}
+                        hitSlop={10}
+                        activeOpacity={0.6}
+                        style={styles.more}
+                        accessibilityLabel="Show workspaces">
                         <ThemedText type="caption">Workspaces</ThemedText>
                         <CaretDown size={12} color={ThemedColor.caption} />
                     </TouchableOpacity>
@@ -323,7 +369,10 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                     style={{ paddingTop: 12, minHeight: viewportHeight || undefined, paddingBottom: dockClearance }}>
                     <View style={styles.sectionHeader}>
                         <SectionTitle title="Workspaces" />
-                        <TouchableOpacity onPress={onCreateWorkspace} hitSlop={10} accessibilityLabel="Create workspace">
+                        <TouchableOpacity
+                            onPress={onCreateWorkspace}
+                            hitSlop={10}
+                            accessibilityLabel="Create workspace">
                             <PlusIcon size={18} weight="light" color={ThemedColor.caption} />
                         </TouchableOpacity>
                     </View>
@@ -331,7 +380,10 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                         <View key={workspace.name}>
                             {/* Accent rail spans the row and its task preview */}
                             <View
-                                style={[styles.rail, { backgroundColor: (workspace.color ?? ThemedColor.tertiary) + "66" }]}
+                                style={[
+                                    styles.rail,
+                                    { backgroundColor: (workspace.color ?? ThemedColor.tertiary) + "66" },
+                                ]}
                             />
                             <WorkspaceDrawerItem
                                 title={workspace.name}
@@ -397,6 +449,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 6,
     },
+    chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 },
     chip: {
         flexDirection: "row",
         alignItems: "center",

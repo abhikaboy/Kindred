@@ -62,7 +62,7 @@ function useEnrichOffer(userId?: string) {
     return { status, visible, markHandled };
 }
 
-/** Occasional home card that offers to schedule and fill in neglected tasks. */
+/** Occasional home chip that offers to schedule and fill in neglected tasks. */
 export default function AutoEnrichCard() {
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
@@ -75,26 +75,25 @@ export default function AutoEnrichCard() {
     return (
         <>
             {visible && (
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                        hapticLight();
-                        setSheetVisible(true);
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Tidy up your tasks"
-                    style={[styles.card, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}>
-                    <MagicWandIcon size={22} weight="light" color={ThemedColor.primary} />
-                    <View style={styles.cardText}>
-                        <ThemedText type="defaultSemiBold">Tidy up your tasks</ThemedText>
-                        <ThemedText type="caption">
-                            {count} task{count === 1 ? " has" : "s have"} no day planned. Kindred can suggest one for each.
+                <View style={[styles.chip, { backgroundColor: ThemedColor.primary + "14" }]}>
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => {
+                            hapticLight();
+                            setSheetVisible(true);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Tidy up ${count} task${count === 1 ? "" : "s"} with no day planned`}
+                        style={styles.chipBody}>
+                        <MagicWandIcon size={16} color={ThemedColor.primary} />
+                        <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                            Tidy up {count} task{count === 1 ? "" : "s"}
                         </ThemedText>
-                    </View>
-                    <TouchableOpacity onPress={markHandled} hitSlop={12} accessibilityLabel="Not now">
-                        <XIcon size={16} color={ThemedColor.caption} />
                     </TouchableOpacity>
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={markHandled} hitSlop={12} accessibilityLabel="Not now">
+                        <XIcon size={12} color={ThemedColor.primary} />
+                    </TouchableOpacity>
+                </View>
             )}
             <AutoEnrichSheet visible={sheetVisible} setVisible={setSheetVisible} status={status} onApplied={markHandled} />
         </>
@@ -336,19 +335,16 @@ function ChangeRow({ change, onDismiss, onDismissPart }: { change: EnrichChange;
 }
 
 const styles = StyleSheet.create({
-    card: {
-        marginHorizontal: HORIZONTAL_PADDING,
+    chip: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
-        padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
+        gap: 8,
+        paddingLeft: 14,
+        paddingRight: 12,
+        paddingVertical: 8,
+        borderRadius: 100,
     },
-    cardText: {
-        flex: 1,
-        gap: 4,
-    },
+    chipBody: { flexDirection: "row", alignItems: "center", gap: 6 },
     heading: {
         marginBottom: 16,
     },
