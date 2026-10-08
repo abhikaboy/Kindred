@@ -1,80 +1,49 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
-import { useIsGuest } from "@/hooks/useIsGuest";
-import { openAccountOverlay } from "@/hooks/useAccountOverlay";
-import {
-    ScrollView,
-    View,
-    Switch,
-    TouchableOpacity,
-    TextInput,
-    RefreshControl,
-    Animated,
-    InteractionManager,
-    Platform,
-} from "react-native";
+import { ScrollView, View, TouchableOpacity, RefreshControl, InteractionManager, Platform, StyleSheet } from "react-native";
 import Reanimated, {
     Easing,
     SharedValue,
+    interpolate,
     runOnJS,
     useAnimatedScrollHandler,
+    useAnimatedStyle,
     useReducedMotion,
     useSharedValue,
     withTiming,
 } from "react-native-reanimated";
-import { MotiView } from "moti";
+import * as WebBrowser from "expo-web-browser";
+import { CalendarPlus, CaretDown, PlusIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { WorkspaceDrawerItem } from "@/components/home/WorkspaceDrawerItem";
 import WorkspaceTaskPreview from "@/components/dashboard/WorkspaceTaskPreview";
-import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
-import DashboardStats from "@/components/dashboard/DashboardStats";
-import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
-import HintBubble from "@/components/ui/HintBubble";
-import BottomDashboardCards from "@/components/dashboard/BottomDashboardCards";
-import BasicCard from "@/components/cards/BasicCard";
-import { KudosCards } from "../cards/KudosCard";
-import { HorseIcon, PlusIcon } from "phosphor-react-native";
-import SectionHeader from "./SectionHeader";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
-
-import RecentlyCompletedTasks from "./RecentlyCompletedTasks";
-import WorkingOnRow from "./WorkingOnRow";
-import { OnboardingChecklist } from "./OnboardingChecklist";
-import { GoogleCalendarCard } from "../cards/GoogleCalendarCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as WebBrowser from "expo-web-browser";
-import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents, CalendarConnection } from "@/api/calendar";
+import { pendingWorkspaceTaskCount } from "@/utils/workspaceCounts";
+import { SectionTitle } from "./SectionHeader";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import { getCalendarConnections, connectGoogleCalendar, syncCalendarEvents } from "@/api/calendar";
 import { useAlert } from "@/contexts/AlertContext";
 import { formatErrorForAlert, ERROR_MESSAGES } from "@/utils/errorParser";
 import CalendarSetupBottomSheet from "@/components/modals/CalendarSetupBottomSheet";
-import { useUserSettings, useUpdateDashboardConfiguration, settingsKeys } from "@/hooks/useSettings";
-import type { DashboardConfiguration, UserSettings } from "@/api/settings";
-import { useQueryClient } from "@tanstack/react-query";
-import { TaggedTaskBanners } from "@/components/dashboard/TaggedTaskBanner";
-import ProductivityRingsCard from "@/components/profile/ProductivityRings";
-import QuickCapture from "@/components/dashboard/QuickCapture";
-import QuickLogDay from "@/components/dashboard/QuickLogDay";
-import AutoEnrichCard from "@/components/dashboard/AutoEnrichCard";
+import ProductivityRingsCard, { RingRewardClaim } from "@/components/profile/ProductivityRings";
+import { HOME_DOCK_SPACE } from "@/components/dashboard/HomeQuickAddDock";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RingsBlurOverlay from "@/components/profile/RingsBlurOverlay";
+import HomeFocusStack from "@/components/dashboard/HomeFocusStack";
+import { useHomeStageQueue } from "@/hooks/useHomeStageQueue";
 import type { HomeTour } from "@/hooks/useHomeTour";
 import { hapticLight } from "@/utils/haptics";
-import { router, type Href } from "expo-router";
+import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
 
 interface HomeScrollContentProps {
+    userName?: string;
     workspaces: any[];
-    displayWorkspaces: any[];
-    fetchingWorkspaces: boolean;
     onWorkspaceSelect: (workspaceName: string) => void;
     onCreateWorkspace: () => void;
-    drawerRef: any;
     ThemedColor: any;
     refreshing?: boolean;
     onRefresh?: () => void;
     scrollRef?: React.RefObject<ScrollView>;
-    kudosRef?: React.RefObject<View>;
-    onKudosLayout?: (layout: { y: number; height: number }) => void;
-    onStatsExpandChange?: (expanded: boolean) => void;
-    kudosOffsetRef: React.MutableRefObject<number>;
     tour: HomeTour;
     /** tab glow pull progress (0-1); when set, iOS pull-to-refresh drives the glow instead of the spinner */
     glowPull?: SharedValue<number>;
@@ -84,53 +53,69 @@ interface HomeScrollContentProps {
 
 // overscroll (px) that arms a refresh; the glow tracks progress toward it
 const PULL_DISTANCE = 96;
+// Gap above the focus stack once "View all" lifts it to the top
+const LIFTED_TOP = 8;
 
-// Temporarily hidden from the dashboard (kept in code for easy re-enable).
-// Flip to true to bring the KUDOS row back.
-const SHOW_KUDOS_ROW = false;
+const greetingFor = (h: number) => (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
 
+type CalendarState = { linked: boolean | null; pendingId: string | null };
+
+const readCalendarState = async (): Promise<CalendarState> => {
+    const { connections } = await getCalendarConnections();
+    const completed = connections?.find((c) => c.setup_complete);
+    const pending = connections?.find((c) => !c.setup_complete);
+    return { linked: !!completed, pendingId: completed ? null : pending?.id ?? null };
+};
+
+// Calm focus home: rings, greeting, one task, quick add; workspaces below the fold.
 export const HomeScrollContent = React.memo<HomeScrollContentProps>(function HomeScrollContent({
+    userName,
     workspaces,
-    displayWorkspaces,
-    fetchingWorkspaces,
     onWorkspaceSelect,
     onCreateWorkspace,
-    drawerRef,
     ThemedColor,
     refreshing = false,
     onRefresh,
     scrollRef,
-    kudosRef,
-    onKudosLayout,
-    onStatsExpandChange,
-    kudosOffsetRef,
     tour,
     glowPull,
     glowReplay,
 }) {
     const { showAlert } = useAlert();
-    const [statsExpanded, setStatsExpanded] = useState(false);
+    const isGuest = useIsGuest();
+    const queue = useHomeStageQueue();
     const [ringsExpanded, setRingsExpanded] = useState(false);
-    const dimAnim = useRef(new Animated.Value(1)).current;
+    const [viewportHeight, setViewportHeight] = useState(0);
 
-    // Per-workspace task-preview collapse — collapsed by default, persisted locally
+    // "View all": the stack lifts to the top and spills into a list while everything else fades
+    const spill = useSharedValue(0);
+    const [stackListed, setStackListed] = useState(false);
+    const [focusY, setFocusY] = useState(0);
+    const onStackListedChange = useCallback(
+        (listed: boolean) => {
+            setStackListed(listed);
+            if (listed) (scrollRef?.current as any)?.scrollTo({ y: 0, animated: true });
+        },
+        [scrollRef]
+    );
+    const fadeStyle = useAnimatedStyle(() => ({ opacity: interpolate(spill.value, [0, 0.5], [1, 0], "clamp") }));
+    const liftStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -spill.value * Math.max(focusY - LIFTED_TOP, 0) }] }));
+    const faded = stackListed ? "none" : "auto";
+
+    // Per-workspace task preview: collapsed by default, persisted locally
     const [expandedPreviews, setExpandedPreviews] = useState<Record<string, boolean>>({});
     const loadedPreviewNamesRef = useRef<Set<string>>(new Set());
     useEffect(() => {
-        const namesToLoad = workspaces
-            .map((w: any) => w.name)
-            .filter((name: string) => !loadedPreviewNamesRef.current.has(name));
-        if (namesToLoad.length === 0) return;
-        namesToLoad.forEach((name: string) => loadedPreviewNamesRef.current.add(name));
-
-        AsyncStorage.multiGet(namesToLoad.map((name: string) => `workspace-preview-expanded-${name}`))
+        const names = workspaces.map((w: any) => w.name).filter((name: string) => !loadedPreviewNamesRef.current.has(name));
+        if (names.length === 0) return;
+        names.forEach((name: string) => loadedPreviewNamesRef.current.add(name));
+        AsyncStorage.multiGet(names.map((name: string) => `workspace-preview-expanded-${name}`))
             .then((pairs) => {
-                const entries = pairs.map(([, v], i) => [namesToLoad[i], v === "true"] as const);
+                const entries = pairs.map(([, v], i) => [names[i], v === "true"] as const);
                 setExpandedPreviews((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
             })
             .catch(() => {});
     }, [workspaces]);
-
     const toggleWorkspacePreview = useCallback((name: string) => {
         setExpandedPreviews((prev) => {
             const next = !prev[name];
@@ -139,169 +124,36 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         });
     }, []);
 
-    // Dashboard section visibility
-    const queryClient = useQueryClient();
-    const { data: settings } = useUserSettings();
-    const { mutate: saveDashboardConfig } = useUpdateDashboardConfiguration();
-    const defaultConfig: DashboardConfiguration = {
-        stats: true, jump_back_in: false, kudos: true, upcoming: true,
-        google_calendar: true, recent_workspaces: true, recently_completed: true,
-    };
-    const dashboardConfig = settings?.dashboard_configuration ?? defaultConfig;
-
-    // Debounced save: accumulate changes, update cache immediately, save to backend after delay
-    // First-touch: teach that home sections are hideable; any toggle counts as learned
-    const { ready: hideHintReady, done: hideHintDone } = useFirstTouchHint("home_hide_sections");
-    const { ready: workspacesHintReady, done: workspacesHintDone } = useFirstTouchHint("personal_workspaces");
-
-    const pendingChangesRef = useRef<Partial<DashboardConfiguration>>({});
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const toggleSection = useCallback((key: keyof DashboardConfiguration) => {
-        hideHintDone();
-        const newValue = !dashboardConfig[key];
-        pendingChangesRef.current = { ...pendingChangesRef.current, [key]: newValue };
-
-        // Optimistic cache update (no network)
-        queryClient.setQueryData(settingsKeys.user(), (old: UserSettings | undefined) => {
-            if (!old) return old;
-            return {
-                ...old,
-                dashboard_configuration: { ...defaultConfig, ...old.dashboard_configuration, [key]: newValue },
-            };
-        });
-
-        // Debounce the actual network save
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            saveDashboardConfig(pendingChangesRef.current);
-            pendingChangesRef.current = {};
-        }, 600);
-    }, [dashboardConfig, saveDashboardConfig, queryClient]);
-
-    // Clean up debounce timer on unmount
-    useEffect(() => {
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
-    }, []);
+    const [calendar, setCalendar] = useState<CalendarState>({ linked: null, pendingId: null });
+    const [showCalendarSetup, setShowCalendarSetup] = useState(false);
+    const [calendarLoading, setCalendarLoading] = useState(false);
 
     useEffect(() => {
-        Animated.timing(dimAnim, {
-            toValue: statsExpanded ? 0.15 : 1,
-            duration: 250,
-            useNativeDriver: true,
-        }).start();
-    }, [statsExpanded]);
-
-    const handleStatsExpandChange = useCallback((expanded: boolean) => {
-        setStatsExpanded(expanded);
-        onStatsExpandChange?.(expanded);
-    }, [onStatsExpandChange]);
-    const isGuest = useIsGuest();
-    const [showGoogleCalendarCard, setShowGoogleCalendarCard] = React.useState(true);
-    const [calendarLoading, setCalendarLoading] = React.useState(false);
-    const [isCalendarLinked, setIsCalendarLinked] = React.useState(false);
-    const [calendarConnection, setCalendarConnection] = React.useState<CalendarConnection | null>(null);
-    const [showCalendarSetup, setShowCalendarSetup] = React.useState(false);
-    const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
-
-    // Check if user has dismissed the card or has a calendar connection
-    React.useEffect(() => {
-        const checkCalendarStatus = async () => {
-            try {
-                // Check if dismissed
-                const dismissed = await AsyncStorage.getItem("google_calendar_card_dismissed");
-                if (dismissed === "true") {
-                    setShowGoogleCalendarCard(false);
-                    return;
-                }
-
-                // Check for existing connections
-                const { connections } = await getCalendarConnections();
-                if (connections && connections.length > 0) {
-                    const completed = connections.find((c) => c.setup_complete);
-                    const pending = connections.find((c) => !c.setup_complete);
-
-                    if (completed) {
-                        setIsCalendarLinked(true);
-                        setCalendarConnection(completed);
-                        setShowGoogleCalendarCard(true);
-                    } else if (pending) {
-                        setIsCalendarLinked(false);
-                        setCalendarConnection(null);
-                        setPendingConnectionId(pending.id);
-                        setShowCalendarSetup(true);
-                        setShowGoogleCalendarCard(true);
-                    }
-                }
-            } catch (error) {
-                console.error("Error checking calendar status:", error);
-            }
-        };
+        if (isGuest) return;
         // Not needed for first paint — let the pager/launch animations settle first
-        const task = InteractionManager.runAfterInteractions(checkCalendarStatus);
+        const task = InteractionManager.runAfterInteractions(() => {
+            readCalendarState()
+                .then(setCalendar)
+                .catch((error) => console.error("Error checking calendar status:", error));
+        });
         return () => task.cancel();
-    }, []);
-
-    const handleCalendarAction = async () => {
-        if (pendingConnectionId) {
-            setShowCalendarSetup(true);
-            return;
-        }
-        if (isCalendarLinked && calendarConnection) {
-            // Sync events
-            await handleSyncCalendar();
-        } else {
-            // Connect calendar
-            await handleConnectCalendar();
-        }
-    };
+    }, [isGuest]);
 
     const handleConnectCalendar = async () => {
+        if (calendar.pendingId) return setShowCalendarSetup(true);
         setCalendarLoading(true);
         try {
-            // Get OAuth URL from backend
             const { auth_url } = await connectGoogleCalendar();
-
-            // Open OAuth flow in browser - pass 'kindred://' so iOS returns the redirect URL
-            const result = await WebBrowser.openAuthSessionAsync(auth_url, 'kindred://');
-
-            if (result.type === "success" && result.url) {
-                // Parse connectionId from the redirect URL
-                // Format: kindred://calendar/linked?connectionId=xxx
-                const connIdMatch = result.url.match(/connectionId=([^&]+)/);
-                const connId = connIdMatch?.[1];
-                if (connId) {
-                    setPendingConnectionId(connId);
-                    setShowCalendarSetup(true);
-                    return;
-                }
-            }
-
-            // Fallback: refresh connection status (Android deep link flow)
-            const { connections } = await getCalendarConnections();
-            if (connections && connections.length > 0) {
-                const completed = connections.find((c) => c.setup_complete);
-                const pending = connections.find((c) => !c.setup_complete);
-
-                if (completed) {
-                    setIsCalendarLinked(true);
-                    setCalendarConnection(completed);
-                } else if (pending) {
-                    setIsCalendarLinked(false);
-                    setCalendarConnection(null);
-                    setPendingConnectionId(pending.id);
-                    setShowCalendarSetup(true);
-                }
-            }
+            // 'kindred://' lets iOS hand the redirect URL back (kindred://calendar/linked?connectionId=xxx)
+            const result = await WebBrowser.openAuthSessionAsync(auth_url, "kindred://");
+            const connId = result.type === "success" ? result.url?.match(/connectionId=([^&]+)/)?.[1] : undefined;
+            const next = connId ? { linked: false, pendingId: connId } : await readCalendarState();
+            setCalendar(next);
+            if (next.pendingId) setShowCalendarSetup(true);
         } catch (error) {
             console.error("Error connecting Google Calendar:", error);
             const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_CONNECT_FAILED);
-            showAlert({
-                title: errorInfo.title,
-                message: errorInfo.message,
-                buttons: [{ text: "OK", style: "default" }],
-            });
+            showAlert({ title: errorInfo.title, message: errorInfo.message, buttons: [{ text: "OK", style: "default" }] });
         } finally {
             setCalendarLoading(false);
         }
@@ -317,72 +169,17 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 message: `Successfully synced ${result.tasks_created} events.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}${deletedText}\nTotal: ${result.events_total}`,
                 buttons: [{ text: "OK", style: "default" }],
             });
-            // Refresh connection status
-            const { connections } = await getCalendarConnections();
-            if (connections && connections.length > 0) {
-                const completed = connections.find((c) => c.setup_complete);
-                if (completed) {
-                    setIsCalendarLinked(true);
-                    setCalendarConnection(completed);
-                }
-            }
-            if (onRefresh) onRefresh();
+            onRefresh?.();
         } catch (error) {
             console.error("Error syncing calendar after setup:", error);
             const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_SYNC_FAILED);
             showAlert({
                 title: "Calendar Linked",
-                message: `Your calendar was linked, but we couldn't sync events automatically.\n\n${errorInfo.message}\n\nYou can sync manually from the home page.`,
+                message: `Your calendar was linked, but we couldn't sync events automatically.\n\n${errorInfo.message}`,
                 buttons: [{ text: "OK", style: "default" }],
             });
         }
-        setPendingConnectionId(null);
-    };
-
-    const handleSyncCalendar = async () => {
-        if (!calendarConnection) return;
-
-        setCalendarLoading(true);
-        try {
-            const result = await syncCalendarEvents(calendarConnection.id);
-
-            const deletedText = result.tasks_deleted ? `\nDeleted: ${result.tasks_deleted}` : "";
-            showAlert({
-                title: "Sync Complete",
-                message: `Synced ${result.tasks_created} events to "${result.workspace_name}" workspace.\n\nCreated: ${result.tasks_created}\nSkipped: ${result.tasks_skipped}${deletedText}\nTotal: ${result.events_total}`,
-                buttons: [{ text: "OK", style: "default" }],
-            });
-
-            // Refresh tasks after sync
-            if (onRefresh) {
-                onRefresh();
-            }
-        } catch (error) {
-            console.error("Error syncing calendar:", error);
-            const errorInfo = formatErrorForAlert(error, ERROR_MESSAGES.CALENDAR_SYNC_FAILED);
-            showAlert({
-                title: errorInfo.title,
-                message: errorInfo.message,
-                buttons: [{ text: "OK", style: "default" }],
-            });
-        } finally {
-            setCalendarLoading(false);
-        }
-    };
-
-    const handleDismissGoogleCalendar = async () => {
-        try {
-            await AsyncStorage.setItem("google_calendar_card_dismissed", "true");
-            setShowGoogleCalendarCard(false);
-        } catch (error) {
-            console.error("Error dismissing Google Calendar card:", error);
-        }
-    };
-
-    const handleKudosLayout = (event: any) => {
-        if (!onKudosLayout) return;
-        const { y, height } = event.nativeEvent.layout;
-        onKudosLayout({ y, height });
+        readCalendarState().then(setCalendar).catch(() => setCalendar({ linked: true, pendingId: null }));
     };
 
     // iOS overscroll lifts the tab glow; release past the threshold refreshes and replays its opening.
@@ -430,215 +227,190 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         [glowRefresh, onScrollY, refreshFromPull]
     );
 
+    // Two snap points: the focus stage, then the workspaces list; both clear the docked quick add.
+    const insets = useSafeAreaInsets();
+    const dockClearance = insets.bottom + HOME_DOCK_SPACE;
+    const showWorkspaces = tour.visibleUpTo("workspaces");
+    const snapOffsets = viewportHeight && showWorkspaces ? [0, viewportHeight] : undefined;
+    const toWorkspaces = () => (scrollRef?.current as any)?.scrollTo({ y: viewportHeight, animated: true });
+
+    const realWorkspaces = workspaces.filter((w: any) => !w.isBlueprint);
+    const showCalendarChip = !isGuest && calendar.linked === false && !tour.active;
+
     return (
         <Reanimated.ScrollView
             ref={scrollRef}
-            style={{ gap: 16 }}
-            contentContainerStyle={{ gap: 16 }}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
+            scrollEnabled={!stackListed}
             scrollEventThrottle={16}
+            onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
+            snapToOffsets={snapOffsets}
+            snapToEnd={false}
+            decelerationRate="fast"
             refreshControl={
                 onRefresh && !glowRefresh ? (
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={onRefresh}
-                        tintColor={ThemedColor.primary}
-                        colors={[ThemedColor.primary]}
-                    />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ThemedColor.primary} colors={[ThemedColor.primary]} />
                 ) : undefined
-            }
-        >
-            <MotiView style={{ gap: 16, marginTop: 0 }}>
-                {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
-                <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
+            }>
+            {/* Sibling of the rings container so the rings' zIndex:999 can float above the blur's 998 */}
+            <RingsBlurOverlay visible={ringsExpanded} onDismiss={() => setRingsExpanded(false)} />
 
-                {!tour.active && <TaggedTaskBanners />}
+            <View style={[styles.stage, { height: viewportHeight || undefined, paddingBottom: dockClearance }]}>
+                <View style={styles.center}>
+                    {/* Private to the user; live-updates via the useRings cache */}
+                    <Reanimated.View
+                        ref={(node) => tour.registerSection("rings", node)}
+                        pointerEvents={faded}
+                        style={[{ width: "100%", zIndex: ringsExpanded ? 999 : 0 }, fadeStyle]}>
+                        <ProductivityRingsCard variant="rings" compact hideClaim expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
+                    </Reanimated.View>
 
-                {/* Dashboard Stats
-                <View style={{ marginHorizontal: HORIZONTAL_PADDING, gap: 10 }}>
-                    <SectionHeader
-                        title="STATS"
-                        visible={dashboardConfig.stats}
-                        onToggleVisibility={() => toggleSection("stats")}
-                    />
-                    {dashboardConfig.stats && <DashboardStats onExpandChange={handleStatsExpandChange} />}
-                </View> */}
+                    <Reanimated.View pointerEvents={faded} style={[styles.greetingBlock, fadeStyle]}>
+                        <ThemedText type="titleFraunces" style={styles.greeting}>
+                            {greetingFor(new Date().getHours())}, {userName || "there"}
+                        </ThemedText>
+                        {isGuest && <GuestLoginLink />}
+                    </Reanimated.View>
 
-                {/* Productivity Rings - private to the user, live-updates via useRings cache */}
-                <View ref={(node) => tour.registerSection("rings", node)} style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 8, gap: 12, zIndex: ringsExpanded ? 999 : 0 }}>
-                    <ThemedText type="default" style={{ fontSize: 17 }}>Activity Rings</ThemedText>
-                    <ProductivityRingsCard variant="rings" expanded={ringsExpanded} onExpandChange={setRingsExpanded} />
-                </View>
-
-                {/* Unwrapped so it leaves no gap once hidden for the day */}
-                {!tour.active && <QuickLogDay />}
-
-                {!tour.active && !isGuest && <AutoEnrichCard />}
-
-                {!tour.active && scrollRef && <OnboardingChecklist scrollRef={scrollRef as React.RefObject<ScrollView>} kudosOffsetRef={kudosOffsetRef} />}
-
-                {!tour.active && (
-                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, zIndex: 997 }}>
-                        <QuickCapture />
-                    </View>
-                )}
-
-                {!tour.active && <WorkingOnRow />}
-
-                <Animated.View style={{ opacity: dimAnim }}>
-
-                {/* Kudos Cards (Encouragements & Congratulations) — temporarily hidden via SHOW_KUDOS_ROW */}
-                {SHOW_KUDOS_ROW && (
-                    <View
-                        style={{
-                            marginHorizontal: HORIZONTAL_PADDING,
-                            gap: 12,
-                            marginBottom: 18,
-                        }}>
-                        <SectionHeader title="KUDOS" visible={dashboardConfig.kudos} onToggleVisibility={() => toggleSection("kudos")} />
-                        {dashboardConfig.kudos && (
-                            <>
-                                <ThemedText type="caption">Send more Kudos to get premium features.</ThemedText>
-                                <View ref={kudosRef} onLayout={handleKudosLayout}>
-                                    <KudosCards />
-                                </View>
-                            </>
-                        )}
-                    </View>
-                )}
-
-                {/* Guests can't link a calendar; the slot asks them to make an account instead */}
-                {!tour.active && isGuest && (
-                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
-                        <PrimaryButton title="Create my Account" onPress={() => openAccountOverlay("login-link")} />
-                    </View>
-                )}
-
-                {/* Google Calendar Connection Card */}
-                {/* Once Google Calendar is linked, the whole section is hidden from the
-                    home page — there's nothing left to prompt. (Sync still lives elsewhere.) */}
-                {!tour.active && !isGuest && showGoogleCalendarCard && !isCalendarLinked && (
-                    <View style={{ marginHorizontal: HORIZONTAL_PADDING, marginBottom: 18 }}>
-                        <View style={{ marginBottom: 8 }}>
-                            <SectionHeader title="Google Calendar" variant="prominent" visible={dashboardConfig.google_calendar} onToggleVisibility={() => toggleSection("google_calendar")} />
-                        </View>
-                        {dashboardConfig.google_calendar && (
-                            <GoogleCalendarCard
-                                isLinked={isCalendarLinked}
-                                setupPending={!!pendingConnectionId}
-                                onAction={handleCalendarAction}
-                                onDismiss={!isCalendarLinked ? handleDismissGoogleCalendar : undefined}
-                                loading={calendarLoading}
+                    {tour.visibleUpTo("focus") && (
+                        <Reanimated.View
+                            ref={(node) => tour.registerSection("focus", node)}
+                            collapsable={false}
+                            onLayout={(e) => setFocusY(e.nativeEvent.layout.y)}
+                            style={[{ width: "100%", zIndex: 1 }, liftStyle]}>
+                            <HomeFocusStack
+                                queue={queue}
+                                onWorkspacePress={onWorkspaceSelect}
+                                spill={spill}
+                                onListedChange={onStackListedChange}
+                                availableHeight={viewportHeight - dockClearance - LIFTED_TOP}
                             />
-                        )}
-                    </View>
-                )}
+                        </Reanimated.View>
+                    )}
 
-                {/* Personal Workspaces Section (replaces Recent Workspaces; WorkspaceGrid kept but unused) */}
-                {tour.visibleUpTo("workspaces") && (
-                <ScrollView
-                    horizontal={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 108 }}>
-                    <View
-                        ref={(node) => tour.registerSection("workspaces", node)}
-                        style={{ marginBottom: 18 }}>
-                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING, marginBottom: 16 }}>
-                        <SectionHeader
-                            title="Personal Workspaces"
-                            variant="prominent"
-                            visible={dashboardConfig.recent_workspaces}
-                            onToggleVisibility={() => toggleSection("recent_workspaces")}
-                            right={
-                                <TouchableOpacity onPress={onCreateWorkspace}>
-                                    <PlusIcon size="18" weight="light" color={ThemedColor.caption} />
-                                </TouchableOpacity>
-                            }
-                        />
-                        {!tour.active && !workspacesHintReady && hideHintReady && (
-                            <HintBubble
-                                text="Tap the eye to hide any home section"
-                                onDone={hideHintDone}
-                                autoDismissMs={7000}
-                                style={{ marginTop: 8 }}
-                            />
-                        )}
-                        {!tour.active && workspacesHintReady && dashboardConfig.recent_workspaces && (
-                            <HintBubble
-                                text="Workspaces keep parts of your life separate — tap + to add one"
-                                onDone={workspacesHintDone}
-                                autoDismissMs={7000}
-                                style={{ marginTop: 8 }}
-                            />
-                        )}
-                    </View>
-                    {dashboardConfig.recent_workspaces && (
-                        <View>
-                            {workspaces
-                                .filter((workspace: any) => !workspace.isBlueprint)
-                                .map((workspace: any) => (
-                                    <View key={workspace.name}>
-                                        {/* Section-spanning accent rail at 40% — covers the row and its task cards */}
-                                        <View
-                                            style={{
-                                                position: "absolute",
-                                                left: 20,
-                                                top: 0,
-                                                bottom: 0,
-                                                width: 3,
-                                                borderRadius: 3,
-                                                backgroundColor: (workspace.color ?? ThemedColor.tertiary) + "66",
-                                            }}
-                                        />
-                                        <WorkspaceDrawerItem
-                                            title={workspace.name}
-                                            selected=""
-                                            taskCount={pendingWorkspaceTaskCount(workspace.categories)}
-                                            workspaceIcon={workspace.icon ?? undefined}
-                                            workspaceColor={workspace.color ?? undefined}
-                                            onPress={() => onWorkspaceSelect(workspace.name)}
-                                            previewExpanded={!!expandedPreviews[workspace.name]}
-                                            onTogglePreview={() => toggleWorkspacePreview(workspace.name)}
-                                        />
-                                        {expandedPreviews[workspace.name] && (
-                                            <WorkspaceTaskPreview
-                                                categories={workspace.categories}
-                                                onShowAll={() => onWorkspaceSelect(workspace.name)}
-                                                ThemedColor={ThemedColor}
-                                            />
-                                        )}
-                                    </View>
-                                ))}
-                            {/* Someday smart view: pinned after real workspaces, no count */}
-                            <WorkspaceDrawerItem
-                                title="Someday"
-                                selected=""
-                                workspaceIcon="Planet"
-                                onPress={() => router.push("/(logged-in)/(tabs)/(task)/someday" as Href)}
-                            />
+                    {!stackListed && (
+                        <View style={{ width: "100%" }}>
+                            <RingRewardClaim />
                         </View>
                     )}
-                    </View>
-                {/* Recently Completed Tasks */}
-                {!tour.active && dashboardConfig.recently_completed && <RecentlyCompletedTasks onToggleVisibility={() => toggleSection("recently_completed")} />}
-                </ScrollView>
-                )}
-                </Animated.View>
-            </MotiView>
 
-            {pendingConnectionId && (
+                    {showCalendarChip && !stackListed && (
+                        <TouchableOpacity
+                            onPress={handleConnectCalendar}
+                            disabled={calendarLoading}
+                            activeOpacity={0.7}
+                            style={[styles.chip, { backgroundColor: ThemedColor.primary + "14", opacity: calendarLoading ? 0.6 : 1 }]}>
+                            <CalendarPlus size={16} color={ThemedColor.primary} />
+                            <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                                {calendar.pendingId ? "Finish calendar setup" : "Connect calendar"}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {!tour.active && showWorkspaces && !stackListed && (
+                    <TouchableOpacity onPress={toWorkspaces} hitSlop={10} activeOpacity={0.6} style={styles.more} accessibilityLabel="Show workspaces">
+                        <ThemedText type="caption">Workspaces</ThemedText>
+                        <CaretDown size={12} color={ThemedColor.caption} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {showWorkspaces && (
+                <View
+                    ref={(node) => tour.registerSection("workspaces", node)}
+                    style={{ paddingTop: 12, minHeight: viewportHeight || undefined, paddingBottom: dockClearance }}>
+                    <View style={styles.sectionHeader}>
+                        <SectionTitle title="Workspaces" />
+                        <TouchableOpacity onPress={onCreateWorkspace} hitSlop={10} accessibilityLabel="Create workspace">
+                            <PlusIcon size={18} weight="light" color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    </View>
+                    {realWorkspaces.map((workspace: any) => (
+                        <View key={workspace.name}>
+                            {/* Accent rail spans the row and its task preview */}
+                            <View
+                                style={[styles.rail, { backgroundColor: (workspace.color ?? ThemedColor.tertiary) + "66" }]}
+                            />
+                            <WorkspaceDrawerItem
+                                title={workspace.name}
+                                selected=""
+                                taskCount={pendingWorkspaceTaskCount(workspace.categories)}
+                                workspaceIcon={workspace.icon ?? undefined}
+                                workspaceColor={workspace.color ?? undefined}
+                                onPress={() => onWorkspaceSelect(workspace.name)}
+                                previewExpanded={!!expandedPreviews[workspace.name]}
+                                onTogglePreview={() => toggleWorkspacePreview(workspace.name)}
+                            />
+                            {expandedPreviews[workspace.name] && (
+                                <WorkspaceTaskPreview
+                                    categories={workspace.categories}
+                                    onShowAll={() => onWorkspaceSelect(workspace.name)}
+                                    ThemedColor={ThemedColor}
+                                />
+                            )}
+                        </View>
+                    ))}
+                </View>
+            )}
+
+            {calendar.pendingId && (
                 <CalendarSetupBottomSheet
                     visible={showCalendarSetup}
                     setVisible={setShowCalendarSetup}
-                    connectionId={pendingConnectionId}
-                    onComplete={() => handleCalendarSetupComplete(pendingConnectionId)}
+                    connectionId={calendar.pendingId}
+                    onComplete={() => handleCalendarSetupComplete(calendar.pendingId!)}
                     onCancel={() => {
                         setShowCalendarSetup(false);
-                        setPendingConnectionId(null);
+                        setCalendar((c) => ({ ...c, pendingId: null }));
                     }}
                 />
             )}
         </Reanimated.ScrollView>
     );
+});
+
+const styles = StyleSheet.create({
+    stage: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        justifyContent: "space-between",
+        gap: 12,
+    },
+    center: {
+        flex: 1,
+        alignItems: "center",
+        gap: 20,
+        paddingTop: 32,
+    },
+    more: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "center",
+        gap: 4,
+        paddingVertical: 4,
+    },
+    greeting: {
+        textAlign: "center",
+    },
+    greetingBlock: {
+        alignItems: "center",
+        gap: 6,
+    },
+    chip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 100,
+    },
+    rail: { position: "absolute", left: 20, top: 0, bottom: 0, width: 3, borderRadius: 3 },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: HORIZONTAL_PADDING,
+        marginBottom: 8,
+    },
 });

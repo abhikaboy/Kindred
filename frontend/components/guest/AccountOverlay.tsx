@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BackHandler, Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
+import { BackHandler, Pressable, StyleSheet, TouchableOpacity, View, useColorScheme } from "react-native";
+import { BlurView } from "expo-blur";
 import Reanimated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,8 +26,8 @@ import {
 } from "@/hooks/useAccountOverlay";
 
 // Almost invisible: a short cross-fade with a few points of drift.
-const FADE_IN = { duration: 260, easing: Easing.out(Easing.cubic) };
-const FADE_OUT = { duration: 200, easing: Easing.out(Easing.cubic) };
+const FADE_IN = { duration: 420, easing: Easing.out(Easing.cubic) };
+const FADE_OUT = { duration: 280, easing: Easing.out(Easing.cubic) };
 const DRIFT = 8;
 
 /**
@@ -37,6 +38,7 @@ const DRIFT = 8;
  */
 export function AccountOverlay() {
     const ThemedColor = useThemeColor();
+    const colorScheme = useColorScheme();
     const insets = useSafeAreaInsets();
     const { user, isGuest } = useAuth();
     const { capture } = useAnalytics();
@@ -134,6 +136,7 @@ export function AccountOverlay() {
     if (!mounted) return null;
 
     const bg = ThemedColor.background;
+    const isDark = colorScheme === "dark";
 
     const openSheet = (next: "register" | "login") => {
         setMode(next);
@@ -153,8 +156,9 @@ export function AccountOverlay() {
                     onPress={() => dismiss("scrim")}
                     accessibilityRole="button"
                     accessibilityLabel="Dismiss">
+                    <BlurView intensity={24} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
                     <LinearGradient
-                        colors={[bg + "B3", bg + "73", bg + "73", bg + "F2", bg]}
+                        colors={[bg + "E6", bg + "B3", bg + "B3", bg + "F7", bg]}
                         locations={[0, 0.4, 0.58, 0.76, 1]}
                         style={StyleSheet.absoluteFill}
                     />

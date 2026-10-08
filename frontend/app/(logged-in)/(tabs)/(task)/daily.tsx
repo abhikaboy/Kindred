@@ -24,6 +24,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { TaskListView } from "@/components/daily/TaskListView";
 import { CalendarView, ScheduleTimeRange } from "@/components/daily/CalendarView";
 import { TimeSelectionPeek } from "@/components/daily/TimeSelectionPeek";
+import { scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
 import PlannerHeader, { PlannerView } from "@/components/daily/PlannerHeader";
 import { mondayOf, DropTarget } from "@/components/daily/dayCells";
 import MonthGrid from "@/components/daily/MonthGrid";
@@ -96,6 +97,12 @@ const Daily = ({ embedded }: Props) => {
     const [schedulingType, setSchedulingType] = useState<'deadline' | 'startDate'>('deadline');
     // Live time selection on the timeline. CalendarView owns the ghost block; this mirrors it.
     const [ghostRange, setGhostRange] = useState<ScheduleTimeRange | null>(null);
+    const scheduling = !!ghostRange;
+    useEffect(() => {
+        if (!embedded) return;
+        scheduleSelectionEvents.emit(scheduling);
+        return () => scheduleSelectionEvents.emit(false);
+    }, [embedded, scheduling]);
     const [assigningTaskId, setAssigningTaskId] = useState<string | null>(null);
     const calendarViewRef = useRef<{ clearGhost: () => void }>(null);
 
@@ -342,7 +349,7 @@ const Daily = ({ embedded }: Props) => {
         },
     });
 
-    const bottomClearance = insets.bottom + TAB_BAR_CLEARANCE + (embedded ? PAGER_DOTS_CLEARANCE : 0);
+    const bottomClearance = insets.bottom + TAB_BAR_CLEARANCE + (embedded && !scheduling ? PAGER_DOTS_CLEARANCE : 0);
     // The tray/peek float above the tab bar; scroll content pads past whichever is showing
     const [trayH, setTrayH] = useState(0);
     const contentBottom = bottomClearance + trayH + 16;

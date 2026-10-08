@@ -12,6 +12,8 @@ type Props = {
     totalSteps: number;
     onNext: () => void;
     onSkip: () => void;
+    /** Put the copy card at the top when the highlighted section sits at the bottom */
+    cardAt?: "top" | "bottom";
 };
 
 // The blur band + explainer card that ride over HomeScrollContent during the
@@ -25,6 +27,7 @@ export const HomeTourOverlay: React.FC<Props> = ({
     totalSteps,
     onNext,
     onSkip,
+    cardAt = "bottom",
 }) => {
     const ThemedColor = useThemeColor();
     // "light"/"dark" reads as a clean frost; "default" casts muddy gray on light UIs.
@@ -54,7 +57,7 @@ export const HomeTourOverlay: React.FC<Props> = ({
                 />
             ) : null}
 
-            <View style={[styles.card, { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
+            <View style={[styles.card, cardAt === "top" ? styles.cardTop : styles.cardBottom, { backgroundColor: ThemedColor.background, borderColor: ThemedColor.tertiary }]}>
                 <ThemedText type="defaultSemiBold" style={{ marginBottom: 10 }}>
                     {copy}
                 </ThemedText>
@@ -88,11 +91,12 @@ const styles = StyleSheet.create({
         position: "absolute",
         left: 16,
         right: 16,
-        bottom: 44,
         borderRadius: 20,
         borderWidth: 1,
         padding: 18,
     },
+    cardBottom: { bottom: 44 },
+    cardTop: { top: 120 },
     dots: {
         flexDirection: "row",
         gap: 6,

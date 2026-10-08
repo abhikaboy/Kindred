@@ -15,7 +15,7 @@ import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
-import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
+import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
 
 // Import Phosphor icons
 import {
@@ -63,6 +63,11 @@ export default function TabLayout() {
         return homeTourVisibilityEvents.subscribe(setHomeTourActive);
     }, []);
 
+    const [homePageVisible, setHomePageVisible] = useState(false);
+    useEffect(() => homePageVisibilityEvents.subscribe(setHomePageVisible), []);
+    const [scheduling, setScheduling] = useState(false);
+    useEffect(() => scheduleSelectionEvents.subscribe(setScheduling), []);
+
     const prevTabIndex = useRef(currentIndex);
 
     useEffect(() => {
@@ -97,7 +102,10 @@ export default function TabLayout() {
     const shouldHideTabBar = baseHideTabBar || isSwipedToToday || focusMode;
 
     const shouldHideFAB =
-        baseHideTabBar || hideFABScreens.some((screen) => pathname.startsWith(screen));
+        baseHideTabBar ||
+        hideFABScreens.some((screen) => pathname.startsWith(screen)) ||
+        (isOnTaskTab && homePageVisible && pathname === "/") ||
+        (isOnTaskTab && scheduling);
 
     const badges = useMemo(
         () => ({

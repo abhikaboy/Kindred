@@ -17,7 +17,14 @@ const FIELD_TRANSITION = LinearTransition.duration(200).easing(Easing.out(Easing
  * added there stays here for a moment after it closes, so a wrong guess is
  * still visible.
  */
-export default function QuickCapture() {
+export default function QuickCapture({
+    placeholder = "Add a task",
+    variant = "row",
+}: {
+    placeholder?: string;
+    // "pill" floats over the page (home dock): rounded, shadow instead of border
+    variant?: "row" | "pill";
+}) {
     const ThemedColor = useThemeColor();
     const colorScheme = useColorScheme();
     const [open, setOpen] = useState(false);
@@ -49,10 +56,11 @@ export default function QuickCapture() {
                         backgroundColor: isDark ? ThemedColor.lightened : ThemedColor.background,
                         borderColor: ThemedColor.tertiary,
                     },
+                    variant === "pill" && [styles.pill, { backgroundColor: isDark ? ThemedColor.lightened : ThemedColor.background }],
                 ]}>
                 <Plus size={18} color={ThemedColor.primary} weight="bold" />
                 <ThemedText type="default" style={[styles.placeholder, { color: ThemedColor.caption }]}>
-                    Add a task
+                    {placeholder}
                 </ThemedText>
                 <TouchableOpacity
                     onPress={() => {
@@ -97,6 +105,16 @@ const styles = StyleSheet.create({
         paddingLeft: 16,
         paddingRight: 16,
         paddingVertical: 8,
+    },
+    pill: {
+        borderRadius: 100,
+        borderWidth: 0,
+        minHeight: 52,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 6,
     },
     placeholder: {
         flex: 1,

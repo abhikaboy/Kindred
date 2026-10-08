@@ -6,15 +6,18 @@ import { useAuth } from "@/hooks/useAuth";
 // First-touch guided reveal of the home dashboard. Sections mount one at a time
 // (see HomeScrollContent gating); this hook owns step state + auto-scroll.
 
-export type TourKey = "rings" | "workspaces";
+export type TourKey = "rings" | "focus" | "quickadd" | "workspaces";
 
-export const HOME_TOUR_STEPS: { key: TourKey; copy: string }[] = [
+// `fixed` sections don't scroll with the page (the docked quick add); `cardAt` keeps the copy off them.
+export const HOME_TOUR_STEPS: { key: TourKey; copy: string; fixed?: boolean; cardAt?: "top" | "bottom" }[] = [
     { key: "rings", copy: "Close all three rings every day to keep your momentum going." },
-    { key: "workspaces", copy: "Workspaces keep the parts of your life separate." },
+    { key: "focus", copy: "One thing at a time. Swipe for the next card, or tap Start to begin." },
+    { key: "quickadd", copy: "Add anything here, like gym @7am tomorrow.", fixed: true, cardAt: "top" },
+    { key: "workspaces", copy: "Swipe up for your workspaces. They keep the parts of your life separate." },
 ];
 
-// Section keys that map to a real on-screen section (create + swipe are card-only).
-const SECTION_ORDER: TourKey[] = ["rings", "workspaces"];
+// Sections reveal in this order as the tour advances.
+const SECTION_ORDER: TourKey[] = ["rings", "focus", "quickadd", "workspaces"];
 
 // Where the active section's top should land on screen after auto-scroll.
 const TARGET_TOP = Dimensions.get("window").height * 0.34;
@@ -104,7 +107,9 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
                     else next();
                     return;
                 }
-                scrollRef?.current?.scrollTo({ y: Math.max(0, scrollY.current + wy - TARGET_TOP), animated: true });
+                if (!step.fixed) {
+                    scrollRef?.current?.scrollTo({ y: Math.max(0, scrollY.current + wy - TARGET_TOP), animated: true });
+                }
                 setTimeout(() => {
                     if (cancelled) return;
                     node.measureInWindow((_x2, wy2) => {

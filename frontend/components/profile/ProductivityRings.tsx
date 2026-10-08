@@ -279,6 +279,10 @@ interface ProductivityRingsCardProps {
     ringsOverride?: RingState;
     // Onboarding tutorial: stagger each ring's entrance by this many ms (0 = off).
     staggerMs?: number;
+    // Smaller ring set where vertical room is tight (home focus stage)
+    compact?: boolean;
+    // Render the claim button elsewhere (home puts it below the focus stack)
+    hideClaim?: boolean;
 }
 
 const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
@@ -287,15 +291,15 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     variant = "full",
     ringsOverride,
     staggerMs = 0,
+    compact = false,
+    hideClaim = false,
 }) => {
     const showScore = variant !== "rings";
     const showRings = variant !== "score";
     const ThemedColor = useThemeColor();
     const { user } = useAuth();
-    const { rings, score, streak, isLoading, history, canClaimReward, allClosed, claimReward, isClaiming } = useRings();
+    const { rings, score, streak, isLoading, history, allClosed } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
-    const [showUnboxing, setShowUnboxing] = useState(false);
-    const [rewardResult, setRewardResult] = useState<RingRewardResponse | null>(null);
 
     // Staggered entrance (tutorial): each ring fades + scales in, one after another
     const entranceValues = useRef([0, 1, 2].map(() => new RNAnimated.Value(staggerMs ? 0 : 1))).current;
@@ -309,22 +313,6 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             )
         ).start();
     }, [staggerMs]);
-
-    const handleClaim = async () => {
-        try {
-            const result = await claimReward();
-            if (result.claimed) {
-                setRewardResult(result);
-                setShowUnboxing(true);
-            } else {
-                showToast("Reward not available yet.", "warning");
-            }
-        } catch (error) {
-            console.error("Claim reward error:", error);
-            showToast("Failed to claim reward. Try again.", "danger");
-        }
-    };
-
 
     // Sync with parent: when blur overlay is dismissed, clear internal state
     React.useEffect(() => {
@@ -389,7 +377,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
             {/* Rings Row */}
             {showRings && (
             <>
-            <View style={styles.stackRow}>
+            <View style={compact ? styles.compactStack : styles.stackRow}>
                 <RNAnimated.View
                     style={{
                         opacity: entranceValues[0],
@@ -398,13 +386,15 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 >
                     <ConcentricRings
                         rings={effectiveRings}
+                        size={compact ? 120 : undefined}
+                        strokeWidth={compact ? 11 : undefined}
                         dimmedExcept={expandedRing}
                         staggerMs={staggerMs}
                         center={!ringsOverride && <ScoreWithInfo score={score} />}
                     />
                 </RNAnimated.View>
 
-                <View style={styles.legend}>
+                <View style={compact ? styles.compactLegend : styles.legend}>
                     {ringEntries.map(({ key, label, progress }, index) => {
                         const ev = entranceValues[index];
                         return (
@@ -416,13 +406,13 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                                     activeOpacity={0.7}
                                 >
                                     <View style={[styles.legendDot, { backgroundColor: RING_COLORS[key] }]} />
-                                    <ThemedText type="default" style={styles.legendLabel}>
+                                    <ThemedText type={compact ? "caption" : "default"} style={compact ? undefined : styles.legendLabel}>
                                         {label}
                                     </ThemedText>
                                     {progress.closed ? (
-                                        <Check size={16} color={RING_COLORS[key]} weight="bold" />
+                                        <Check size={compact ? 12 : 16} color={RING_COLORS[key]} weight="bold" />
                                     ) : (
-                                        <ThemedText style={[styles.ringText, { color: ThemedColor.text }]}>
+                                        <ThemedText style={[styles.ringText, compact && { fontSize: 13 }, { color: ThemedColor.text }]}>
                                             {progress.current}/{progress.target}
                                         </ThemedText>
                                     )}
@@ -442,8 +432,41 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 />
             )}
 
+            {!hideClaim && !expandedRing && <RingRewardClaim />}
+            </>
+            )}
+        </View>
+    );
+};
+
+// Claim button + unboxing for a day with every ring closed; renders nothing otherwise.
+export function RingRewardClaim() {
+    const ThemedColor = useThemeColor();
+    const { user } = useAuth();
+    const { canClaimReward, claimReward, isClaiming } = useRings();
+    const [showUnboxing, setShowUnboxing] = useState(false);
+    const [rewardResult, setRewardResult] = useState<RingRewardResponse | null>(null);
+
+    const handleClaim = async () => {
+        try {
+            const result = await claimReward();
+            if (result.claimed) {
+                setRewardResult(result);
+                setShowUnboxing(true);
+            } else {
+                showToast("Reward not available yet.", "warning");
+            }
+        } catch (error) {
+            console.error("Claim reward error:", error);
+            showToast("Failed to claim reward. Try again.", "danger");
+        }
+    };
+
+
+    return (
+        <>
             {/* Claim reward button */}
-            {canClaimReward && !expandedRing && (
+            {canClaimReward && (
                 <PrimaryButton
                     title={isClaiming ? "Claiming..." : "Claim Reward"}
                     onPress={handleClaim}
@@ -470,11 +493,9 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                         : undefined
                 }
             />
-            </>
-            )}
-        </View>
+        </>
     );
-};
+}
 
 const styles = StyleSheet.create({
     privateRow: {
@@ -507,6 +528,16 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         alignItems: "center",
         justifyContent: "center",
+    },
+    // Home: rings centered with one quiet Plan · Do · Share line under them
+    compactStack: {
+        alignItems: "center",
+        gap: 8,
+    },
+    compactLegend: {
+        flexDirection: "row",
+        justifyContent: "center",
+        gap: 16,
     },
     legend: {
         flex: 1,

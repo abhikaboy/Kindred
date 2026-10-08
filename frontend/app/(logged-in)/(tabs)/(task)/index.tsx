@@ -1,4 +1,4 @@
-import { StyleSheet, View, Animated, InteractionManager } from "react-native";
+import { StyleSheet, View, InteractionManager } from "react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +16,6 @@ import WorkspaceSelectionBottomSheet from "@/components/modals/WorkspaceSelectio
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusMode } from "@/contexts/focusModeContext";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
-import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
@@ -25,7 +24,8 @@ import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
 import { IntroTourOverlay } from "@/components/dashboard/IntroTourOverlay";
 import { useIntroTour } from "@/hooks/useIntroTour";
-import { homeTourVisibilityEvents } from "@/utils/homeTourVisibilityEvents";
+import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
+import HomeQuickAddDock from "@/components/dashboard/HomeQuickAddDock";
 import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { PagerDots, type PagerKind } from "@/components/task/PagerDots";
 import PagerView from "react-native-pager-view";
@@ -46,6 +46,7 @@ const MemoWorkspaceContent = React.memo(WorkspaceContent);
 type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string };
 const HOME_INDEX = 1;
 const FRIENDS_INDEX = 2;
+const WORKSPACE_OFFSET = 3;
 // Besides the active page ±1, keep this many recently active pages mounted so
 // jumping back (drawer → workspace → home) doesn't pay a full remount.
 const EXTRA_RECENT_PAGES = 2;
@@ -60,8 +61,6 @@ const Home = (props: Props) => {
 
     const { fetchWorkspaces, setSelected } = useTaskActions();
     const workspaces = useTasksSelector((s) => s.workspaces);
-    const fetchingWorkspaces = useTasksSelector((s) => s.fetchingWorkspaces);
-    const recentWorkspaceNames = useTasksSelector((s) => s.recentWorkspaces);
     const selectedIsEmpty = useTasksSelector((s) => s.selected === "");
 
     const [creatingWorkspace, setCreatingWorkspace] = useState(false);
@@ -74,19 +73,6 @@ const Home = (props: Props) => {
 
     const insets = useSafeAreaInsets();
     const { setIsDrawerOpen } = useDrawer();
-
-    // Create a display list: recent workspaces first, then other workspaces up to 6 total
-    const displayWorkspaces = React.useMemo(() => {
-        if (!workspaces || workspaces.length === 0) return [];
-
-        const recentWorkspaces = recentWorkspaceNames
-            .map((name) => workspaces.find((ws) => ws.name === name))
-            .filter(Boolean);
-
-        const otherWorkspaces = workspaces.filter((ws) => !recentWorkspaceNames.includes(ws.name));
-        const combined = [...recentWorkspaces, ...otherWorkspaces];
-        return combined.slice(0, 6);
-    }, [workspaces, recentWorkspaceNames]);
 
     // Check if user has completed quick setup
     useEffect(() => {
@@ -150,8 +136,6 @@ const Home = (props: Props) => {
             insets={insets}
             focusMode={focusMode}
             toggleFocusMode={toggleFocusMode}
-            displayWorkspaces={displayWorkspaces}
-            fetchingWorkspaces={fetchingWorkspaces}
             workspaces={workspaces}
             setSelected={setSelected}
             refreshing={refreshing}
@@ -173,8 +157,6 @@ const HomeContent = React.memo(function HomeContent({
     insets,
     focusMode,
     toggleFocusMode,
-    displayWorkspaces,
-    fetchingWorkspaces,
     workspaces,
     setSelected,
     refreshing,
@@ -182,25 +164,13 @@ const HomeContent = React.memo(function HomeContent({
 }: any) {
     const selected = useTasksSelector((s) => s.selected);
     const showConfetti = useTasksSelector((s) => s.showConfetti);
-    const [statsExpanded, setStatsExpanded] = useState(false);
-    const headerDimAnim = useRef(new Animated.Value(1)).current;
     // home pull-to-refresh drives the tab glow: pull lifts the wash, release replays its opening
     const glowPull = useSharedValue(0);
     const glowReplay = useSharedValue(0);
     // First-touch: the drawer (workspace switcher/creator) hides behind the menu icon
     const { ready: drawerHintReady, done: drawerHintDone } = useFirstTouchHint("drawer_workspaces");
 
-    useEffect(() => {
-        Animated.timing(headerDimAnim, {
-            toValue: statsExpanded ? 0.15 : 1,
-            duration: 250,
-            useNativeDriver: true,
-        }).start();
-    }, [statsExpanded]);
-
     const homeScrollRef = useRef<any>(null);
-    const kudosRef = useRef<View>(null);
-    const kudosOffsetRef = useRef<number>(0);
 
     // Guided first-touch home tour. Lives here (not in HomeScrollContent) so the
     // overlay can cover the whole home view — header included — and so the tabs
@@ -239,12 +209,12 @@ const HomeContent = React.memo(function HomeContent({
             if (sel === "Today") return 0;
             if (sel === "") return HOME_INDEX;
             const wi = wsPages.findIndex((w) => w.name === sel);
-            return wi >= 0 ? 3 + wi : HOME_INDEX;
+            return wi >= 0 ? WORKSPACE_OFFSET + wi : HOME_INDEX;
         },
         [wsPages]
     );
     const indexToSelected = React.useCallback(
-        (index: number) => (index === 0 ? "Today" : index <= 2 ? "" : wsPages[index - 3]?.name ?? ""),
+        (index: number) => (index === 0 ? "Today" : index < WORKSPACE_OFFSET ? "" : wsPages[index - WORKSPACE_OFFSET]?.name ?? ""),
         [wsPages]
     );
 
@@ -351,7 +321,13 @@ const HomeContent = React.memo(function HomeContent({
     }, [activeIndex, isGuest, tour.active, introTour.active, onDotPress]);
 
     const isHome = activeIndex === HOME_INDEX;
+    const [scheduling, setScheduling] = useState(false);
+    useEffect(() => scheduleSelectionEvents.subscribe(setScheduling), []);
     const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === FRIENDS_INDEX;
+    useEffect(() => {
+        homePageVisibilityEvents.emit(isHome);
+    }, [isHome]);
+    useEffect(() => () => homePageVisibilityEvents.emit(false), []);
 
     // Drawer content only tracks the selection while it's being shown, so it doesn't
     // re-render on every swipe while closed.
@@ -376,47 +352,38 @@ const HomeContent = React.memo(function HomeContent({
 
     const onSettingsPress = useCallback(() => router.push("/(logged-in)/(tabs)/(profile)/settings"), []);
     const onCreateWorkspace = useCallback(() => setCreatingWorkspace(true), [setCreatingWorkspace]);
-    const onKudosLayout = useCallback((layout: { y: number }) => {
-        kudosOffsetRef.current = layout.y;
-    }, []);
 
     const homePage = useMemo(
         () => (
             <View style={[styles.viewContainer, { paddingTop: insets.top }]}>
-                <Animated.View style={{ marginHorizontal: HORIZONTAL_PADDING, opacity: headerDimAnim }}>
+                <View style={{ marginHorizontal: HORIZONTAL_PADDING }}>
                     <WelcomeHeader
-                        userName={userName}
                         ThemedColor={ThemedColor}
                         onSettingsPress={onSettingsPress}
                         focusMode={focusMode}
                         onToggleFocusMode={toggleFocusMode}
                     />
-                    {isGuest && <GuestLoginLink />}
-                </Animated.View>
+                </View>
                 <HomeScrollContent
+                    userName={userName}
                     workspaces={workspaces}
-                    displayWorkspaces={displayWorkspaces}
-                    fetchingWorkspaces={fetchingWorkspaces}
                     onWorkspaceSelect={setSelected}
                     onCreateWorkspace={onCreateWorkspace}
-                    drawerRef={drawerRef}
                     ThemedColor={ThemedColor}
                     refreshing={refreshing}
                     onRefresh={onRefresh}
                     scrollRef={homeScrollRef}
                     tour={tour}
-                    kudosRef={kudosRef}
-                    kudosOffsetRef={kudosOffsetRef}
-                    onKudosLayout={onKudosLayout}
-                    onStatsExpandChange={setStatsExpanded}
                     glowPull={glowPull}
                     glowReplay={glowReplay}
                 />
+                {tour.visibleUpTo("quickadd") && (
+                    <HomeQuickAddDock sectionRef={(node) => tour.registerSection("quickadd", node)} />
+                )}
             </View>
         ),
         [
             insets.top,
-            headerDimAnim,
             userName,
             isGuest,
             ThemedColor,
@@ -424,15 +391,11 @@ const HomeContent = React.memo(function HomeContent({
             focusMode,
             toggleFocusMode,
             workspaces,
-            displayWorkspaces,
-            fetchingWorkspaces,
             setSelected,
             onCreateWorkspace,
-            drawerRef,
             refreshing,
             onRefresh,
             tour,
-            onKudosLayout,
         ]
     );
 
@@ -494,7 +457,8 @@ const HomeContent = React.memo(function HomeContent({
                         })}
                     </PagerView>
 
-                    <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} />
+                    {/* Home docks its own quick add; the stage switcher + workspace list navigate instead */}
+                    {!isHome && !(scheduling && activeIndex === 0) && <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} />}
 
                     {/* Guided tour overlay — covers the whole home view (header included) */}
                     {isHome && (
@@ -506,6 +470,7 @@ const HomeContent = React.memo(function HomeContent({
                             totalSteps={tour.totalSteps}
                             onNext={tour.next}
                             onSkip={tour.skip}
+                            cardAt={tour.step?.cardAt}
                         />
                     )}
 
