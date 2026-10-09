@@ -44,6 +44,7 @@ import {
     createTaskAPI,
     createTaskAutoAPI,
     getTaskPredictionsAPI,
+    splitTaskAPI,
     suggestTaskFieldsAPI,
     type TaskFieldSuggestion,
 } from "@/api/task";
@@ -70,6 +71,12 @@ export type Receipt = { content: string; details: string };
 // A task typed and staged with Enter but not created yet. Priority fills in
 // once its own suggest call returns, so it never borrows the previous line's.
 type Draft = { id: number; content: string; fuzzy: TaskFieldSuggestion | null };
+
+// Only lines with a joiner can hold several tasks, so plain lines skip the AI call
+const MAY_HOLD_SEVERAL = /\b(and|then|also|plus|after)\b|[,;&+]/i;
+
+const splitIntoParts = (content: string): Promise<string[]> =>
+    MAY_HOLD_SEVERAL.test(content) ? splitTaskAPI(content).catch(() => [content]) : Promise.resolve([content]);
 
 const draftSchedule = (d: Draft) => {
     const now = new Date();
@@ -325,9 +332,26 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         setDrafts(all);
         setSubmitting(true);
 
+        // A line can hold several tasks ("email the landlord and pay rent"): split first, one task per piece
+        const units: Draft[] = (
+            await Promise.all(
+                all.map(async (d) => {
+                    const parts = await splitIntoParts(d.content);
+                    if (parts.length === 1) return [{ ...d, content: parts[0] }];
+                    return Promise.all(
+                        parts.map(async (content) => ({
+                            id: nextId.current++,
+                            content,
+                            fuzzy: await suggestTaskFieldsAPI(content).catch(() => null),
+                        }))
+                    );
+                })
+            )
+        ).flat();
+
         const now = new Date();
         const results = await Promise.allSettled(
-            all.map(async (d) => {
+            units.map(async (d) => {
                 const body = buildQuickCaptureTask(
                     d.content,
                     parseSchedule(d.content, now),
@@ -354,8 +378,8 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         queryClient.invalidateQueries({ queryKey: TASK_PREDICTIONS_KEY });
         setSubmitting(false);
 
-        const created = all.filter((_, i) => results[i].status === "fulfilled");
-        const failed = all.filter((_, i) => results[i].status === "rejected");
+        const created = units.filter((_, i) => results[i].status === "fulfilled");
+        const failed = units.filter((_, i) => results[i].status === "rejected");
         if (created.length > 0) {
             // Each created task counts toward the guest limit
             created.forEach(() => void promptAccountAfterTask(user));

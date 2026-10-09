@@ -89,7 +89,8 @@ export default function Feed() {
     useGuestAccountWall("feed");
     const router = useRouter();
     // Deep links (e.g. kudos reaction pushes) open straight onto the notifications page.
-    const { page } = useLocalSearchParams<{ page?: string }>();
+    // `at` is a fresh stamp per tap, so tapping the bell again after swiping back still re-opens it
+    const { page, at } = useLocalSearchParams<{ page?: string; at?: string }>();
     const openOnNotifications = page === "notifications";
 
     // Feed ↔ Notifications live as the two pages of a horizontal pager so the other
@@ -98,10 +99,18 @@ export default function Feed() {
     const [activePage, setActivePage] = useState(openOnNotifications ? 1 : 0);
     // Lazily mount the notifications page on the first swipe toward it.
     const [notificationsMounted, setNotificationsMounted] = useState(openOnNotifications);
+
     // react-native-pager-view doesn't reliably honor `initialPage` on first layout
     // here (it can come up on page 1) — same reason DatePager sets the page
     // imperatively. Pin page 0 exactly once, after the pager has laid out.
     const didInitPage = useRef(false);
+
+    // The feed stays mounted behind its tab, so a later deep link only changes params; move the pager too
+    useEffect(() => {
+        if (!openOnNotifications || !didInitPage.current) return;
+        setNotificationsMounted(true);
+        pagerRef.current?.setPage(1);
+    }, [openOnNotifications, at]);
 
     const insets = useSafeAreaInsets();
     const colorScheme = useColorScheme();

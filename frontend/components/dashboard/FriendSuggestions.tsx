@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { StyleSheet, TouchableOpacity, View, useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
-import { CheckIcon, ConfettiIcon, HandWavingIcon, MagnifyingGlassIcon, PencilSimpleIcon } from "phosphor-react-native";
+import { AddressBook, CheckIcon, ConfettiIcon, HandWavingIcon, MagnifyingGlassIcon, PencilSimpleIcon, UserPlus } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PreviewIcon from "@/components/profile/PreviewIcon";
@@ -75,7 +75,15 @@ function buildSuggestions(rows: Row[], primary: string): Suggestion[] {
 }
 
 // Fanned stack of who to send kudos to right now; the full friends list scrolls below it.
-export default function FriendSuggestions({ rows }: { rows: Row[] }) {
+type FriendSuggestionsProps = {
+    rows: Row[];
+    onSyncContacts: () => void;
+    isSyncing: boolean;
+    hasSynced: boolean;
+    onInvite: () => void;
+};
+
+export default function FriendSuggestions({ rows, onSyncContacts, isSyncing, hasSynced, onInvite }: FriendSuggestionsProps) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
     const stackRef = useRef<SwipeCardStackHandle>(null);
@@ -103,17 +111,39 @@ export default function FriendSuggestions({ rows }: { rows: Row[] }) {
                     )
                 }
             />
-            {n > 1 && (
+            <View style={styles.footer}>
                 <TouchableOpacity
-                    onPress={() => stackRef.current?.next()}
-                    hitSlop={8}
-                    style={styles.counter}
-                    accessibilityLabel="Next suggestion">
-                    <ThemedText type="caption" style={{ fontVariant: ["tabular-nums"] }}>
-                        {current + 1} of {n}
+                    onPress={onSyncContacts}
+                    disabled={isSyncing}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Sync contacts"
+                    style={[styles.chip, { backgroundColor: hasSynced ? "transparent" : ThemedColor.primary + "26" }]}>
+                    <AddressBook size={16} color={ThemedColor.primary} />
+                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                        Sync contacts
                     </ThemedText>
                 </TouchableOpacity>
-            )}
+                {n > 1 ? (
+                    <TouchableOpacity
+                        onPress={() => stackRef.current?.next()}
+                        hitSlop={8}
+                        accessibilityLabel="Next suggestion">
+                        <ThemedText type="caption" style={{ fontVariant: ["tabular-nums"] }}>
+                            {current + 1} of {n}
+                        </ThemedText>
+                    </TouchableOpacity>
+                ) : null}
+                <TouchableOpacity
+                    onPress={onInvite}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Invite friends"
+                    style={[styles.chip, { backgroundColor: ThemedColor.primary + "26" }]}>
+                    <UserPlus size={16} color={ThemedColor.primary} />
+                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                        Invite friends
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -230,7 +260,15 @@ function FindFriendsCard({ friendCount }: { friendCount: number }) {
 
 const styles = StyleSheet.create({
     wrap: { gap: 12, paddingTop: 8, paddingBottom: 16 },
-    counter: { alignSelf: "center", paddingVertical: 4 },
+    footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    chip: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
+    },
     inner: { flex: 1, padding: 20, justifyContent: "space-between" },
     headerRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     actions: { flexDirection: "row", gap: 8 },

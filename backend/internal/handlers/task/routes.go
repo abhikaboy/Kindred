@@ -35,6 +35,7 @@ func RegisterTaskOperations(api huma.API, handler *Handler) {
 	// matches in registration order, so /{category} would otherwise shadow /log.
 	RegisterLogTasksOperation(api, handler)
 	RegisterSuggestTaskFieldsOperation(api, handler)
+	RegisterSplitTasksOperation(api, handler)
 	RegisterGetTaskPredictionsOperation(api, handler)
 	RegisterEnrichOperations(api, handler)
 	RegisterGraceOperations(api, handler)

@@ -3884,6 +3884,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/user/tasks/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Split a quick-capture line into tasks
+         * @description Break one line with several separate tasks into one entry each, copying shared times into each. A single task comes back as one entry. Additive: returns the original line when AI is unavailable, and consumes no credits.
+         */
+        post: operations["split-tasks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/user/tasks/suggest": {
         parameters: {
             query?: never;
@@ -8653,6 +8673,34 @@ export interface components {
             id: number;
             previewUrl: string;
             title: string;
+        };
+        SplitTasksInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SplitTasksInputBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * @description One line the user typed in quick capture
+             * @example email the landlord and pay rent by friday
+             */
+            text: string;
+            /**
+             * @description User's timezone (IANA format). Defaults to America/New_York if not provided
+             * @example America/New_York
+             */
+            timezone?: string;
+        };
+        SplitTasksOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SplitTasksOutputBody.json
+             */
+            readonly $schema?: string;
+            /** @description Separate tasks in the order written. A single task comes back as one entry. */
+            tasks: string[];
         };
         StartWorkingOutputBody: {
             /**
@@ -17911,6 +17959,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetSomedayTasksOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    "split-tasks": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitTasksInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitTasksOutputBody"];
                 };
             };
             /** @description Error */

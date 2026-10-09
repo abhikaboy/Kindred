@@ -1,5 +1,5 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View, useWindowDimensions, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, View, useWindowDimensions, type ViewStyle } from "react-native";
 import Reanimated, {
     Easing,
     cancelAnimation,
@@ -144,10 +144,10 @@ function SwipeCardStackInner<T>(
         if (n < 2 || listed) return;
         let interval: ReturnType<typeof setInterval> | null = null;
         const nudge = () => {
+            // One direction only: the tilt says "swipe this way", not "wobble"
             hint.value = withSequence(
                 withTiming(NUDGE_DEGREES, { duration: 150, easing: EASE }),
-                withTiming(-NUDGE_DEGREES, { duration: 260, easing: EASE }),
-                withTiming(0, { duration: 150, easing: EASE })
+                withTiming(0, { duration: 260, easing: EASE })
             );
         };
         const timeout = setTimeout(() => {
@@ -194,6 +194,16 @@ function SwipeCardStackInner<T>(
     );
 
     const listScrollRef = useRef<Reanimated.ScrollView>(null);
+    const collapse = useCallback(() => {
+        const done = () => {
+            setListed(false);
+            onListedChange?.(false);
+        };
+        spillValue.value = withTiming(0, { duration: SPILL_DURATION - 80, easing: EASE }, (finished) => {
+            if (finished) runOnJS(done)();
+        });
+    }, [spillValue, onListedChange]);
+
     useImperativeHandle(
         ref,
         () => ({
@@ -227,17 +237,9 @@ function SwipeCardStackInner<T>(
                 onListedChange?.(true);
                 spillValue.value = withTiming(1, { duration: SPILL_DURATION, easing: EASE });
             },
-            collapse: () => {
-                const done = () => {
-                    setListed(false);
-                    onListedChange?.(false);
-                };
-                spillValue.value = withTiming(0, { duration: SPILL_DURATION - 80, easing: EASE }, (finished) => {
-                    if (finished) runOnJS(done)();
-                });
-            },
+            collapse,
         }),
-        [n, listed, pos, fly, hint, flyTo, scrollY, spillValue, onListedChange]
+        [n, listed, pos, fly, hint, flyTo, scrollY, spillValue, collapse]
     );
 
     const onListScroll = useAnimatedScrollHandler((e) => {
@@ -258,27 +260,33 @@ function SwipeCardStackInner<T>(
                     showsVerticalScrollIndicator={false}
                     style={StyleSheet.absoluteFill}
                     contentContainerStyle={{ paddingBottom: listBottomPadding }}>
-                    <View style={{ height: contentHeight }}>
-                        {ordered.map((item, i) => (
-                            <SpilledCard
-                                key={keyOf(item)}
-                                i={i}
-                                count={n}
-                                variant={variant}
-                                cardHeight={cardHeight}
-                                stackHeight={stackHeight}
-                                layerCount={layerCount}
-                                seq={index + i}
-                                spill={spillValue}
-                                scrollY={scrollY}
-                                frontColor={frontColor}
-                                backColor={backColor}
-                                style={cardStyle}>
-                                {renderCard(item, true)}
-                            </SpilledCard>
-                        ))}
-                    </View>
-                    {listFooter && <SpillFade spill={spillValue}>{listFooter}</SpillFade>}
+                    {/* Empty space around the cards taps back to the stack; cards and footer keep their own taps */}
+                    <Pressable
+                        onPress={collapse}
+                        accessibilityLabel="Collapse list"
+                        style={{ minHeight: Math.max(listHeight, stackHeight) }}>
+                        <View style={{ height: contentHeight }}>
+                            {ordered.map((item, i) => (
+                                <SpilledCard
+                                    key={keyOf(item)}
+                                    i={i}
+                                    count={n}
+                                    variant={variant}
+                                    cardHeight={cardHeight}
+                                    stackHeight={stackHeight}
+                                    layerCount={layerCount}
+                                    seq={index + i}
+                                    spill={spillValue}
+                                    scrollY={scrollY}
+                                    frontColor={frontColor}
+                                    backColor={backColor}
+                                    style={cardStyle}>
+                                    {renderCard(item, true)}
+                                </SpilledCard>
+                            ))}
+                        </View>
+                        {listFooter && <SpillFade spill={spillValue}>{listFooter}</SpillFade>}
+                    </Pressable>
                 </Reanimated.ScrollView>
             </View>
         );

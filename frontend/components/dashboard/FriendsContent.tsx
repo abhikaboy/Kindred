@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SectionList, RefreshControl, StyleSheet, TouchableOpacity, View } from "react-native";
+import { RefreshControl, SectionList, Share, StyleSheet, TouchableOpacity, View } from "react-native";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { CheckIcon, ConfettiIcon, HandshakeIcon, HandWavingIcon, PencilSimpleIcon, UsersThreeIcon } from "phosphor-react-native";
@@ -7,12 +7,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFriendsActivityAPI, getFriendsAPI } from "@/api/connection";
+import { searchProfiles } from "@/api/profile";
+import { SearchBox } from "@/components/SearchBox";
+import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
+import FollowButton from "@/components/inputs/FollowButton";
+import { convertToProfile } from "@/components/search/SearchResults";
+import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
+import CustomAlert from "@/components/modals/CustomAlert";
+import ContactConsentModal from "@/components/modals/ContactConsentModal";
+import { useContactSync } from "@/hooks/useContactSync";
+import { useReferral } from "@/hooks/useReferral";
+import { APP_STORE_URL } from "@/constants/appLinks";
 import PreviewIcon from "@/components/profile/PreviewIcon";
 import { ConcentricRings } from "@/components/profile/ProductivityRings";
 import EncourageModal from "@/components/modals/EncourageModal";
 import CongratulateModal from "@/components/modals/CongratulateModal";
 import DefaultModal from "@/components/modals/DefaultModal";
-import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { UserRowSkeleton } from "@/components/ui/SkeletonLoader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import FriendSuggestions from "@/components/dashboard/FriendSuggestions";
@@ -246,6 +256,31 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
         queryFn: getFriendsAPI as () => Promise<Friend[]>,
     });
 
+    const contactSync = useContactSync();
+    const { referralCode } = useReferral();
+    const [query, setQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+    const searching = query.trim().length > 0;
+    const { data: people = [], isFetching: isSearchingPeople } = useQuery({
+        queryKey: ["people-search", debouncedQuery],
+        queryFn: () => searchProfiles(debouncedQuery),
+        enabled: debouncedQuery.length >= 2,
+        meta: { persist: false },
+    });
+
+    const invite = useCallback(async () => {
+        const message = referralCode
+            ? `Join me on Kindred! Use my referral code "${referralCode}" when you sign up: ${APP_STORE_URL}`
+            : `Join me on Kindred! Download the app and let's grow together: ${APP_STORE_URL}`;
+        try {
+            await Share.share({ message });
+        } catch (_) {}
+    }, [referralCode]);
+
     const friendIds = useMemo(() => (friends ?? []).map((f) => f._id).sort(), [friends]);
     // One batched request instead of one per friend. Not persisted: rewriting it to disk
     // on every change serialized the whole cache on the JS thread and froze the page.
@@ -306,54 +341,120 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
         );
     }
 
+    const searchLabel =
+        people.length > 0
+            ? "People"
+            : debouncedQuery.length < 2
+              ? "Keep typing to find people"
+              : isSearchingPeople
+                ? "Searching..."
+                : `No one matches "${query.trim()}"`;
+
     return (
-        <SectionList
-            sections={sections}
-            renderItem={({ item }) => <FriendCard friend={item.friend} profile={item.profile} />}
-            renderSectionHeader={({ section }) =>
-                section.title ? (
-                    <ThemedText type="caption" style={styles.sectionTitle}>
-                        {section.title}
-                    </ThemedText>
-                ) : null
-            }
-            keyExtractor={(item) => item.friend._id}
-            stickySectionHeadersEnabled={false}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            ListHeaderComponent={
-                <>
-                    <FriendsHeader />
-                    <FriendSuggestions rows={rows} />
-                </>
-            }
-            refreshControl={
-                <RefreshControl
-                    refreshing={isRefetching}
-                    onRefresh={onRefresh}
-                    colors={[ThemedColor.primary]}
-                    tintColor={ThemedColor.primary}
-                />
-            }
-            ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                    <View style={[styles.emptyIconRow, { backgroundColor: ThemedColor.primary + "10" }]}>
-                        <HandshakeIcon size={32} color={ThemedColor.primary} weight="duotone" />
-                    </View>
-                    <ThemedText type="subtitle">No friends yet</ThemedText>
-                    <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
-                        Add friends to see their rings and cheer them on as they get things done.
-                    </ThemedText>
-                    <View style={{ width: "100%", marginTop: 8 }}>
-                        <PrimaryButton
-                            title="Find friends"
-                            secondary
-                            onPress={() => router.push("/(logged-in)/(tabs)/(search)/search")}
-                        />
-                    </View>
-                </View>
-            }
-        />
+        <>
+            <SectionList
+                sections={searching ? [] : sections}
+                renderItem={({ item }) => <FriendCard friend={item.friend} profile={item.profile} />}
+                renderSectionHeader={({ section }) =>
+                    section.title ? (
+                        <ThemedText type="caption" style={styles.sectionTitle}>
+                            {section.title}
+                        </ThemedText>
+                    ) : null
+                }
+                keyExtractor={(item) => item.friend._id}
+                stickySectionHeadersEnabled={false}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.listContent}
+                ListHeaderComponent={
+                    <>
+                        <FriendsHeader />
+                        <View style={styles.searchRow}>
+                            <SearchBox
+                                value={query}
+                                placeholder="Search for friends"
+                                onChangeText={setQuery}
+                                onSubmit={() => {}}
+                                recent={false}
+                                name="friends-people-search"
+                            />
+                        </View>
+                        {searching ? (
+                            <View>
+                                <ThemedText type="caption" style={styles.sectionTitle}>
+                                    {searchLabel}
+                                </ThemedText>
+                                {people.map((person) => (
+                                    <TouchableOpacity
+                                        key={person.id}
+                                        onPress={() => router.push(`/account/${person.id}`)}
+                                        activeOpacity={0.8}
+                                        style={styles.personRow}>
+                                        <UserInfoRowBase
+                                            name={person.display_name}
+                                            username={person.handle}
+                                            icon={person.profile_picture}
+                                            id={person.id}
+                                            right={
+                                                <View style={styles.followSlot}>
+                                                    <FollowButton profile={convertToProfile(person)} />
+                                                </View>
+                                            }
+                                        />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : (
+                            <>
+                                <FriendSuggestions
+                                    rows={rows}
+                                    onSyncContacts={contactSync.sync}
+                                    isSyncing={contactSync.isSyncing}
+                                    hasSynced={contactSync.hasSynced}
+                                    onInvite={invite}
+                                />
+                                {contactSync.matchedContacts.length > 0 && (
+                                    <ContactsFromPhone contacts={contactSync.matchedContacts} />
+                                )}
+                            </>
+                        )}
+                    </>
+                }
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefetching}
+                        onRefresh={onRefresh}
+                        colors={[ThemedColor.primary]}
+                        tintColor={ThemedColor.primary}
+                    />
+                }
+                ListEmptyComponent={
+                    searching ? null : (
+                        <View style={styles.emptyContainer}>
+                            <View style={[styles.emptyIconRow, { backgroundColor: ThemedColor.primary + "10" }]}>
+                                <HandshakeIcon size={32} color={ThemedColor.primary} weight="duotone" />
+                            </View>
+                            <ThemedText type="subtitle">No friends yet</ThemedText>
+                            <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
+                                Sync your contacts to find people already on Kindred, or invite someone you know.
+                            </ThemedText>
+                        </View>
+                    )
+                }
+            />
+            <CustomAlert
+                visible={contactSync.alert.visible}
+                setVisible={contactSync.setAlertVisible}
+                title={contactSync.alert.title}
+                message={contactSync.alert.message}
+                buttons={contactSync.alert.buttons}
+            />
+            <ContactConsentModal
+                visible={contactSync.consentVisible}
+                onAccept={contactSync.acceptConsent}
+                onDecline={contactSync.declineConsent}
+            />
+        </>
     );
 }
 
@@ -425,6 +526,17 @@ const styles = StyleSheet.create({
     sectionTitle: {
         marginTop: 8,
         letterSpacing: 0.5,
+    },
+    searchRow: {
+        paddingBottom: 16,
+    },
+    personRow: {
+        width: "100%",
+        paddingVertical: 8,
+    },
+    // Fixed trailing column so the Follow button can't push the name off the row
+    followSlot: {
+        width: 120,
     },
     emptyContainer: {
         paddingVertical: 40,

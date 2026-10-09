@@ -21,5 +21,6 @@ type GeminiService struct {
 	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
 	EnrichTasksFlow                  *core.Flow[EnrichTasksFlowInput, EnrichTasksFlowOutput, struct{}]
 	SuggestBreakdownFlow             *core.Flow[SuggestBreakdownFlowInput, SuggestBreakdownFlowOutput, struct{}]
+	SplitTasksFlow                   *core.Flow[SplitTasksFlowInput, SplitTasksFlowOutput, struct{}]
 	Tools                            *ToolSet
 }

@@ -68,6 +68,9 @@ import CustomAlert, { type AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import type { Task } from "@/api/types";
+import { clearTaskSomedayAPI, setTaskSomedayAPI } from "@/api/plan";
+import { isSomedayTask } from "@/hooks/useSomedayTasks";
+import { showToast } from "@/utils/showToast";
 import { persistTaskEdit, persistTemplateEdit, buildBlueprintTask } from "./persistEdit";
 import { formatHandle } from "@/utils/handle";
 import CategoryPicker, { categoryColor } from "./CategoryPicker";
@@ -239,11 +242,11 @@ export default function CreateComposer({
     // Tags only go out with a new task, so edits and blueprints never open "@" either
     const canTag = !tutorial && !edit && !isBlueprint;
 
-    // Someday: an undated new task. Any date or repeat replaces it, since the server rejects the mix
+    // Someday: an undated task, new or existing. Any date or repeat replaces it, since the server rejects the mix
     const [someday, setSomeday] = useState(false);
-    const allowSomeday = !edit && !isBlueprint;
+    const allowSomeday = !isBlueprint;
     useEffect(() => {
-        if (visible) setSomeday(false);
+        if (visible) setSomeday(edit && isSomedayTask(editTask ?? contextTask));
     }, [visible]);
     useEffect(() => {
         if (startDate || deadline || recurring || flexDetails) setSomeday(false);
@@ -471,6 +474,16 @@ export default function CreateComposer({
     const destinationId = category?.id ?? guess?.id ?? AUTO_CATEGORY_ID;
     const taskToEdit = editTask ?? contextTask;
 
+    // Someday is its own endpoint: it strips dates and plan server-side, so it runs after the field save
+    const syncSomeday = (categoryId: string) => {
+        if (someday === !!taskToEdit.somedayAt) return;
+        updateTask(categoryId, taskToEdit.id, { somedayAt: someday ? new Date().toISOString() : null });
+        const call = someday
+            ? setTaskSomedayAPI(categoryId, taskToEdit.id)
+            : clearTaskSomedayAPI(categoryId, taskToEdit.id);
+        call.catch(() => showToast("Couldn't update Someday. Give it another try.", "danger"));
+    };
+
     const saveEdit = () => {
         if (!taskToEdit) return close();
         // Auto Sort isn't offered here, so no pick means the task's own category
@@ -478,7 +491,9 @@ export default function CreateComposer({
         const fields = creationRef.current;
         const persist = () =>
             persistTaskEdit(fields, taskToEdit, targetCategoryId, updateTask).then((ok) => {
-                if (ok) capture(AnalyticsEvents.TASK_UPDATED, { source: "edit_modal" });
+                if (!ok) return;
+                capture(AnalyticsEvents.TASK_UPDATED, { source: "edit_modal" });
+                syncSomeday(targetCategoryId);
             });
         if (!taskToEdit.templateID) {
             persist();

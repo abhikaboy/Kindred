@@ -8008,6 +8008,39 @@ paths:
                         application/problem+json:
                             schema:
                                 $ref: '#/components/schemas/ErrorModel'
+    /v1/user/tasks/split:
+        post:
+            tags:
+                - tasks
+                - ai
+            summary: Split a quick-capture line into tasks
+            description: 'Break one line with several separate tasks into one entry each, copying shared times into each. A single task comes back as one entry. Additive: returns the original line when AI is unavailable, and consumes no credits.'
+            operationId: split-tasks
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SplitTasksInputBody'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SplitTasksOutputBody'
+                default:
+                    description: Error
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
     /v1/user/tasks/suggest:
         post:
             tags:
@@ -16476,6 +16509,49 @@ components:
                 - title
                 - artist
                 - previewUrl
+        SplitTasksInputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SplitTasksInputBody.json
+                    readOnly: true
+                text:
+                    type: string
+                    description: One line the user typed in quick capture
+                    examples:
+                        - email the landlord and pay rent by friday
+                    minLength: 1
+                    maxLength: 1000
+                timezone:
+                    type: string
+                    description: User's timezone (IANA format). Defaults to America/New_York if not provided
+                    examples:
+                        - America/New_York
+            required:
+                - text
+        SplitTasksOutputBody:
+            type: object
+            additionalProperties: false
+            properties:
+                $schema:
+                    type: string
+                    description: A URL to the JSON Schema for this object.
+                    format: uri
+                    examples:
+                        - https://example.com/schemas/SplitTasksOutputBody.json
+                    readOnly: true
+                tasks:
+                    type: array
+                    description: Separate tasks in the order written. A single task comes back as one entry.
+                    items:
+                        type: string
+            required:
+                - tasks
         StartWorkingOutputBody:
             type: object
             additionalProperties: false

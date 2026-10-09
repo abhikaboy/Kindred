@@ -402,6 +402,19 @@ type SuggestBreakdownFlowOutput struct {
 	WhenHint string   `json:"whenHint,omitempty" jsonschema_description:"Optional single gentle line about a good moment to try the first step. Omit unless useful."`
 }
 
+// --- Split tasks flow types ---
+
+type SplitTasksFlowInput struct {
+	Text     string `json:"text"`
+	Timezone string `json:"timezone"`
+}
+
+// SplitTasksFlowOutput is one entry per separate task. Text is returned as-is
+// when it's a single task, so the caller can always use the list.
+type SplitTasksFlowOutput struct {
+	Tasks []string `json:"tasks" jsonschema_description:"One entry per separate task, in the order written. A single task is one entry."`
+}
+
 // Input for fetchUnsplashImage tool
 type FetchUnsplashImageInput struct {
 	Query string `json:"query" jsonschema_description:"Search query to find relevant banner images (e.g., 'productivity', 'morning sunrise', 'healthy food', 'workspace')"`

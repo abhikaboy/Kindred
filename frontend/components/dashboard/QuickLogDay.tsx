@@ -1,29 +1,28 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CaretRightIcon, MoonStarsIcon } from "phosphor-react-native";
+import { MoonStarsIcon } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTasksSelector } from "@/contexts/tasksContext";
-import { quickLogDoneKey, todaysOpenTasks } from "@/utils/endOfDay";
+import { isEndOfDayWindow, quickLogDoneKey, todaysOpenTasks } from "@/utils/endOfDay";
 import { hapticLight } from "@/utils/haptics";
-import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import EndOfDayReviewSheet from "@/components/modals/EndOfDayReviewSheet";
 
-const ICON_COLOR = "#FFFFFF";
-
 /**
- * Hidden once today's log succeeded. Starts hidden until storage answers so it
- * never flashes, and re-checks every minute so it returns after midnight.
+ * Shown only in the evening window and until today's log succeeds. Starts hidden
+ * until storage answers so it never flashes; re-checks every minute so it appears
+ * at 8pm and returns after midnight.
  */
-function useQuickLogDone() {
-    const [done, setDone] = useState(true);
+function useQuickLogVisible() {
+    const [visible, setVisible] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
         const check = async () => {
-            const stored = await AsyncStorage.getItem(quickLogDoneKey(new Date())).catch(() => null);
-            if (!cancelled) setDone(stored != null);
+            const now = new Date();
+            const stored = await AsyncStorage.getItem(quickLogDoneKey(now)).catch(() => null);
+            if (!cancelled) setVisible(isEndOfDayWindow(now) && stored == null);
         };
         check();
         const interval = setInterval(check, 60_000);
@@ -34,51 +33,38 @@ function useQuickLogDone() {
     }, []);
 
     const markDone = useCallback(() => {
-        setDone(true);
+        setVisible(false);
         AsyncStorage.setItem(quickLogDoneKey(new Date()), "1").catch(() => {});
     }, []);
 
-    return { done, markDone };
+    return { visible, markDone };
 }
 
-/** Home entry point for the end-of-day review: check off today's tasks and log untracked ones. */
+/** Home chip for the end-of-day review: check off today's tasks and log untracked ones. */
 export default function QuickLogDay() {
     const ThemedColor = useThemeColor();
     const allTasks = useTasksSelector((s) => s.allTasks);
     const [sheetVisible, setSheetVisible] = useState(false);
-    const { done, markDone } = useQuickLogDone();
+    const { visible, markDone } = useQuickLogVisible();
 
     const openTasks = useMemo(() => todaysOpenTasks(allTasks), [allTasks]);
 
-    const subtitle =
-        openTasks.length > 0
-            ? `${openTasks.length} open task${openTasks.length === 1 ? "" : "s"} from today to check off`
-            : "Add anything you got done today";
-
     return (
         <>
-            {!done && (
+            {visible && (
                 <TouchableOpacity
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                     onPress={() => {
                         hapticLight();
                         setSheetVisible(true);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel="Quick log my day"
-                    style={[styles.row, { backgroundColor: ThemedColor.primary }]}>
-                    <View style={styles.iconBadge}>
-                        <MoonStarsIcon size={20} weight="fill" color={ICON_COLOR} />
-                    </View>
-                    <View style={styles.text}>
-                        <ThemedText type="defaultSemiBold" style={{ color: ThemedColor.buttonText }}>
-                            Quick log my day
-                        </ThemedText>
-                        <ThemedText type="caption" style={{ color: ThemedColor.buttonText, opacity: 0.8 }}>
-                            {subtitle}
-                        </ThemedText>
-                    </View>
-                    <CaretRightIcon size={16} weight="bold" color={ICON_COLOR} />
+                    accessibilityLabel="Log my day"
+                    style={[styles.chip, { backgroundColor: ThemedColor.primary + "26" }]}>
+                    <MoonStarsIcon size={16} weight="fill" color={ThemedColor.primary} />
+                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                        Log my day
+                    </ThemedText>
                 </TouchableOpacity>
             )}
             {/* Stays mounted after markDone so the sheet can finish closing */}
@@ -93,25 +79,12 @@ export default function QuickLogDay() {
 }
 
 const styles = StyleSheet.create({
-    row: {
-        marginHorizontal: HORIZONTAL_PADDING,
+    chip: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
-        padding: 12,
-        // Matches PrimaryButton's radius so it reads as the same CTA
-        borderRadius: 12,
-    },
-    iconBadge: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
-    },
-    text: {
-        flex: 1,
-        gap: 2,
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
     },
 });

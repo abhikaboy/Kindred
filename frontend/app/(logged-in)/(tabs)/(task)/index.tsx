@@ -42,6 +42,7 @@ import { hapticSelect } from "@/utils/haptics";
 const MemoWorkspaceContent = React.memo(WorkspaceContent);
 
 type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string } | { key: "someday" };
+const TODAY_INDEX = 0;
 const HOME_INDEX = 1;
 const FRIENDS_INDEX = 2;
 const WORKSPACE_OFFSET = 3;
@@ -322,9 +323,11 @@ const HomeContent = React.memo(function HomeContent({
     const [scheduling, setScheduling] = useState(false);
     useEffect(() => scheduleSelectionEvents.subscribe(setScheduling), []);
     const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === FRIENDS_INDEX;
+    // The FAB stays off the Today, Home and Friends pages
+    const fabHidden = activeIndex === TODAY_INDEX || onHomeOrFriends;
     useEffect(() => {
-        homePageVisibilityEvents.emit(isHome);
-    }, [isHome]);
+        homePageVisibilityEvents.emit(fabHidden);
+    }, [fabHidden]);
     useEffect(() => () => homePageVisibilityEvents.emit(false), []);
 
     const closeWorkspaceSelection = useCallback(() => setShowWorkspaceSelection(false), [setShowWorkspaceSelection]);

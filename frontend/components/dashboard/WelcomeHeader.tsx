@@ -40,7 +40,12 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ ThemedColor, onSet
                 <Moon size={22} color={focusMode ? ThemedColor.primary : ThemedColor.caption} weight={focusMode ? "fill" : "regular"} />
             </TouchableOpacity>
             <TouchableOpacity
-                onPress={() => router.navigate("/(logged-in)/(tabs)/(feed)/feed?page=notifications")}
+                onPress={() =>
+                    router.navigate({
+                        pathname: "/(logged-in)/(tabs)/(feed)/feed",
+                        params: { page: "notifications", at: String(Date.now()) },
+                    })
+                }
                 hitSlop={8}
                 activeOpacity={0.7}
                 accessibilityLabel="Notifications"

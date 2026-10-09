@@ -48,6 +48,7 @@ type FlowSet struct {
 	PredictTasksFlow                 *core.Flow[PredictTasksFlowInput, PredictTasksFlowOutput, struct{}]
 	EnrichTasksFlow                  *core.Flow[EnrichTasksFlowInput, EnrichTasksFlowOutput, struct{}]
 	SuggestBreakdownFlow             *core.Flow[SuggestBreakdownFlowInput, SuggestBreakdownFlowOutput, struct{}]
+	SplitTasksFlow                   *core.Flow[SplitTasksFlowInput, SplitTasksFlowOutput, struct{}]
 }
 
 // InitFlows initializes and registers all Genkit flows
@@ -653,6 +654,23 @@ For each task, propose only the changes you are confident about:
 			return *resp, nil
 		})
 
+	// Quick capture: break one typed line into separate tasks. Never gated on credits.
+	splitTasksFlow := genkit.DefineFlow(g, "splitTasksFlow",
+		func(ctx context.Context, input SplitTasksFlowInput) (SplitTasksFlowOutput, error) {
+			ctx, span := otel.Tracer("kindred").Start(ctx, "gemini.SplitTasks")
+			defer span.End()
+			resp, _, err := genkit.GenerateData[SplitTasksFlowOutput](ctx, g, ai.WithPrompt(BuildSplitTasksPrompt(input)), lowThinking())
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				return SplitTasksFlowOutput{}, err
+			}
+			if resp == nil {
+				return SplitTasksFlowOutput{}, nil
+			}
+			return *resp, nil
+		})
+
 	// Grace planning: tiny first steps for a task the user wants to restart.
 	// Never gated on credits; the handler returns an empty list on failure.
 	suggestBreakdownFlow := genkit.DefineFlow(g, "suggestBreakdownFlow",
@@ -685,5 +703,6 @@ For each task, propose only the changes you are confident about:
 		PredictTasksFlow:                 predictTasksFlow,
 		EnrichTasksFlow:                  enrichTasksFlow,
 		SuggestBreakdownFlow:             suggestBreakdownFlow,
+		SplitTasksFlow:                   splitTasksFlow,
 	}
 }

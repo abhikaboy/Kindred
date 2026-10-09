@@ -3,7 +3,7 @@ import { View, Pressable, TouchableOpacity, StyleSheet, Platform, Image, useColo
 import type { SharedValue } from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, CaretLeft, CaretRight, Check, ClipboardText, Play } from "phosphor-react-native";
+import { ArrowRight, CaretLeft, Check, ClipboardText, Play } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,7 +30,6 @@ const openTask = (task: StageTask) =>
 
 type Props = {
     queue: StageTask[];
-    onWorkspacePress: (name: string) => void;
     /** drives the spill into a list; the home page fades its other content off the same value */
     spill: SharedValue<number>;
     onListedChange: (listed: boolean) => void;
@@ -40,37 +39,22 @@ type Props = {
     accessory?: React.ReactNode;
 };
 
-// Desktop focus stage on mobile: a workspace switcher over a swipeable card stack (kudos lead "All").
-export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListedChange, availableHeight, accessory }: Props) {
+// Focus stage on mobile: a swipeable card stack of everything on your plate (kudos lead).
+export default function HomeFocusStack({ queue, spill, onListedChange, availableHeight, accessory }: Props) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
     const insets = useSafeAreaInsets();
     const { kudos, acknowledge } = useRecentKudos();
-    const [wsIndex, setWsIndex] = useState(-1);
     const [current, setCurrent] = useState(0);
     const [listed, setListed] = useState(false);
     const [stackTop, setStackTop] = useState(0);
     const stackRef = useRef<SwipeCardStackHandle>(null);
 
-    const workspaces = useMemo(() => [...new Set(queue.map((t) => t.workspaceName).filter(Boolean))], [queue]);
-    const items = useMemo<StageItem[]>(() => {
-        const tasks = (wsIndex < 0 ? queue : queue.filter((t) => t.workspaceName === workspaces[wsIndex])).map(
-            (task): StageItem => ({ kind: "task", task })
-        );
-        return wsIndex < 0 ? [...kudos.map((k): StageItem => ({ kind: "kudos", kudos: k })), ...tasks] : tasks;
-    }, [queue, kudos, wsIndex, workspaces]);
+    const items = useMemo<StageItem[]>(
+        () => [...kudos.map((k): StageItem => ({ kind: "kudos", kudos: k })), ...queue.map((task): StageItem => ({ kind: "task", task }))],
+        [queue, kudos]
+    );
     const n = items.length;
-    const wsLabel = wsIndex < 0 ? "All workspaces" : workspaces[wsIndex];
-
-    React.useEffect(() => {
-        if (wsIndex >= workspaces.length) setWsIndex(-1);
-    }, [wsIndex, workspaces.length]);
-
-    const shiftWorkspace = (dir: 1 | -1) => {
-        hapticSelect();
-        const span = workspaces.length + 1;
-        setWsIndex((w) => ((w + 1 + dir + span) % span) - 1);
-    };
 
     const handleListed = (value: boolean) => {
         setListed(value);
@@ -87,32 +71,6 @@ export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListe
 
     return (
         <View style={styles.wrap}>
-            {workspaces.length > 0 && (
-                <View style={styles.switcher}>
-                    <TouchableOpacity
-                        onPress={() => shiftWorkspace(-1)}
-                        hitSlop={10}
-                        accessibilityLabel="Previous workspace">
-                        <CaretLeft size={14} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                    <Pressable
-                        disabled={wsIndex < 0}
-                        onPress={() => onWorkspacePress(wsLabel)}
-                        style={styles.switcherLabel}
-                        accessibilityRole={wsIndex < 0 ? "text" : "link"}>
-                        <ThemedText type="caption" numberOfLines={1}>
-                            {wsLabel}
-                        </ThemedText>
-                    </Pressable>
-                    <TouchableOpacity
-                        onPress={() => shiftWorkspace(1)}
-                        hitSlop={10}
-                        accessibilityLabel="Next workspace">
-                        <CaretRight size={14} color={ThemedColor.caption} />
-                    </TouchableOpacity>
-                </View>
-            )}
-
             {n === 0 ? (
                 <ThemedText type="caption" style={{ textAlign: "center" }}>
                     Nothing on your plate. Add something below.
@@ -126,7 +84,6 @@ export default function HomeFocusStack({ queue, onWorkspacePress, spill, onListe
                         cardHeight={CARD_HEIGHT}
                         frontColor={isDark ? ThemedColor.lightened : ThemedColor.background}
                         backColor={ThemedColor.lightened}
-                        resetKey={wsIndex}
                         onIndexChange={setCurrent}
                         spill={spill}
                         onListedChange={handleListed}
@@ -329,8 +286,6 @@ function KudosBody({ kudos, onAcknowledge }: { kudos: StageKudos; onAcknowledge:
 
 const styles = StyleSheet.create({
     wrap: { width: "100%", alignItems: "center", gap: 12 },
-    switcher: { flexDirection: "row", alignItems: "center", gap: 8 },
-    switcherLabel: { minWidth: 120, alignItems: "center", paddingVertical: 4 },
     footer: { flexDirection: "row", alignItems: "center", alignSelf: "center", gap: 16, paddingVertical: 4 },
     cardInner: { flex: 1, padding: 20, justifyContent: "space-between" },
     titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },

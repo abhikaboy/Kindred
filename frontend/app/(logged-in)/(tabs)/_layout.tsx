@@ -21,7 +21,7 @@ import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEv
 import {
     PencilSimple,
     PencilSimpleLine,
-    MagnifyingGlass,
+    // MagnifyingGlass,
     Newspaper,
     Brain,
 } from "phosphor-react-native";
@@ -80,7 +80,7 @@ export default function TabLayout() {
         }
     }, [currentIndex]);
 
-    // Pending friend requests (red badge on the Search tab)
+    // Pending friend requests: red dot on the Profile tab, where the requests list lives
     const friendRequestCount = useFriendRequestCount();
 
     // Screens where the whole tab bar hides
@@ -110,22 +110,22 @@ export default function TabLayout() {
     const badges = useMemo(
         () => ({
             "(task)": todayTaskCount > 0 ? todayTaskCount : undefined,
-            "(search)": friendRequestCount > 0 ? friendRequestCount : undefined,
+            // "(search)": friendRequestCount > 0 ? friendRequestCount : undefined,
         }),
-        [todayTaskCount, friendRequestCount]
+        [todayTaskCount]
     );
-    const badgeColors = useMemo(() => ({ "(search)": ThemedColor.error }), [ThemedColor.error]);
+    const dots = useMemo(() => ({ "(profile)": friendRequestCount > 0 }), [friendRequestCount]);
     const renderTabBar = useCallback(
         (props: BottomTabBarProps) => (
             <LiquidGlassTabBar
                 {...props}
                 badges={badges}
-                badgeColors={badgeColors}
+                dots={dots}
                 visible={!shouldHideTabBar}
                 switcherTabName="(task)"
             />
         ),
-        [badges, badgeColors, shouldHideTabBar]
+        [badges, dots, shouldHideTabBar]
     );
     const screenOptions = useMemo(
         () => ({
@@ -176,11 +176,14 @@ export default function TabLayout() {
                 <Tabs.Screen
                     name="(search)"
                     options={{
-                        title: "Search",
-                        tabBarIcon: ({ color, focused }) => (
-                            <MagnifyingGlass size={24} color={color} weight={focused ? "bold" : "regular"} />
-                        ),
-                        tabBarAccessibilityLabel: "Search",
+                        // hidden for now: friends search moved to the home Friends page. Keep href: null,
+                        // since expo-router lists any route without it as a tab.
+                        href: null,
+                        // title: "Search",
+                        // tabBarIcon: ({ color, focused }) => (
+                        //     <MagnifyingGlass size={24} color={color} weight={focused ? "bold" : "regular"} />
+                        // ),
+                        // tabBarAccessibilityLabel: "Search",
                     }}
                 />
                 <Tabs.Screen

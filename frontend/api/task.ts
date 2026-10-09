@@ -766,6 +766,23 @@ export const suggestTaskFieldsAPI = async (text: string): Promise<TaskFieldSugge
     return ((data as any)?.body ?? data) as TaskFieldSuggestion;
 };
 
+/**
+ * Break one quick-capture line into separate tasks. Additive: on any failure, or
+ * when AI is unavailable, the line comes back unchanged. Consumes no credits.
+ */
+export const splitTaskAPI = async (text: string): Promise<string[]> => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const { data, error } = await client.POST("/v1/user/tasks/split", {
+        params: withAuthHeaders({}),
+        body: { text, timezone },
+    });
+
+    const tasks = data?.tasks;
+    if (error || !tasks?.length) return [text];
+    return tasks;
+};
+
 export type TaskPrediction = components["schemas"]["TaskPrediction"];
 
 /**

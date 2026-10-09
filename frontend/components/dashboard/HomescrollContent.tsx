@@ -43,6 +43,7 @@ import type { HomeTour } from "@/hooks/useHomeTour";
 import { hapticLight } from "@/utils/haptics";
 import { GuestLoginLink } from "@/components/dashboard/GuestLoginLink";
 import AutoEnrichCard from "@/components/dashboard/AutoEnrichCard";
+import QuickLogDay from "@/components/dashboard/QuickLogDay";
 
 interface HomeScrollContentProps {
     userName?: string;
@@ -312,13 +313,13 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                             style={[{ width: "100%", zIndex: 1 }, liftStyle]}>
                             <HomeFocusStack
                                 queue={queue}
-                                onWorkspacePress={onWorkspaceSelect}
                                 spill={spill}
                                 onListedChange={onStackListedChange}
                                 availableHeight={viewportHeight - dockClearance - LIFTED_TOP}
                                 accessory={
 <View style={styles.chips}>
                             {!tour.active && !isGuest && <AutoEnrichCard />}
+                            {!tour.active && !isGuest && <QuickLogDay />}
                             {showCalendarChip && (
                                 <TouchableOpacity
                                     onPress={handleConnectCalendar}

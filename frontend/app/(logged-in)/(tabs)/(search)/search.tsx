@@ -22,7 +22,7 @@ import {
     searchBlueprintsFromBackend,
     autocompleteBlueprintsFromBackend,
 } from "@/api/blueprint";
-import { searchProfiles, autocompleteProfiles, findUsersByPhoneHashes, getSuggestedUsers } from "@/api/profile";
+import { searchProfiles, autocompleteProfiles, getSuggestedUsers } from "@/api/profile";
 import type { components } from "@/api/generated/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SearchResults } from "@/components/search/SearchResults";
@@ -30,21 +30,18 @@ import { ExplorePage } from "@/components/search/ExplorePage";
 import { useRouter } from "expo-router";
 import { useRecentSearch, RecentSearchItem } from "@/hooks/useRecentSearch";
 import { FollowRequestsSection } from "@/components/profile/FollowRequestsSection";
-import { useContacts } from "@/hooks/useContacts";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMatchedContacts, type MatchedContact } from "@/hooks/useMatchedContacts";
+import { useQuery } from "@tanstack/react-query";
+import { useContactSync } from "@/hooks/useContactSync";
 import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
 import { SuggestedUsers } from "@/components/search/SuggestedUsers";
-import * as Contacts from "expo-contacts";
 import BetterTogetherCard from "@/components/cards/BetterTogetherCard";
 import { LinearGradient } from "expo-linear-gradient";
 import { getGradient } from "@/constants/Colors";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { UsersThree, SquaresFour } from "phosphor-react-native";
 import { AnimatedTabContent } from "@/components/inputs/AnimatedTabs";
-import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
+import CustomAlert from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
-import { useContactConsent } from "@/hooks/useContactConsent";
 import FriendsList from "@/components/search/FriendsList";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
@@ -133,18 +130,8 @@ const Search = (props: Props) => {
     const ThemedColor = useThemeColor();
     const styles = useMemo(() => stylesheet(ThemedColor), [ThemedColor]);
     const { capture } = useAnalytics();
-    const { getContacts, isLoading: isLoadingContacts } = useContacts();
-    const { matchedContacts, addMatchedContacts, isLoading: isLoadingMatchedContacts } = useMatchedContacts();
-    const { hasConsent, grantConsent, denyConsent } = useContactConsent();
-
-    // Alert state
-    const [alertVisible, setAlertVisible] = React.useState(false);
-    const [alertTitle, setAlertTitle] = React.useState("");
-    const [alertMessage, setAlertMessage] = React.useState("");
-    const [alertButtons, setAlertButtons] = React.useState<AlertButton[]>([]);
-
-    // Consent modal state
-    const [consentModalVisible, setConsentModalVisible] = React.useState(false);
+    const contactSync = useContactSync();
+    const { matchedContacts, isLoadingMatchedContacts } = contactSync;
 
     // TanStack Query for fetching suggested users
     const { data: suggestedUsers = [], isLoading: isLoadingSuggestedUsers } = useQuery({
@@ -162,40 +149,6 @@ const Search = (props: Props) => {
     });
     const hasFriends = (friendsForGate ?? []).length > 0;
 
-    // Store contacts map ref to access in mutation callback
-    const contactsMapRef = useRef<{ [phoneNumber: string]: string }>({});
-
-    // TanStack Query mutation for finding users by hashed contact numbers
-    const findUsersMutation = useMutation({
-        mutationFn: findUsersByPhoneHashes,
-        onSuccess: (matchedUsers) => {
-            console.log(`Found ${matchedUsers.length} matching users on Kindred:`, matchedUsers);
-
-            if (matchedUsers.length > 0) {
-                // Map matched users to MatchedContact format with contact names
-                const newMatchedContacts: MatchedContact[] = matchedUsers.map((user) => ({
-                    user,
-                    contactName: contactsMapRef.current[user.phone_hash] || "Unknown",
-                }));
-
-                // Save to AsyncStorage
-                addMatchedContacts(newMatchedContacts);
-
-                setAlertTitle("Friends Found!");
-                setAlertMessage(`Found ${matchedUsers.length} of your contacts on Kindred! Scroll down to see them.`);
-                setAlertButtons([{ text: "OK", style: "default" }]);
-                setAlertVisible(true);
-            } else {
-            }
-        },
-        onError: (error) => {
-            console.error("Error finding users by phone numbers:", error);
-            setAlertTitle("Error");
-            setAlertMessage("Failed to find contacts. Please try again.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        },
-    });
     const skipAutocompleteRef = useRef(false);
 
     const [state, dispatch] = useReducer(searchReducer, {
@@ -481,99 +434,6 @@ const Search = (props: Props) => {
     const colorScheme = useColorScheme();
     const gradientColors = getGradient(colorScheme ?? "light") as [string, string, ...string[]];
 
-    // Handle the actual contact syncing after consent is granted
-    const performContactSync = useCallback(async () => {
-        try {
-            const contactsResponse = await getContacts();
-
-            // Handle alert if present
-            if (contactsResponse.alert) {
-                setAlertTitle(contactsResponse.alert.title);
-                setAlertMessage(contactsResponse.alert.message);
-                setAlertButtons(contactsResponse.alert.buttons || [{ text: "OK", style: "default" }]);
-                setAlertVisible(true);
-                return;
-            }
-
-            // If no numbers returned, permission was likely denied or no contacts exist
-            if (contactsResponse.phoneHashes.length === 0) {
-                // The hook already returns alerts for permission issues which we handled above
-                // Only show this alert if permission was granted but no numbers found
-                const { status } = await Contacts.getPermissionsAsync();
-                if (status === "granted") {
-                    setAlertTitle("No Phone Numbers Found");
-                    setAlertMessage("We couldn't find any phone numbers in your contacts. Make sure your contacts have phone numbers saved.");
-                    setAlertButtons([{ text: "OK", style: "default" }]);
-                    setAlertVisible(true);
-                }
-                return;
-            }
-
-            console.log(`Total phone numbers: ${contactsResponse.phoneHashes.length}`);
-
-            // Store contacts map for use in mutation callback
-            contactsMapRef.current = contactsResponse.contactsMap;
-
-            // Use TanStack Query mutation for efficient single-query database lookup
-            findUsersMutation.mutate(contactsResponse.phoneHashes);
-        } catch (error) {
-            console.error("Error getting contacts:", error);
-            setAlertTitle("Error");
-            setAlertMessage("Failed to access contacts. Please try again.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        }
-    }, [getContacts, findUsersMutation]);
-
-    // Handle consent acceptance
-    const handleConsentAccept = useCallback(async () => {
-        try {
-            await grantConsent();
-            setConsentModalVisible(false);
-            // Proceed with contact sync
-            await performContactSync();
-        } catch (error) {
-            console.error("Error granting consent:", error);
-            setAlertTitle("Error");
-            setAlertMessage("Failed to save your consent. Please try again.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        }
-    }, [grantConsent, performContactSync]);
-
-    // Handle consent decline
-    const handleConsentDecline = useCallback(async () => {
-        try {
-            await denyConsent();
-            setConsentModalVisible(false);
-            setAlertTitle("Contact Sync Declined");
-            setAlertMessage("You can enable contact syncing later from your account settings.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        } catch (error) {
-            console.error("Error denying consent:", error);
-            setConsentModalVisible(false);
-        }
-    }, [denyConsent]);
-
-    // Handle contacts import - check consent first
-    const handleAddContacts = useCallback(async () => {
-        // Check if user has already granted consent
-        if (hasConsent === true) {
-            // User has already consented, proceed directly
-            await performContactSync();
-        } else if (hasConsent === false) {
-            // User previously declined, show message
-            setAlertTitle("Contact Sync Disabled");
-            setAlertMessage("You previously declined contact syncing. You can enable it in your account settings.");
-            setAlertButtons([{ text: "OK", style: "default" }]);
-            setAlertVisible(true);
-        } else {
-            // User hasn't been asked yet, show consent modal
-            setConsentModalVisible(true);
-        }
-    }, [hasConsent, performContactSync]);
-
     // Error state
     if (error) {
         return (
@@ -701,9 +561,9 @@ const Search = (props: Props) => {
                                 </View>
                                 {!hasFriends && (
                                     <BetterTogetherCard
-                                        onSyncContacts={handleAddContacts}
-                                        isLoadingContacts={isLoadingContacts}
-                                        isFindingFriends={findUsersMutation.isPending}
+                                        onSyncContacts={contactSync.sync}
+                                        isLoadingContacts={contactSync.isSyncing}
+                                        isFindingFriends={false}
                                     />
                                 )}
                             </View>
@@ -739,16 +599,16 @@ const Search = (props: Props) => {
                 )}
             </ThemedView>
             <CustomAlert
-                visible={alertVisible}
-                setVisible={setAlertVisible}
-                title={alertTitle}
-                message={alertMessage}
-                buttons={alertButtons}
+                visible={contactSync.alert.visible}
+                setVisible={contactSync.setAlertVisible}
+                title={contactSync.alert.title}
+                message={contactSync.alert.message}
+                buttons={contactSync.alert.buttons}
             />
             <ContactConsentModal
-                visible={consentModalVisible}
-                onAccept={handleConsentAccept}
-                onDecline={handleConsentDecline}
+                visible={contactSync.consentVisible}
+                onAccept={contactSync.acceptConsent}
+                onDecline={contactSync.declineConsent}
             />
         </View>
     );

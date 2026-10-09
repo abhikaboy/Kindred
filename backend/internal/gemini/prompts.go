@@ -138,6 +138,25 @@ var breakdownSizeLimits = map[string]string{
 	"full": "one focused sitting each. Still concrete and clearly finishable.",
 }
 
+// BuildSplitTasksPrompt builds the prompt for splitTasksFlow. Time phrases are
+// copied into every piece they apply to, because the client parses times per task.
+func BuildSplitTasksPrompt(input SplitTasksFlowInput) string {
+	return fmt.Sprintf(`You split what someone typed into separate tasks. Be literal and conservative.
+
+Text: %q
+Current time: %s
+User's timezone: %s
+
+Rules:
+- Split only when the text clearly describes separate things to do, joined by "and", "then", commas, "also" or similar. One action stays one task.
+- Do not split a single action into steps, and do not invent tasks the user did not write.
+- Keep each task's wording close to the original. Each task must read on its own.
+- If a date or time phrase applies to several tasks, copy that phrase into each one. "call mom and dad tomorrow at 5" becomes "call mom tomorrow at 5" and "call dad tomorrow at 5".
+- If a time applies to only one task, keep it on that task only. Never add a time the text does not contain.
+- Keep order as written. Drop filler words like "remember to" or "I need to".
+- Return at most 6 tasks.`, input.Text, time.Now().UTC().Format(time.RFC3339), input.Timezone)
+}
+
 // BuildSuggestBreakdownPrompt builds the prompt for suggestBreakdownFlow. The
 // tone is calm and never refers to when the task was meant to happen.
 func BuildSuggestBreakdownPrompt(input SuggestBreakdownFlowInput) string {

@@ -14,7 +14,7 @@ import { Profile, RelationshipStatus } from "@/api/types";
 type BlueprintDocument = components["schemas"]["BlueprintDocument"];
 type ProfileDocument = components["schemas"]["ProfileDocument"];
 
-const convertToProfile = (profileDoc: ProfileDocument): Profile => {
+export const convertToProfile = (profileDoc: ProfileDocument): Profile => {
     return {
         id: profileDoc.id,
         display_name: profileDoc.display_name,
