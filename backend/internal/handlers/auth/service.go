@@ -308,7 +308,8 @@ func (s *Service) CreateUser(user User) error {
 }
 
 /*
-Setup default workspace with starter tasks for a new user
+Retired: new users no longer get a seeded Kindred Guide. They create it themselves in onboarding v2.
+No call sites remain. Kept only until the function is deleted.
 */
 
 func (s *Service) SetupDefaultWorkspace(ctx context.Context, userID primitive.ObjectID) error {
@@ -408,13 +409,11 @@ func (s *Service) SendWelcomeCongratulation(ctx context.Context, userID primitiv
 			"picture": "https://kindred.nyc3.digitaloceanspaces.com/profiles/67eef59f4931ee7a9fb630e5/ba16e335-bd38-4a0a-b5c0-b6e30f94b3f6.jpg",
 			"id":      beakID,
 		},
-		"receiver":     userID,
-		"message":      "its beak, one of the founders of kindred. welcome :) you just completed your first task!",
-		"timestamp":    time.Now().UTC(),
-		"categoryName": "Starting",
-		"taskName":     "Swipe to mark a task as complete",
-		"read":         false,
-		"type":         "message",
+		"receiver":  userID,
+		"message":   "its beak, one of the founders of kindred. welcome :)",
+		"timestamp": time.Now().UTC(),
+		"read":      false,
+		"type":      "message",
 	}
 
 	_, err := s.congratulations.InsertOne(ctx, doc)

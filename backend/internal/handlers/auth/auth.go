@@ -419,20 +419,11 @@ func (h *Handler) RegisterWithContext(ctx context.Context, input *RegisterInput)
 		)
 	}
 
-	// Setup default workspace with starter tasks for the new user
+	// Send welcome congratulation from beak (Kindred founder)
 	go func() {
-		// Use a background context with timeout for workspace setup
 		setupCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if err := h.service.SetupDefaultWorkspace(setupCtx, id); err != nil {
-			slog.LogAttrs(setupCtx, slog.LevelError, "Failed to setup default workspace for new user",
-				slog.String("userId", id.Hex()),
-				slog.String("error", err.Error()))
-		}
-
-		// Send welcome congratulation from beak (Kindred founder)
-		// Intentionally delayed: runs after workspace setup so the task exists
 		if err := h.service.SendWelcomeCongratulation(setupCtx, id); err != nil {
 			slog.LogAttrs(setupCtx, slog.LevelError, "Failed to send welcome congratulation",
 				slog.String("userId", id.Hex()),

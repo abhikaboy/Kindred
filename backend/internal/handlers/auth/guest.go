@@ -28,8 +28,7 @@ const (
 	guestRateLimitPerIP  = 100
 	guestRateLimitWindow = time.Hour
 
-	guestHandleAttempts   = 5
-	guestWorkspaceTimeout = 10 * time.Second
+	guestHandleAttempts = 5
 )
 
 // GuestLoginRequest is the optional body for POST /v1/auth/guest.
@@ -192,17 +191,6 @@ func (s *Service) CreateGuestUser(ctx context.Context, deviceID string, timezone
 
 	if err := s.users.CreateUser(ctx, &user); err != nil {
 		return nil, fmt.Errorf("failed to create guest user: %w", err)
-	}
-
-	// Detach from the request context so a client disconnect mid-seed does not
-	// leave the guest with a half-built workspace.
-	setupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), guestWorkspaceTimeout)
-	defer cancel()
-	if err := s.SetupDefaultWorkspace(setupCtx, id); err != nil {
-		// Not fatal: the account is usable without the starter tasks.
-		slog.LogAttrs(ctx, slog.LevelError, "Failed to setup default workspace for guest",
-			slog.String("userId", id.Hex()),
-			slog.String("error", err.Error()))
 	}
 
 	return &AuthResult{
