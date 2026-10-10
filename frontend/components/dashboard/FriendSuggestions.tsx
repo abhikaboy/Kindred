@@ -29,7 +29,7 @@ const CARD_HEIGHT = 200;
 // Person cards stack a graphic, an avatar row and a follow button.
 const PERSON_CARD_HEIGHT = 340;
 // The intro card is the main call to action, so it gets the most room.
-const FIND_CARD_HEIGHT = 400;
+const FIND_CARD_HEIGHT = 330;
 
 const MAX_SUGGESTIONS = 6;
 const MAX_QUIET_NUDGES = 2;
@@ -385,8 +385,8 @@ const styles = StyleSheet.create({
     personRow: { flexDirection: "row", alignItems: "center", gap: 14 },
     personNames: { flex: 1, gap: 2 },
     inner: { flex: 1, padding: 20, justifyContent: "space-between" },
-    findColumn: { alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
-    findImage: { width: 190, height: 190, alignSelf: "center", marginTop: -12, marginBottom: -8 },
+    findColumn: { alignItems: "flex-start", justifyContent: "space-between", gap: 4, padding: 16 },
+    findImage: { width: 180, height: 180, alignSelf: "center", marginTop: -16, marginBottom: -14 },
     headerRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     actions: { flexDirection: "row", gap: 8 },
     action: {

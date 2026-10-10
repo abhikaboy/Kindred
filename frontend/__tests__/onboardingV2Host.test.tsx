@@ -35,6 +35,9 @@ jest.mock("@/contexts/tasksContext", () => ({
 jest.mock("@/api/workspace", () => ({
     createWorkspace: jest.fn(),
 }));
+jest.mock("@/api/category", () => ({
+    updateWorkspaceMeta: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock("react-native-safe-area-context", () => ({
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -154,7 +157,7 @@ describe("OnboardingV2Host step 1 create", () => {
         });
         expect(consumed).toBe(true);
         expect(createWorkspace).toHaveBeenCalledWith(ONBOARDING_WORKSPACE);
-        expect(mockTasks.addWorkspace).toHaveBeenCalledWith(ONBOARDING_WORKSPACE, { name: "!-proxy-!" });
+        expect(mockTasks.addWorkspace).toHaveBeenCalledWith(ONBOARDING_WORKSPACE, { name: "!-proxy-!" }, "Flower");
         expect(mockTasks.setSelected).toHaveBeenCalledWith(ONBOARDING_WORKSPACE);
         expect(mockCtx.dispatch).toHaveBeenCalledWith({ type: "OPEN_GUIDE" });
     });

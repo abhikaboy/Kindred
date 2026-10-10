@@ -22,8 +22,28 @@ const dayPart = (d: Date): string => {
 const timePart = (d: Date): string => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 // Muted "add" affordance for an empty slot — present but not emphasized.
-const ScheduleSlotCTA: React.FC<{ label: string; onPress?: () => void }> = ({ label, onPress }) => {
+const ScheduleSlotCTA: React.FC<{ label: string; onPress?: () => void; pill?: boolean }> = ({ label, onPress, pill }) => {
     const ThemedColor = useThemeColor();
+    if (pill) {
+        return (
+            <View style={styles.row}>
+                <View style={styles.iconWrap}>
+                    <Flag size={16} color={ThemedColor.caption} weight="regular" />
+                </View>
+                <TouchableOpacity
+                    onPress={onPress}
+                    disabled={!onPress}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    style={[styles.pill, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                    <Plus size={14} color={ThemedColor.primary} weight="bold" />
+                    <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                        {label}
+                    </ThemedText>
+                </TouchableOpacity>
+            </View>
+        );
+    }
     return (
         <TouchableOpacity onPress={onPress} disabled={!onPress} activeOpacity={0.6} style={styles.row}>
             <View style={styles.iconWrap}>
@@ -40,7 +60,9 @@ type Props = {
     startDate?: string;
     startTime?: string;
     deadline?: string;
+    someday?: boolean;
     onEditDeadline?: () => void;
+    onEditStart?: () => void;
     onAddStart?: () => void;
     onAddDeadline?: () => void;
 };
@@ -49,7 +71,9 @@ export const TaskScheduleRoute: React.FC<Props> = ({
     startDate,
     startTime,
     deadline,
+    someday,
     onEditDeadline,
+    onEditStart,
     onAddStart,
     onAddDeadline,
 }) => {
@@ -66,8 +90,8 @@ export const TaskScheduleRoute: React.FC<Props> = ({
 
     return (
         <View style={{ paddingTop: 4 }}>
-            {hasStart ? (
-                <View style={styles.row}>
+            {hasStart || someday ? (
+                <TouchableOpacity onPress={onEditStart} disabled={!onEditStart} activeOpacity={0.6} accessibilityRole="button" accessibilityLabel="Edit start" style={styles.row}>
                     <View style={styles.iconWrap}>
                         <View style={[styles.dot, { borderColor: ThemedColor.primary }]} />
                     </View>
@@ -75,9 +99,9 @@ export const TaskScheduleRoute: React.FC<Props> = ({
                         <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
                             Starts
                         </ThemedText>
-                        <ThemedText type="defaultSemiBold">{startLabel}</ThemedText>
+                        <ThemedText type="defaultSemiBold">{someday ? "Someday" : startLabel}</ThemedText>
                     </View>
-                </View>
+                </TouchableOpacity>
             ) : (
                 <ScheduleSlotCTA label="Add a start time" onPress={onAddStart} />
             )}
@@ -105,7 +129,7 @@ export const TaskScheduleRoute: React.FC<Props> = ({
                     )}
                 </View>
             ) : (
-                <ScheduleSlotCTA label="Add a deadline" onPress={onAddDeadline} />
+                <ScheduleSlotCTA pill label="Add a deadline" onPress={onAddDeadline} />
             )}
         </View>
     );
@@ -117,5 +141,6 @@ const styles = StyleSheet.create({
     dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
     content: { flex: 1, gap: 1 },
     connector: { marginLeft: 9, height: 14, width: 0, borderLeftWidth: 1.5, borderStyle: "dashed" },
+    pill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 },
     edit: { padding: 8, borderRadius: 8 },
 });

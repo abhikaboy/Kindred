@@ -9,7 +9,8 @@ import CoachSpotlight from "@/components/onboarding/CoachSpotlight";
 import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
 import { useTasks } from "@/contexts/tasksContext";
 import { createWorkspace } from "@/api/workspace";
-import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { updateWorkspaceMeta } from "@/api/category";
+import { ONBOARDING_WORKSPACE, ONBOARDING_WORKSPACE_ICON } from "@/constants/spotlightConfig";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { openAccountOverlay, useAccountOverlay } from "@/hooks/useAccountOverlay";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
@@ -287,7 +288,8 @@ export default function OnboardingV2Host({ active, workspacePage = false }: Prop
         creatingRef.current = true;
         try {
             const category = await createWorkspace(ONBOARDING_WORKSPACE);
-            addWorkspace(ONBOARDING_WORKSPACE, category);
+            addWorkspace(ONBOARDING_WORKSPACE, category, ONBOARDING_WORKSPACE_ICON);
+            updateWorkspaceMeta(ONBOARDING_WORKSPACE, ONBOARDING_WORKSPACE_ICON).catch(() => {});
             setSelected(ONBOARDING_WORKSPACE);
             dispatch({ type: "OPEN_GUIDE" });
         } catch (error) {

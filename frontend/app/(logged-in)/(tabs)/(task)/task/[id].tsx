@@ -30,9 +30,9 @@ import { updateNotesAPI, updateChecklistAPI, getTemplateByIDAPI, removeFromCateg
 import { TaskScheduleRoute } from "@/components/task/TaskScheduleRoute";
 import Checklist from "@/components/task/Checklist";
 import TaskLinks from "@/components/task/TaskLinks";
-import { formatLocalDate, formatLocalTime } from "@/utils/timeUtils";
+import { formatLocalDate, formatLocalTime, combineDateAndTime } from "@/utils/timeUtils";
 import { RecurDetails } from "@/api/types";
-import { Note, LinkSimple, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Users, ChartLineUp } from "phosphor-react-native";
+import { Note, LinkSimple, ListChecks, Calendar, Flag, Repeat, Bell, PencilSimple, Plugs, Trash, Sparkle, UserPlus, Play, Stop, Users, ChartLineUp, ClockCounterClockwise } from "phosphor-react-native";
 import LogProgressBottomSheetModal from "@/components/modals/LogProgressBottomSheetModal";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
 import TagFriendsModal from "@/components/modals/TagFriendsModal";
@@ -44,6 +44,8 @@ import type { components } from "@/api/generated/types";
 import { Screen } from "@/contexts/createModalContext";
 import { useCreateModal } from "@/contexts/createModalContext";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { isSomedayTask } from "@/hooks/useSomedayTasks";
+import StartStage from "@/components/modals/create/composer/StartStage";
 import DeadlineStage from "@/components/modals/create/composer/DeadlineStage";
 // Removed Picker import - no longer using timer tab
 // import { Picker } from "@react-native-picker/picker";
@@ -82,6 +84,7 @@ export default function Task() {
     const [localNotes, setLocalNotes] = useState("");
     // Removed sticky header state - was blocking scroll on long notes
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
+    const [showStartModal, setShowStartModal] = useState(false);
     const [deadlineLiveActivity, setDeadlineLiveActivity] = useState<LiveActivity<DeadlineCountdownProps> | null>(null);
     const [activeTaskLiveActivity, setActiveTaskLiveActivity] = useState<LiveActivity<ActiveTaskActivityProps> | null>(null);
     // Removed timer state - no longer using timer tab
@@ -459,6 +462,21 @@ export default function Task() {
         });
     }, [task?.id, categoryId, openModal, loadTaskData]);
 
+    const handleStartModalPress = useCallback(() => {
+        if (task) setShowStartModal(true);
+    }, [task?.id]);
+
+    const handleStartUpdate = (startDate: Date | null, startTime: Date | null, someday: boolean) => {
+        if (!task || !categoryId || !id) return;
+        const combined = startDate && startTime ? combineDateAndTime(startDate, startTime) : startDate;
+        updateTask(categoryId as string, id as string, {
+            startDate: combined?.toISOString() ?? undefined,
+            startTime: startTime?.toISOString() ?? undefined,
+            // Someday strips dates and reminders server-side
+            ...(someday ? { somedayAt: new Date().toISOString(), deadline: undefined, reminders: undefined } : { somedayAt: null }),
+        });
+    };
+
     const handleDeadlineModalPress = useCallback(() => {
         if (!task || isLoadingTaskData.current || !isMounted.current) return;
 
@@ -638,25 +656,42 @@ export default function Task() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    {task?.active && (
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 6,
-                                alignSelf: "flex-start",
-                                marginTop: 10,
-                                paddingHorizontal: 12,
-                                paddingVertical: 6,
-                                borderRadius: 100,
-                                backgroundColor: ThemedColor.primary + "1A",
-                            }}>
-                            <Play size={14} color={ThemedColor.primary} weight="fill" />
-                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
-                                In Progress
-                            </ThemedText>
-                        </View>
-                    )}
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 10 }}>
+                        {task?.active && (
+                            <View style={[styles.headerPill, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                                <Play size={14} color={ThemedColor.primary} weight="fill" />
+                                <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                    In Progress
+                                </ThemedText>
+                            </View>
+                        )}
+                        {!task?.active && (
+                            <TouchableOpacity
+                                onPress={handleStartWorking}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                style={[styles.headerPill, { backgroundColor: ThemedColor.primary }]}>
+                                {activeTaskLiveActivity ? (
+                                    <Stop size={14} color="#FFFFFF" weight="fill" />
+                                ) : (
+                                    <Play size={14} color="#FFFFFF" weight="fill" />
+                                )}
+                                <ThemedText type="caption" style={{ color: "#FFFFFF" }}>
+                                    {activeTaskLiveActivity ? "Stop Working" : "Start Working"}
+                                </ThemedText>
+                            </TouchableOpacity>
+                        )}
+                        {task?.sessionTrackable !== false && (
+                            <TouchableOpacity
+                                onPress={handleLogProgress}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                style={[styles.headerPill, { backgroundColor: ThemedColor.lightened }]}>
+                                <ClockCounterClockwise size={14} color={ThemedColor.text} weight="regular" />
+                                <ThemedText type="caption">Log Progress</ThemedText>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                     <View style={{ paddingBottom: 16 }} />
                 </View>
                 <KeyboardAvoidingView
@@ -743,9 +778,11 @@ export default function Task() {
                                     <TaskScheduleRoute
                                         startDate={task?.startDate}
                                         startTime={task?.startTime}
+                                        someday={isSomedayTask(task)}
                                         deadline={task?.deadline}
                                         onEditDeadline={handleDeadlineModalPress}
-                                        onAddStart={handleEditPress}
+                                        onEditStart={handleStartModalPress}
+                                        onAddStart={handleStartModalPress}
                                         onAddDeadline={handleDeadlineModalPress}
                                     />
                                 </DataCard>
@@ -872,33 +909,9 @@ export default function Task() {
                                     </DataCard>
                                 </ConditionalView>
                                 <View style={{ gap: 8 }}>
-                                    <View key="start-working" style={{ marginTop: 0 }}>
-                                        <PrimaryButton
-                                            title={activeTaskLiveActivity ? "Stop Working" : "Start Working"}
-                                            secondary={!activeTaskLiveActivity}
-                                            style={{
-                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                            }}
-                                            onPress={handleStartWorking}
-                                            />
-                                    </View>
-                                    {/* Log Progress and Mark as Completed are peers (same secondary weight) —
-                                        logging progress never auto-completes the task. Shown unless the task
-                                        was explicitly opted out via sessionTrackable === false. */}
-                                    <ConditionalView condition={task?.sessionTrackable !== false} key="log-progress">
-                                        <PrimaryButton
-                                            title="Log Progress"
-                                            secondary
-                                            style={{
-                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                            }}
-                                            onPress={handleLogProgress}
-                                            />
-                                    </ConditionalView>
                                     <View key="mark-complete" style={{ marginTop: 0 }}>
                                         <PrimaryButton
                                             title={isCompleting ? "Completing..." : "Mark as Completed"}
-                                            secondary
                                             style={{
                                                 boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
                                             }}
@@ -906,15 +919,6 @@ export default function Task() {
                                             disabled={isCompleting}
                                             />
                                     </View>
-                                    <ConditionalView condition={task?.deadline == null} key="deadline-2">
-                                        <PrimaryButton
-                                            title="Set Deadline"
-                                            style={{
-                                                boxShadow: "0px 0px 10px 0px rgba(0, 0, 0, 0.1)",
-                                            }}
-                                            onPress={handleDeadlineModalPress}
-                                            />
-                                    </ConditionalView>
                                 </View>
                                 <ConditionalView condition={task?.deadline != null} key="track-deadline">
                                     <PrimaryButton
@@ -951,6 +955,17 @@ export default function Task() {
                 />
             )}
 
+            {showStartModal && (
+                <StartStage
+                    visible={showStartModal}
+                    setVisible={setShowStartModal}
+                    task={task}
+                    taskId={id as string}
+                    categoryId={categoryId as string}
+                    onStartUpdate={handleStartUpdate}
+                />
+            )}
+
             {showDeadlineModal && (
                 <DeadlineStage
                     visible={showDeadlineModal}
@@ -975,7 +990,9 @@ export default function Task() {
     );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+    headerPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 },
+});
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     const ThemedColor = useThemeColor();

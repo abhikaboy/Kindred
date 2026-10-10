@@ -14,6 +14,7 @@ jest.mock("@/contexts/tasksContext", () => ({
     useTasks: () => ({ addWorkspace: jest.fn(), doesWorkspaceExist: jest.fn(), setSelected: jest.fn(), workspaces: [] }),
 }));
 jest.mock("@/api/workspace", () => ({ createWorkspace: jest.fn() }));
+jest.mock("@/api/category", () => ({ updateWorkspaceMeta: jest.fn().mockResolvedValue(undefined) }));
 jest.mock("react-native-safe-area-context", () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 
 const setStep = (step: number) => {

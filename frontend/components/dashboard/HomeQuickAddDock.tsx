@@ -3,6 +3,8 @@ import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Defs, Mask, Pattern, RadialGradient, Rect, Stop } from "react-native-svg";
 import QuickCapture from "@/components/dashboard/QuickCapture";
+import { ACTIVE_BAR_SPACE } from "@/components/dashboard/ActiveTaskMiniBar";
+import { useActiveTask } from "@/hooks/useActiveTask";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useFocusMode } from "@/contexts/focusModeContext";
@@ -39,9 +41,10 @@ export default function HomeQuickAddDock({
     const { focusMode } = useFocusMode();
     // The tab bar is also hidden during onboarding v2
     const { step, isLoading } = useOnboardingV2Context();
+    const hasActiveTask = !!useActiveTask();
     const tabBarHidden = focusMode || isOnboardingV2Active(step, isLoading);
     return (
-        <View ref={setDockNode} onLayout={onLayout} testID="home-quick-add" collapsable={false} pointerEvents="box-none" style={[styles.dock, { bottom: insets.bottom + (tabBarHidden ? 8 : TAB_BAR_HEIGHT + 4) }]}>
+        <View ref={setDockNode} onLayout={onLayout} testID="home-quick-add" collapsable={false} pointerEvents="box-none" style={[styles.dock, { bottom: insets.bottom + (tabBarHidden ? 8 : TAB_BAR_HEIGHT + 4) + (hasActiveTask ? ACTIVE_BAR_SPACE : 0) }]}>
             <View pointerEvents="none" style={styles.glow}>
                 <Svg width="100%" height="100%">
                     <Defs>

@@ -12,6 +12,7 @@ import { isOnboardingV2Active } from "@/utils/onboardingV2/active";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { useFriendRequestCount } from "@/hooks/useFriendRequests";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
+import ActiveTaskMiniBar from "@/components/dashboard/ActiveTaskMiniBar";
 import { LiquidGlassTabBar } from "@/components/ui/LiquidGlassTabBar";
 import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -215,6 +216,8 @@ export default function TabLayout() {
                         }}
                     />
                 </Tabs>
+
+                {!baseHideTabBar && !pathname.startsWith("/task/") && <ActiveTaskMiniBar tabBarHidden={shouldHideTabBar} />}
 
                 {/* Floating Action Button */}
                 <FloatingActionButton visible={!shouldHideFAB} />
