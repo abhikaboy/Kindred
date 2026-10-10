@@ -14,3 +14,4 @@ Build, codegen, and git-hook automation. Mostly invoked via the root `Makefile`.
 ## Gotchas
 - `generate-api-types.sh` is the source of truth for the FE↔BE type contract — run it after backend DTO changes.
 - Pre-commit only runs fast (`-short`) tests; it is not a substitute for `make test-backend`.
+- `notioly.py` — extracts Notioly illustrations from `~/Downloads/notioly` into `frontend/assets/images/notioly/<set>/` and regenerates the `index.ts` registry. See `.claude/skills/notioly/SKILL.md`.

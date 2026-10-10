@@ -25,6 +25,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
 import DeadlineStage from "../modals/create/composer/DeadlineStage";
 import ReminderStage from "../modals/create/composer/ReminderStage";
 import type { Reminder } from "@/hooks/useReminder";
@@ -99,6 +100,7 @@ const SwipableTaskCard = ({
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
+    const { step: onboardingStep, dispatch: dispatchOnboarding } = useOnboardingV2Context();
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -158,6 +160,9 @@ const SwipableTaskCard = ({
             capture(AnalyticsEvents.TASK_COMPLETED, {
                 source: "swipe",
             });
+            // Step 3 ends on the first completed task, step 7 on the next. Other steps ignore both.
+            if (onboardingStep === 3) dispatchOnboarding({ type: "TASK_COMPLETED" });
+            if (onboardingStep === 7) dispatchOnboarding({ type: "FINISH" });
 
             // If backend returned the next flex instance, insert it immediately
             if (res.nextFlexTask) {

@@ -2,12 +2,14 @@ import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
+import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
 import { createConnectionAPI, deleteConnectionAPI, acceptConnectionAPI, unblockUser } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import PrimaryButton from "./PrimaryButton";
+import { ThemedText } from "@/components/ThemedText";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 
@@ -18,7 +20,7 @@ type Props = {
 
 export default function FollowButton({ profile, onRelationshipChange }: Props) {
     const [isLoading, setIsLoading] = useState(false);
-    const { user } = useAuth();
+    const { user, isGuest } = useAuth();
     const router = useRouter();
     let ThemedColor = useThemeColor();
     const { capture } = useAnalytics();
@@ -67,6 +69,10 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     const handleFollowPress = async () => {
         if (Platform.OS === "ios") {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        if (isGuest && relationship === "none") {
+            promptAccountForSocial("friends", undefined, { everyVisit: true });
+            return;
         }
         if (!profile.id || !user?._id || isLoading) return;
 
@@ -161,18 +167,18 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
                 minWidth: Dimensions.get("screen").width * 0.3,
                 opacity: isLoading ? 0.6 : 1,
             }}>
-            <Text
+            <ThemedText
+                type="defaultSemiBold"
                 style={{
                     color:
                         relationshipMapping[relationship].color === ThemedColor.lightened || relationshipMapping[relationship].color === ThemedColor.lightenedCard
                             ? ThemedColor.text
                             : ThemedColor.buttonText,
-                    fontFamily: "OutfitLight",
                     fontSize: 16,
                     textAlign: "center",
                 }}>
-                {isLoading ? "Loading..." : relationshipMapping[relationship].text}
-            </Text>
+                {isLoading ? "Loading..." : isGuest && relationship === "none" ? "Create an account to follow" : relationshipMapping[relationship].text}
+            </ThemedText>
         </TouchableOpacity>
     );
 }

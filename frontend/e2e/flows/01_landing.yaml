@@ -1,5 +1,5 @@
-# Smoke test: verify the landing page renders correctly
-appId: com.suntex.kindred
+# Smoke test: a fresh launch lands as a guest on Home with the onboarding v2 coach
+appId: com.kindred.kindredtsl
 tags:
   - smoke
   - landing
@@ -7,8 +7,9 @@ tags:
 - launchApp:
     clearState: true
 
-# The landing screen shows "kindred" branding and auth options
-- assertVisible: "kindred"
-- assertVisible: "human centered productivity"
-- assertVisible: "Join Kindred"
-- assertVisible: "Log in"
+# Guest lands on Home; the first coach line and its Skip action are shown
+- assertVisible: "Swipe up to see your workspaces"
+- assertVisible:
+    id: "onboarding-coach-copy"
+- assertVisible:
+    id: "onboarding-coach-skip"

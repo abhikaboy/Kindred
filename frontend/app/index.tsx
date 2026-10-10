@@ -9,8 +9,7 @@ import { maybeForceFirstLaunch } from '@/utils/resetFirstLaunch';
 
 /**
  * Entry point that determines where to route the user:
- * - Stored session (or user already in context) -> main app, or the tutorial
- *   for a guest who hasn't finished it
+ * - Stored session (or user already in context) -> main app (guests included)
  * - No session, never signed in on this device -> new guest session
  * - No session, signed in before (logged out) -> login
  *
@@ -47,8 +46,7 @@ export default function Index() {
                     setNextRoute(route);
                     return;
                 }
-                // The tutorial sits outside the logged-in layout, so nothing
-                // there loads the user; verify here before sending the guest back.
+                // Outside the logged-in layout nothing loads the user; verify here.
                 const result = await auth.fetchAuthData();
                 if (result.status === 'authenticated') {
                     setNextRoute(result.user.isGuest ? await routeForGuest(result.user._id) : TABS_ROUTE);
@@ -67,13 +65,7 @@ export default function Index() {
                 return;
             }
 
-            // ponytail: intro video temporarily disabled — signed-out returning
-            // users go straight to login. Restore by un-commenting the block below.
-            // const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
-            // if (!hasSeenIntro) {
-            //     setNextRoute('/intro');
-            //     return;
-            // }
+            // Signed-out returning users go straight to login.
             setNextRoute('/login');
         } catch (error) {
             console.error('Error checking initial route:', error);

@@ -11,6 +11,9 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
 import TagChip from "@/components/TagChip";
+import CompleteSwipeNudge from "@/components/onboarding/CompleteSwipeNudge";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 
 interface CategoryProps {
     id: string;
@@ -24,6 +27,8 @@ interface CategoryProps {
     highlightCategoryHeader?: boolean;
     // First task hosts the one-time swipe demo (see SwipableTaskCard.showSwipeHint).
     showSwipeHint?: boolean;
+    // Registers the header "+" as the onboarding coach target for adding a task.
+    coachTaskAdd?: boolean;
 }
 
 const CategoryComponent: React.FC<CategoryProps> = ({
@@ -37,8 +42,10 @@ const CategoryComponent: React.FC<CategoryProps> = ({
     highlightFirstTask = false,
     highlightCategoryHeader = false,
     showSwipeHint,
+    coachTaskAdd = false,
 }) => {
     const setCreateCategory = useSetCreateCategory();
+    const { step: onboardingStep } = useOnboardingV2Context();
     const ThemedColor = useThemeColor();
     const router = useRouter();
 
@@ -48,6 +55,8 @@ const CategoryComponent: React.FC<CategoryProps> = ({
     const drag = useDragActionsOptional();
     const isDragging = useIsDragging();
     const containerRef = useRef<View>(null);
+    const plusRef = useRef<View>(null);
+    const firstTaskRef = useRef<View>(null);
     const isDropTarget = useIsDropTarget(id);
 
     // Fade the drop-target highlight in/out instead of snapping it on/off.
@@ -77,6 +86,16 @@ const CategoryComponent: React.FC<CategoryProps> = ({
     useEffect(() => {
         if (isDragging) measure();
     }, [isDragging, measure]);
+
+    useEffect(() => {
+        if (!coachTaskAdd) return;
+        const offPlus = registerCoachAnchor("taskAdd", containerRef);
+        const offTask = registerCoachAnchor("firstTask", firstTaskRef);
+        return () => {
+            offPlus();
+            offTask();
+        };
+    }, [coachTaskAdd]);
 
     const categoryNameText = (
         <ThemedText type={tasks.length > 0 ? "subtitle" : "disabledTitle"}>{name}</ThemedText>
@@ -139,12 +158,16 @@ const CategoryComponent: React.FC<CategoryProps> = ({
                         </ScrollView>
                     )}
                 </View>
-                {!viewOnly && <Plus size={16} weight="bold" color={ThemedColor.text} />}
+                {!viewOnly && (
+                    <View ref={plusRef} collapsable={false} style={styles.plusTarget}>
+                        <Plus size={16} weight="bold" color={ThemedColor.text} />
+                    </View>
+                )}
             </TouchableOpacity>
             {tasks.map((task, index) => {
                 const isFirstTask = index === 0 && highlightFirstTask;
 
-                return !viewOnly ? (
+                const swipable = (
                     <SwipableTaskCard
                         key={task.id + task.content}
                         redirect={!viewOnly}
@@ -154,6 +177,17 @@ const CategoryComponent: React.FC<CategoryProps> = ({
                         highlightContent={isFirstTask}
                         showSwipeHint={showSwipeHint === undefined ? undefined : showSwipeHint && index === 0}
                     />
+                );
+
+                return !viewOnly ? (
+                    coachTaskAdd && index === 0 ? (
+                        <View key={task.id + task.content} ref={firstTaskRef} collapsable={false}>
+                            {swipable}
+                            {onboardingStep === 3 && <CompleteSwipeNudge />}
+                        </View>
+                    ) : (
+                        swipable
+                    )
                 ) : (
                     <TaskCard
                         key={task.id + task.content}
@@ -191,6 +225,10 @@ const CategoryComponent: React.FC<CategoryProps> = ({
 export const Category = React.memo(CategoryComponent);
 
 const styles = StyleSheet.create({
+    plusTarget: {
+        padding: 8,
+        margin: -8,
+    },
     container: {
         gap: 12,
         marginBottom: 4,

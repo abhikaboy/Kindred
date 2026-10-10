@@ -180,9 +180,10 @@ const Daily = ({ embedded }: Props) => {
 
     // Tasks made from the calendar are auto-sorted into a category; the date/time
     // the user picked still rides along on the task
-    const handleAddTask = useCallback((date: Date = selectedDate) => {
+    // Also wired straight to onPress, which passes a press event rather than a date
+    const handleAddTask = useCallback((date?: unknown) => {
         resetTaskCreation();
-        setStartDate(date);
+        setStartDate(date instanceof Date ? date : selectedDate);
         openModal({ screen: Screen.STANDARD, categoryId: AUTO_CATEGORY_ID });
     }, [selectedDate, resetTaskCreation, setStartDate, openModal]);
 

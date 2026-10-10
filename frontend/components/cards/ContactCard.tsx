@@ -34,32 +34,23 @@ const ContactCard = ({ name, icon, handle, following, id, contactName, width }: 
         <TouchableOpacity
             style={[
                 styles.container,
-                // Keep the card a bit taller than wide (matches the 125x160 carousel ratio).
+                // Keep the card a bit taller than wide (matches the carousel ratio).
                 width != null && { width, height: width * 1.28, marginRight: 0 },
             ]}
             onPress={handlePress}>
 
-            <CachedImage
-                source={{ uri: icon }}
-                style={StyleSheet.absoluteFillObject}
-                contentFit="cover"
-                variant="medium"
-                blurRadius={2}
-            />
+            <CachedImage source={{ uri: icon }} style={StyleSheet.absoluteFillObject} contentFit="cover" variant="medium" />
 
             <LinearGradient
-                colors={["transparent", "rgba(0,0,0,0.5)"]}
+                colors={["transparent", "rgba(0,0,0,0.65)"]}
                 style={StyleSheet.absoluteFillObject}
-                start={{ x: 0.5, y: 0.01 }}
-                end={{ x: 0.5, y: 0.8 }}
+                start={{ x: 0.5, y: 0.35 }}
+                end={{ x: 0.5, y: 1 }}
             />
 
             <View style={styles.contentContainer}>
-                <ThemedText
-                    type="captionLight"
-                    style={styles.handleText}
-                >
-                    {displayHandle}
+                <ThemedText type="captionLight" style={styles.handleText} numberOfLines={1}>
+                    {contactName ? `${contactName} in your contacts` : displayHandle}
                 </ThemedText>
 
                 <View style={styles.nameRow}>
@@ -91,15 +82,18 @@ export default ContactCard;
 const useStyles = (ThemedColor: any) =>
     StyleSheet.create({
         container: {
-            width: 125,
-            height: 160,
-            borderRadius: 12,
+            width: 140,
+            height: 180,
+            borderRadius: 20,
             overflow: "hidden",
             backgroundColor: ThemedColor.tertiary,
             marginRight: 12,
             justifyContent: "flex-end",
-            borderWidth: 1,
-            borderColor: ThemedColor.tertiary,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 12,
+            elevation: 3,
         },
         contentContainer: {
             width: "100%",
@@ -108,7 +102,7 @@ const useStyles = (ThemedColor: any) =>
             overflow: "visible",
         },
         handleText: {
-            color: "#9D9D9D",
+            color: "rgba(255,255,255,0.75)",
             marginBottom: 0,
         },
         nameRow: {

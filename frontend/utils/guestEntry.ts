@@ -1,21 +1,13 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Href } from "expo-router";
-import { guestTutorialDoneKey } from "@/constants/authStorageKeys";
 import { createLogger } from "@/utils/logger";
 
 const logger = createLogger("GuestEntry");
 
 export const TABS_ROUTE: Href = "/(logged-in)/(tabs)/(task)";
-export const GUEST_TUTORIAL_ROUTE: Href = "/(onboarding)/tutorial";
 
-/** Where a guest belongs: the tutorial until they have finished it, then the app. */
-export async function routeForGuest(userId: string): Promise<Href> {
-    try {
-        const done = await AsyncStorage.getItem(guestTutorialDoneKey(userId));
-        return done === "true" ? TABS_ROUTE : GUEST_TUTORIAL_ROUTE;
-    } catch {
-        return GUEST_TUTORIAL_ROUTE;
-    }
+/** Guests land on Home, where onboarding v2 coaches them. */
+export async function routeForGuest(_userId: string): Promise<Href> {
+    return TABS_ROUTE;
 }
 
 /**

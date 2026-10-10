@@ -73,6 +73,8 @@ import { isSomedayTask } from "@/hooks/useSomedayTasks";
 import { showToast } from "@/utils/showToast";
 import { persistTaskEdit, persistTemplateEdit, buildBlueprintTask } from "./persistEdit";
 import { formatHandle } from "@/utils/handle";
+import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
 import CategoryPicker, { categoryColor } from "./CategoryPicker";
 import PropertyChip, { type ChipState } from "./PropertyChip";
 import QuickSet from "./QuickSet";
@@ -154,6 +156,7 @@ export default function CreateComposer({
     const [alert, setAlert] = useState<{ title: string; message: string; buttons: AlertButton[] } | null>(null);
     const { request } = useRequest();
     const submitNewTask = useSubmitNewTask();
+    const { dispatch: dispatchOnboarding } = useOnboardingV2Context();
     const { filter: filterFriends } = useFriendsForMention();
     const {
         taskName,
@@ -439,6 +442,7 @@ export default function CreateComposer({
         try {
             const response = await request("POST", `/user/categories`, { name, workspaceName: homeWorkspace });
             addToWorkspace(homeWorkspace, response);
+            if (homeWorkspace === ONBOARDING_WORKSPACE) dispatchOnboarding({ type: "CATEGORY_CREATED" });
             return { id: response.id, name, workspace: homeWorkspace };
         } catch (error) {
             console.error("Failed to create category:", error);

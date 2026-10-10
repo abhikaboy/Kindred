@@ -1,4 +1,5 @@
 import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, Alert } from "react-native";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
@@ -458,7 +459,8 @@ const Review = (props: Props) => {
 
                 {/* Empty states */}
                 <ConditionalView condition={emptyStack && unnestedTasks.length > 0} style={styles.emptyState}>
-                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>🎉 All Done!</ThemedText>
+                    <EmptyIllustration source={require("@/assets/images/empty/review.png")} />
+                    <ThemedText type="title" style={{ textAlign: "center", marginBottom: 8 }}>All Done!</ThemedText>
                     <ThemedText type="default" style={{ textAlign: "center", color: ThemedColor.caption }}>
                         You've reviewed all {unnestedTasks.length} tasks.
                     </ThemedText>

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import type { IntroStep } from "@/hooks/useIntroTour";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { useFocusButtonRect } from "@/hooks/useFocusButtonRect";
 
 type Props = {
@@ -20,7 +21,7 @@ type Props = {
 const COPY: Record<IntroStep, string> = {
     swipeRight: "Swipe right for your workspaces",
     swipeLeft: "Swipe left for your calendar & list view",
-    focusMode: "Tap the moon for Focus mode: just today's tasks, nothing else",
+    focusMode: "Focus mode is one tap away. The moon shows just today's tasks, whenever you want it.",
 };
 
 export const IntroTourOverlay: React.FC<Props> = ({
@@ -31,6 +32,7 @@ export const IntroTourOverlay: React.FC<Props> = ({
     onFocusModePress,
     onSkip,
 }) => {
+    const ThemedColor = useThemeColor();
     const tint = useColorScheme() === "dark" ? "dark" : "light";
     const insets = useSafeAreaInsets();
     const bounce = useRef(new Animated.Value(0)).current;
@@ -77,8 +79,10 @@ export const IntroTourOverlay: React.FC<Props> = ({
                 intensity={isSwipeStep ? 8 : 20}
                 tint={tint}
                 pointerEvents={isSwipeStep ? "none" : "auto"}
-                style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.35)", zIndex: 0, elevation: 0 }]}
-            />
+                style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.35)", zIndex: 0, elevation: 0 }]}>
+                {/* Focus mode is a hint, not a gate: tapping anywhere else just dismisses it */}
+                {!isSwipeStep && <Pressable style={StyleSheet.absoluteFill} onPress={onSkip} accessibilityLabel="Dismiss" />}
+            </BlurView>
 
             <Pressable onPress={onSkip} hitSlop={10} style={[styles.skip, { top: insets.top + 12 }]}>
                 <ThemedText type="caption" style={{ color: "#fff" }}>
@@ -129,13 +133,21 @@ export const IntroTourOverlay: React.FC<Props> = ({
                             style={[styles.focusArrow, { left: cx - 10, top: ring.top + size + 4, transform: [{ translateY: arrowNudge }] }]}>
                             <ArrowUp size={20} color="#fff" weight="bold" />
                         </Animated.View>
-                        <Pressable
-                            onPress={onFocusModePress}
-                            style={[styles.callout, styles.focusCallout, { top: ring.top + size + 32, right: HORIZONTAL_PADDING }]}>
-                            <ThemedText type="defaultSemiBold" style={styles.calloutCopy}>
+                        <View
+                            style={[
+                                styles.callout,
+                                styles.focusCallout,
+                                { top: ring.top + size + 32, left: HORIZONTAL_PADDING, right: HORIZONTAL_PADDING, backgroundColor: ThemedColor.background },
+                            ]}>
+                            <ThemedText type="fancyFrauncesSubheading" style={styles.calloutCopy}>
                                 {COPY.focusMode}
                             </ThemedText>
-                        </Pressable>
+                            <Pressable onPress={onSkip} hitSlop={8} style={[styles.gotIt, { backgroundColor: ThemedColor.primary }]}>
+                                <ThemedText type="defaultSemiBold" style={styles.gotItText}>
+                                    Got it
+                                </ThemedText>
+                            </Pressable>
+                        </View>
                     </>
                 );
             })()}
@@ -197,23 +209,24 @@ const styles = StyleSheet.create({
         elevation: 11,
     },
     callout: {
-        maxWidth: 240,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        borderRadius: 16,
-        padding: 14,
+        borderRadius: 20,
+        padding: 16,
         zIndex: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
         elevation: 10,
-        backgroundColor: "rgba(255,255,255,0.14)",
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.25)",
     },
-    calloutCopy: {
-        flex: 1,
-        fontSize: 14,
-        color: "#fff",
+    calloutCopy: {},
+    gotIt: {
+        alignSelf: "flex-start",
+        marginTop: 12,
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        borderRadius: 100,
     },
+    gotItText: { color: "#fff", fontSize: 15 },
     dots: {
         position: "absolute",
         left: 0,

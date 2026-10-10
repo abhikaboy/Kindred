@@ -1,4 +1,5 @@
 import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
 import React, { useCallback } from "react";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import { router } from "expo-router";
@@ -57,7 +58,8 @@ export const SomedayList = () => {
     if (groups.length === 0) {
         return (
             <Animated.View entering={FadeIn.duration(200)}>
-                <ThemedText type="caption">Tasks without a date live here.</ThemedText>
+                <EmptyIllustration source={require("@/assets/images/empty/someday.png")} size={240} />
+                <ThemedText type="caption" style={{ textAlign: "center" }}>Tasks without a date live here.</ThemedText>
             </Animated.View>
         );
     }

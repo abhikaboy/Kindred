@@ -1,6 +1,6 @@
-# Verify the phone login screen UI and navigation
+# Verify the phone login screen UI and navigation, reached from a guest's Home
 # NOTE: This does NOT actually send OTP or log in (no real credentials)
-appId: com.suntex.kindred
+appId: com.kindred.kindredtsl
 tags:
   - smoke
   - login
@@ -8,22 +8,23 @@ tags:
 - launchApp:
     clearState: true
 
-# Skip onboarding if shown
-- runFlow:
-    when:
-      visible: "Skip"
-    commands:
-      - tapOn: "Skip"
-
-# Open the login modal
+# A fresh launch shows the Home coach; skip it first
+- assertVisible:
+    id: "onboarding-coach-skip"
 - tapOn:
-    id: "login-link"
+    id: "onboarding-coach-skip"
 
-# The modal should show auth options
+# Home "Log in" link (guest-login-link) opens the account sheet, not /login
+- tapOn:
+    id: "guest-login-link"
+- assertVisible: "Create your account"
+
+# Switch the sheet to login mode
+- tapOn: "Log in"
 - assertVisible: "Welcome back"
 - assertVisible: "Continue with Phone"
 
-# Go to phone login
+# Go to phone login (pushes /login-phone in login mode)
 - tapOn:
     id: "continue-with-phone"
 

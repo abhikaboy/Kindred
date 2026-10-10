@@ -1,4 +1,5 @@
 import React from "react";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
 import { Dimensions, StyleSheet, ScrollView, View } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -25,6 +26,9 @@ export const TodayContent: React.FC = () => {
                     This is a glance of your tasks today, feel free to navigate to your workspaces to add new tasks!
                 </ThemedText>
             </View>
+            {dueTodayTasks.length + startTodayTasks.length + windowTasks.length === 0 && (
+                <EmptyIllustration source={require("@/assets/images/empty/today.png")} />
+            )}
             <ScrollView style={{ gap: 16 }} contentContainerStyle={{ gap: 24 }}>
                 <View style={{ gap: 8 }}>
                     <ThemedText type="subtitle">Due Today</ThemedText>
@@ -97,4 +101,3 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
 });
-

@@ -1,6 +1,6 @@
-# Verify the onboarding intro screens (productivity -> positivity -> circle)
-# This flow covers the pre-auth intro that first-time users see
-appId: com.suntex.kindred
+# Verify a fresh launch lands as a guest on Home, where the onboarding v2 coach starts
+# The first coach line is "Swipe up to see your workspaces" with a Skip action
+appId: com.kindred.kindredtsl
 tags:
   - smoke
   - onboarding
@@ -8,24 +8,7 @@ tags:
 - launchApp:
     clearState: true
 
-# First screen: productivity
-- assertVisible: "Productivity is something"
-- assertVisible: "Skip"
-
-# Tap the arrow button to advance
-- tapOn:
-    id: "onboard-next-btn"
-
-# Second screen: positivity
-- assertVisible: "Something rooted in"
-- tapOn:
-    id: "onboard-next-btn"
-
-# Third screen: circle (positive feedback loops)
-- assertVisible: "Built around positive"
-- tapOn:
-    id: "onboard-next-btn"
-
-# Should arrive at the login/landing page
-- assertVisible: "kindred"
-- assertVisible: "Join Kindred"
+# Guest lands on Home with the first coach step
+- assertVisible: "Swipe up to see your workspaces"
+- assertVisible:
+    id: "onboarding-coach-skip"

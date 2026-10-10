@@ -1,9 +1,13 @@
 import React, { useMemo, useRef, useState } from "react";
-import { StyleSheet, TouchableOpacity, View, useColorScheme } from "react-native";
+import { Image, StyleSheet, TouchableOpacity, View, useColorScheme } from "react-native";
 import { useRouter } from "expo-router";
-import { AddressBook, CheckIcon, ConfettiIcon, HandWavingIcon, MagnifyingGlassIcon, PencilSimpleIcon, UserPlus } from "phosphor-react-native";
+import { AddressBook, CheckIcon, ConfettiIcon, HandWavingIcon, PencilSimpleIcon, UserPlus } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import FollowButton from "@/components/inputs/FollowButton";
+import { formatHandle } from "@/utils/handle";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
+import { NOTIOLY_SETS } from "@/assets/images/notioly";
 import PreviewIcon from "@/components/profile/PreviewIcon";
 import { ConcentricRings } from "@/components/profile/ProductivityRings";
 import { SwipeCardStack, type SwipeCardStackHandle } from "@/components/ui/SwipeCardStack";
@@ -21,9 +25,17 @@ import {
     type SupportOption,
 } from "@/components/dashboard/friendKudos";
 
-const CARD_HEIGHT = 196;
+const CARD_HEIGHT = 200;
+// Person cards stack a graphic, an avatar row and a follow button.
+const PERSON_CARD_HEIGHT = 340;
+// The intro card is the main call to action, so it gets the most room.
+const FIND_CARD_HEIGHT = 400;
+
 const MAX_SUGGESTIONS = 6;
 const MAX_QUIET_NUDGES = 2;
+const MAX_PEOPLE = 3;
+// Once someone has friends the stack leads with kudos, so discovery cards stay few.
+const MAX_PEOPLE_WITH_FRIENDS = 2;
 // Below this many friends, the stack ends with a prompt to find more.
 const FEW_FRIENDS = 3;
 
@@ -40,9 +52,19 @@ type KudosSuggestion = {
     /** why now, e.g. "Maya finished this · 2h ago" */
     reason: string;
 };
-type Suggestion = KudosSuggestion | { kind: "find"; id: string; friendCount: number };
+export type DiscoverPerson = {
+    id: string;
+    display_name: string;
+    handle: string;
+    profile_picture: string;
+    reason: string;
+};
+type Suggestion =
+    | KudosSuggestion
+    | { kind: "person"; id: string; person: DiscoverPerson }
+    | { kind: "find"; id: string; friendCount: number };
 
-function buildSuggestions(rows: Row[], primary: string): Suggestion[] {
+function buildSuggestions(rows: Row[], primary: string, discover: DiscoverPerson[]): Suggestion[] {
     const out: KudosSuggestion[] = [];
     let quiet = 0;
     for (const { friend, profile, activity } of rows) {
@@ -71,24 +93,37 @@ function buildSuggestions(rows: Row[], primary: string): Suggestion[] {
         }
     }
     const kudos: Suggestion[] = out.slice(0, MAX_SUGGESTIONS);
-    return rows.length < FEW_FRIENDS ? [...kudos, { kind: "find", id: "find-friends", friendCount: rows.length }] : kudos;
+    const people: Suggestion[] = discover.slice(0, rows.length > 0 ? MAX_PEOPLE_WITH_FRIENDS : MAX_PEOPLE).map((person) => ({ kind: "person", id: `person-${person.id}`, person }));
+    const stack = [...kudos, ...people];
+    if (rows.length >= FEW_FRIENDS) return stack;
+    const find: Suggestion = { kind: "find", id: "find-friends", friendCount: rows.length };
+    // With no friends yet, the intro card leads; otherwise it closes the stack.
+    return rows.length === 0 ? [find, ...stack] : [...stack, find];
 }
 
 // Fanned stack of who to send kudos to right now; the full friends list scrolls below it.
 type FriendSuggestionsProps = {
     rows: Row[];
+    discover: DiscoverPerson[];
     onSyncContacts: () => void;
     isSyncing: boolean;
     hasSynced: boolean;
     onInvite: () => void;
 };
 
-export default function FriendSuggestions({ rows, onSyncContacts, isSyncing, hasSynced, onInvite }: FriendSuggestionsProps) {
+export default function FriendSuggestions({ rows, discover, onSyncContacts, isSyncing, hasSynced, onInvite }: FriendSuggestionsProps) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
     const stackRef = useRef<SwipeCardStackHandle>(null);
     const [current, setCurrent] = useState(0);
-    const suggestions = useMemo(() => buildSuggestions(rows, ThemedColor.primary), [rows, ThemedColor.primary]);
+    // A fresh shuffle each time the stack mounts, so each person card gets its own graphic
+    const artOrder = useMemo(() => shuffled(NOTIOLY_SETS.people.length), []);
+    const suggestions = useMemo(() => buildSuggestions(rows, ThemedColor.primary, discover), [rows, discover, ThemedColor.primary]);
+    // The big graphic is for someone with no friends yet; otherwise person cards match the kudos cards
+    const withArt = rows.length === 0;
+    const heightOf = (x: Suggestion) =>
+        x.kind === "find" ? FIND_CARD_HEIGHT : x.kind === "person" && withArt ? PERSON_CARD_HEIGHT : CARD_HEIGHT;
+    const personIndex = useMemo(() => new Map(suggestions.filter((x) => x.kind === "person").map((x, i) => [x.id, i])), [suggestions]);
     const n = suggestions.length;
     if (!n) return null;
 
@@ -100,29 +135,37 @@ export default function FriendSuggestions({ rows, onSyncContacts, isSyncing, has
                 keyOf={(s) => s.id}
                 variant="fan"
                 cardHeight={CARD_HEIGHT}
+                heightOf={heightOf}
                 frontColor={isDark ? ThemedColor.lightened : ThemedColor.background}
                 backColor={ThemedColor.lightened}
                 onIndexChange={setCurrent}
                 renderCard={(s) =>
                     s.kind === "kudos" ? (
                         <KudosSuggestionCard suggestion={s} onSent={() => setTimeout(() => stackRef.current?.next(), 400)} />
+                    ) : s.kind === "person" ? (
+                        <PersonSuggestionCard
+                            person={s.person}
+                            art={withArt ? NOTIOLY_SETS.people[artOrder[personIndex.get(s.id) ?? 0] % NOTIOLY_SETS.people.length] : undefined}
+                        />
                     ) : (
-                        <FindFriendsCard friendCount={s.friendCount} />
+                        <FindFriendsCard friendCount={s.friendCount} onInvite={onInvite} />
                     )
                 }
             />
             <View style={styles.footer}>
-                <TouchableOpacity
-                    onPress={onSyncContacts}
-                    disabled={isSyncing}
-                    activeOpacity={0.7}
-                    accessibilityLabel="Sync contacts"
-                    style={[styles.chip, { backgroundColor: hasSynced ? "transparent" : ThemedColor.primary + "26" }]}>
-                    <AddressBook size={16} color={ThemedColor.primary} />
-                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
-                        Sync contacts
-                    </ThemedText>
-                </TouchableOpacity>
+                {!hasSynced && (
+                    <TouchableOpacity
+                        onPress={onSyncContacts}
+                        disabled={isSyncing}
+                        activeOpacity={0.7}
+                        accessibilityLabel="Sync contacts"
+                        style={[styles.chip, { backgroundColor: ThemedColor.primary + "26" }]}>
+                        <AddressBook size={16} color={ThemedColor.primary} />
+                        <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                            Sync contacts
+                        </ThemedText>
+                    </TouchableOpacity>
+                )}
                 {n > 1 ? (
                     <TouchableOpacity
                         onPress={() => stackRef.current?.next()}
@@ -234,24 +277,91 @@ function KudosSuggestionCard({ suggestion, onSent }: { suggestion: KudosSuggesti
     );
 }
 
-function FindFriendsCard({ friendCount }: { friendCount: number }) {
-    const ThemedColor = useThemeColor();
+function shuffled(n: number) {
+    const a = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function PersonSuggestionCard({ person, art }: { person: DiscoverPerson; art?: number }) {
     const router = useRouter();
+    const ThemedColor = useThemeColor();
+    // The frame comes first, so the card reads as a suggestion before it reads as a profile
+    const label = (
+        <ThemedText type="caption" numberOfLines={1} style={{ color: ThemedColor.primary }}>
+            Friend suggestion · {person.reason}
+        </ThemedText>
+    );
+    const identity = (
+        <View style={styles.personRow}>
+            <PreviewIcon size={art === undefined ? "smallMedium" : "medium"} icon={person.profile_picture} />
+            <View style={styles.personNames}>
+                <ThemedText type="subtitle" numberOfLines={1}>
+                    {person.display_name}
+                </ThemedText>
+                <ThemedText type="caption" numberOfLines={1}>
+                    {formatHandle(person.handle)}
+                </ThemedText>
+            </View>
+        </View>
+    );
+    const follow = (
+        <FollowButton
+            profile={{
+                id: person.id,
+                display_name: person.display_name,
+                handle: person.handle,
+                profile_picture: person.profile_picture,
+                tasks_complete: 0,
+                friends: [],
+            }}
+        />
+    );
+
+    // With friends: the same compact shape as a kudos card
+    if (art === undefined) {
+        return (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => router.push(`/account/${person.id}`)} style={styles.inner}>
+                {label}
+                {identity}
+                <View>{follow}</View>
+            </TouchableOpacity>
+        );
+    }
+
     return (
-        <View style={styles.inner}>
+        <TouchableOpacity activeOpacity={0.9} onPress={() => router.push(`/account/${person.id}`)} style={[styles.inner, styles.personInner]}>
+            <EmptyIllustration source={art} size={170} tintInDark={false} style={styles.personArt} />
+            {label}
+            {identity}
+            <View style={styles.personFooter}>{follow}</View>
+        </TouchableOpacity>
+    );
+}
+
+function FindFriendsCard({ friendCount, onInvite }: { friendCount: number; onInvite: () => void }) {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={[styles.inner, styles.findColumn]}>
+            <Image source={require("@/assets/images/friend-cards.png")} style={styles.findImage} resizeMode="contain" />
             <View style={{ gap: 4 }}>
-                <ThemedText type="subtitle">Find more friends</ThemedText>
-                <ThemedText type="caption">
-                    {friendCount === 0 ? "No friends yet" : `${friendCount} ${friendCount === 1 ? "friend" : "friends"} so far`}
+                <ThemedText type="subtitle">
+                    {friendCount === 0 ? "Your friends live here" : "Bring more friends along"}
+                </ThemedText>
+                <ThemedText type="caption" numberOfLines={3}>
+                    Cheer on their wins and send kudos in a tap. It's way more fun with people you know.
                 </ThemedText>
             </View>
             <TouchableOpacity
-                onPress={() => router.push("/(logged-in)/(tabs)/(search)/search")}
+                onPress={onInvite}
                 activeOpacity={0.8}
                 style={[styles.action, { backgroundColor: ThemedColor.primary }]}>
-                <MagnifyingGlassIcon size={14} color="#fff" weight="bold" />
+                <UserPlus size={14} color="#fff" weight="bold" />
                 <ThemedText type="defaultSemiBold" style={styles.actionText}>
-                    Search
+                    Invite a friend
                 </ThemedText>
             </TouchableOpacity>
         </View>
@@ -269,7 +379,14 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 100,
     },
+    personInner: { justifyContent: "flex-start", gap: 10, paddingTop: 12 },
+    personArt: { width: "100%" },
+    personFooter: { marginTop: "auto" },
+    personRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+    personNames: { flex: 1, gap: 2 },
     inner: { flex: 1, padding: 20, justifyContent: "space-between" },
+    findColumn: { alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+    findImage: { width: 190, height: 190, alignSelf: "center", marginTop: -12, marginBottom: -8 },
     headerRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     actions: { flexDirection: "row", gap: 8 },
     action: {

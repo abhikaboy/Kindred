@@ -1,6 +1,6 @@
-# Verify the registration flow UI (phone path)
+# Verify the registration flow UI (phone path), reached from a guest's Home
 # Does NOT create a real account - stops before OTP verification
-appId: com.suntex.kindred
+appId: com.kindred.kindredtsl
 tags:
   - smoke
   - onboarding
@@ -9,22 +9,22 @@ tags:
 - launchApp:
     clearState: true
 
-# Skip onboarding if shown
-- runFlow:
-    when:
-      visible: "Skip"
-    commands:
-      - tapOn: "Skip"
-
-# Tap Join Kindred
+# Skip the Home coach first
+- assertVisible:
+    id: "onboarding-coach-skip"
 - tapOn:
-    id: "join-kindred-btn"
+    id: "onboarding-coach-skip"
 
-# The modal should show register options
-- assertVisible: "Almost there!"
+# Guest account link opens the sheet in register mode ("Create your account")
+- tapOn:
+    id: "guest-login-link"
+
+# Register sheet (register mode) with phone option
+- assertVisible: "Create your account"
+- assertVisible: "Choose how to sign up"
 - assertVisible: "Continue with Phone"
 
-# Go to phone registration
+# Go to phone registration (pushes /(onboarding)/phone)
 - tapOn:
     id: "continue-with-phone"
 

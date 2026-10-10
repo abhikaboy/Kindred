@@ -27,6 +27,7 @@ import { FunnelSimple, SortAscending, CalendarBlank } from "phosphor-react-nativ
 import * as PhosphorIcons from "phosphor-react-native";
 import Feather from "@expo/vector-icons/Feather";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 import InlineCategoryCreator from "@/components/InlineCategoryCreator";
 import { UpcomingCategory } from "@/components/UpcomingCategory";
 import { OpenTasksCategory } from "@/components/OpenTasksCategory";
@@ -34,6 +35,11 @@ import { DragProvider, useDrag, useDragActionsOptional, useIsDragging } from "@/
 import Animated, { AnimatedRef, useAnimatedRef, useAnimatedScrollHandler } from "react-native-reanimated";
 import { sortCategories } from "@/utils/categorySort";
 import { setWorkspaceViewState } from "@/hooks/workspaceViewStateStore";
+import { ONBOARDING_WORKSPACE } from "@/constants/spotlightConfig";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
+import { guideFacts } from "@/utils/onboardingV2/guideFacts";
+import { GUIDE_CATEGORY_PREFILL, GUIDE_TASK_PREFILL } from "@/utils/onboardingV2/prefill";
+import { useTaskCreationActions } from "@/contexts/taskCreationContext";
 
 // Last scroll offset per workspace, so a page that the pager unmounted comes
 // back where the user left it.
@@ -123,6 +129,37 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     const { openModal } = useCreateModal();
     const openModalRef = useRef(openModal);
     openModalRef.current = openModal;
+
+    // Onboarding v2: the guide page drives steps 1-3. dispatch no-ops off-step.
+    const isGuidePage = workspaceName === ONBOARDING_WORKSPACE;
+    const globalSelected = useTasksSelector((s) => s.selected);
+    const categoryAddRef = useRef<View>(null);
+    useEffect(() => {
+        if (!isGuidePage) return;
+        return registerCoachAnchor("categoryAdd", categoryAddRef);
+    }, [isGuidePage]);
+    const guideHasCategory = useTasksSelector((s) => guideFacts(s.workspaces)?.hasCategoryInGuide ?? false);
+    const guideLoaded = useTasksSelector((s) => !s.fetchingWorkspaces && s.lastSyncedAt !== null);
+    const { step: onboardingStep, dispatch: dispatchOnboarding, isLoading: onboardingLoading } = useOnboardingV2Context();
+    useEffect(() => {
+        if (isGuidePage && !onboardingLoading && globalSelected === ONBOARDING_WORKSPACE) {
+            dispatchOnboarding({ type: "OPEN_GUIDE" });
+        }
+    }, [isGuidePage, onboardingLoading, globalSelected, dispatchOnboarding]);
+    // Skip step 2 when the guide already has a category.
+    useEffect(() => {
+        if (!isGuidePage || onboardingLoading || !guideLoaded) return;
+        if (onboardingStep === 2 && guideHasCategory) dispatchOnboarding({ type: "CATEGORY_CREATED" });
+    }, [isGuidePage, onboardingLoading, guideLoaded, onboardingStep, guideHasCategory, dispatchOnboarding]);
+    // The coach types the category and task names in, so each is one tap to confirm.
+    const categoryPrefill = isGuidePage && onboardingStep === 2 ? GUIDE_CATEGORY_PREFILL : undefined;
+    const { setTaskName } = useTaskCreationActions();
+    const prefillTask = useCallback(
+        () => {
+            if (isGuidePage && onboardingStep === 3) setTaskName(GUIDE_TASK_PREFILL);
+        },
+        [isGuidePage, onboardingStep, setTaskName]
+    );
 
     const [editing, setEditing] = useState(false);
     const [editingWorkspace, setEditingWorkspace] = useState(false);
@@ -236,8 +273,9 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     }, []);
     const handleCategoryPress = useCallback((categoryId: string) => {
         setFocusedCategory(categoryId);
+        prefillTask();
         openModalRef.current({ categoryId });
-    }, []);
+    }, [prefillTask]);
     const firstCategory = visibleCategories[0];
     const firstCategoryWithTasks = visibleCategories.find((category) => category.tasks.length > 0);
     const groupByDay = state.groupByDay;
@@ -323,7 +361,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
     return (
         <>
             <EditCategory editing={editing} setEditing={setEditing} id={focusedCategory} />
-            <CategoryComposer visible={creatingCategory} setVisible={setCreatingCategory} workspace={selected} />
+            <CategoryComposer visible={creatingCategory} setVisible={setCreatingCategory} workspace={selected} initialName={categoryPrefill} />
             <EditWorkspace
                 editing={editingWorkspace}
                 setEditing={setEditingWorkspace}
@@ -472,15 +510,17 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             <ThemedText type="captionLight" style={styles.emptyStepDesc}>
                                                 Organize your tasks into categories like "Work", "Health", or "Personal".
                                             </ThemedText>
-                                            <TouchableOpacity
-                                                style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary, alignSelf: "flex-start" }]}
-                                                onPress={() => setCreatingCategory(true)}
-                                                activeOpacity={0.7}>
-                                                <FolderPlus size={16} color="#fff" weight="regular" />
-                                                <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
-                                                    New Category
-                                                </ThemedText>
-                                            </TouchableOpacity>
+                                            <View ref={categoryAddRef} collapsable={false} style={{ alignSelf: "flex-start" }}>
+                                                <TouchableOpacity
+                                                    style={[styles.emptyStepBtn, { backgroundColor: ThemedColor.primary, alignSelf: "flex-start" }]}
+                                                    onPress={() => setCreatingCategory(true)}
+                                                    activeOpacity={0.7}>
+                                                    <FolderPlus size={16} color="#fff" weight="regular" />
+                                                    <ThemedText type="smallerDefault" style={{ color: "#fff" }}>
+                                                        New Category
+                                                    </ThemedText>
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
                                     </View>
 
@@ -498,7 +538,10 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                             </ThemedText>
                                             <TouchableOpacity
                                                 style={[styles.emptyStepBtn, { borderColor: ThemedColor.tertiary, borderWidth: 1, alignSelf: "flex-start" }]}
-                                                onPress={() => openModal()}
+                                                onPress={() => {
+                                                    prefillTask();
+                                                    openModal();
+                                                }}
                                                 activeOpacity={0.7}>
                                                 <CheckSquare size={16} color={ThemedColor.text} weight="regular" />
                                                 <ThemedText type="smallerDefault">
@@ -542,7 +585,12 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                 <View style={styles.categoriesContainer} key="category-container">
                                     {isCreatingCategory && (
                                         <InlineCategoryCreator
-                                            onCreated={() => stopCreatingCategory()}
+                                            workspaceName={workspaceName}
+                                            initialName={categoryPrefill}
+                                            onCreated={() => {
+                                                if (isGuidePage) dispatchOnboarding({ type: "CATEGORY_CREATED" });
+                                                stopCreatingCategory();
+                                            }}
                                             onCancel={() => stopCreatingCategory()}
                                         />
                                     )}
@@ -562,6 +610,7 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                                     onPress={handleCategoryPress}
                                                     highlightFirstTask={isFirstCategoryWithTasks}
                                                     highlightCategoryHeader={isFirstCategory}
+                                                    coachTaskAdd={isGuidePage && isFirstCategory}
                                                     showSwipeHint={isFirstCategoryWithTasks}
                                                 />
                                             );
@@ -576,15 +625,17 @@ const WorkspaceContentBody: React.FC<WorkspaceContentBodyProps> = ({
                                         />
                                     )}
                                     {!isCreatingCategory && (
-                                        <TouchableOpacity
-                                            onPress={startCreatingCategory}
-                                            style={{ alignSelf: "center", paddingVertical: 8}}
-                                            activeOpacity={0.6}
-                                        >
-                                            <ThemedText type="default" style={{ color: ThemedColor.caption}}>
-                                                + Add Category
-                                            </ThemedText>
-                                        </TouchableOpacity>
+                                        <View ref={categoryAddRef} collapsable={false} style={{ alignSelf: "center" }}>
+                                            <TouchableOpacity
+                                                onPress={startCreatingCategory}
+                                                style={{ paddingVertical: 8, paddingHorizontal: 8 }}
+                                                activeOpacity={0.6}
+                                            >
+                                                <ThemedText type="default" style={{ color: ThemedColor.caption}}>
+                                                    + Add Category
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                        </View>
                                     )}
                                 </View>
                             )}

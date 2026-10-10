@@ -109,6 +109,8 @@ interface Props {
     /** Open listening instead of on the keyboard. */
     startWithVoice?: boolean;
     onClose: (lastReceipt: Receipt | null) => void;
+    /** Runs after at least one task was created. */
+    onSubmitted?: () => void;
 }
 
 /**
@@ -121,7 +123,7 @@ interface Props {
  * The backdrop blur is a fixed intensity faded by opacity. Animating
  * BlurView's intensity renders inconsistently (and shows up in screenshots).
  */
-export default function QuickCaptureComposer({ visible, startWithVoice = false, onClose }: Props) {
+export default function QuickCaptureComposer({ visible, startWithVoice = false, onClose, onSubmitted }: Props) {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     const [mounted, setMounted] = useState(visible);
@@ -381,6 +383,7 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
         const created = units.filter((_, i) => results[i].status === "fulfilled");
         const failed = units.filter((_, i) => results[i].status === "rejected");
         if (created.length > 0) {
+            onSubmitted?.();
             // Each created task counts toward the guest limit
             created.forEach(() => void promptAccountAfterTask(user));
             receiptRef.current =

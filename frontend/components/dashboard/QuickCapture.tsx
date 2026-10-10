@@ -20,10 +20,13 @@ const FIELD_TRANSITION = LinearTransition.duration(200).easing(Easing.out(Easing
 export default function QuickCapture({
     placeholder = "Add a task",
     variant = "row",
+    onSubmitted,
 }: {
     placeholder?: string;
     // "pill" floats over the page (home dock): rounded, shadow instead of border
     variant?: "row" | "pill";
+    /** Fires after a composer confirm creates at least one task. */
+    onSubmitted?: () => void;
 }) {
     const ThemedColor = useThemeColor();
     const colorScheme = useColorScheme();
@@ -89,6 +92,7 @@ export default function QuickCapture({
                     setOpen(false);
                     if (last) setReceipt(last);
                 }}
+                onSubmitted={onSubmitted}
             />
         </View>
     );

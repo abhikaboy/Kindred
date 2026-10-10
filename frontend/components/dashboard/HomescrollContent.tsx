@@ -1,4 +1,8 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, type RefObject } from "react";
+import { setHomeScrolledPastRings } from "@/utils/homeRingsVisibility";
+import { releaseCoachScrolling, setCoachScrolling } from "@/utils/onboardingV2/coachScroll";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
+import { tryCreateGuide } from "@/utils/onboardingV2/guideCreator";
 import {
     ScrollView,
     View,
@@ -59,6 +63,12 @@ interface HomeScrollContentProps {
     glowPull?: SharedValue<number>;
     /** bumped on release to replay the glow's opening */
     glowReplay?: SharedValue<number>;
+    /** Fires when the vertical snap lands at or past the workspaces section. */
+    onWorkspacesRevealed?: () => void;
+    /** Rings view ref for the onboarding coach. */
+    ringsAnchorRef?: RefObject<View | null>;
+    /** Fires when the rings move or a scroll settles, so the coach re-measures. */
+    onAnchorsMoved?: () => void;
 }
 
 // overscroll (px) that arms a refresh; the glow tracks progress toward it
@@ -90,6 +100,9 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
     tour,
     glowPull,
     glowReplay,
+    onWorkspacesRevealed,
+    ringsAnchorRef,
+    onAnchorsMoved,
 }) {
     const { showAlert } = useAlert();
     const isGuest = useIsGuest();
@@ -212,6 +225,11 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
         if (!refreshingRef.current) onRefresh?.();
     }, [onRefresh]);
     const onScrollY = tour.onScrollY;
+    // Only the scripted tour reads the offset; reporting it every frame floods the JS thread otherwise.
+    const tourActive = useSharedValue(tour.active);
+    useEffect(() => {
+        tourActive.value = tour.active;
+    }, [tour.active, tourActive]);
     const dragging = useSharedValue(false);
     const armed = useSharedValue(false);
     const scrollHandler = useAnimatedScrollHandler(
@@ -221,7 +239,7 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 armed.value = false;
             },
             onScroll: (e) => {
-                runOnJS(onScrollY)(e.contentOffset.y);
+                if (tourActive.value) runOnJS(onScrollY)(e.contentOffset.y);
                 if (!glowRefresh || !glowPull || !dragging.value) return;
                 const progress = Math.min(Math.max(-e.contentOffset.y / PULL_DISTANCE, 0), 1);
                 glowPull.value = progress;
@@ -244,7 +262,7 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 }
             },
         },
-        [glowRefresh, onScrollY, refreshFromPull]
+        [glowRefresh, onScrollY, refreshFromPull, tourActive]
     );
 
     // Two snap points: the focus stage, then the workspaces list; both clear the docked quick add.
@@ -253,6 +271,17 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
     const showWorkspaces = tour.visibleUpTo("workspaces");
     const snapOffsets = viewportHeight && showWorkspaces ? [0, viewportHeight] : undefined;
     const toWorkspaces = () => (scrollRef?.current as any)?.scrollTo({ y: viewportHeight, animated: true });
+    const checkWorkspacesReveal = (y: number) => {
+        setHomeScrolledPastRings(!!viewportHeight && y >= viewportHeight * 0.5);
+        if (viewportHeight && y >= viewportHeight * 0.5) onWorkspacesRevealed?.();
+        onAnchorsMoved?.();
+    };
+
+    const workspacesHandleRef = useRef<View>(null);
+    useEffect(() => registerCoachAnchor("workspacesHandle", workspacesHandleRef), []);
+
+    const workspaceCreateRef = useRef<View>(null);
+    useEffect(() => registerCoachAnchor("workspaceCreate", workspaceCreateRef), []);
 
     const realWorkspaces = workspaces.filter((w: any) => !w.isBlueprint);
     const showCalendarChip = !isGuest && calendar.linked === false && !tour.active;
@@ -265,6 +294,16 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
             scrollEnabled={!stackListed}
             scrollEventThrottle={16}
             onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
+            onScrollBeginDrag={() => setCoachScrolling(true)}
+            onScrollEndDrag={(e) => {
+                releaseCoachScrolling();
+                checkWorkspacesReveal(e.nativeEvent.contentOffset.y);
+            }}
+            onMomentumScrollBegin={() => setCoachScrolling(true)}
+            onMomentumScrollEnd={(e) => {
+                setCoachScrolling(false);
+                checkWorkspacesReveal(e.nativeEvent.contentOffset.y);
+            }}
             snapToOffsets={snapOffsets}
             snapToEnd={false}
             decelerationRate="fast"
@@ -286,7 +325,11 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 <View style={[styles.center, { paddingTop: queue.length >= 3 ? 12 : queue.length === 2 ? 22 : 32 }]}>
                     {/* Private to the user; live-updates via the useRings cache */}
                     <Reanimated.View
-                        ref={(node) => tour.registerSection("rings", node)}
+                        ref={(node) => {
+                            tour.registerSection("rings", node);
+                            if (ringsAnchorRef) ringsAnchorRef.current = node;
+                        }}
+                        onLayout={() => onAnchorsMoved?.()}
                         pointerEvents={faded}
                         style={[{ width: "100%", zIndex: ringsExpanded ? 999 : 0 }, fadeStyle]}>
                         <ProductivityRingsCard
@@ -353,15 +396,17 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                 </View>
 
                 {!tour.active && showWorkspaces && !stackListed && (
-                    <TouchableOpacity
-                        onPress={toWorkspaces}
-                        hitSlop={10}
-                        activeOpacity={0.6}
-                        style={styles.more}
-                        accessibilityLabel="Show workspaces">
-                        <ThemedText type="caption">Workspaces</ThemedText>
-                        <CaretDown size={12} color={ThemedColor.caption} />
-                    </TouchableOpacity>
+                    <View ref={workspacesHandleRef} collapsable={false} style={styles.moreAnchor}>
+                        <TouchableOpacity
+                            onPress={toWorkspaces}
+                            hitSlop={10}
+                            activeOpacity={0.6}
+                            style={styles.more}
+                            accessibilityLabel="Show workspaces">
+                            <ThemedText type="caption">Workspaces</ThemedText>
+                            <CaretDown size={12} color={ThemedColor.caption} />
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
 
@@ -372,10 +417,12 @@ export const HomeScrollContent = React.memo<HomeScrollContentProps>(function Hom
                     <View style={styles.sectionHeader}>
                         <SectionTitle title="Workspaces" />
                         <TouchableOpacity
-                            onPress={onCreateWorkspace}
+                            onPress={() => {
+                                if (!tryCreateGuide()) onCreateWorkspace();
+                            }}
                             hitSlop={10}
                             accessibilityLabel="Create workspace">
-                            <View style={[styles.addBtn, { backgroundColor: ThemedColor.primary + "1A" }]}>
+                            <View ref={workspaceCreateRef} collapsable={false} style={[styles.addBtn, { backgroundColor: ThemedColor.primary + "1A" }]}>
                                 <PlusIcon size={16} weight="bold" color={ThemedColor.primary} />
                             </View>
                         </TouchableOpacity>
@@ -438,6 +485,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
         gap: 20,
         paddingTop: 32,
+    },
+    moreAnchor: {
+        alignSelf: "center",
     },
     more: {
         flexDirection: "row",

@@ -22,7 +22,7 @@ const SECTION_ORDER: TourKey[] = ["rings", "focus", "quickadd", "workspaces"];
 // Where the active section's top should land on screen after auto-scroll.
 const TARGET_TOP = Dimensions.get("window").height * 0.34;
 
-export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
+export function useHomeTour(scrollRef?: React.RefObject<ScrollView>, { suppressed = false }: { suppressed?: boolean } = {}) {
     const { user } = useAuth();
     const seenKey = user?._id ? `${user._id}-home-tour-seen` : null;
 
@@ -73,14 +73,14 @@ export function useHomeTour(scrollRef?: React.RefObject<ScrollView>) {
 
     // Auto-start once per user on the first home visit.
     useEffect(() => {
-        if (!seenKey || autoChecked.current) return;
+        if (!seenKey || autoChecked.current || suppressed) return;
         autoChecked.current = true;
         AsyncStorage.getItem(seenKey)
             .then((v) => {
                 if (v == null) setTimeout(() => start(), 600);
             })
             .catch(() => {});
-    }, [seenKey, start]);
+    }, [seenKey, start, suppressed]);
 
     // On each step: scroll the active section into the clear zone, then measure
     // its screen top so the blur band can sit just above it. Absent/empty

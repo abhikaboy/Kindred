@@ -72,9 +72,21 @@ export default function HomeFocusStack({ queue, spill, onListedChange, available
     return (
         <View style={styles.wrap}>
             {n === 0 ? (
-                <ThemedText type="caption" style={{ textAlign: "center" }}>
-                    Nothing on your plate. Add something below.
-                </ThemedText>
+                <View
+                    style={[
+                        styles.emptyCard,
+                        { backgroundColor: isDark ? ThemedColor.lightened : ThemedColor.background, borderColor: ThemedColor.tertiary },
+                    ]}>
+                    <Image
+                        source={require("@/assets/images/211-Coffee.png")}
+                        style={[styles.emptyImage, isDark && { tintColor: "#ffffff" }]}
+                        resizeMode="contain"
+                    />
+                    <View style={styles.emptyText}>
+                        <ThemedText type="subtitle">Relax and enjoy the break</ThemedText>
+                        <ThemedText type="caption">Nothing on your plate. Add something below.</ThemedText>
+                    </View>
+                </View>
             ) : (
                 <View style={{ width: "100%" }} onLayout={(e) => setStackTop(e.nativeEvent.layout.y)}>
                     <SwipeCardStack
@@ -286,6 +298,20 @@ function KudosBody({ kudos, onAcknowledge }: { kudos: StageKudos; onAcknowledge:
 
 const styles = StyleSheet.create({
     wrap: { width: "100%", alignItems: "center", gap: 12 },
+    emptyCard: {
+        width: "100%",
+        alignItems: "flex-start",
+        gap: 4,
+        borderRadius: 20,
+        borderWidth: StyleSheet.hairlineWidth,
+        padding: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+    },
+    emptyText: { alignSelf: "stretch", gap: 6 },
+    emptyImage: { width: 104, height: 104, alignSelf: "center" },
     footer: { flexDirection: "row", alignItems: "center", alignSelf: "center", gap: 16, paddingVertical: 4 },
     cardInner: { flex: 1, padding: 20, justifyContent: "space-between" },
     titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },

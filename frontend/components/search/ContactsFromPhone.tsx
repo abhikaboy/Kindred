@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { View, StyleSheet, FlatList } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import ContactCard from "@/components/cards/ContactCard";
 import type { UserExtendedReferenceWithPhone } from "@/api/profile";
 
@@ -11,16 +12,31 @@ export interface MatchedContact {
 
 type ContactsFromPhoneProps = {
     contacts: MatchedContact[];
+    hasSynced?: boolean;
 };
 
-const ContactsFromPhoneComponent: React.FC<ContactsFromPhoneProps> = ({ contacts }) => {
+const GHOSTS = [0, 1, 2];
+
+/** A faded row of placeholder cards, showing what syncing contacts unlocks. */
+export const ContactsPreview: React.FC = () => {
+    const ThemedColor = useThemeColor();
+    return (
+        <View style={styles.ghostRow} pointerEvents="none">
+            {GHOSTS.map((i) => (
+                <View key={i} style={[styles.ghost, { backgroundColor: ThemedColor.tertiary, opacity: 0.5 - i * 0.12 }]} />
+            ))}
+        </View>
+    );
+};
+
+const ContactsFromPhoneComponent: React.FC<ContactsFromPhoneProps> = ({ contacts, hasSynced = true }) => {
     const renderContact = useCallback(
         ({ item }: { item: MatchedContact }) => (
             <ContactCard
                 name={item.user.display_name}
                 icon={item.user.profile_picture}
                 handle={item.user.handle}
-                following={false} // We can enhance this later to check actual friendship status
+                following={false}
                 id={item.user._id}
                 contactName={item.contactName}
             />
@@ -28,14 +44,13 @@ const ContactsFromPhoneComponent: React.FC<ContactsFromPhoneProps> = ({ contacts
         []
     );
 
-    if (!contacts || contacts.length === 0) {
-        return null;
-    }
+    // Nothing to show until a sync finds someone (the empty state previews it via ContactsPreview)
+    if (!hasSynced || !contacts || contacts.length === 0) return null;
 
     return (
         <View style={styles.contactsSection}>
             <ThemedText type="defaultSemiBold" style={styles.contactsHeader}>
-                From your Contacts
+                From your contacts
             </ThemedText>
             <FlatList
                 data={contacts}
@@ -59,11 +74,10 @@ const styles = StyleSheet.create({
     },
     contactsList: {
         paddingHorizontal: 16,
-        overflow: "visible",
+        paddingBottom: 8,
     },
+    ghostRow: { flexDirection: "row", gap: 12, marginTop: 12 },
+    ghost: { width: 100, height: 128, borderRadius: 16 },
 });
 
-// Memoize ContactsFromPhone to prevent unnecessary re-renders
-export const ContactsFromPhone = React.memo(ContactsFromPhoneComponent, (prevProps, nextProps) => {
-    return prevProps.contacts === nextProps.contacts;
-});
+export const ContactsFromPhone = React.memo(ContactsFromPhoneComponent);

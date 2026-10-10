@@ -1,4 +1,5 @@
 import { Dimensions, StyleSheet, View, SectionList, TouchableOpacity, ActivityIndicator, Animated, InteractionManager, RefreshControl, ScrollView } from "react-native";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -557,6 +558,7 @@ const NotificationsView = ({ isActive, onBack }: NotificationsViewProps) => {
         </View>
     ) : allNotifications.length === 0 ? (
         <View style={[styles.scrollViewContent, styles.section]}>
+            <EmptyIllustration source={require("@/assets/images/empty/notifications.png")} />
             <ThemedText style={{ textAlign: "center" }}>No notifications yet</ThemedText>
         </View>
     ) : (

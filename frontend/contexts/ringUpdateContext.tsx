@@ -7,6 +7,8 @@ import React, {
     useState,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { areHomeRingsVisible } from "@/utils/homeRingsVisibility";
 import type { RingDelta, RingTodayResponse } from "@/api/types";
 
 interface RingUpdateContextValue {
@@ -117,6 +119,12 @@ export const RingUpdateProvider: React.FC<{ children: React.ReactNode }> = ({
             // the cache so the underlying count stays accurate.
             if (delta.target > 0 && delta.previous >= delta.target) {
                 applyOptimisticUpdate(delta);
+                return;
+            }
+            // Rings on screen: let them fill in place. A closing ring still gets its thud.
+            if (areHomeRingsVisible()) {
+                applyOptimisticUpdate(delta);
+                if (delta.just_closed) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
                 return;
             }
             // Coalesce completions that land within 800ms into a single

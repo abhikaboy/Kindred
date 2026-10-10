@@ -2,17 +2,17 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshControl, SectionList, Share, StyleSheet, TouchableOpacity, View } from "react-native";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { CheckIcon, ConfettiIcon, HandshakeIcon, HandWavingIcon, PencilSimpleIcon, UsersThreeIcon } from "phosphor-react-native";
+import { CheckIcon, ConfettiIcon, HandWavingIcon, PencilSimpleIcon, UsersThreeIcon } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { getFriendsActivityAPI, getFriendsAPI } from "@/api/connection";
-import { searchProfiles } from "@/api/profile";
+import { getSuggestedUsers, searchProfiles } from "@/api/profile";
 import { SearchBox } from "@/components/SearchBox";
 import UserInfoRowBase from "@/components/UserInfo/UserInfoRowBase";
 import FollowButton from "@/components/inputs/FollowButton";
 import { convertToProfile } from "@/components/search/SearchResults";
-import { ContactsFromPhone } from "@/components/search/ContactsFromPhone";
+import { ContactsFromPhone, ContactsPreview } from "@/components/search/ContactsFromPhone";
 import CustomAlert from "@/components/modals/CustomAlert";
 import ContactConsentModal from "@/components/modals/ContactConsentModal";
 import { useContactSync } from "@/hooks/useContactSync";
@@ -25,7 +25,7 @@ import CongratulateModal from "@/components/modals/CongratulateModal";
 import DefaultModal from "@/components/modals/DefaultModal";
 import { UserRowSkeleton } from "@/components/ui/SkeletonLoader";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
-import FriendSuggestions from "@/components/dashboard/FriendSuggestions";
+import FriendSuggestions, { type DiscoverPerson } from "@/components/dashboard/FriendSuggestions";
 import {
     ACTIVITY_RANK,
     ACTIVITY_STALE_MS,
@@ -320,6 +320,55 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
         return { rows, sections };
     }, [friends, activity]);
 
+    const emptySteps = [
+        ...(contactSync.hasSynced
+            ? []
+            : [
+                  {
+                      title: "Sync your contacts",
+                      body: "Find friends who are already on Kindred.",
+                      cta: contactSync.isSyncing ? "Syncing..." : "Sync Contacts",
+                      primary: true,
+                      disabled: contactSync.isSyncing,
+                      onPress: contactSync.sync,
+                  },
+              ]),
+        {
+            title: "Invite someone you know",
+            body: "Share your referral code. Friends who join count toward your rewards.",
+            cta: "Share Invite",
+            primary: contactSync.hasSynced,
+            disabled: false,
+            onPress: invite,
+        },
+    ];
+
+    const { data: suggestedUsers } = useQuery({
+        queryKey: ["suggested-users"],
+        queryFn: getSuggestedUsers,
+        enabled: profilesEnabled,
+        staleTime: 5 * 60 * 1000,
+        meta: { persist: false },
+    });
+    const discover = useMemo<DiscoverPerson[]>(() => {
+        const taken = new Set((friends ?? []).map((f) => f._id));
+        const out: DiscoverPerson[] = [];
+        const add = (user: { _id: string; display_name: string; handle: string; profile_picture: string }, reason: string) => {
+            if (taken.has(user._id)) return;
+            taken.add(user._id);
+            out.push({ id: user._id, display_name: user.display_name, handle: user.handle, profile_picture: user.profile_picture, reason });
+        };
+        contactSync.matchedContacts.forEach((c) => add(c.user, `${c.contactName} is on Kindred`));
+        (suggestedUsers ?? []).forEach((u) => add(u, "Popular on Kindred"));
+        return out;
+    }, [friends, contactSync.matchedContacts, suggestedUsers]);
+
+    // Contacts already in your friends list don't need introducing
+    const newContacts = useMemo(() => {
+        const friendSet = new Set(friendIds);
+        return contactSync.matchedContacts.filter((c) => !friendSet.has(c.user._id));
+    }, [contactSync.matchedContacts, friendIds]);
+
     // Hold the skeleton until activity lands, so cards don't render as idle and then regroup
     const waitingForActivity = friendIds.length > 0 && activityPending;
 
@@ -408,14 +457,13 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
                             <>
                                 <FriendSuggestions
                                     rows={rows}
+                                    discover={discover}
                                     onSyncContacts={contactSync.sync}
                                     isSyncing={contactSync.isSyncing}
                                     hasSynced={contactSync.hasSynced}
                                     onInvite={invite}
                                 />
-                                {contactSync.matchedContacts.length > 0 && (
-                                    <ContactsFromPhone contacts={contactSync.matchedContacts} />
-                                )}
+                                <ContactsFromPhone contacts={newContacts} hasSynced={contactSync.hasSynced} />
                             </>
                         )}
                     </>
@@ -431,13 +479,47 @@ function FriendsContent({ isActive = true }: FriendsContentProps) {
                 ListEmptyComponent={
                     searching ? null : (
                         <View style={styles.emptyContainer}>
-                            <View style={[styles.emptyIconRow, { backgroundColor: ThemedColor.primary + "10" }]}>
-                                <HandshakeIcon size={32} color={ThemedColor.primary} weight="duotone" />
-                            </View>
-                            <ThemedText type="subtitle">No friends yet</ThemedText>
+                            <ThemedText type="subtitle">Find your people</ThemedText>
                             <ThemedText type="lightBody" style={{ color: ThemedColor.caption }}>
-                                Sync your contacts to find people already on Kindred, or invite someone you know.
+                                Kindred is built on friendships. Here's how to get started:
                             </ThemedText>
+                            <View style={styles.emptySteps}>
+                                {emptySteps.map((step, i) => (
+                                    <View key={step.title} style={styles.emptyStep}>
+                                        <View style={styles.stepTrack}>
+                                            <View style={[styles.stepBadge, { backgroundColor: ThemedColor.primary }]}>
+                                                <ThemedText type="smallerDefault" style={{ color: "#fff" }}>{i + 1}</ThemedText>
+                                            </View>
+                                            {i < emptySteps.length - 1 && (
+                                                <View style={[styles.stepRail, { backgroundColor: ThemedColor.tertiary }]} />
+                                            )}
+                                        </View>
+                                        <View style={[styles.stepBody, i < emptySteps.length - 1 && styles.stepBodyGap]}>
+                                            <ThemedText type="defaultSemiBold">{step.title}</ThemedText>
+                                            <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
+                                                {step.body}
+                                            </ThemedText>
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.stepButton,
+                                                    step.primary
+                                                        ? { backgroundColor: ThemedColor.primary }
+                                                        : { borderColor: ThemedColor.tertiary, borderWidth: 1 },
+                                                ]}
+                                                onPress={step.onPress}
+                                                disabled={step.disabled}
+                                                activeOpacity={0.7}>
+                                                <ThemedText
+                                                    type="smallerDefault"
+                                                    style={{ color: step.primary ? "#fff" : ThemedColor.text }}>
+                                                    {step.cta}
+                                                </ThemedText>
+                                            </TouchableOpacity>
+                                            {i === 0 && !contactSync.hasSynced && <ContactsPreview />}
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
                     )
                 }
@@ -540,15 +622,45 @@ const styles = StyleSheet.create({
     },
     emptyContainer: {
         paddingVertical: 40,
-        alignItems: "flex-start",
+        alignItems: "stretch",
         gap: 12,
     },
-    emptyIconRow: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+    emptySteps: {
+        marginTop: 16,
+    },
+    emptyStep: {
+        flexDirection: "row",
+        gap: 16,
+    },
+    stepBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 4,
+    },
+    stepTrack: {
+        width: 28,
+        alignItems: "center",
+    },
+    stepRail: {
+        flex: 1,
+        width: 2,
+        marginVertical: 6,
+        borderRadius: 1,
+    },
+    stepBody: {
+        flex: 1,
+        gap: 4,
+    },
+    stepBodyGap: {
+        paddingBottom: 40,
+    },
+    stepButton: {
+        alignSelf: "flex-start",
+        marginTop: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
     },
 });

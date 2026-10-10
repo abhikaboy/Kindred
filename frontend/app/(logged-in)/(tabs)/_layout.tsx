@@ -7,6 +7,8 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { useDrawer } from "@/contexts/drawerContext";
 import { useNavigationState } from "@react-navigation/native";
 import { useFocusMode } from "@/contexts/focusModeContext";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
+import { isOnboardingV2Active } from "@/utils/onboardingV2/active";
 import { useTaskActions, useTasksSelector } from "@/contexts/tasksContext";
 import { useFriendRequestCount } from "@/hooks/useFriendRequests";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
@@ -42,6 +44,7 @@ export default function TabLayout() {
     const segments = useSegments();
     const { isDrawerOpen } = useDrawer();
     const { focusMode } = useFocusMode();
+    const { step: onboardingStep, isLoading: onboardingLoading } = useOnboardingV2Context();
     const { setSelected } = useTaskActions();
     // Narrow subscriptions: a swipe between workspaces shouldn't re-render the tab layout
     const isSelectedToday = useTasksSelector((s) => s.selected === "Today");
@@ -95,6 +98,7 @@ export default function TabLayout() {
         hideTabBarScreens.some((screen) => pathname.startsWith(screen)) ||
         isDrawerOpen ||
         homeTourActive ||
+        isOnboardingV2Active(onboardingStep, onboardingLoading) ||
         (isOnFeedTab && !scrollVisible);
 
     // Focus mode only hides the tab bar — the FAB and home button stay put,
@@ -141,75 +145,77 @@ export default function TabLayout() {
 
     return (
         <>
-            <Tabs
-                tabBar={renderTabBar}
-                screenOptions={screenOptions}>
-                <Tabs.Screen
-                    name="(task)"
-                    // Re-tapping the Tasks tab while already on it drops back to home.
-                    listeners={({ navigation }) => ({
-                        tabPress: () => {
-                            if (navigation.isFocused()) setSelected("");
-                        },
-                    })}
-                    options={{
-                        title: "Tasks",
-                        tabBarIcon: ({ color, focused }) =>
-                            focused ? (
-                                <PencilSimple size={24} color={color} weight="fill" />
-                            ) : (
-                                <PencilSimpleLine size={24} color={color} />
+            <>
+                <Tabs
+                    tabBar={renderTabBar}
+                    screenOptions={screenOptions}>
+                    <Tabs.Screen
+                        name="(task)"
+                        // Re-tapping the Tasks tab while already on it drops back to home.
+                        listeners={({ navigation }) => ({
+                            tabPress: () => {
+                                if (navigation.isFocused()) setSelected("");
+                            },
+                        })}
+                        options={{
+                            title: "Tasks",
+                            tabBarIcon: ({ color, focused }) =>
+                                focused ? (
+                                    <PencilSimple size={24} color={color} weight="fill" />
+                                ) : (
+                                    <PencilSimpleLine size={24} color={color} />
+                                ),
+                            tabBarAccessibilityLabel: "Tasks",
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="(feed)"
+                        options={{
+                            title: "Feed",
+                            tabBarIcon: ({ color, focused }) => (
+                                <Newspaper size={24} color={color} weight={focused ? "fill" : "regular"} />
                             ),
-                        tabBarAccessibilityLabel: "Tasks",
-                    }}
-                />
-                <Tabs.Screen
-                    name="(feed)"
-                    options={{
-                        title: "Feed",
-                        tabBarIcon: ({ color, focused }) => (
-                            <Newspaper size={24} color={color} weight={focused ? "fill" : "regular"} />
-                        ),
-                        tabBarAccessibilityLabel: "Feed",
-                    }}
-                />
-                <Tabs.Screen
-                    name="(search)"
-                    options={{
-                        // hidden for now: friends search moved to the home Friends page. Keep href: null,
-                        // since expo-router lists any route without it as a tab.
-                        href: null,
-                        // title: "Search",
-                        // tabBarIcon: ({ color, focused }) => (
-                        //     <MagnifyingGlass size={24} color={color} weight={focused ? "bold" : "regular"} />
-                        // ),
-                        // tabBarAccessibilityLabel: "Search",
-                    }}
-                />
-                <Tabs.Screen
-                    name="(activity)"
-                    options={{
-                        // hidden for now: route stays registered, just off the tab bar
-                        href: null,
-                        title: "Activity",
-                        tabBarIcon: ({ color, focused }) => (
-                            <Brain size={24} color={color} weight={focused ? "fill" : "regular"} />
-                        ),
-                        tabBarAccessibilityLabel: "Activity",
-                    }}
-                />
-                <Tabs.Screen
-                    name="(profile)"
-                    options={{
-                        title: "Profile",
-                        tabBarIcon: ({ color, focused }) => <ProfileTabIcon focused={focused} color={color} />,
-                        tabBarAccessibilityLabel: "Profile",
-                    }}
-                />
-            </Tabs>
+                            tabBarAccessibilityLabel: "Feed",
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="(search)"
+                        options={{
+                            // hidden for now: friends search moved to the home Friends page. Keep href: null,
+                            // since expo-router lists any route without it as a tab.
+                            href: null,
+                            // title: "Search",
+                            // tabBarIcon: ({ color, focused }) => (
+                            //     <MagnifyingGlass size={24} color={color} weight={focused ? "bold" : "regular"} />
+                            // ),
+                            // tabBarAccessibilityLabel: "Search",
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="(activity)"
+                        options={{
+                            // hidden for now: route stays registered, just off the tab bar
+                            href: null,
+                            title: "Activity",
+                            tabBarIcon: ({ color, focused }) => (
+                                <Brain size={24} color={color} weight={focused ? "fill" : "regular"} />
+                            ),
+                            tabBarAccessibilityLabel: "Activity",
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="(profile)"
+                        options={{
+                            title: "Profile",
+                            tabBarIcon: ({ color, focused }) => <ProfileTabIcon focused={focused} color={color} />,
+                            tabBarAccessibilityLabel: "Profile",
+                        }}
+                    />
+                </Tabs>
 
-            {/* Floating Action Button */}
-            <FloatingActionButton visible={!shouldHideFAB} />
+                {/* Floating Action Button */}
+                <FloatingActionButton visible={!shouldHideFAB} />
+            </>
         </>
     );
 }

@@ -52,6 +52,8 @@ type Props<T> = {
     keyOf: (item: T) => string;
     renderCard: (item: T, front: boolean) => React.ReactNode;
     cardHeight: number;
+    /** per-card height; cards behind a shorter front are clipped to it. Defaults to cardHeight. */
+    heightOf?: (item: T) => number;
     variant?: StackVariant;
     /** front surface fades into `backColor` as a card falls behind */
     frontColor: string;
@@ -78,6 +80,7 @@ function SwipeCardStackInner<T>(
         keyOf,
         renderCard,
         cardHeight,
+        heightOf,
         variant = "peek",
         frontColor,
         backColor,
@@ -95,7 +98,7 @@ function SwipeCardStackInner<T>(
     const { width } = useWindowDimensions();
     const n = items.length;
     const layerCount = Math.min(n, MAX_LAYERS);
-    const stackHeight = stackHeightFor(variant, cardHeight, layerCount);
+    const hOf = (item: T) => heightOf?.(item) ?? cardHeight;
 
     const [index, setIndex] = useState(0);
     const pos = useSharedValue(0);
@@ -117,6 +120,8 @@ function SwipeCardStackInner<T>(
     }, [resetKey, pos]);
 
     const current = n ? ((index % n) + n) % n : 0;
+    const frontHeight = n ? hOf(items[current]) : cardHeight;
+    const stackHeight = stackHeightFor(variant, frontHeight, layerCount);
     const onIndexChangeRef = useRef(onIndexChange);
     onIndexChangeRef.current = onIndexChange;
     useLayoutEffect(() => {
@@ -250,7 +255,12 @@ function SwipeCardStackInner<T>(
 
     if (listed) {
         const ordered = items.map((_, i) => items[(current + i) % n]);
-        const contentHeight = n * (cardHeight + LIST_GAP);
+        const tops: number[] = [];
+        let contentHeight = 0;
+        for (const item of ordered) {
+            tops.push(contentHeight);
+            contentHeight += hOf(item) + LIST_GAP;
+        }
         return (
             <View style={{ width: "100%", height: Math.max(listHeight, stackHeight) }}>
                 <Reanimated.ScrollView
@@ -272,7 +282,9 @@ function SwipeCardStackInner<T>(
                                     i={i}
                                     count={n}
                                     variant={variant}
-                                    cardHeight={cardHeight}
+                                    cardHeight={hOf(item)}
+                                    stackedHeight={i === 0 ? frontHeight : Math.min(hOf(item), frontHeight)}
+                                    listTop={tops[i]}
                                     stackHeight={stackHeight}
                                     layerCount={layerCount}
                                     seq={index + i}
@@ -311,7 +323,7 @@ function SwipeCardStackInner<T>(
                             pos={pos}
                             fly={fly}
                             width={width}
-                            cardHeight={cardHeight}
+                            cardHeight={depth === 0 ? frontHeight : Math.min(hOf(item), frontHeight)}
                             frontColor={frontColor}
                             backColor={backColor}
                             hint={depth === 0 ? hint : undefined}
@@ -410,6 +422,8 @@ function SpilledCard({
     count,
     variant,
     cardHeight,
+    stackedHeight,
+    listTop,
     stackHeight,
     layerCount,
     seq,
@@ -424,6 +438,9 @@ function SpilledCard({
     count: number;
     variant: StackVariant;
     cardHeight: number;
+    /** height this card has while still in the stack */
+    stackedHeight: number;
+    listTop: number;
     stackHeight: number;
     layerCount: number;
     seq: number;
@@ -434,14 +451,13 @@ function SpilledCard({
     style?: ViewStyle;
     children: React.ReactNode;
 }) {
-    const listTop = i * (cardHeight + LIST_GAP);
     const animated = useAnimatedStyle(() => {
         const staggered = Math.min(count, SPILL_MAX_STAGGERED) - 1;
         const t = Math.min(Math.max(spill.value * (1 + SPILL_STAGGER * staggered) - SPILL_STAGGER * Math.min(i, staggered), 0), 1);
         const rel = Math.min(i, layerCount - 1);
         const pose = restingPose(variant, rel, seq);
         // Where this card sits in the stack, in list coordinates (stack cards are bottom-aligned)
-        const stackTop = stackHeight - cardHeight + pose.y + scrollY.value;
+        const stackTop = stackHeight - stackedHeight + pose.y + scrollY.value;
         const hidden = i >= layerCount;
         return {
             opacity: hidden ? t : 1,

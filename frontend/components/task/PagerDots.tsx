@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { View, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { CalendarBlank, House, UsersThree, Planet } from "phosphor-react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { hapticSelect } from "@/utils/haptics";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 
 const TAB_BAR_HEIGHT = 83;
 // Special pages are always shown; only the workspace dots are windowed.
@@ -110,7 +111,9 @@ const SpecialIcon: React.FC<{
 }> = React.memo(({ kind, active, index, onPress }) => {
     const ThemedColor = useThemeColor();
     const Icon = SPECIAL_ICONS[kind];
-    return (
+    const anchorRef = useRef<View>(null);
+    useEffect(() => (kind === "home" ? registerCoachAnchor("homeTab", anchorRef) : undefined), [kind]);
+    const icon = (
         <TouchableOpacity
             onPress={() => {
                 if (!active) hapticSelect();
@@ -128,6 +131,13 @@ const SpecialIcon: React.FC<{
                 weight={active ? "fill" : "regular"}
             />
         </TouchableOpacity>
+    );
+    return kind === "home" ? (
+        <View ref={anchorRef} collapsable={false}>
+            {icon}
+        </View>
+    ) : (
+        icon
     );
 });
 

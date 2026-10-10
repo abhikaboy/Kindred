@@ -30,10 +30,12 @@ type Props = {
     setVisible: (visible: boolean) => void;
     /** Where the category goes; defaults to the workspace being viewed. */
     workspace?: string;
+    /** Typed in when the composer opens, for the onboarding coach. */
+    initialName?: string;
 };
 
 /** New category on the dark stage, like the workspace composer: just a name and Create. */
-export default function CategoryComposer({ visible, setVisible, workspace }: Props) {
+export default function CategoryComposer({ visible, setVisible, workspace, initialName }: Props) {
     const ThemedColor = useThemeColor();
     const scheme = useColorScheme() === "dark" ? "dark" : "light";
     const insets = useSafeAreaInsets();
@@ -54,6 +56,7 @@ export default function CategoryComposer({ visible, setVisible, workspace }: Pro
             return;
         }
         closingRef.current = false;
+        if (initialName) setName(initialName);
         setMounted(true);
         opacity.value = withTiming(1, FADE);
         // eslint-disable-next-line react-hooks/exhaustive-deps

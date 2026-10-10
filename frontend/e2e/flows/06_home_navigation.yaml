@@ -1,35 +1,39 @@
-# Verify home screen and tab navigation after login
-# PREREQUISITE: user must already be logged in
-# Run this after a successful login flow or with a pre-authenticated state
-appId: com.suntex.kindred
+# Verify Home and tab navigation for a guest after skipping the coach
+# Runs from a clean launch; no login needed
+appId: com.kindred.kindredtsl
 tags:
   - navigation
   - home
-  - requires-auth
 ---
-- launchApp
+- launchApp:
+    clearState: true
 
-# Home screen should show a welcome header
-# (The exact name depends on the logged-in user)
-- assertVisible: "Jump Back In"
+# Skip the Home coach
+- assertVisible:
+    id: "onboarding-coach-skip"
+- tapOn:
+    id: "onboarding-coach-skip"
 
-# Tab bar should be visible with all tabs
-# Using accessibility labels set on the tab bar
+# Home is visible: the guest "Log in" link is on the Home page
+- assertVisible:
+    id: "guest-login-link"
+
+# Tab bar: the Search tab is hidden (href: null), so it is not asserted
 - assertVisible: "Tasks"
 - assertVisible: "Feed"
-- assertVisible: "Search"
 - assertVisible: "Activity"
 - assertVisible: "Profile"
 
 # Navigate to Feed tab
 - tapOn: "Feed"
 
-# Navigate to Search tab
-- tapOn: "Search"
+# Navigate to Activity tab
+- tapOn: "Activity"
 
 # Navigate to Profile tab
 - tapOn: "Profile"
 
-# Navigate back to Tasks tab
+# Navigate back to Tasks tab (Home)
 - tapOn: "Tasks"
-- assertVisible: "Jump Back In"
+- assertVisible:
+    id: "guest-login-link"

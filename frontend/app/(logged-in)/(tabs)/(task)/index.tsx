@@ -36,6 +36,11 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useKudos } from "@/contexts/kudosContext";
 import { hapticSelect } from "@/utils/haptics";
+import { setHomePageActive } from "@/utils/homeRingsVisibility";
+import { notifyCoachAnchorsMoved, registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
+import { setCoachSurface } from "@/utils/onboardingV2/coachSurface";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
+import { ONBOARDING_V2_DONE } from "@/utils/onboardingV2/machine";
 
 // Memoized at the usage site so a swipe (which re-renders the pager) doesn't
 // re-render every mounted workspace page.
@@ -44,6 +49,8 @@ const MemoWorkspaceContent = React.memo(WorkspaceContent);
 type Page = { key: "today" } | { key: "home" } | { key: "friends" } | { key: "workspace"; name: string } | { key: "someday" };
 const TODAY_INDEX = 0;
 const HOME_INDEX = 1;
+// Waits out the score count-up that closes the onboarding coach.
+const INTRO_TOUR_DELAY_MS = 3200;
 const FRIENDS_INDEX = 2;
 const WORKSPACE_OFFSET = 3;
 // Besides the active page ±1, keep this many recently active pages mounted so
@@ -72,14 +79,28 @@ const Home = (props: Props) => {
 
     const insets = useSafeAreaInsets();
 
-    // Check if user has completed quick setup
+    // Check if user has completed quick setup. Hidden while the v2 coach is running.
+    const v2 = useOnboardingV2Context();
+    // Loading counts as active, so the sheet never flashes in before v2 has read its step.
+    const v2Active = v2.isLoading || (v2.step !== null && v2.step !== ONBOARDING_V2_DONE);
+    const v2ActiveRef = useRef(v2Active);
+    v2ActiveRef.current = v2Active;
+    // Finished onboarding means no sheet, unless the user has just one workspace.
+    const realWorkspaceCount = workspaces.filter((w) => !w.isBlueprint).length;
+    const suppressQuickSetup = v2.step === ONBOARDING_V2_DONE && realWorkspaceCount !== 1;
     useEffect(() => {
         const checkQuickSetup = async () => {
             if (!user?._id) return;
+            if (v2Active || suppressQuickSetup) {
+                setShowWorkspaceSelection(false);
+                return;
+            }
 
             try {
                 const key = `${user._id}-quicksetup`;
                 const hasCompletedSetup = await AsyncStorage.getItem(key);
+                // v2 may have started while the read was in flight.
+                if (v2ActiveRef.current) return;
 
                 if (!hasCompletedSetup && selectedIsEmpty) {
                     setShowWorkspaceSelection(true);
@@ -92,7 +113,7 @@ const Home = (props: Props) => {
         };
 
         checkQuickSetup();
-    }, [user?._id, selectedIsEmpty]);
+    }, [user?._id, selectedIsEmpty, v2Active, suppressQuickSetup]);
 
     // Initial workspace load is kicked off by TasksProvider once the user id is known.
 
@@ -162,10 +183,30 @@ const HomeContent = React.memo(function HomeContent({
 
     const homeScrollRef = useRef<any>(null);
 
+    const { step: onboardingStep, dispatch: dispatchOnboarding, isLoading: v2Loading } = useOnboardingV2Context();
+    // v2 replaces the legacy tours for every user, so they stay off once v2 has loaded.
+    const legacyToursOff = v2Loading || onboardingStep !== null;
+    const v2Blocking = v2Loading || (onboardingStep !== null && onboardingStep !== ONBOARDING_V2_DONE);
+    const realWorkspaceCount = useTasksSelector((s) => s.workspaces.filter((w) => !w.isBlueprint).length);
+    const suppressQuickSetup = onboardingStep === ONBOARDING_V2_DONE && realWorkspaceCount !== 1;
+    // No step guard: the scroll handler can hold a stale copy of this callback, and the reducer
+    // ignores REVEAL_WORKSPACES off step 0 anyway.
+    const onWorkspacesRevealed = useCallback(() => {
+        dispatchOnboarding({ type: "REVEAL_WORKSPACES" });
+    }, [dispatchOnboarding]);
+    const onQuickAddSubmitted = useCallback(() => dispatchOnboarding({ type: "QUICK_ADD_SUBMITTED" }), [dispatchOnboarding]);
+
+    // Coach anchors: re-measured on step change, rings layout, scroll settle, and dock layout.
+    const ringsAnchorRef = useRef<View>(null);
+    const dockAnchorRef = useRef<View>(null);
+    useEffect(() => registerCoachAnchor("rings", ringsAnchorRef), []);
+    useEffect(() => registerCoachAnchor("dock", dockAnchorRef), []);
+    const measureCoachAnchors = notifyCoachAnchorsMoved;
+
     // Guided first-touch home tour. Lives here (not in HomeScrollContent) so the
     // overlay can cover the whole home view — header included — and so the tabs
     // layout can hide the tab bar + FAB while it runs.
-    const rawTour = useHomeTour(homeScrollRef);
+    const rawTour = useHomeTour(homeScrollRef, { suppressed: legacyToursOff });
     // useHomeTour returns a fresh object every render; pin it so the memoized home page can bail out
     const tour = useMemo(
         () => rawTour,
@@ -249,6 +290,25 @@ const HomeContent = React.memo(function HomeContent({
     const activeIndexRef = useRef(activeIndex);
     activeIndexRef.current = activeIndex;
 
+    // The page the native pager last reported. setPage is sometimes dropped, which would leave the
+    // UI state on one page and the screen on another, so every move is checked and retried.
+    const shownPageRef = useRef(activeIndex);
+    const moveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (moveTimerRef.current) clearTimeout(moveTimerRef.current); }, []);
+    // A jump of several pages is walked one page at a time: the native pager loses track of where it is
+    // after animating straight past pages, and snaps back to the old one on the next touch.
+    const chainTargetRef = useRef<number | null>(null);
+    const movePager = useCallback((target: number) => {
+        const from = shownPageRef.current;
+        chainTargetRef.current = target === from ? null : target;
+        pagerRef.current?.setPage(target === from ? target : from + Math.sign(target - from));
+        if (moveTimerRef.current) clearTimeout(moveTimerRef.current);
+        moveTimerRef.current = setTimeout(() => {
+            chainTargetRef.current = null;
+            if (shownPageRef.current !== target) pagerRef.current?.setPageWithoutAnimation(target);
+        }, 350 * Math.max(Math.abs(target - from), 1) + 300);
+    }, []);
+
     // External setSelected → move the pager. Compares against getSelected(), not the
     // `selected` snapshot: the store publishes a render late, so right after a swipe or
     // tap the snapshot still holds the old workspace and would drag the pager back to
@@ -262,8 +322,8 @@ const HomeContent = React.memo(function HomeContent({
         if (target === activeIndex) return;
         activeIndexRef.current = target;
         setActiveIndex(target);
-        pagerRef.current?.setPage(target);
-    }, [selected, activeIndex, indexToSelected, selectedToIndex, getSelected]);
+        movePager(target);
+    }, [selected, activeIndex, indexToSelected, selectedToIndex, getSelected, movePager]);
 
     const goToPage = useCallback(
         (pos: number) => {
@@ -279,6 +339,16 @@ const HomeContent = React.memo(function HomeContent({
     const onPageSelected = React.useCallback(
         (e: { nativeEvent: { position: number } }) => {
             const pos = e.nativeEvent.position;
+            shownPageRef.current = pos;
+            const chain = chainTargetRef.current;
+            if (chain !== null) {
+                if (pos !== chain) {
+                    // Mid-walk: keep going, and don't let the in-between pages change the selection
+                    pagerRef.current?.setPage(pos + Math.sign(chain - pos));
+                    return;
+                }
+                chainTargetRef.current = null;
+            }
             if (pos === activeIndexRef.current) return;
             // Dot taps and external changes set the index up front, so this only ticks on swipes.
             hapticSelect();
@@ -291,12 +361,20 @@ const HomeContent = React.memo(function HomeContent({
     // setPage alone didn't always emit it, so a first tap could be dropped.
     const onDotPress = useCallback(
         (i: number) => {
-            if (i === activeIndexRef.current) return;
+            // Already there, on screen too (state alone can be ahead of a dropped setPage)
+            if (i === activeIndexRef.current && i === shownPageRef.current) return;
             goToPage(i);
-            pagerRef.current?.setPage(i);
+            movePager(i);
         },
-        [goToPage]
+        [goToPage, movePager]
     );
+
+    // Back on Home after the guide, glide up from the workspaces list to the rings.
+    useEffect(() => {
+        if (onboardingStep !== 4 || activeIndex !== HOME_INDEX) return;
+        const timer = setTimeout(() => homeScrollRef.current?.scrollTo({ y: 0, animated: true }), 450);
+        return () => clearTimeout(timer);
+    }, [onboardingStep, activeIndex]);
 
     // Full-screen swipe + focus-mode intro tour. Waits out both the scroll
     // tour and the quick-setup sheet before it ever starts.
@@ -306,6 +384,9 @@ const HomeContent = React.memo(function HomeContent({
         todayIndex: 0,
         setSelected,
         blocked: tour.active || showWorkspaceSelection,
+        // Runs once the v2 coach is done, so the swipe lesson follows "You're set".
+        suppressed: v2Blocking,
+        startDelayMs: INTRO_TOUR_DELAY_MS,
     });
     useEffect(() => {
         homeTourVisibilityEvents.emit(tour.active || introTour.active);
@@ -320,6 +401,16 @@ const HomeContent = React.memo(function HomeContent({
     }, [activeIndex, isGuest, tour.active, introTour.active, onDotPress]);
 
     const isHome = activeIndex === HOME_INDEX;
+    useEffect(() => {
+        setHomePageActive(isHome);
+        return () => setHomePageActive(false);
+    }, [isHome]);
+    const onWorkspacePage = activeIndex >= WORKSPACE_OFFSET && activeIndex < somedayIndex;
+    const coachActive = (isHome || onWorkspacePage) && !tour.active && !introTour.active;
+    useEffect(() => {
+        setCoachSurface({ active: coachActive, workspacePage: onWorkspacePage });
+    }, [coachActive, onWorkspacePage]);
+    useEffect(() => () => setCoachSurface({ active: false, workspacePage: false }), []);
     const [scheduling, setScheduling] = useState(false);
     useEffect(() => scheduleSelectionEvents.subscribe(setScheduling), []);
     const onHomeOrFriends = activeIndex === HOME_INDEX || activeIndex === FRIENDS_INDEX;
@@ -358,9 +449,17 @@ const HomeContent = React.memo(function HomeContent({
                     tour={tour}
                     glowPull={glowPull}
                     glowReplay={glowReplay}
+                    onWorkspacesRevealed={onWorkspacesRevealed}
+                    ringsAnchorRef={ringsAnchorRef}
+                    onAnchorsMoved={measureCoachAnchors}
                 />
                 {tour.visibleUpTo("quickadd") && (
-                    <HomeQuickAddDock sectionRef={(node) => tour.registerSection("quickadd", node)} />
+                    <HomeQuickAddDock
+                        sectionRef={(node) => tour.registerSection("quickadd", node)}
+                        onSubmitted={onQuickAddSubmitted}
+                        anchorRef={dockAnchorRef}
+                        onLayout={measureCoachAnchors}
+                    />
                 )}
             </View>
         ),
@@ -378,6 +477,9 @@ const HomeContent = React.memo(function HomeContent({
             refreshing,
             onRefresh,
             tour,
+            onWorkspacesRevealed,
+            onQuickAddSubmitted,
+            measureCoachAnchors,
         ]
     );
 
@@ -386,7 +488,7 @@ const HomeContent = React.memo(function HomeContent({
             {/* Shared modals */}
             <CreateWorkspaceBottomSheetModal visible={creatingWorkspace} setVisible={setCreatingWorkspace} />
             <WorkspaceSelectionBottomSheet
-                isVisible={showWorkspaceSelection}
+                isVisible={showWorkspaceSelection && !v2Blocking && !suppressQuickSetup}
                 onClose={closeWorkspaceSelection}
                 onComplete={closeWorkspaceSelection}
             />
@@ -409,6 +511,10 @@ const HomeContent = React.memo(function HomeContent({
                         initialPage={activeIndex}
                         offscreenPageLimit={1}
                         scrollEnabled={!tour.active}
+                        onPageScrollStateChanged={(e) => {
+                            // A finger on the pager takes over from any scripted walk
+                            if (e.nativeEvent.pageScrollState === "dragging") chainTargetRef.current = null;
+                        }}
                         onPageSelected={onPageSelected}>
                         {pages.map((page, index) => {
                             const key = pageKeys[index];

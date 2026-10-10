@@ -7,6 +7,7 @@ import {
     Platform,
     TouchableOpacity,
     Animated as RNAnimated,
+    Easing,
 } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 
@@ -22,6 +23,10 @@ import ExpandedRingDetail from "./ExpandedRingDetail";
 import EncourageModal from "@/components/modals/EncourageModal";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import RewardUnboxingModal from "@/components/modals/RewardUnboxingModal";
+import ScoreRamp from "@/components/onboarding/ScoreRamp";
+import { useCoachRing } from "@/utils/onboardingV2/coachRing";
+import { useOnboardingV2Context } from "@/contexts/OnboardingV2Context";
+import { ONBOARDING_V2_DONE } from "@/utils/onboardingV2/machine";
 
 import DefaultModal from "@/components/modals/DefaultModal";
 import { useFirstTouchHint } from "@/hooks/useFirstTouchHint";
@@ -36,11 +41,55 @@ const SCORE_BREAKDOWN = [
     { Icon: CalendarCheck, label: "Show up daily", detail: "close at least one ring", points: "up to 8" },
 ];
 
+// Rings scale in and out during the coach: wait, then glide slowly.
+const BLOW_DELAY_MS = 600;
+const BLOW_MS = 1100;
+
+const AnimatedThemedText = RNAnimated.createAnimatedComponent(ThemedText);
+
+/** The score number; flashes success green whenever it goes up. */
+function FlashingScore({ score }: { score: number }) {
+    const ThemedColor = useThemeColor();
+    const prev = useRef(score);
+    const flash = useRef(new RNAnimated.Value(0)).current;
+
+    useEffect(() => {
+        // A rise from 0 is the first load, not a gain.
+        if (prev.current > 0 && score > prev.current) {
+            flash.setValue(0);
+            RNAnimated.sequence([
+                RNAnimated.timing(flash, { toValue: 1, duration: 150, useNativeDriver: false }),
+                RNAnimated.delay(900),
+                RNAnimated.timing(flash, { toValue: 0, duration: 400, useNativeDriver: false }),
+            ]).start();
+        }
+        prev.current = score;
+    }, [score, flash]);
+
+    const color = flash.interpolate({ inputRange: [0, 1], outputRange: [ThemedColor.text, ThemedColor.success] });
+    return (
+        <AnimatedThemedText type="subtitle" style={{ color }}>
+            {score}
+        </AnimatedThemedText>
+    );
+}
+
 /** Productivity score number, tappable to (re-)explain how the score works. */
-function ScoreWithInfo({ score }: { score: number }) {
+export function ScoreWithInfo({ score }: { score: number }) {
     const [showInfo, setShowInfo] = useState(false);
     const { ready, done } = useFirstTouchHint("productivity_score");
     const ThemedColor = useThemeColor();
+    const { step } = useOnboardingV2Context();
+    const [ramping, setRamping] = useState(false);
+    const prevStep = useRef(step);
+    // The coach's finish is step 7, so the score is revealed once it is behind us.
+    const inOnboarding = step !== null && step <= 7;
+
+    // Ramp only when the finish step ends in this session, never on mount or a skip.
+    useEffect(() => {
+        if (prevStep.current === 7 && step !== null && step > 7) setRamping(true);
+        prevStep.current = step;
+    }, [step]);
 
     useEffect(() => {
         if (ready) setShowInfo(true);
@@ -57,7 +106,13 @@ function ScoreWithInfo({ score }: { score: number }) {
     return (
         <>
             <TouchableOpacity onPress={() => setShowInfo(true)} activeOpacity={0.8} hitSlop={8}>
-                <ThemedText type="subtitle">{score}</ThemedText>
+                {inOnboarding ? (
+                    <ThemedText type="subtitle">0</ThemedText>
+                ) : ramping ? (
+                    <ScoreRamp target={score} playing onDone={() => setRamping(false)} type="subtitle" />
+                ) : (
+                    <FlashingScore score={score} />
+                )}
             </TouchableOpacity>
             <DefaultModal visible={showInfo} setVisible={closeInfo} enableDynamicSizing>
                 <View style={infoStyles.header}>
@@ -300,6 +355,49 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
     const { user } = useAuth();
     const { rings, score, streak, isLoading, history, allClosed } = useRings();
     const [expandedRing, setExpandedRing] = useState<RingKey | null>(null);
+    const coachRing = useCoachRing();
+    const spotlitRing = expandedRing ?? coachRing;
+
+    // While the coach explains the rings (steps 4-5) the home rings blow up to double size, then ease back.
+    const { step: coachStep } = useOnboardingV2Context();
+    const blownUp = variant === "rings" && (coachStep === 4 || coachStep === 5);
+    // `bigLayout` is the layout the rings actually occupy. Growing flips it first (the scale starts at the
+    // old visual size, so nothing moves); shrinking scales down first and only then collapses the layout.
+    const [bigLayout, setBigLayout] = useState(false);
+    // Rests at 0.5 (the visual size the layout flip starts from); only used while the layout is enlarged.
+    const blowScale = useRef(new RNAnimated.Value(0.5)).current;
+    const growPending = useRef(false);
+    useEffect(() => {
+        blowScale.stopAnimation();
+        if (blownUp) {
+            if (bigLayout) {
+                RNAnimated.timing(blowScale, { toValue: 1, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start();
+            } else {
+                growPending.current = true;
+                setBigLayout(true);
+            }
+        } else if (bigLayout) {
+            RNAnimated.sequence([
+                RNAnimated.delay(BLOW_DELAY_MS),
+                RNAnimated.timing(blowScale, { toValue: 0.5, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+            ]).start(({ finished }) => {
+                if (finished) setBigLayout(false);
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [blownUp]);
+    // Growing starts from the resting 0.5, which looks identical to the old size at the new layout.
+    React.useLayoutEffect(() => {
+        if (bigLayout && growPending.current) {
+            growPending.current = false;
+            RNAnimated.sequence([
+                RNAnimated.delay(BLOW_DELAY_MS),
+                RNAnimated.timing(blowScale, { toValue: 1, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+            ]).start();
+        } else if (!bigLayout) {
+            blowScale.setValue(0.5);
+        }
+    }, [bigLayout, blowScale]);
 
     // Staggered entrance (tutorial): each ring fades + scales in, one after another
     const entranceValues = useRef([0, 1, 2].map(() => new RNAnimated.Value(staggerMs ? 0 : 1))).current;
@@ -381,14 +479,19 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 <RNAnimated.View
                     style={{
                         opacity: entranceValues[0],
-                        transform: [{ scale: entranceValues[0].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
+                        transform: [
+                            { scale: entranceValues[0].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
+                            // A plain 1 once the layout has collapsed: it commits with the size, never behind a native update
+                            { scale: bigLayout ? blowScale : 1 },
+                        ],
                     }}
                 >
                     <ConcentricRings
                         rings={effectiveRings}
-                        size={compact ? 120 : undefined}
-                        strokeWidth={compact ? 11 : undefined}
-                        dimmedExcept={expandedRing}
+                        size={bigLayout ? (compact ? 240 : 264) : compact ? 120 : undefined}
+                        strokeWidth={bigLayout ? (compact ? 22 : 24) : compact ? 11 : undefined}
+                        gap={bigLayout ? 8 : undefined}
+                        dimmedExcept={spotlitRing}
                         staggerMs={staggerMs}
                         center={!ringsOverride && <ScoreWithInfo score={score} />}
                     />
@@ -400,7 +503,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                         return (
                             <RNAnimated.View key={key} style={{ opacity: ev }}>
                                 <TouchableOpacity
-                                    style={[styles.legendRow, isExpanded && expandedRing !== key && { opacity: 0.3 }]}
+                                    style={[styles.legendRow, spotlitRing !== null && spotlitRing !== key && { opacity: 0.3 }]}
                                     onPress={() => handleRingPress(key)}
                                     disabled={!!ringsOverride}
                                     activeOpacity={0.7}

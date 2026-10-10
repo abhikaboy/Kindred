@@ -12,6 +12,8 @@ import { noteTaskCompleted, refreshCompletedToday, syncStreakWidgets } from "@/w
 import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
 import PostCompletionNudgeSheet from "@/components/modals/PostCompletionNudgeSheet";
 import { recordAppOpen } from "@/utils/lastOpen";
+import { loadStep } from "@/utils/onboardingV2/storage";
+import { ONBOARDING_V2_DONE } from "@/utils/onboardingV2/machine";
 
 LogBox.ignoreLogs(['addListener', 'native JS logger']);
 import { type ErrorBoundaryProps } from "expo-router";
@@ -46,6 +48,8 @@ import { useLiveActivityScheduler } from '@/hooks/useLiveActivityScheduler';
 import { useBackgroundTaskSync, registerBackgroundFetch } from '@/tasks/backgroundTaskSync';
 import { registerBackgroundRefresh } from '@/tasks/backgroundRefresh';
 import { useTaskActions, useTasksSelector } from '@/contexts/tasksContext';
+import { OnboardingV2Overlay } from "@/components/onboarding/OnboardingV2Host";
+import { OnboardingV2Provider } from "@/contexts/OnboardingV2Context";
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
 import { getNotificationRefreshPlan } from '@/utils/notificationInvalidation';
@@ -258,10 +262,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
                         if (guestRoute !== TABS_ROUTE) setRedirectPath(guestRoute);
                         return;
                     }
-                    // First open ever: intro video precedes login. (Old pre-login
-                    // onboarding cluster removed — after intro, straight to login.)
-                    const hasSeenIntro = await AsyncStorage.getItem('hasSeenIntroVideo');
-                    setRedirectPath(hasSeenIntro ? "/login" : "/intro");
+                    setRedirectPath("/login");
                 } else if (result.status === "unverified-offline" && !result.user) {
                     // We hold tokens but couldn't verify them and have no cached
                     // profile to render, so there is nothing to show. Still don't
@@ -355,9 +356,10 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!user) return;
 
-        // Prompt for push a few seconds after the user lands in-app (never during
-        // onboarding) so it doesn't interrupt the first-touch home tour.
-        const t = setTimeout(() => {
+        // Prompt for push a few seconds after the user lands in-app. Not while onboarding v2 runs (step < 9).
+        const t = setTimeout(async () => {
+            const step = await loadStep(user._id).catch(() => null);
+            if (step === null || step < ONBOARDING_V2_DONE) return;
             registerForPushNotificationsAsync().then((result) => {
                 if (!result) return;
 
@@ -526,16 +528,15 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         setSplashDone(true);
     }, []);
 
-    // A guest's redirect (to the tutorial) is one-shot. Left set, it fires again
-    // on the next re-render of this layout, e.g. any route change, which bounced
-    // guests from Home back to the start of the tutorial once they finished it.
+    // A guest's redirect is one-shot. Left set, it fires again on every re-render
+    // of this layout, bouncing guests off the screen they were sent to.
     const guestRedirectPending = !isLoading && !!redirectPath && !!user?.isGuest;
     useEffect(() => {
         if (guestRedirectPending) setRedirectPath(null);
     }, [guestRedirectPending]);
 
     // If no user after loading, redirect based on onboarding status. A just-created
-    // guest has a user but still needs to leave for the tutorial.
+    // guest has a user but still needs to leave for its route.
     if (!isLoading && redirectPath && (!user || user.isGuest)) {
         return <Redirect href={redirectPath} />;
     }
@@ -554,7 +555,11 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     // tabs mount underneath during the fade.
     return (
         <View style={{ flex: 1 }}>
-            {showContent && <LayoutContent />}
+            {showContent && (
+                <OnboardingV2Scope>
+                    <LayoutContent />
+                </OnboardingV2Scope>
+            )}
             {!splashDone && (
                 <View style={StyleSheet.absoluteFill} pointerEvents={showContent ? "none" : "auto"}>
                     <EnhancedSplashScreen ready={showContent} onAnimationComplete={handleAnimationComplete} />
@@ -572,6 +577,18 @@ const SCREEN_PANEL: Partial<Record<Screen, Panel>> = {
     [Screen.REMINDER]: "reminder",
     [Screen.COLLABORATORS]: "tag",
     [Screen.INTEGRATION]: "integration",
+};
+
+// Provides onboarding v2 state to the tabs and the create modal, which both render under this layout.
+const OnboardingV2Scope = ({ children }: { children: React.ReactNode }) => {
+    const hasNoWorkspaces = useTasksSelector((s) => !s.workspaces.some((w) => !w.isBlueprint));
+    // A new user has zero workspaces, so readiness can't depend on the list being non-empty.
+    const ready = useTasksSelector((s) => !s.fetchingWorkspaces && s.lastSyncedAt !== null);
+    return (
+        <OnboardingV2Provider hasNoWorkspaces={hasNoWorkspaces} ready={ready}>
+            {children}
+        </OnboardingV2Provider>
+    );
 };
 
 // Separate component to use the CreateModal context
@@ -616,6 +633,8 @@ const LayoutContent = () => {
                         }}
                     /> */}
                 </Stack>
+                {/* Onboarding coach: above the tabs, dock and FAB, below the composers and account prompt */}
+                <OnboardingV2Overlay />
                 {createModalMounted && (
                     <CategoryComposer visible={visible && !composerRoute} setVisible={setVisible} />
                 )}

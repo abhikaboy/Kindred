@@ -1,5 +1,5 @@
-# Verify the skip button on onboarding goes straight to login
-appId: com.suntex.kindred
+# Verify the coach Skip action dismisses the onboarding v2 coach on Home
+appId: com.kindred.kindredtsl
 tags:
   - smoke
   - onboarding
@@ -7,10 +7,10 @@ tags:
 - launchApp:
     clearState: true
 
-# First screen should show Skip button
-- assertVisible: "Productivity is something"
-- tapOn: "Skip"
+# First coach step shows Skip
+- assertVisible: "Swipe up to see your workspaces"
+- tapOn:
+    id: "onboarding-coach-skip"
 
-# Should land on the login page
-- assertVisible: "kindred"
-- assertVisible: "Join Kindred"
+# Coach is dismissed and the user stays on Home
+- assertNotVisible: "Swipe up to see your workspaces"

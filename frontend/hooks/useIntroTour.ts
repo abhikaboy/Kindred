@@ -21,9 +21,12 @@ type Args = {
     // Scroll-tour running, or a workspace-setup sheet covering the screen —
     // don't start (or restart the delay) until this clears.
     blocked: boolean;
+    // Onboarding v2 owns first-run guidance; the legacy tour stays off while it's active.
+    suppressed?: boolean;
+    startDelayMs?: number;
 };
 
-export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, blocked }: Args) {
+export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, blocked, suppressed = false, startDelayMs = START_DELAY_MS }: Args) {
     const { user } = useAuth();
     const { toggleFocusMode } = useFocusMode();
     const seenKey = user?._id ? `${user._id}-intro-tour-seen` : null;
@@ -46,14 +49,14 @@ export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, 
 
     // Check once per user whether they've seen it.
     useEffect(() => {
-        if (!seenKey || checked.current) return;
+        if (!seenKey || checked.current || suppressed) return;
         checked.current = true;
         AsyncStorage.getItem(seenKey)
             .then((v) => {
                 if (v == null) setUnseen(true);
             })
             .catch(() => {});
-    }, [seenKey]);
+    }, [seenKey, suppressed]);
 
     // (Re)schedule the delayed start whenever the blocker clears. Restarts
     // the wait — rather than requiring a specific "workspace created" event —
@@ -61,14 +64,14 @@ export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, 
     // creates a workspace inside it or skips.
     useEffect(() => {
         clearTimeout(timer.current ?? undefined);
-        if (blocked || active || !unseen) return;
+        if (blocked || active || !unseen || suppressed) return;
         timer.current = setTimeout(() => {
             setSelected("");
             setStepIndex(0);
             setActive(true);
-        }, START_DELAY_MS);
+        }, startDelayMs);
         return () => clearTimeout(timer.current ?? undefined);
-    }, [blocked, active, unseen, setSelected]);
+    }, [blocked, active, unseen, suppressed, startDelayMs, setSelected]);
 
     // Real pager movement advances the swipe steps.
     useEffect(() => {
