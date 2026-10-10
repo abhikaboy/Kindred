@@ -42,6 +42,7 @@ const SCORE_BREAKDOWN = [
 ];
 
 // Rings scale in and out during the coach: wait, then glide slowly.
+const BIG_RINGS = 240;
 const BLOW_DELAY_MS = 600;
 const BLOW_MS = 1100;
 
@@ -360,23 +361,24 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
 
     // While the coach explains the rings (steps 4-5) the home rings blow up to double size, then ease back.
     const { step: coachStep } = useOnboardingV2Context();
-    const blownUp = variant === "rings" && (coachStep === 4 || coachStep === 5);
-    // `bigLayout` is the layout the rings actually occupy. Growing flips it first (the scale starts at the
-    // old visual size, so nothing moves); shrinking scales down first and only then collapses the layout.
+    // Home rings: while the coach explains them (steps 4-5) they blow up to double size, then ease back.
+    // The graphic is always built at double size and `blowScale` (attached from the first render, never
+    // reset) rests at 0.5. Growing flips the outer height first, then scales 0.5 -> 1; shrinking scales
+    // 1 -> 0.5 first and only then collapses the height, so nothing ever jumps.
+    const homeRings = variant === "rings" && compact;
+    const blownUp = homeRings && (coachStep === 4 || coachStep === 5);
     const [bigLayout, setBigLayout] = useState(false);
-    // Rests at 0.5 (the visual size the layout flip starts from); only used while the layout is enlarged.
     const blowScale = useRef(new RNAnimated.Value(0.5)).current;
-    const growPending = useRef(false);
     useEffect(() => {
+        if (!homeRings) return;
         blowScale.stopAnimation();
         if (blownUp) {
-            if (bigLayout) {
-                RNAnimated.timing(blowScale, { toValue: 1, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start();
-            } else {
-                growPending.current = true;
-                setBigLayout(true);
-            }
-        } else if (bigLayout) {
+            setBigLayout(true);
+            RNAnimated.sequence([
+                RNAnimated.delay(BLOW_DELAY_MS),
+                RNAnimated.timing(blowScale, { toValue: 1, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+            ]).start();
+        } else {
             RNAnimated.sequence([
                 RNAnimated.delay(BLOW_DELAY_MS),
                 RNAnimated.timing(blowScale, { toValue: 0.5, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
@@ -384,20 +386,7 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 if (finished) setBigLayout(false);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [blownUp]);
-    // Growing starts from the resting 0.5, which looks identical to the old size at the new layout.
-    React.useLayoutEffect(() => {
-        if (bigLayout && growPending.current) {
-            growPending.current = false;
-            RNAnimated.sequence([
-                RNAnimated.delay(BLOW_DELAY_MS),
-                RNAnimated.timing(blowScale, { toValue: 1, duration: BLOW_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-            ]).start();
-        } else if (!bigLayout) {
-            blowScale.setValue(0.5);
-        }
-    }, [bigLayout, blowScale]);
+    }, [blownUp, homeRings, blowScale]);
 
     // Staggered entrance (tutorial): each ring fades + scales in, one after another
     const entranceValues = useRef([0, 1, 2].map(() => new RNAnimated.Value(staggerMs ? 0 : 1))).current;
@@ -479,22 +468,44 @@ const ProductivityRingsCard: React.FC<ProductivityRingsCardProps> = ({
                 <RNAnimated.View
                     style={{
                         opacity: entranceValues[0],
-                        transform: [
-                            { scale: entranceValues[0].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) },
-                            // A plain 1 once the layout has collapsed: it commits with the size, never behind a native update
-                            { scale: bigLayout ? blowScale : 1 },
-                        ],
+                        transform: [{ scale: entranceValues[0].interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }],
                     }}
                 >
-                    <ConcentricRings
-                        rings={effectiveRings}
-                        size={bigLayout ? (compact ? 240 : 264) : compact ? 120 : undefined}
-                        strokeWidth={bigLayout ? (compact ? 22 : 24) : compact ? 11 : undefined}
-                        gap={bigLayout ? 8 : undefined}
-                        dimmedExcept={spotlitRing}
-                        staggerMs={staggerMs}
-                        center={!ringsOverride && <ScoreWithInfo score={score} />}
-                    />
+                    {homeRings ? (
+                        // Layout box: 120 at rest, 240 while blown up. The 240 graphic inside is scaled about its top.
+                        <View style={{ width: BIG_RINGS, height: bigLayout ? BIG_RINGS : BIG_RINGS / 2 }}>
+                            <RNAnimated.View
+                                style={{
+                                    width: BIG_RINGS,
+                                    height: BIG_RINGS,
+                                    transform: [
+                                        { translateY: blowScale.interpolate({ inputRange: [0.5, 1], outputRange: [-BIG_RINGS / 4, 0] }) },
+                                        { scale: blowScale },
+                                    ],
+                                }}
+                            >
+                                <ConcentricRings
+                                    rings={effectiveRings}
+                                    size={BIG_RINGS}
+                                    strokeWidth={22}
+                                    gap={8}
+                                    dimmedExcept={spotlitRing}
+                                    staggerMs={staggerMs}
+                                    // Counter-scaled so the score reads at its normal size when the graphic rests at 0.5
+                                    center={!ringsOverride && <View style={{ transform: [{ scale: 2 }] }}><ScoreWithInfo score={score} /></View>}
+                                />
+                            </RNAnimated.View>
+                        </View>
+                    ) : (
+                        <ConcentricRings
+                            rings={effectiveRings}
+                            size={compact ? 120 : undefined}
+                            strokeWidth={compact ? 11 : undefined}
+                            dimmedExcept={spotlitRing}
+                            staggerMs={staggerMs}
+                            center={!ringsOverride && <ScoreWithInfo score={score} />}
+                        />
+                    )}
                 </RNAnimated.View>
 
                 <View style={compact ? styles.compactLegend : styles.legend}>

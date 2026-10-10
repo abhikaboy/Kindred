@@ -32,6 +32,24 @@ export const homePageVisibilityEvents = {
     },
 };
 
+const homePagerListeners = new Set<Listener>();
+let onHomePager = false;
+
+// True only while the pager sits on the Home page itself (not Today, Friends or a workspace). Focus
+// mode hides the tab bar there and nowhere else, so every other page can navigate back Home.
+export const homePagerActiveEvents = {
+    subscribe(fn: Listener) {
+        homePagerListeners.add(fn);
+        fn(onHomePager);
+        return () => { homePagerListeners.delete(fn); };
+    },
+
+    emit(active: boolean) {
+        onHomePager = active;
+        homePagerListeners.forEach((fn) => fn(active));
+    },
+};
+
 const scheduleListeners = new Set<Listener>();
 let scheduling = false;
 

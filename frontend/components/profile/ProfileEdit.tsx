@@ -4,6 +4,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "../inputs/PrimaryButton";
 import { router } from "expo-router";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import { openAccountOverlay } from "@/hooks/useAccountOverlay";
 
 interface ProfileStatsProps {
     friendsCount: number;
@@ -11,14 +13,17 @@ interface ProfileStatsProps {
 
 export default function ProfileStats({ friendsCount }: ProfileStatsProps) {
     const ThemedColor = useThemeColor();
+    // A guest has no profile to edit yet: the primary action is making the account
+    const isGuest = useIsGuest();
     return (
         <View style={styles.container}>
             <View style={styles.gridContainer}>
                 <View style={styles.buttonWrapper}>
                     <PrimaryButton
-                        title="Edit Profile"
+                        title={isGuest ? "Sign Up" : "Edit Profile"}
                         onPress={() => {
-                            router.push("/(logged-in)/(tabs)/(profile)/edit");
+                            if (isGuest) openAccountOverlay("social", { surface: "profile" });
+                            else router.push("/(logged-in)/(tabs)/(profile)/edit");
                         }}
                         style={styles.button}
                     />

@@ -36,7 +36,7 @@ Legend:
 | 9 | `live_activity` (deadlineCountdown) | Task deadline ≈1h away | `liveActivityType`, `taskId`, `categoryId`, `taskName`, `workspaceName`, `deadline`, `priority` | `/(task)/task/{taskId}?categoryId=...&name=...` | ✅ |
 | 10 | `congratulation` | Congratulation sent on task | `sender_name`, `task_name`, `message_text`, `imageUrl?` | `/kudos?tab=congratulations` | ⚠️ no `task_id` / `post_id` sent |
 | 11 | `congratulation` (onboarding beak) | Onboarding tutorial message | Same as 10 | `/kudos?tab=congratulations` | ✅ (intentional) |
-| 12 | `checkin` | Daily check-in at user-local 17:01 | `time`, `timestamp`, `scheduled_today`, `deadline_today`, `open_tasks`, **`url`** = `/(task)/review` | Uses `data.url` override → `/(task)/review` | ✅ |
+| 12 | `checkin` | Daily check-in at user-local 17:01 | `time`, `timestamp`, `scheduled_today`, `deadline_today`, `open_tasks`, **`url`** = `/(task)/review` (legacy) | The review screen was removed; the app maps this url to Home | ✅ |
 | 13 | `FOLLOW_UP` (reminder) | Task follow-up reminder | `taskId`, `type` | `/(task)` | ⚠️ `taskId` ignored — should open the task |
 | 14 | `ABSOLUTE` (reminder) | Absolute-time task reminder | `taskId`, `type` | `/(task)` | ⚠️ `taskId` ignored |
 | 15 | `RELATIVE` (reminder) | Relative-time task reminder | `taskId`, `type` | `/(task)` | ⚠️ `taskId` ignored |

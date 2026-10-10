@@ -22,12 +22,12 @@ import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
 import { IntroTourOverlay } from "@/components/dashboard/IntroTourOverlay";
 import { useIntroTour } from "@/hooks/useIntroTour";
-import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
+import { homeTourVisibilityEvents, homePageVisibilityEvents, homePagerActiveEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
 import HomeQuickAddDock from "@/components/dashboard/HomeQuickAddDock";
 import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { PagerDots, type PagerKind } from "@/components/task/PagerDots";
 import PagerView from "react-native-pager-view";
-import { useSharedValue } from "react-native-reanimated";
+import Reanimated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Confetti from "@/components/ui/Confetti";
 import { MemoDaily } from "./daily";
 import WorkspaceGlow from "@/components/task/WorkspaceGlow";
@@ -51,6 +51,8 @@ const TODAY_INDEX = 0;
 const HOME_INDEX = 1;
 // Waits out the score count-up that closes the onboarding coach.
 const INTRO_TOUR_DELAY_MS = 3200;
+// How far the pager slides during the swipe lessons
+const INTRO_NUDGE_PX = 36;
 const FRIENDS_INDEX = 2;
 const WORKSPACE_OFFSET = 3;
 // Besides the active page ±1, keep this many recently active pages mounted so
@@ -382,12 +384,34 @@ const HomeContent = React.memo(function HomeContent({
         activeIndex,
         homeIndex: HOME_INDEX,
         todayIndex: 0,
+        friendsIndex: FRIENDS_INDEX,
         setSelected,
         blocked: tour.active || showWorkspaceSelection,
         // Runs once the v2 coach is done, so the swipe lesson follows "You're set".
         suppressed: v2Blocking,
         startDelayMs: INTRO_TOUR_DELAY_MS,
     });
+    // During the swipe lessons the whole pager slides a little the way you should drag, then settles back.
+    // Right drag pulls the calendar in from the left; left drags bring friends and workspaces.
+    const introNudge = useSharedValue(0);
+    const nudgeDir = introTour.step === "swipeCalendar" ? 1 : introTour.step === "swipeFriends" || introTour.step === "swipeWorkspaces" ? -1 : 0;
+    useEffect(() => {
+        cancelAnimation(introNudge);
+        if (nudgeDir === 0) {
+            introNudge.value = withTiming(0, { duration: 150 });
+            return;
+        }
+        introNudge.value = withRepeat(
+            withSequence(
+                withDelay(1200, withTiming(nudgeDir * INTRO_NUDGE_PX, { duration: 480, easing: Easing.out(Easing.cubic) })),
+                withTiming(0, { duration: 560, easing: Easing.inOut(Easing.cubic) })
+            ),
+            -1
+        );
+        return () => cancelAnimation(introNudge);
+    }, [nudgeDir, introNudge]);
+    const introNudgeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: introNudge.value }] }));
+
     useEffect(() => {
         homeTourVisibilityEvents.emit(tour.active || introTour.active);
     }, [tour.active, introTour.active]);
@@ -403,7 +427,11 @@ const HomeContent = React.memo(function HomeContent({
     const isHome = activeIndex === HOME_INDEX;
     useEffect(() => {
         setHomePageActive(isHome);
-        return () => setHomePageActive(false);
+        homePagerActiveEvents.emit(isHome);
+        return () => {
+            setHomePageActive(false);
+            homePagerActiveEvents.emit(false);
+        };
     }, [isHome]);
     const onWorkspacePage = activeIndex >= WORKSPACE_OFFSET && activeIndex < somedayIndex;
     const coachActive = (isHome || onWorkspacePage) && !tour.active && !introTour.active;
@@ -505,6 +533,7 @@ const HomeContent = React.memo(function HomeContent({
                         </View>
                     )}
 
+                    <Reanimated.View style={[{ flex: 1 }, introNudgeStyle]}>
                     <PagerView
                         ref={pagerRef}
                         style={{ flex: 1 }}
@@ -545,6 +574,7 @@ const HomeContent = React.memo(function HomeContent({
                             );
                         })}
                     </PagerView>
+                    </Reanimated.View>
 
                     {/* Home docks its own quick add; the stage switcher + workspace list navigate instead */}
                     {!isHome && !(scheduling && activeIndex === 0) && <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} />}

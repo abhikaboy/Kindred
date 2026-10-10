@@ -3,20 +3,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/hooks/useAuth";
 import { useFocusMode } from "@/contexts/focusModeContext";
 
-// Full-screen, gesture-driven first-touch tour: teaches the pager swipe
-// (right → workspaces, left → calendar/list), then chains into a one-step
+// Full-screen, gesture-driven first-touch tour: teaches the pager in the order the pages sit
+// (right → calendar, then left → friends, left again → workspaces), then chains into a one-step
 // intro for focus mode. Separate from useHomeTour (the
 // scroll-guided dashboard reveal) since it spans pages instead of sections
 // and needs real swipes, not taps, to advance.
 
-export type IntroStep = "swipeRight" | "swipeLeft" | "focusMode";
-const STEPS: IntroStep[] = ["swipeRight", "swipeLeft", "focusMode"];
+export type IntroStep = "swipeCalendar" | "swipeFriends" | "swipeWorkspaces" | "focusMode";
+const STEPS: IntroStep[] = ["swipeCalendar", "swipeFriends", "swipeWorkspaces", "focusMode"];
+// After reaching a page, give it a moment to register before moving on
+const SETTLE_MS = 700;
 const START_DELAY_MS = 900;
 
 type Args = {
     activeIndex: number;
     homeIndex: number;
     todayIndex: number;
+    friendsIndex: number;
     setSelected: (s: string) => void;
     // Scroll-tour running, or a workspace-setup sheet covering the screen —
     // don't start (or restart the delay) until this clears.
@@ -26,7 +29,7 @@ type Args = {
     startDelayMs?: number;
 };
 
-export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, blocked, suppressed = false, startDelayMs = START_DELAY_MS }: Args) {
+export function useIntroTour({ activeIndex, homeIndex, todayIndex, friendsIndex, setSelected, blocked, suppressed = false, startDelayMs = START_DELAY_MS }: Args) {
     const { user } = useAuth();
     const { toggleFocusMode } = useFocusMode();
     const seenKey = user?._id ? `${user._id}-intro-tour-seen` : null;
@@ -73,23 +76,26 @@ export function useIntroTour({ activeIndex, homeIndex, todayIndex, setSelected, 
         return () => clearTimeout(timer.current ?? undefined);
     }, [blocked, active, unseen, suppressed, startDelayMs, setSelected]);
 
-    // Real pager movement advances the swipe steps.
+    // Real pager movement advances the swipe steps, one page at a time.
     useEffect(() => {
         if (!active) return;
         const step = STEPS[stepIndex];
-        if (step === "swipeRight" && activeIndex > homeIndex) {
-            setSelected("");
-            setStepIndex(1);
-        } else if (step === "swipeLeft" && activeIndex === todayIndex) {
-            // Let the Today page register, then bring them home where the
-            // focus-mode button lives for the last step.
+        // Reaching the calendar or the workspaces brings them back to Home for the next lesson
+        const backHomeThen = (next: number) => {
             const t = setTimeout(() => {
                 setSelected("");
-                setStepIndex(2);
-            }, 700);
+                setStepIndex(next);
+            }, SETTLE_MS);
             return () => clearTimeout(t);
+        };
+        if (step === "swipeCalendar" && activeIndex === todayIndex) {
+            return backHomeThen(1);
+        } else if (step === "swipeFriends" && activeIndex === friendsIndex) {
+            setStepIndex(2);
+        } else if (step === "swipeWorkspaces" && activeIndex > friendsIndex) {
+            return backHomeThen(3);
         }
-    }, [active, activeIndex, stepIndex, homeIndex, todayIndex, setSelected]);
+    }, [active, activeIndex, stepIndex, homeIndex, todayIndex, friendsIndex, setSelected]);
 
     const onFocusModePress = useCallback(() => {
         toggleFocusMode();

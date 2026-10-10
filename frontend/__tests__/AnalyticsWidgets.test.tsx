@@ -1,6 +1,5 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { SignalStrip } from "@/components/analytics/SignalStrip";
 import { StatusPill } from "@/components/analytics/StatusPill";
 import { StatCards } from "@/components/analytics/StatCards";
 import { TasksNeedingAttentionWidget } from "@/components/analytics/TasksNeedingAttentionWidget";
@@ -16,7 +15,6 @@ import {
     heatmapLevelColor,
     directionColor,
 } from "@/components/analytics/analyticsColors";
-import type { AnalyticsSignals } from "@/api/analytics";
 
 const themed: any = {
     primary: "#854DFF",
@@ -75,22 +73,6 @@ describe("analyticsColors", () => {
         expect(directionColor("up", themed)).toBe(themed.success);
         expect(directionColor("down", themed)).toBe(themed.error);
         expect(directionColor("flat", themed)).toBe(themed.caption);
-    });
-});
-
-describe("SignalStrip", () => {
-    const signals: AnalyticsSignals = {
-        momentum: { label: "Momentum", value: "34 done", rawValue: 34, delta: 18, deltaLabel: "+18% vs last week", direction: "up" },
-        timing: { label: "Timing", value: "81%", rawValue: 81, delta: 9, deltaLabel: "+9 pts", direction: "up" },
-        support: { label: "Support", value: "27 Kudos", rawValue: 27, delta: 6, deltaLabel: "+6 vs last week", direction: "up" },
-    };
-
-    test("renders all three signals", () => {
-        const { getByText } = render(<SignalStrip signals={signals} />);
-        getByText("Momentum");
-        getByText("34 done");
-        getByText("81%");
-        getByText("27 Kudos");
     });
 });
 

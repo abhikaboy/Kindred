@@ -12,14 +12,16 @@ type Props = {
     intensity?: number;
     /** Fade duration; the host lengthens it to introduce the blur gradually. */
     fadeMs?: number;
+    /** Blur the whole screen until the target is measured, instead of showing nothing. */
+    coverUntilFrame?: boolean;
     testID?: string;
 };
 
 /** Blurs everything except the target, which stays sharp. Never intercepts touches. */
-const CoachSpotlight = ({ frame, active, padding = 8, intensity = 14, fadeMs = 200, testID = "coach-spotlight" }: Props) => {
+const CoachSpotlight = ({ frame, active, padding = 8, intensity = 14, fadeMs = 200, coverUntilFrame = false, testID = "coach-spotlight" }: Props) => {
     // "light"/"dark" reads as a clean frost; "default" casts muddy gray on light UIs.
     const tint = useColorScheme() === "dark" ? "dark" : "light";
-    const show = active && frame !== null;
+    const show = active && (frame !== null || coverUntilFrame);
 
     const rootRef = useRef<View>(null);
     const [origin, setOrigin] = useState({ x: 0, y: 0 });
@@ -34,11 +36,19 @@ const CoachSpotlight = ({ frame, active, padding = 8, intensity = 14, fadeMs = 2
         });
     }, [show, fadeMs, progress]);
 
-    if (!frame || !mounted) return null;
+    if (!mounted || (!frame && !coverUntilFrame)) return null;
 
-    const local: Rect = { x: frame.x - origin.x, y: frame.y - origin.y, width: frame.width, height: frame.height };
-    const bands = spotlightBands({ x: 0, y: 0, width: size.width, height: size.height }, local, padding);
     const measured = size.width > 0 && size.height > 0;
+    // Until the target and this view are both measured there is no hole to cut, so cover everything
+    const covering = !frame || !measured;
+    const bands =
+        frame && measured
+            ? spotlightBands(
+                  { x: 0, y: 0, width: size.width, height: size.height },
+                  { x: frame.x - origin.x, y: frame.y - origin.y, width: frame.width, height: frame.height },
+                  padding
+              )
+            : null;
     const placed = (r: Rect) => ({ position: "absolute" as const, left: r.x, top: r.y, width: r.width, height: r.height });
 
     return (
@@ -52,8 +62,17 @@ const CoachSpotlight = ({ frame, active, padding = 8, intensity = 14, fadeMs = 2
                 rootRef.current?.measureInWindow?.((x, y) => setOrigin({ x, y }));
             }}
             style={StyleSheet.absoluteFill}>
-            {measured
-                ? [bands.top, bands.bottom, bands.left, bands.right].map((band, i) =>
+            {covering ? (
+                <FadingBlurView
+                    intensity={intensity}
+                    progress={progress}
+                    tint={tint}
+                    pointerEvents="none"
+                    testID={`${testID}-cover`}
+                    style={StyleSheet.absoluteFill}
+                />
+            ) : bands ? (
+                [bands.top, bands.bottom, bands.left, bands.right].map((band, i) =>
                       band ? (
                           <FadingBlurView
                               key={i}
@@ -66,7 +85,7 @@ const CoachSpotlight = ({ frame, active, padding = 8, intensity = 14, fadeMs = 2
                           />
                       ) : null
                   )
-                : null}
+            ) : null}
         </View>
     );
 };

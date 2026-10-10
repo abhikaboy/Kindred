@@ -2,7 +2,7 @@ import { Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from "
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useAuth } from "@/hooks/useAuth";
-import { promptAccountForSocial } from "@/hooks/useAccountOverlay";
+import { openAccountOverlay, promptAccountForSocial } from "@/hooks/useAccountOverlay";
 import { createConnectionAPI, deleteConnectionAPI, acceptConnectionAPI, unblockUser } from "@/api/connection";
 import { showToast } from "@/utils/showToast";
 import { Profile, RelationshipStatus } from "@/api/types";
@@ -145,9 +145,10 @@ export default function FollowButton({ profile, onRelationshipChange }: Props) {
     if (relationship === "self") {
         return (
             <PrimaryButton
-                title="Edit Profile"
+                title={isGuest ? "Sign Up" : "Edit Profile"}
                 onPress={() => {
-                    router.push("/(logged-in)/(tabs)/(profile)/edit");
+                    if (isGuest) openAccountOverlay("social", { surface: "profile" });
+                    else router.push("/(logged-in)/(tabs)/(profile)/edit");
                 }}
             />
         );

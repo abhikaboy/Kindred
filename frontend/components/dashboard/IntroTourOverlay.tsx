@@ -19,9 +19,10 @@ type Props = {
 };
 
 const COPY: Record<IntroStep, string> = {
-    swipeRight: "Swipe right for your workspaces",
-    swipeLeft: "Swipe left for your calendar & list view",
-    focusMode: "Focus mode is one tap away. The moon shows just today's tasks, whenever you want it.",
+    swipeCalendar: "Swipe right to pull in your calendar",
+    swipeFriends: "Swipe left to see your friends",
+    swipeWorkspaces: "Swipe left again for your workspaces",
+    focusMode: "Tap the moon for Focus mode. It hides the social features and keeps Kindred simple.",
 };
 
 export const IntroTourOverlay: React.FC<Props> = ({
@@ -40,7 +41,7 @@ export const IntroTourOverlay: React.FC<Props> = ({
     const focusRect = useFocusButtonRect();
     const arrowNudge = pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -4, 0] });
 
-    const isSwipeStep = step === "swipeRight" || step === "swipeLeft";
+    const isSwipeStep = step === "swipeCalendar" || step === "swipeFriends" || step === "swipeWorkspaces";
 
     useEffect(() => {
         if (!isSwipeStep) return;
@@ -70,7 +71,7 @@ export const IntroTourOverlay: React.FC<Props> = ({
 
     const translateX = bounce.interpolate({
         inputRange: [0, 1],
-        outputRange: step === "swipeRight" ? [0, 14] : [0, -14],
+        outputRange: step === "swipeCalendar" ? [0, 14] : [0, -14],
     });
 
     return (
@@ -93,7 +94,7 @@ export const IntroTourOverlay: React.FC<Props> = ({
             {isSwipeStep && (
                 <View style={styles.center} pointerEvents="none">
                     <Animated.View style={{ transform: [{ translateX }] }}>
-                        {step === "swipeRight" ? (
+                        {step === "swipeCalendar" ? (
                             <CaretRight size={64} color="#fff" weight="bold" />
                         ) : (
                             <CaretLeft size={64} color="#fff" weight="bold" />

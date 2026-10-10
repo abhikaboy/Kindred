@@ -41,7 +41,6 @@ export default function TaskLayout() {
                 },
             }}
         >
-            <Stack.Screen name="review" options={{ gestureEnabled: false }} />
         </Stack>
     );
 }

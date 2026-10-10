@@ -323,7 +323,7 @@ export default function OnboardingV2Host({ active, workspacePage = false }: Prop
             onLayout={() => rootRef.current?.measureInWindow?.((x, y) => setOrigin({ x, y }))}>
             {blurMode === "target" && (
                 <View pointerEvents="none" style={styles.layer}>
-                    <CoachSpotlight frame={layout.sharp} active={targetVisible} fadeMs={reveal === "blur" ? NEW_WORKSPACE_BLUR_MS : 200} />
+                    <CoachSpotlight frame={layout.sharp} active={targetVisible} coverUntilFrame={!!registryKey} fadeMs={reveal === "blur" ? NEW_WORKSPACE_BLUR_MS : 200} />
                 </View>
             )}
             {blurMode === "all" && (

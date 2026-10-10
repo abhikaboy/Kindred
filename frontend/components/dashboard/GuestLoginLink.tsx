@@ -5,8 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { openAccountOverlay } from "@/hooks/useAccountOverlay";
 
 // Quiet way back to an existing account for someone trying the app as a guest.
-// Mirrors the "Already have an account? Log in" link on the landing screen, and
-// opens the account overlay over Home rather than leaving for /login.
+// Opens the account overlay over Home rather than leaving for /login.
 export const GuestLoginLink = React.memo(function GuestLoginLink() {
     const ThemedColor = useThemeColor();
     return (
@@ -17,9 +16,9 @@ export const GuestLoginLink = React.memo(function GuestLoginLink() {
             hitSlop={8}
             style={styles.row}>
             <ThemedText type="caption" style={{ color: ThemedColor.caption }}>
-                Already have an account?{" "}
+                Create an account for the best experience.{" "}
                 <ThemedText type="caption" style={{ color: ThemedColor.primary, fontWeight: "800" }}>
-                    Log in
+                    Log In
                 </ThemedText>
             </ThemedText>
         </TouchableOpacity>

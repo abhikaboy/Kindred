@@ -351,10 +351,10 @@ describe("OnboardingV2Host blur and swipe cue", () => {
         off();
     });
 
-    test("a target step with no frame renders no blur but still shows the card", () => {
+    test("a target step with no frame yet blurs the whole screen at once and still shows the card", () => {
         setStep(4);
         const { queryByTestId, getByTestId } = render(<OnboardingV2Host active />);
-        expect(queryByTestId("coach-spotlight")).toBeNull();
+        expect(getByTestId("coach-spotlight-cover")).toBeTruthy();
         expect(queryByTestId("coach-backdrop")).toBeNull();
         expect(getByTestId("onboarding-coach-copy")).toBeTruthy();
     });
@@ -407,10 +407,10 @@ describe("OnboardingV2Host blur and swipe cue", () => {
         off();
     });
 
-    test("step 0 without a registered handle has no blur and no chevron", () => {
+    test("step 0 without a registered handle blurs everything at once, with no chevron", () => {
         setStep(0);
-        const { queryByTestId } = render(<OnboardingV2Host active />);
-        expect(queryByTestId("coach-spotlight")).toBeNull();
+        const { queryByTestId, getByTestId } = render(<OnboardingV2Host active />);
+        expect(getByTestId("coach-spotlight-cover")).toBeTruthy();
         expect(queryByTestId("coach-swipe-arrow")).toBeNull();
     });
 

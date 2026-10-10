@@ -111,8 +111,9 @@ interface NotificationData {
 /** Derive a navigation URL from push notification data. */
 function getNotificationRoute(data: NotificationData | undefined): string | null {
     if (!data) return null;
-    // Explicit url always wins
-    if (data.url) return data.url;
+    // Explicit url always wins. The daily check-in used to deep-link to the removed review screen;
+    // notifications already delivered still carry that url, so send them Home.
+    if (data.url) return /(^|\/)\(task\)\/review(\?|$)/.test(data.url) ? "/(logged-in)/(tabs)/(task)" : data.url;
 
     switch (data.type) {
         case "encouragement":
