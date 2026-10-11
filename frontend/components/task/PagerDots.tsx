@@ -8,6 +8,9 @@ import { hapticSelect } from "@/utils/haptics";
 import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 
 const TAB_BAR_HEIGHT = 83;
+// The FAB is 56px tall and sits 80px above the safe area; the nav pill is ~40px tall.
+const FAB_CENTER_FROM_BOTTOM = 80 + 28;
+const PILL_HEIGHT = 40;
 // Special pages are always shown; only the workspace dots are windowed.
 const MAX_VISIBLE_WORKSPACE_DOTS = 5;
 const DOT_SIZE = 8;
@@ -53,7 +56,11 @@ export const PagerDots = React.memo<{
     colors: (string | null | undefined)[];
     activeIndex: number;
     onDotPress: (index: number) => void;
-}>(function PagerDots({ kinds, colors, activeIndex, onDotPress }) {
+    /** Extra room above the tab bar, e.g. for the active-task mini bar docked there. */
+    bottomOffset?: number;
+    /** The tab bar is hidden: center the nav on the FAB instead of stacking it above the bar. */
+    alignWithFab?: boolean;
+}>(function PagerDots({ kinds, colors, activeIndex, onDotPress, bottomOffset = 0, alignWithFab = false }) {
     const ThemedColor = useThemeColor();
     const insets = useSafeAreaInsets();
     // White pops against the light glow; in dark mode the page background is
@@ -70,7 +77,11 @@ export const PagerDots = React.memo<{
     if (kinds.length <= 1) return null;
 
     return (
-        <View style={[styles.container, { bottom: insets.bottom + TAB_BAR_HEIGHT + 16 }]}>
+        <View
+            style={[
+                styles.container,
+                { bottom: alignWithFab ? insets.bottom + FAB_CENTER_FROM_BOTTOM - PILL_HEIGHT / 2 : insets.bottom + TAB_BAR_HEIGHT + 16 + bottomOffset },
+            ]}>
             <View
                 style={[
                     styles.inner,

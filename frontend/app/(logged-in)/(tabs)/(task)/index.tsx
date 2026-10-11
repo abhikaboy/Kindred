@@ -22,8 +22,9 @@ import { HomeTourOverlay } from "@/components/dashboard/HomeTourOverlay";
 import { useHomeTour } from "@/hooks/useHomeTour";
 import { IntroTourOverlay } from "@/components/dashboard/IntroTourOverlay";
 import { useIntroTour } from "@/hooks/useIntroTour";
-import { homeTourVisibilityEvents, homePageVisibilityEvents, homePagerActiveEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
+import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
 import HomeQuickAddDock from "@/components/dashboard/HomeQuickAddDock";
+import { ACTIVE_BAR_SPACE } from "@/components/dashboard/ActiveTaskMiniBar";
 import { WorkspaceContent } from "@/components/task/WorkspaceContent";
 import { PagerDots, type PagerKind } from "@/components/task/PagerDots";
 import PagerView from "react-native-pager-view";
@@ -425,13 +426,15 @@ const HomeContent = React.memo(function HomeContent({
     }, [activeIndex, isGuest, tour.active, introTour.active, onDotPress]);
 
     const isHome = activeIndex === HOME_INDEX;
+    // The active-task mini bar is docked just above the tab bar, right where the pager nav sits. The
+    // calendar page hides the tab bar (and the bar drops with it), so only the other pages need room.
+    const hasActiveTask = useTasksSelector((s) => s.workspaces.some((ws) => ws.categories.some((c) => c.tasks?.some((t) => t.active))));
+    // Focus mode and the calendar page both hide the tab bar; the nav then lines up with the FAB.
+    const tabBarHidden = focusMode || activeIndex === TODAY_INDEX;
+    const miniBarOffset = hasActiveTask && !tabBarHidden ? ACTIVE_BAR_SPACE : 0;
     useEffect(() => {
         setHomePageActive(isHome);
-        homePagerActiveEvents.emit(isHome);
-        return () => {
-            setHomePageActive(false);
-            homePagerActiveEvents.emit(false);
-        };
+        return () => setHomePageActive(false);
     }, [isHome]);
     const onWorkspacePage = activeIndex >= WORKSPACE_OFFSET && activeIndex < somedayIndex;
     const coachActive = (isHome || onWorkspacePage) && !tour.active && !introTour.active;
@@ -577,7 +580,9 @@ const HomeContent = React.memo(function HomeContent({
                     </Reanimated.View>
 
                     {/* Home docks its own quick add; the stage switcher + workspace list navigate instead */}
-                    {!isHome && !(scheduling && activeIndex === 0) && <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} />}
+                    {!isHome && !(scheduling && activeIndex === 0) && (
+                        <PagerDots kinds={pageKinds} colors={pageColors} activeIndex={activeIndex} onDotPress={onDotPress} bottomOffset={miniBarOffset} alignWithFab={tabBarHidden} />
+                    )}
 
                     {/* Guided tour overlay — covers the whole home view (header included) */}
                     {isHome && (

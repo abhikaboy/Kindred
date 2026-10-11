@@ -18,7 +18,7 @@ import { ProfileTabIcon } from "@/components/ui/ProfileTabIcon";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents, TabNames } from "@/utils/analytics";
 import { feedScrollVisibilityEvents } from "@/utils/feedScrollVisibilityEvents";
-import { homeTourVisibilityEvents, homePageVisibilityEvents, homePagerActiveEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
+import { homeTourVisibilityEvents, homePageVisibilityEvents, scheduleSelectionEvents } from "@/utils/homeTourVisibilityEvents";
 
 // Import Phosphor icons
 import {
@@ -67,8 +67,6 @@ export default function TabLayout() {
         return homeTourVisibilityEvents.subscribe(setHomeTourActive);
     }, []);
 
-    const [onHomePager, setOnHomePager] = useState(false);
-    useEffect(() => homePagerActiveEvents.subscribe(setOnHomePager), []);
     const [homePageVisible, setHomePageVisible] = useState(false);
     useEffect(() => homePageVisibilityEvents.subscribe(setHomePageVisible), []);
     const [scheduling, setScheduling] = useState(false);
@@ -104,9 +102,10 @@ export default function TabLayout() {
         isOnboardingV2Active(onboardingStep, onboardingLoading) ||
         (isOnFeedTab && !scrollVisible);
 
-    // Focus mode hides the tab bar on the Home page only. Every other page keeps it so there is
-    // always a way back Home. The FAB and home button stay put either way, same as isSwipedToToday.
-    const focusHidesTabBar = focusMode && isOnTaskTab && onHomePager && pathname === "/";
+    // Focus mode hides the tab bar on the task tab's pager (Home, Friends, workspaces, Today, Someday).
+    // Any other page, like Feed, Profile or a pushed screen, keeps it so there is always a way back.
+    // The FAB and home button stay put either way, same as isSwipedToToday.
+    const focusHidesTabBar = focusMode && isOnTaskTab && pathname === "/";
     const shouldHideTabBar = baseHideTabBar || isSwipedToToday || focusHidesTabBar;
 
     const shouldHideFAB =
