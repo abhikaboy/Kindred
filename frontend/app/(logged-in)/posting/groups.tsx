@@ -97,7 +97,7 @@ export default function GroupSelection() {
                             <GroupListItem
                                 groupName="All Friends"
                                 members={[]}
-                                memberCount={friends.length}
+                                memberCount={friends?.length ?? 0}
                                 isSelected={selectedGroupId === null}
                                 onPress={handleAllFriendsPress}
                             />

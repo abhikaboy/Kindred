@@ -11,6 +11,9 @@ type Props = {
     fontSize?: number;
     fontWeight?: TextStyle["fontWeight"];
     autoFocus?: boolean;
+    /** Overrides for dark stages; default to the theme */
+    color?: string;
+    placeholderColor?: string;
     onSelectionChange?: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void;
 };
 
@@ -23,6 +26,8 @@ const LongTextInput = ({
     fontSize = 16,
     fontWeight = "400",
     autoFocus,
+    color,
+    placeholderColor,
     onSelectionChange,
 }: Props) => {
     const ThemedColor = useThemeColor();
@@ -31,7 +36,7 @@ const LongTextInput = ({
         <View>
             <TextInput
                 placeholder={placeholder}
-                placeholderTextColor={ThemedColor.ghost}
+                placeholderTextColor={placeholderColor ?? ThemedColor.ghost}
                 multiline={true}
                 numberOfLines={6}
                 autoFocus={autoFocus}
@@ -41,7 +46,7 @@ const LongTextInput = ({
                 onSelectionChange={onSelectionChange}
                 style={{
                     backgroundColor: "transparent",
-                    color: ThemedColor.text,
+                    color: color ?? ThemedColor.text,
                     fontSize: fontSize,
                     fontFamily: "Outfit",
                     fontWeight: fontWeight,

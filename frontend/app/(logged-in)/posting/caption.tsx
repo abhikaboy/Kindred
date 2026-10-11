@@ -1,13 +1,15 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
-import { View, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, TouchableOpacity, ScrollView, KeyboardAvoidingView, Keyboard, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ThemedView } from "@/components/ThemedView";
+import { StatusBar } from "expo-status-bar";
 import { ThemedText } from "@/components/ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import MentionTextInput from "@/components/inputs/MentionTextInput";
-import TaggedUsersChips, { TaggedUser } from "@/components/inputs/TaggedUsersChips";
+import type { TaggedUser } from "@/components/inputs/TaggedUsersChips";
+import PropertyChip from "@/components/modals/create/composer/PropertyChip";
+import { STAGE } from "@/components/capture/CaptureStage";
+import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { formatHandle } from "@/utils/handle";
 import { createPostToBackend } from "@/api/post";
 import { uploadImageSmart, uploadVideo, ImageUploadResult } from "@/api/upload";
@@ -19,13 +21,10 @@ import CustomAlert, { AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { useRingUpdate } from "@/contexts/ringUpdateContext";
-import { Ionicons } from "@expo/vector-icons";
-import PostCardHeader from "@/components/cards/PostCardHeader";
-import PostCardMedia from "@/components/cards/PostCardMedia";
-import PostCardFooter from "@/components/cards/PostCardFooter";
+import StageMedia from "@/components/posting/StageMedia";
 import { usePostComposer } from "@/contexts/PostComposerContext";
 import SongPickerModal from "@/components/profile/song/SongPickerModal";
-import { MusicNote, CaretRight } from "phosphor-react-native";
+import { ArrowLeft, At, MusicNote, UsersThree } from "phosphor-react-native";
 import { getEncouragementsByTask } from "@/api/encouragement";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import type { Href } from "expo-router";
@@ -53,8 +52,17 @@ export default function Caption() {
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
-    const ThemedColor = useThemeColor();
-    const { user, updateUser } = useAuth();
+    const { updateUser } = useAuth();
+    const [keyboardUp, setKeyboardUp] = useState(false);
+    useEffect(() => {
+        const ios = Platform.OS === "ios";
+        const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", () => setKeyboardUp(true));
+        const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setKeyboardUp(false));
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
     // The posting lesson points at the caption box and the Post button
     const lesson = usePostingLesson();
     const isGuest = useIsGuest();
@@ -252,189 +260,130 @@ export default function Caption() {
         }
     };
 
+    const tagLabel =
+        taggedUsers.length === 0
+            ? "Tag people"
+            : taggedUsers.length === 1
+                ? formatHandle(taggedUsers[0].handle)
+                : `${taggedUsers.length} tagged`;
+    const taskMeta = taskInfo
+        ? [taskInfo.categoryName, taskInfo.status === "in_progress" ? "In progress" : "Completed"]
+              .filter(Boolean)
+              .join(" · ")
+        : null;
+
     return (
-        <ThemedView style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: "#000" }}>
+            <StatusBar style="light" />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
                 keyboardVerticalOffset={0}>
                 <ScrollView
                     style={{ flex: 1 }}
-                    contentContainerStyle={{
-                        paddingTop: insets.top,
-                        paddingBottom: 24 + insets.bottom,
-                    }}
+                    contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 24 }}
                     keyboardShouldPersistTaps="handled">
-                    {/* Header with back button */}
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            paddingHorizontal: 16,
-                            paddingVertical: 12,
-                        }}>
+                    <View style={{ paddingHorizontal: HORIZONTAL_PADDING }}>
                         <TouchableOpacity
                             onPress={() => router.back()}
                             activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel="Back"
                             style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 18,
-                                backgroundColor: ThemedColor.lightened,
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                backgroundColor: STAGE.fill,
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}>
-                            <Ionicons name="arrow-back" size={20} color={ThemedColor.text} />
+                            <ArrowLeft size={20} color={STAGE.text} />
                         </TouchableOpacity>
-                        <ThemedText type="subtitle" style={{ marginLeft: 12 }}>
-                            New Post
-                        </ThemedText>
-                    </View>
 
-                    {/* Post preview card */}
-                    <View style={{ paddingHorizontal: 16 }}>
-                        <View
-                            style={{
-                                borderRadius: 16,
-                                overflow: "hidden",
-                                backgroundColor: ThemedColor.background,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.15,
-                                shadowRadius: 12,
-                                elevation: 6,
-                            }}>
-                            <PostCardHeader
-                                icon={user?.profile_picture}
-                                name={user?.display_name ?? "You"}
-                                username={user?.handle ? `${user.handle}` : undefined}
-                                timeLabel="Just now"
-                                disableNavigation
-                            />
-                            {hasActualPhotos && (
-                                <PostCardMedia
-                                    images={photos}
-                                    media={photos.map((uri: string) => ({
-                                        type: mediaTypesByUri[uri] ?? "image",
-                                        url: uri,
-                                        thumbnailUrl: uri,
-                                        width: 0,
-                                        height: 0,
-                                    }))}
-                                    dual={dualPhoto}
-                                />
+                        {/* The task is the headline: it's what this post is about */}
+                        <View style={{ marginTop: 24, gap: 4 }}>
+                            <ThemedText type="fancyFrauncesSubheading" style={{ color: STAGE.text }} numberOfLines={3}>
+                                {taskInfo?.name || "New post"}
+                            </ThemedText>
+                            {taskMeta && (
+                                <ThemedText type="caption" style={{ color: STAGE.muted }}>
+                                    {taskMeta}
+                                </ThemedText>
                             )}
-                            <PostCardFooter
-                                category={taskInfo?.categoryName}
-                                taskName={taskInfo?.name}
-                                taskStatus={taskInfo?.status}
-                                readOnly
+                        </View>
+
+                        <View ref={captionAnchorRef} collapsable={false} style={{ marginTop: 24 }}>
+                            <MentionTextInput
+                                placeholder="Say something about it"
+                                value={data.caption}
+                                setValue={handleCaptionChange}
+                                fontSize={17}
+                                minHeight={48}
+                                color={STAGE.text}
+                                placeholderColor={STAGE.faint}
+                                // The lesson's coach marks need the screen, not the keyboard
+                                autoFocus={!lesson.step}
+                                onMentionPicked={(c: MentionCandidate) => {
+                                    setTaggedUsers((prev) => {
+                                        if (prev.find((p) => p.id === c.id)) return prev;
+                                        return [...prev, { id: c.id, handle: c.handle, display_name: c.display_name, profile_picture: c.profile_picture }];
+                                    });
+                                }}
                             />
                         </View>
                     </View>
 
-                    {/* Caption and options */}
-                    <View style={{ padding: 16, gap: 12 }}>
-                        <View ref={captionAnchorRef} collapsable={false}>
-                        <MentionTextInput
-                            placeholder="Enter a caption"
-                            value={data.caption}
-                            setValue={handleCaptionChange}
-                            fontSize={16}
-                            minHeight={120}
-                            onMentionPicked={(c: MentionCandidate) => {
-                                setTaggedUsers((prev) => {
-                                    if (prev.find((p) => p.id === c.id)) return prev;
-                                    return [...prev, { id: c.id, handle: c.handle, display_name: c.display_name, profile_picture: c.profile_picture }];
-                                });
-                            }}
-                        />
+                    {/* Same rounded box as the camera, so the photo reads as carried over */}
+                    {hasActualPhotos && (
+                        <View style={{ marginTop: 16, marginHorizontal: 12 }}>
+                            <StageMedia uris={photos} mediaTypesByUri={mediaTypesByUri} dual={dualPhoto} />
                         </View>
-                        <TaggedUsersChips
-                            users={taggedUsers}
-                            onRemove={(id) => setTaggedUsers((prev) => prev.filter((p) => p.id !== id))}
-                        />
-                        <TouchableOpacity
-                            style={{
-                                width: "100%",
-                                padding: 20,
-                                justifyContent: "space-between",
-                                backgroundColor: ThemedColor.lightened,
-                                borderRadius: 8,
-                                flexDirection: "row",
-                                alignItems: "center",
-                            }}
-                            onPress={() => setSongPickerOpen(true)}
-                            activeOpacity={0.7}>
-                            <ThemedText>Add music</ThemedText>
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
-                                <ThemedText
-                                    style={{ color: ThemedColor.primary, flexShrink: 1 }}
-                                    numberOfLines={1}>
-                                    {song ? `${song.title} · ${song.artist}` : "None"}
-                                </ThemedText>
-                                {song ? (
-                                    <MusicNote size={16} color={ThemedColor.primary} weight="fill" />
-                                ) : (
-                                    <CaretRight size={16} color={ThemedColor.primary} />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={{
-                                width: "100%",
-                                padding: 20,
-                                justifyContent: "space-between",
-                                backgroundColor: ThemedColor.lightened,
-                                borderRadius: 8,
-                                flexDirection: "row",
-                                alignItems: "center",
-                            }}
-                            onPress={() => {
-                                router.push("/(logged-in)/posting/tag-people" as Href);
-                            }}
-                            activeOpacity={0.7}>
-                            <ThemedText>Tag people</ThemedText>
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                <ThemedText style={{ color: ThemedColor.primary }}>
-                                    {taggedUsers.length === 0
-                                        ? "None"
-                                        : taggedUsers.length === 1
-                                            ? formatHandle(taggedUsers[0].handle)
-                                            : `${taggedUsers.length} tagged`}
-                                </ThemedText>
-                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
-                            </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={{
-                                width: "100%",
-                                padding: 20,
-                                justifyContent: "space-between",
-                                backgroundColor: ThemedColor.lightened,
-                                borderRadius: 8,
-                                flexDirection: "row",
-                                alignItems: "center",
-                            }}
-                            onPress={() => {
-                                router.push("/(logged-in)/posting/groups");
-                            }}
-                            activeOpacity={0.7}>
-                            <ThemedText>Who can see this post?</ThemedText>
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                <ThemedText style={{ color: ThemedColor.primary }}>{groupDisplayText}</ThemedText>
-                                <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
-                            </View>
-                        </TouchableOpacity>
-                        <View ref={postAnchorRef} collapsable={false}>
-                            <PrimaryButton
-                                title={isPosting ? "Posting..." : "Post"}
-                                onPress={handlePost}
-                                disabled={isPosting}
-                            />
-                        </View>
-                    </View>
+                    )}
                 </ScrollView>
+
+                <View
+                    style={{
+                        paddingHorizontal: HORIZONTAL_PADDING,
+                        paddingTop: 12,
+                        paddingBottom: keyboardUp ? 12 : insets.bottom + 12,
+                        gap: 12,
+                    }}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                        <PropertyChip
+                            Icon={UsersThree}
+                            state="set"
+                            tier="core"
+                            label={groupDisplayText}
+                            onPress={() => router.push("/(logged-in)/posting/groups")}
+                            accessibilityLabel="Who can see this post"
+                        />
+                        <PropertyChip
+                            Icon={At}
+                            state={taggedUsers.length > 0 ? "set" : "empty"}
+                            tier="core"
+                            label={tagLabel}
+                            onPress={() => router.push("/(logged-in)/posting/tag-people" as Href)}
+                            onClear={() => setTaggedUsers([])}
+                            accessibilityLabel="Tagged people"
+                        />
+                        <PropertyChip
+                            Icon={MusicNote}
+                            state={song ? "set" : "empty"}
+                            tier="core"
+                            label={song ? song.title : "Music"}
+                            onPress={() => setSongPickerOpen(true)}
+                            onClear={() => setSong(null)}
+                            accessibilityLabel="Music"
+                        />
+                    </View>
+                    <View ref={postAnchorRef} collapsable={false}>
+                        <PrimaryButton
+                            title={isPosting ? "Posting..." : "Post"}
+                            onPress={handlePost}
+                            disabled={isPosting}
+                        />
+                    </View>
+                </View>
             </KeyboardAvoidingView>
             <SongPickerModal
                 visible={songPickerOpen}
@@ -448,6 +397,6 @@ export default function Caption() {
                 message={alertMessage}
                 buttons={alertButtons}
             />
-        </ThemedView>
+        </View>
     );
 }

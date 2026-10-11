@@ -10,14 +10,11 @@ import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { router, useLocalSearchParams } from "expo-router";
-import { BlurView } from "expo-blur";
 import { useMediaLibrary, IMAGE_AND_VIDEO_TYPES } from "@/hooks/useMediaLibrary";
 import { assetsToPickedMedia } from "@/api/media";
-import { Play } from "phosphor-react-native";
-import PostCardHeader from "@/components/cards/PostCardHeader";
-import PostCardMedia from "@/components/cards/PostCardMedia";
-import PostCardFooter from "@/components/cards/PostCardFooter";
-import { useAuth } from "@/hooks/useAuth";
+import { Camera, Play, Plus, Trash } from "phosphor-react-native";
+import StageMedia from "@/components/posting/StageMedia";
+import { STAGE } from "@/components/capture/CaptureStage";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
@@ -46,10 +43,10 @@ export default function Posting() {
     const previewCamera = useRef<CameraView>(null);
     // Measured height of the bottom control bar; the camera box anchors above it
     const [controlsHeight, setControlsHeight] = useState(200);
+    const [stageHeight, setStageHeight] = useState(0);
     let ThemedColor = useThemeColor();
 
     const { pickImage: pickImageFromLibrary } = useMediaLibrary();
-    const { user } = useAuth();
     const { capture } = useAnalytics();
 
     const params = useLocalSearchParams();
@@ -317,65 +314,63 @@ export default function Posting() {
         });
     };
 
-    const renderPhotoThumbnail = ({ item, index }: { item: string; index: number }) => (
-        <TouchableOpacity
-            onPress={() => {
-                setCurrentPhotoIndex(index);
-                setViewMode("preview");
-            }}
-            style={{ marginRight: 10, paddingTop: 8 }}>
-            <View style={{ position: "relative" }}>
-                <Image
-                    source={{ uri: item }}
+    const renderPhotoThumbnail = ({ item, index }: { item: string; index: number }) => {
+        const reviewing = viewMode === "preview";
+        const selected = reviewing && currentPhotoIndex === index;
+        return (
+            <TouchableOpacity
+                onPress={() => {
+                    setCurrentPhotoIndex(index);
+                    setViewMode("preview");
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Photo ${index + 1}`}
+                style={{ marginRight: 8 }}>
+                <View
                     style={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: 8,
-                        backgroundColor: "#000",
-                        borderWidth: currentPhotoIndex === index && viewMode === "preview" ? 2 : 0,
-                        borderColor: ThemedColor.tint || "#9333ea",
-                    }}
-                />
-                {mediaTypesByUri[item] === "video" && (
-                    <View
-                        style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            justifyContent: "center",
-                            alignItems: "center",
-                        }}>
-                        <Play size={20} color="#fff" weight="fill" />
-                    </View>
-                )}
-                <TouchableOpacity
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        removePhoto(index);
-                    }}
-                    style={{
-                        position: "absolute",
-                        top: -8,
-                        right: -8,
-                        backgroundColor: ThemedColor.text,
+                        width: 56,
+                        height: 56,
                         borderRadius: 12,
-                        width: 24,
-                        height: 24,
-                        justifyContent: "center",
-                        alignItems: "center",
+                        borderWidth: 2,
+                        borderColor: selected ? STAGE.selected : "transparent",
+                        overflow: "hidden",
+                        opacity: reviewing && !selected ? 0.6 : 1,
                     }}>
-                    <Ionicons name="close" size={16} color="#fff" />
-                </TouchableOpacity>
-            </View>
-        </TouchableOpacity>
-    );
+                    <Image source={{ uri: item }} style={{ width: "100%", height: "100%", backgroundColor: "#111" }} />
+                    {mediaTypesByUri[item] === "video" && (
+                        <View
+                            style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}>
+                            <Play size={20} color="#fff" weight="fill" />
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
+    const windowWidth = Dimensions.get("window").width;
+    const roundButton = {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: STAGE.fill,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+    };
 
     const inCameraMode = permission?.status === PermissionStatus.GRANTED && viewMode === "camera";
 
     return (
-        <ThemedView style={{ flex: 1, backgroundColor: inCameraMode ? "#000" : ThemedColor.lightened }}>
+        <ThemedView
+            style={{ flex: 1, backgroundColor: permission?.status === PermissionStatus.GRANTED ? "#000" : ThemedColor.lightened }}>
             {permission?.status !== PermissionStatus.GRANTED && (
                 <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: HORIZONTAL_PADDING }}>
                     <ThemedText type="default" style={{ marginBottom: 20, textAlign: "center" }}>
@@ -388,76 +383,71 @@ export default function Posting() {
                 <>
                     {viewMode === "preview" && photos.length > 0 ? (
                         <>
-                            <FlatList
-                                ref={flatListRef}
-                                data={photos}
-                                horizontal
-                                pagingEnabled
-                                showsHorizontalScrollIndicator={false}
-                                onMomentumScrollEnd={(event) => {
-                                    const index = Math.round(
-                                        event.nativeEvent.contentOffset.x / Dimensions.get("window").width
-                                    );
-                                    setCurrentPhotoIndex(index);
+                            <View
+                                style={{
+                                    position: "absolute",
+                                    top: insets.top + 8,
+                                    left: HORIZONTAL_PADDING,
+                                    right: HORIZONTAL_PADDING,
+                                    height: 40,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    zIndex: 11,
+                                }}>
+                                <ThemedText type="caption" style={{ color: STAGE.muted }}>
+                                    {photos.length > 1 ? `${currentPhotoIndex + 1} of ${photos.length}` : ""}
+                                </ThemedText>
+                                <TouchableOpacity
+                                    onPress={() => removePhoto(currentPhotoIndex)}
+                                    activeOpacity={0.7}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Remove this photo"
+                                    style={roundButton}>
+                                    <Trash size={20} color={STAGE.text} />
+                                </TouchableOpacity>
+                            </View>
+                            {/* Same frame as the camera box, so review reads as the shot settling */}
+                            <View
+                                style={{
+                                    position: "absolute",
+                                    top: insets.top + 60,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: controlsHeight + 12,
                                 }}
-                                renderItem={({ item }) => (
-                                    <View
-                                        style={{
-                                            width: Dimensions.get("window").width,
-                                            height: Dimensions.get("window").height / 1,
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            paddingHorizontal: HORIZONTAL_PADDING,
-                                            paddingBottom: 220,
-                                            transform: [{ scale: 0.8 }],
-                                        }}>
-                                        {/* Shadow container */}
+                                onLayout={(e) => setStageHeight(e.nativeEvent.layout.height)}>
+                                <FlatList
+                                    ref={flatListRef}
+                                    data={photos}
+                                    horizontal
+                                    pagingEnabled
+                                    showsHorizontalScrollIndicator={false}
+                                    getItemLayout={(_, index) => ({ length: windowWidth, offset: windowWidth * index, index })}
+                                    onMomentumScrollEnd={(event) => {
+                                        setCurrentPhotoIndex(Math.round(event.nativeEvent.contentOffset.x / windowWidth));
+                                    }}
+                                    renderItem={({ item }) => (
                                         <View
                                             style={{
-                                                width: "100%",
-                                                borderRadius: 16,
-                                                shadowColor: "#000",
-                                                shadowOffset: { width: 0, height: 8 },
-                                                shadowOpacity: 0.25,
-                                                shadowRadius: 16,
-                                                elevation: 10,
-                                                backgroundColor: ThemedColor.background,
+                                                width: windowWidth,
+                                                height: stageHeight,
+                                                justifyContent: "center",
+                                                paddingHorizontal: 12,
                                             }}>
-                                            {/* Clip content to rounded corners */}
-                                            <View style={{ borderRadius: 16 }}>
-                                                <PostCardHeader
-                                                    icon={user?.profile_picture}
-                                                    name={user?.display_name ?? "You"}
-                                                    username={user?.handle ? `${user.handle}` : undefined}
-                                                    timeLabel="Just now"
-                                                    disableNavigation
-                                                />
-                                                <PostCardMedia
-                                                    images={[item]}
-                                                    media={[
-                                                        {
-                                                            type: mediaTypesByUri[item] ?? "image",
-                                                            url: item,
-                                                            thumbnailUrl: item,
-                                                            width: 0,
-                                                            height: 0,
-                                                        },
-                                                    ]}
-                                                    dual={dualPhoto}
-                                                    onDualPress={swapPhotos}
-                                                    onDualRemove={removeDualPhoto}
-                                                />
-                                                <PostCardFooter
-                                                    category={taskInfo?.categoryName}
-                                                    taskName={taskInfo?.name}
-                                                    taskStatus={taskInfo?.status}
-                                                />
-                                            </View>
+                                            <StageMedia
+                                                uris={[item]}
+                                                mediaTypesByUri={mediaTypesByUri}
+                                                dual={dualPhoto}
+                                                onDualPress={swapPhotos}
+                                                onDualRemove={removeDualPhoto}
+                                                maxHeight={stageHeight || undefined}
+                                            />
                                         </View>
-                                    </View>
-                                )}
-                                keyExtractor={(item, index) => index.toString()}
-                            />
+                                    )}
+                                    keyExtractor={(item, index) => `${index}-${item}`}
+                                />
+                            </View>
                         </>
                     ) : (
                         <>
@@ -633,28 +623,7 @@ export default function Posting() {
                         </>
                     )}
 
-                    {photos.length > 0 && (
-                        <View
-                            style={{
-                                position: "absolute",
-                                top: insets.top + 20,
-                                right: 20,
-                                backgroundColor: "rgba(0,0,0,0.6)",
-                                paddingHorizontal: 12,
-                                paddingVertical: 6,
-                                borderRadius: 16,
-                                zIndex: 10,
-                            }}>
-                            <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>
-                                {viewMode === "preview"
-                                    ? `${currentPhotoIndex + 1} / ${photos.length}`
-                                    : `${photos.length} selected`}
-                            </Text>
-                        </View>
-                    )}
-
-                    <BlurView
-                        intensity={viewMode === "camera" ? 0 : 30}
+                    <View
                         onLayout={(e) => setControlsHeight(e.nativeEvent.layout.height)}
                         style={{
                             width: "100%",
@@ -664,7 +633,7 @@ export default function Posting() {
                             gap: 12,
                             padding: HORIZONTAL_PADDING,
                             paddingBottom: insets.bottom + HORIZONTAL_PADDING,
-                            backgroundColor: viewMode === "camera" ? "#000" : ThemedColor.background + "30",
+                            backgroundColor: "#000",
                             position: "absolute",
                             bottom: 0,
                             zIndex: 10,
@@ -673,7 +642,7 @@ export default function Posting() {
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
-                                style={{ width: "100%", maxHeight: 88 }}
+                                style={{ width: "100%", maxHeight: 72 }}
                                 contentContainerStyle={{ paddingVertical: 8, alignItems: "center" }}>
                                 <FlatList
                                     data={photos}
@@ -685,29 +654,18 @@ export default function Posting() {
                                 {viewMode === "preview" && (
                                     <TouchableOpacity
                                         onPress={pickImage}
+                                        activeOpacity={0.7}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Add from library"
                                         style={{
-                                            width: 60,
-                                            height: 60,
-                                            borderRadius: 8,
-                                            backgroundColor:
-                                                ThemedColor.background === "#000"
-                                                    ? "rgba(255,255,255,0.1)"
-                                                    : "rgba(0,0,0,0.05)",
+                                            width: 56,
+                                            height: 56,
+                                            borderRadius: 12,
+                                            backgroundColor: STAGE.fill,
                                             justifyContent: "center",
                                             alignItems: "center",
-                                            borderWidth: 1,
-                                            borderColor:
-                                                ThemedColor.background === "#000"
-                                                    ? "rgba(255,255,255,0.3)"
-                                                    : "rgba(0,0,0,0.1)",
-                                            borderStyle: "dashed",
-                                            marginLeft: 8,
                                         }}>
-                                        <Ionicons
-                                            name="add"
-                                            size={28}
-                                            color={ThemedColor.background === "#000" ? "#fff" : "#000"}
-                                        />
+                                        <Plus size={24} color={STAGE.text} />
                                     </TouchableOpacity>
                                 )}
                             </ScrollView>
@@ -824,21 +782,19 @@ export default function Posting() {
                             <>
 
                                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12, width: "100%" }}>
-                                    <PrimaryButton
+                                    <TouchableOpacity
                                         onPress={() => setViewMode("camera")}
-                                        title="Take More"
-                                        secondary
-                                        style={{ flex: 1 }}
-                                    />
-                                    <PrimaryButton
-                                        onPress={continueWithPhotos}
-                                        title={`Done (${photos.length})`}
-                                        style={{ flex: 1 }}
-                                    />
+                                        activeOpacity={0.7}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Take more"
+                                        style={{ ...roundButton, width: 52, height: 52, borderRadius: 26 }}>
+                                        <Camera size={24} color={STAGE.text} />
+                                    </TouchableOpacity>
+                                    <PrimaryButton onPress={continueWithPhotos} title="Next" style={{ flex: 1 }} />
                                 </View>
                             </>
                         )}
-                    </BlurView>
+                    </View>
                 </>
             )}
         </ThemedView>

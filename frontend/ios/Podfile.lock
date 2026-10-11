@@ -197,6 +197,9 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (55.0.14):
     - ExpoModulesCore
+  - ExpoBackgroundTask (55.0.22):
+    - ExpoModulesCore
+    - ExpoTaskManager
   - ExpoBlur (55.0.14):
     - ExpoModulesCore
   - ExpoCamera (55.0.15):
@@ -295,6 +298,9 @@ PODS:
     - ExpoModulesCore
   - ExpoSystemUI (55.0.15):
     - ExpoModulesCore
+  - ExpoTaskManager (55.0.20):
+    - ExpoModulesCore
+    - UMAppLoader
   - ExpoUI (55.0.11):
     - ExpoModulesCore
     - React-RCTFabric
@@ -2671,6 +2677,7 @@ PODS:
     - SDWebImage/Core (~> 5.17)
   - Sentry/HybridSDK (8.58.0)
   - SwiftUIIntrospect (1.3.0)
+  - UMAppLoader (55.0.5)
   - Yoga (0.0.0)
   - ZXingObjC/Core (3.6.9)
   - ZXingObjC/OneD (3.6.9):
@@ -2691,6 +2698,7 @@ DEPENDENCIES:
   - "ExpoAdapterGoogleSignIn (from `../node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoBackgroundTask (from `../node_modules/expo-background-task/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
   - ExpoCamera (from `../node_modules/expo-camera/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
@@ -2723,6 +2731,7 @@ DEPENDENCIES:
   - ExpoStoreReview (from `../node_modules/expo-store-review/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
+  - ExpoTaskManager (from `../node_modules/expo-task-manager/ios`)
   - "ExpoUI (from `../node_modules/@expo/ui/ios`)"
   - ExpoVideo (from `../node_modules/expo-video/ios`)
   - ExpoVideoThumbnails (from `../node_modules/expo-video-thumbnails/ios`)
@@ -2818,6 +2827,7 @@ DEPENDENCIES:
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - RNSVG (from `../node_modules/react-native-svg`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
+  - UMAppLoader (from `../node_modules/unimodules-app-loader/ios`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2865,6 +2875,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-apple-authentication/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoBackgroundTask:
+    :path: "../node_modules/expo-background-task/ios"
   ExpoBlur:
     :path: "../node_modules/expo-blur/ios"
   ExpoCamera:
@@ -2929,6 +2941,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-symbols/ios"
   ExpoSystemUI:
     :path: "../node_modules/expo-system-ui/ios"
+  ExpoTaskManager:
+    :path: "../node_modules/expo-task-manager/ios"
   ExpoUI:
     :path: "../node_modules/@expo/ui/ios"
   ExpoVideo:
@@ -3118,6 +3132,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-svg"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
+  UMAppLoader:
+    :path: "../node_modules/unimodules-app-loader/ios"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -3136,6 +3152,7 @@ SPEC CHECKSUMS:
   ExpoAdapterGoogleSignIn: ab4d9fc38cb91077a4138d178395525ec65d0c2e
   ExpoAppleAuthentication: 08b3d0e502f46731abdf4c59203769fb685f66c8
   ExpoAsset: 6b2936edf301b6a0db65bb0c8ba09dbe0816981e
+  ExpoBackgroundTask: 4475ee0ed489294e227282cc0bf7d40c20537752
   ExpoBlur: 7a86e84e7728108fa6908d7103fa527705a3dbbf
   ExpoCamera: 5f6ae5fd7365ceb741168a71eeaa5b65e556c672
   ExpoClipboard: 5d1b0cd2686406f21e616f2d9b3431259dee2e6a
@@ -3168,6 +3185,7 @@ SPEC CHECKSUMS:
   ExpoStoreReview: dab6e25f0641784bd6207f729f893423afbb6574
   ExpoSymbols: 8b63e859ba013df1f2fc666f535fddb3d5270569
   ExpoSystemUI: 709410d6e473378d568e5df28fe409cade0ba530
+  ExpoTaskManager: 30a8729c6f6fc1872d96589bffc4ad8d5384b8d9
   ExpoUI: 5e98fba91241cd4bdd976729be965ab71d7f761d
   ExpoVideo: 5e7aee124df2f7d9ffe1bd4dbf63119417b340a3
   ExpoVideoThumbnails: 0264f7a30d0a28b950ccb39c5b2be14fca5eccac
@@ -3276,6 +3294,7 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   Sentry: d587a8fe91ca13503ecd69a1905f3e8a0fcf61be
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
+  UMAppLoader: 045699ef1cc6afda399a5c78bde728f23bcce213
   Yoga: acd565934addf7423687593ec490bd4491b2a802
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 

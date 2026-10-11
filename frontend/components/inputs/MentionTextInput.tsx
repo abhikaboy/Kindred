@@ -14,6 +14,8 @@ type Props = {
     minHeight?: number;
     fontWeight?: import("react-native").TextStyle["fontWeight"];
     autoFocus?: boolean;
+    color?: string;
+    placeholderColor?: string;
 };
 
 const GAP = 4;
@@ -27,6 +29,8 @@ const MentionTextInput = ({
     minHeight,
     fontWeight = "400",
     autoFocus,
+    color,
+    placeholderColor,
 }: Props) => {
     const { query, caret, onChange, onSelection, onPick } = useMentionTrigger(value, setValue);
     const { height: windowHeight } = useWindowDimensions();
@@ -74,6 +78,8 @@ const MentionTextInput = ({
                 minHeight={minHeight}
                 fontWeight={fontWeight}
                 autoFocus={autoFocus}
+                color={color}
+                placeholderColor={placeholderColor}
                 onSelectionChange={onSelection}
             />
             {/* Hidden mirror: matches the input's text layout so its height = bottom Y of the caret's line. */}

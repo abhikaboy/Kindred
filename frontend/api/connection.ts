@@ -86,7 +86,8 @@ export const getFriendsAPI = async (): Promise<any[]> => {
         throw new Error(`Failed to get friends: ${JSON.stringify(error)}`);
     }
 
-    return data as any;
+    // The backend sends null for an empty list
+    return (data as any) ?? [];
 };
 
 /**
