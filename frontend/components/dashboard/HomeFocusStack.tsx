@@ -1,14 +1,21 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, Pressable, TouchableOpacity, StyleSheet, Platform, Image, useColorScheme } from "react-native";
+import { View, Pressable, TouchableOpacity, StyleSheet, Platform, Image, useColorScheme, ActionSheetIOS, Alert } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, CaretLeft, Check, ClipboardText, Play } from "phosphor-react-native";
+import { ArrowRight, CalendarBlank, CaretLeft, Check, ClipboardText, EyeSlash, ListChecks, Play } from "phosphor-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTaskActions } from "@/contexts/tasksContext";
-import { markInProgressAPI, setWorkingAPI } from "@/api/task";
+import { useTaskActions, useTasks } from "@/contexts/tasksContext";
+import { markInProgressAPI, setWorkingAPI, updateTaskStartAPI } from "@/api/task";
+import { clearTaskSomedayAPI } from "@/api/plan";
+import { openPlanSheet } from "@/hooks/planSheetStore";
+import { isSomedayTask } from "@/hooks/useSomedayTasks";
+import { hideStageTask, useHiddenStageTasks } from "@/hooks/useHiddenStageTasks";
+import { showToast } from "@/utils/showToast";
+import { HIDE_HOURS, hoursLeft } from "@/utils/stageHidden";
+import { ASSIGN_OPTIONS, assignDate, type AssignKey } from "@/utils/somedayAssign";
 import { ActiveTaskActivityFactory } from "@/widgets/widgetUpdaters";
 import { hapticSelect } from "@/utils/haptics";
 import { useTaskCompletion } from "@/hooks/useTaskCompletion";
@@ -45,6 +52,8 @@ export default function HomeFocusStack({ queue, spill, onListedChange, available
     const isDark = useColorScheme() === "dark";
     const insets = useSafeAreaInsets();
     const { kudos, acknowledge } = useRecentKudos();
+    const { hidden, count: hiddenCount, show, showAll } = useHiddenStageTasks();
+    const { allTasks } = useTasks();
     const [current, setCurrent] = useState(0);
     const [listed, setListed] = useState(false);
     const [stackTop, setStackTop] = useState(0);
@@ -84,7 +93,9 @@ export default function HomeFocusStack({ queue, spill, onListedChange, available
                     />
                     <View style={styles.emptyText}>
                         <ThemedText type="subtitle">Relax and enjoy the break</ThemedText>
-                        <ThemedText type="caption">Nothing on your plate. Add something below.</ThemedText>
+                        <ThemedText type="caption">
+                            {hiddenCount > 0 ? "Everything left is hidden for now. Bring it back below." : "Nothing on your plate. Add something below."}
+                        </ThemedText>
                     </View>
                 </View>
             ) : (
@@ -135,7 +146,66 @@ export default function HomeFocusStack({ queue, spill, onListedChange, available
                     {accessory}
                 </View>
             )}
+
+            {hiddenCount > 0 && !listed && (
+                <HiddenChip hidden={hidden} allTasks={allTasks} onShow={show} onShowAll={showAll} />
+            )}
         </View>
+    );
+}
+
+// Where hidden tasks went: a quiet chip under the stack that says when they return and brings them back.
+function HiddenChip({
+    hidden,
+    allTasks,
+    onShow,
+    onShowAll,
+}: {
+    hidden: Record<string, string>;
+    allTasks: { id: string; content: string }[];
+    onShow: (id: string) => void;
+    onShowAll: () => void;
+}) {
+    const ThemedColor = useThemeColor();
+    const ids = Object.keys(hidden);
+    const now = Date.now();
+    const soonest = Math.min(...ids.map((id) => hoursLeft(hidden[id], now)));
+    const nameOf = (id: string) => allTasks.find((t) => t.id === id)?.content ?? "Hidden task";
+
+    const open = () => {
+        hapticSelect();
+        const shown = ids.slice(0, 4);
+        const labels = [...shown.map((id) => `Show "${nameOf(id)}"`), ...(ids.length > 1 ? [`Show all ${ids.length}`] : []), "Cancel"];
+        const run = (i: number) => {
+            if (i < shown.length) onShow(shown[i]);
+            else if (ids.length > 1 && i === shown.length) onShowAll();
+        };
+        if (Platform.OS === "ios") {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { title: `Hidden for ${HIDE_HOURS} hours`, options: labels, cancelButtonIndex: labels.length - 1 },
+                run
+            );
+        } else {
+            // Android alerts hold three buttons: show everything
+            Alert.alert(`Hidden for ${HIDE_HOURS} hours`, `${ids.length} hidden. Back in about ${soonest}h.`, [
+                { text: "Show all", onPress: onShowAll },
+                { text: "Cancel", style: "cancel" },
+            ]);
+        }
+    };
+
+    return (
+        <TouchableOpacity
+            onPress={open}
+            activeOpacity={0.7}
+            hitSlop={8}
+            accessibilityLabel={`${ids.length} hidden tasks. Tap to show.`}
+            style={[styles.hiddenChip, { backgroundColor: ThemedColor.primary + "14" }]}>
+            <EyeSlash size={14} color={ThemedColor.primary} />
+            <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                {ids.length} hidden · back in {soonest}h
+            </ThemedText>
+        </TouchableOpacity>
     );
 }
 
@@ -153,6 +223,48 @@ function TaskBody({ task }: { task: StageTask }) {
                 ? ThemedColor.success
                 : undefined;
     const caption = [task.reason, task.workspaceName].filter(Boolean).join(" · ");
+    const someday = isSomedayTask(task);
+
+    const hide = () => {
+        hapticSelect();
+        hideStageTask(task.id);
+        showToast(`Hidden for ${HIDE_HOURS} hours. Find it under "hidden" below the stack.`, "info");
+    };
+
+    // Give a Someday task a day: it leaves Someday and shows up on that day
+    const assign = (key: AssignKey) => {
+        const at = assignDate(key);
+        const iso = at.toISOString();
+        const prev = { startDate: task.startDate ?? null, startTime: task.startTime ?? null, somedayAt: task.somedayAt ?? null };
+        updateTask(task.categoryID, task.id, { startDate: iso, startTime: iso, somedayAt: null });
+        Promise.all([updateTaskStartAPI(task.categoryID, task.id, at, at), clearTaskSomedayAPI(task.categoryID, task.id)]).then(
+            () => showToast(`Scheduled for ${ASSIGN_OPTIONS.find((o) => o.key === key)?.label.toLowerCase()}`, "success"),
+            () => {
+                updateTask(task.categoryID, task.id, prev);
+                showToast("Couldn't set that day. Give it another try.", "danger");
+            }
+        );
+    };
+
+    const pickDay = () => {
+        hapticSelect();
+        if (Platform.OS === "ios") {
+            const labels = [...ASSIGN_OPTIONS.map((o) => o.label), "Choose in the task", "Cancel"];
+            ActionSheetIOS.showActionSheetWithOptions(
+                { title: "When do you want to do this?", options: labels, cancelButtonIndex: labels.length - 1 },
+                (i) => {
+                    if (i < ASSIGN_OPTIONS.length) assign(ASSIGN_OPTIONS[i].key);
+                    else if (i === ASSIGN_OPTIONS.length) openTask(task);
+                }
+            );
+        } else {
+            Alert.alert("When do you want to do this?", undefined, [
+                { text: "Tomorrow", onPress: () => assign("tomorrow") },
+                { text: "Next week", onPress: () => assign("nextWeek") },
+                { text: "Choose in the task", onPress: () => openTask(task) },
+            ]);
+        }
+    };
 
     const start = () => {
         if (Platform.OS === "ios") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -199,11 +311,18 @@ function TaskBody({ task }: { task: StageTask }) {
     return (
         <Pressable onPress={() => openTask(task)} style={styles.cardInner} accessibilityRole="link">
             <View style={{ gap: 4 }}>
-                {!!caption && (
-                    <ThemedText type="caption" numberOfLines={1}>
+                <View style={styles.captionRow}>
+                    <ThemedText type="caption" numberOfLines={1} style={{ flex: 1 }}>
                         {caption}
                     </ThemedText>
-                )}
+                    <TouchableOpacity
+                        onPress={hide}
+                        hitSlop={10}
+                        activeOpacity={0.6}
+                        accessibilityLabel={`Hide for ${HIDE_HOURS} hours`}>
+                        <EyeSlash size={16} color={ThemedColor.caption} />
+                    </TouchableOpacity>
+                </View>
                 <View style={styles.titleRow}>
                     {(working || priorityColor) && (
                         <View style={[styles.dot, { backgroundColor: working ? ThemedColor.primary : priorityColor }]} />
@@ -213,6 +332,30 @@ function TaskBody({ task }: { task: StageTask }) {
                     </ThemedText>
                 </View>
             </View>
+            {someday ? (
+                <View style={styles.actions}>
+                    <TouchableOpacity
+                        onPress={pickDay}
+                        activeOpacity={0.8}
+                        style={[styles.action, { backgroundColor: ThemedColor.primary }]}
+                        accessibilityLabel="Pick a day">
+                        <CalendarBlank size={14} color="#fff" weight="bold" />
+                        <ThemedText type="defaultSemiBold" style={styles.actionText}>
+                            Pick a day
+                        </ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => openPlanSheet({ task })}
+                        activeOpacity={0.8}
+                        style={[styles.action, { backgroundColor: ThemedColor.primary + "14" }]}
+                        accessibilityLabel="Give it a first step">
+                        <ListChecks size={14} color={ThemedColor.primary} weight="bold" />
+                        <ThemedText type="defaultSemiBold" style={[styles.actionText, { color: ThemedColor.primary }]}>
+                            First step
+                        </ThemedText>
+                    </TouchableOpacity>
+                </View>
+            ) : (
             <View style={styles.actions}>
                 <TouchableOpacity
                     onPress={log}
@@ -249,6 +392,14 @@ function TaskBody({ task }: { task: StageTask }) {
                     </ThemedText>
                 </TouchableOpacity>
             </View>
+            )}
+            {/* Someday cards have no day yet, so they read as an open slot: dashed instead of solid */}
+            {someday && (
+                <View
+                    pointerEvents="none"
+                    style={[StyleSheet.absoluteFill, styles.dashed, { borderColor: ThemedColor.text + "33" }]}
+                />
+            )}
         </Pressable>
     );
 }
@@ -318,6 +469,17 @@ const styles = StyleSheet.create({
     dot: { width: 8, height: 8, borderRadius: 4 },
     avatar: { width: 36, height: 36, borderRadius: 18 },
     actions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    captionRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    dashed: { borderWidth: 1.5, borderStyle: "dashed", borderRadius: 20 },
+    hiddenChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
+    },
     logAction: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
     action: {
         alignSelf: "flex-start",
