@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import type { View } from "react-native";
 
-export type CoachAnchorKey = "categoryAdd" | "taskAdd" | "firstTask" | "homeTab" | "workspacesHandle" | "workspaceCreate" | "rings" | "dock";
+export type CoachAnchorKey = "categoryAdd" | "taskAdd" | "firstTask" | "homeTab" | "workspacesHandle" | "workspaceCreate" | "rings" | "dock" | "postShutter" | "postCaption" | "postButton";
 export type CoachAnchorFrame = { x: number; y: number; width: number; height: number };
 
 const refs = new Map<CoachAnchorKey, RefObject<View | null>>();

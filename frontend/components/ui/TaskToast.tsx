@@ -30,6 +30,8 @@ interface TaskToastProps extends ToastableBodyParams {
     onPressOverride?: () => void;
     // Onboarding tutorial: a persistent toast the user can't swipe away.
     disableDismiss?: boolean;
+    // Runs just before the toast opens the camera (the posting lesson advances its step here).
+    onBeforeNavigate?: () => void;
 }
 
 export default function TaskToast(props: TaskToastProps) {
@@ -108,6 +110,7 @@ export default function TaskToast(props: TaskToastProps) {
     });
 
     const handleNavigateToCamera = () => {
+        props.onBeforeNavigate?.();
         const taskInfo = props.taskData
             ? {
                   id: props.taskData.id,

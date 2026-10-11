@@ -1,17 +1,22 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Redirect, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { reloadAppAsync } from "expo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import PrimaryButton from "@/components/inputs/PrimaryButton";
 import { HORIZONTAL_PADDING } from "@/constants/spacing";
 import { useAuth } from "@/hooks/useAuth";
+import { clearLessonState } from "@/utils/postingLesson/storage";
+import { forcePostingLessonOnNextCompletion } from "@/utils/postingLesson/devForce";
+import { startPostingLessonDemo } from "@/utils/postingLesson/demo";
 import {
     getOnboardingDebugSnapshot,
     ONBOARDING_V2_STEP_LABELS,
     OnboardingDebugSnapshot,
+    quickSetupKey,
     resetOnboardingState,
     setOnboardingV2Step,
 } from "@/utils/devOnboarding";
@@ -23,7 +28,8 @@ const yn = (v: boolean | null) => (v === null ? "-" : v ? "yes" : "no");
 export default function DevOnboardingScreen() {
     const { user } = useAuth();
     // kindred:///dev-onboarding?jump=4 jumps to a step and reloads the app (scripted testing)
-    const params = useLocalSearchParams<{ jump?: string }>();
+    const params = useLocalSearchParams<{ jump?: string; demo?: string; quiet?: string }>();
+    const demoRan = React.useRef(false);
     const autoRan = React.useRef(false);
     const insets = useSafeAreaInsets();
     const userId = user?._id ?? null;
@@ -53,9 +59,26 @@ export default function DevOnboardingScreen() {
         autoRan.current = true;
         void (async () => {
             await setOnboardingV2Step(userId, Number(params.jump));
+            // quiet=1 also marks the legacy tours as seen, so a scripted demo isn't covered by them
+            if (params.quiet === "1") {
+                await AsyncStorage.multiSet([
+                    [`${userId}-intro-tour-seen`, "true"],
+                    [`${userId}-home-tour-seen`, "true"],
+                    [quickSetupKey(userId), "true"],
+                ]);
+            }
             await reloadAppAsync("Onboarding dev jump");
         })();
     }, [userId, params.jump]);
+
+    // kindred:///dev-onboarding?demo=toast|camera|caption|post starts the posting lesson at that step
+    useEffect(() => {
+        if (!__DEV__ || demoRan.current || !params.demo) return;
+        demoRan.current = true;
+        const step = params.demo as "toast" | "camera" | "caption" | "post";
+        router.replace("/(logged-in)/(tabs)/(task)");
+        setTimeout(() => startPostingLessonDemo(step), 1200);
+    }, [params.demo]);
 
     if (!__DEV__) return <Redirect href="/" />;
 
@@ -96,6 +119,21 @@ export default function DevOnboardingScreen() {
                         title="Reload app"
                         ghost
                         onPress={() => void reloadAppAsync("Onboarding dev")}
+                    />
+                </View>
+
+                <View style={styles.section}>
+                    <ThemedText type="caption">Posting lesson</ThemedText>
+                    <PrimaryButton
+                        title="Reset posting lesson"
+                        outline
+                        disabled={!userId}
+                        onPress={() => void run("Posting lesson reset", () => clearLessonState(userId!))}
+                    />
+                    <PrimaryButton
+                        title="Show it on my next completion"
+                        outline
+                        onPress={() => void run("Posting lesson will show on the next completion", async () => forcePostingLessonOnNextCompletion(true))}
                     />
                 </View>
 

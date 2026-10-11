@@ -20,6 +20,7 @@ import PostCardFooter from "@/components/cards/PostCardFooter";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 
 export default function Posting() {
     const insets = useSafeAreaInsets();
@@ -78,6 +79,10 @@ export default function Posting() {
             }, 100);
         }
     }, [viewMode, currentPhotoIndex]);
+
+    // The posting lesson points at the shutter
+    const shutterAnchorRef = useRef<View>(null);
+    useEffect(() => registerCoachAnchor("postShutter", shutterAnchorRef), []);
 
     const takePicture = async () => {
         capture(AnalyticsEvents.POSTING_PHOTO_TAKEN, { source: "camera" });
@@ -744,6 +749,7 @@ export default function Posting() {
                                             borderWidth: 2,
                                             borderColor: "#ffffff",
                                         }}>
+                                        <View ref={shutterAnchorRef} collapsable={false}>
                                         <TouchableOpacity
                                             onPress={takePicture}
                                             style={{
@@ -774,6 +780,7 @@ export default function Posting() {
                                                 </View>
                                             )}
                                         </TouchableOpacity>
+                                        </View>
                                     </View>
                                     <Ionicons
                                         name="camera-reverse-outline"

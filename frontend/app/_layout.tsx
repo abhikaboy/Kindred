@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AppState, Dimensions, Platform, useColorScheme, View } from "react-native";
+import { AppState, Dimensions, Platform, StyleSheet, useColorScheme, View } from "react-native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Slot, Stack } from "expo-router";
@@ -185,16 +185,19 @@ export default Sentry.wrap(function RootLayout() {
                                                         <PortalProvider>
                                                             <BottomSheetModalProvider>
                                                                 <AlertProvider>
-                                                                    <Toastable
-                                                                        statusMap={{
-                                                                            success: ThemedColor.success,
-                                                                            danger: ThemedColor.error,
-                                                                            warning: ThemedColor.warning,
-                                                                            info: ThemedColor.primary,
-                                                                        }}
-                                                                        offset={top}
-                                                                        renderContent={(props) => <DefaultToast {...props} />}
-                                                                    />
+                                                                    {/* Toasts float above everything in the app, including the coach and posting-lesson blur */}
+                                                                    <View style={{ ...StyleSheet.absoluteFillObject, zIndex: 9999 }} pointerEvents="box-none">
+                                                                        <Toastable
+                                                                            statusMap={{
+                                                                                success: ThemedColor.success,
+                                                                                danger: ThemedColor.error,
+                                                                                warning: ThemedColor.warning,
+                                                                                info: ThemedColor.primary,
+                                                                            }}
+                                                                            offset={top}
+                                                                            renderContent={(props) => <DefaultToast {...props} />}
+                                                                        />
+                                                                    </View>
                                                                     <Slot />
                                                                     <RingUpdateOverlay />
                                                                     <KudosSentOverlay />

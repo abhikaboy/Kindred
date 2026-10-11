@@ -4,6 +4,7 @@ import { endActivity } from '@/utils/liveActivityManager';
 import { useTasks } from '@/contexts/tasksContext';
 import { Task } from '@/api/types';
 import { showToastable } from 'react-native-toastable';
+import { showPostingLessonToast } from '@/components/ui/showPostingLessonToast';
 import TaskToast from '@/components/ui/TaskToast';
 import DefaultToast from '@/components/ui/DefaultToast';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +12,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { AnalyticsEvents } from '@/utils/analytics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRingUpdate } from '@/contexts/ringUpdateContext';
+import { usePostingLesson } from '@/contexts/PostingLessonContext';
 
 interface TaskCompletionData {
     id: string;
@@ -35,6 +37,10 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
     const { capture } = useAnalytics();
     const queryClient = useQueryClient();
     const { showRingUpdate } = useRingUpdate();
+    const lesson = usePostingLesson();
+    // The callback below outlives renders, so it reads the lesson through a ref
+    const lessonRef = useRef(lesson);
+    lessonRef.current = lesson;
     const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const markTaskAsCompleted = useCallback(async (
@@ -125,15 +131,35 @@ export const useTaskCompletion = (options?: UseTaskCompletionOptions) => {
                 }
             }
 
-            showToastable({
-                title,
-                status: "success",
-                position: "top",
-                swipeDirection: "up",
-                duration: 5000,
-                message,
-                renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
+            // The 3rd completion teaches posting: the toast stays up longer while the lesson overlay
+            // blurs everything else and points at it. Dismissing the toast ends the lesson.
+            const teachPosting = lessonRef.current.tryStart(res.tasksComplete, {
+                id: taskData.id,
+                name: taskData.name,
+                category: taskData.category,
+                categoryName: taskData.categoryName,
+                points: taskData.points,
+                public: taskData.public,
             });
+
+            if (teachPosting) {
+                showPostingLessonToast({
+                    title,
+                    taskData,
+                    onTap: () => lessonRef.current.advance("camera"),
+                    onGone: () => lessonRef.current.toastGone(),
+                });
+            } else {
+                showToastable({
+                    title,
+                    status: "success",
+                    position: "top",
+                    swipeDirection: "up",
+                    duration: 5000,
+                    message,
+                    renderContent: (props) => <TaskToast {...props} taskData={taskData} />,
+                });
+            }
 
             optionsRef.current?.onSuccess?.(res.ringDelta);
         } catch (error) {

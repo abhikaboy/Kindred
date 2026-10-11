@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { View, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +29,10 @@ import { MusicNote, CaretRight } from "phosphor-react-native";
 import { getEncouragementsByTask } from "@/api/encouragement";
 import type { MentionCandidate } from "@/hooks/useFriendsForMention";
 import type { Href } from "expo-router";
+import { usePostingLesson } from "@/contexts/PostingLessonContext";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import { openAccountOverlay } from "@/hooks/useAccountOverlay";
+import { registerCoachAnchor } from "@/utils/onboardingV2/coachAnchors";
 
 export default function Caption() {
     const insets = useSafeAreaInsets();
@@ -51,6 +55,18 @@ export default function Caption() {
 
     const ThemedColor = useThemeColor();
     const { user, updateUser } = useAuth();
+    // The posting lesson points at the caption box and the Post button
+    const lesson = usePostingLesson();
+    const isGuest = useIsGuest();
+    const captionAnchorRef = useRef<View>(null);
+    const postAnchorRef = useRef<View>(null);
+    useEffect(() => registerCoachAnchor("postCaption", captionAnchorRef), []);
+    useEffect(() => registerCoachAnchor("postButton", postAnchorRef), []);
+    // Reaching this screen means the photo step is done, however they got here (photo, library or skip)
+    useEffect(() => {
+        lesson.advance("caption");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const { capture } = useAnalytics();
     const { showRingUpdate } = useRingUpdate();
     const { selectedGroupId, selectedGroupName, getGroupIds } = useSelectedGroup();
@@ -152,6 +168,12 @@ export default function Caption() {
         return { media, sizeInfo, dualUrl };
     };
     const handlePost = async () => {
+        // A guest can't post: the lesson ends with the account prompt instead of a post
+        if (isGuest && lesson.step) {
+            lesson.finish();
+            openAccountOverlay("social", { surface: "feed" });
+            return;
+        }
         if (!data.caption.trim()) {
             setAlertTitle("Error");
             setAlertMessage("Please add a caption");
@@ -206,6 +228,8 @@ export default function Caption() {
             capture(AnalyticsEvents.POST_CREATED, {
                 has_caption: !!data.caption?.trim(),
             });
+
+            lesson.finish();
 
             // Replace the composer (not push on top) so "back" from the new post goes to
             // the feed, never back into the posting flow — avoids confusing re-posts.
@@ -311,6 +335,7 @@ export default function Caption() {
 
                     {/* Caption and options */}
                     <View style={{ padding: 16, gap: 12 }}>
+                        <View ref={captionAnchorRef} collapsable={false}>
                         <MentionTextInput
                             placeholder="Enter a caption"
                             value={data.caption}
@@ -324,6 +349,7 @@ export default function Caption() {
                                 });
                             }}
                         />
+                        </View>
                         <TaggedUsersChips
                             users={taggedUsers}
                             onRemove={(id) => setTaggedUsers((prev) => prev.filter((p) => p.id !== id))}
@@ -400,11 +426,13 @@ export default function Caption() {
                                 <Ionicons name="chevron-forward" size={16} color={ThemedColor.primary} />
                             </View>
                         </TouchableOpacity>
-                        <PrimaryButton
-                            title={isPosting ? "Posting..." : "Post"}
-                            onPress={handlePost}
-                            disabled={isPosting}
-                        />
+                        <View ref={postAnchorRef} collapsable={false}>
+                            <PrimaryButton
+                                title={isPosting ? "Posting..." : "Post"}
+                                onPress={handlePost}
+                                disabled={isPosting}
+                            />
+                        </View>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -50,6 +50,8 @@ import { registerBackgroundRefresh } from '@/tasks/backgroundRefresh';
 import { useTaskActions, useTasksSelector } from '@/contexts/tasksContext';
 import { OnboardingV2Overlay } from "@/components/onboarding/OnboardingV2Host";
 import { OnboardingV2Provider } from "@/contexts/OnboardingV2Context";
+import { PostingLessonProvider } from "@/contexts/PostingLessonContext";
+import { PostingLessonOverlay } from "@/components/onboarding/PostingLessonOverlay";
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationRefreshEvents } from '@/utils/notificationRefreshEvents';
 import { getNotificationRefreshPlan } from '@/utils/notificationInvalidation';
@@ -587,7 +589,7 @@ const OnboardingV2Scope = ({ children }: { children: React.ReactNode }) => {
     const ready = useTasksSelector((s) => !s.fetchingWorkspaces && s.lastSyncedAt !== null);
     return (
         <OnboardingV2Provider hasNoWorkspaces={hasNoWorkspaces} ready={ready}>
-            {children}
+            <PostingLessonProvider>{children}</PostingLessonProvider>
         </OnboardingV2Provider>
     );
 };
@@ -636,6 +638,8 @@ const LayoutContent = () => {
                 </Stack>
                 {/* Onboarding coach: above the tabs, dock and FAB, below the composers and account prompt */}
                 <OnboardingV2Overlay />
+                {/* Posting lesson: follows the user from Home into the posting screens, below the toast layer */}
+                <PostingLessonOverlay />
                 {createModalMounted && (
                     <CategoryComposer visible={visible && !composerRoute} setVisible={setVisible} />
                 )}
