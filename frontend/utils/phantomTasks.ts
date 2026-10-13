@@ -43,7 +43,7 @@ export function computePhantomTasks(templates: TemplateLike[], workspaces: Works
             recurDetails: tpl.recurDetails,
             templateID: tpl.id,
             public: tpl.public ?? false,
-            active: true,
+            active: false,
             isPhantom: true,
             nextGenerated: tpl.nextGenerated,
             timestamp: now,

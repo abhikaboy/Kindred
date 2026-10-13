@@ -691,7 +691,7 @@ export const VoiceInputOverlay: React.FC<VoiceInputOverlayProps> = ({ onClose })
             recurType: taskParams.recurType,
             recurDetails: taskParams.recurDetails,
             public: taskParams.public ?? false,
-            active: true,
+            active: false,
             timestamp: new Date().toISOString(),
             lastEdited: new Date().toISOString(),
             templateID: taskParams.templateID,

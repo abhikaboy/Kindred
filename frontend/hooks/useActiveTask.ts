@@ -14,6 +14,7 @@ export function useActiveTask(): ActiveEntry | null {
             for (const category of ws.categories) {
                 for (const task of category.tasks ?? []) {
                     if (!task.active) continue;
+                    if (task.isPhantom) continue;
                     if (!best || startOf(task) > startOf(best.task)) {
                         best = { task, categoryId: category.id, categoryName: category.name, workspaceName: ws.name, workspaceIcon: ws.icon };
                     }
