@@ -5,9 +5,9 @@ import OfflineBanner from "@/components/OfflineBanner";
 import { useAuth, getAuthData, getCachedUser, getHasEverSignedIn } from "@/hooks/useAuth";
 import { enterAsNewGuest, TABS_ROUTE } from "@/utils/guestEntry";
 import { Redirect, Slot, Stack, router, usePathname, type Href } from "expo-router";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
-import { ScrollView, View, AppState, InteractionManager, LogBox, StyleSheet } from "react-native";
+import { ScrollView, View, AppState, InteractionManager, LogBox } from "react-native";
 import { noteTaskCompleted, refreshCompletedToday, syncStreakWidgets } from "@/widgets/syncWidgets";
 import { taskCompletionEvents } from "@/utils/taskCompletionEvents";
 import PostCompletionNudgeSheet from "@/components/modals/PostCompletionNudgeSheet";
@@ -40,7 +40,7 @@ import { AccountOverlay } from "@/components/guest/AccountOverlay";
 import { useKudos } from "@/contexts/kudosContext";
 import { updateTimezone } from "@/api/profile";
 import * as Localization from 'expo-localization';
-import EnhancedSplashScreen from "@/components/ui/EnhancedSplashScreen";
+import SplashHold from "@/components/ui/SplashHold";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import { endActivity, tryStartActiveTaskActivity, tryStartDeadlineActivity } from '@/utils/liveActivityManager';
@@ -233,7 +233,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
     const authInitialized = useRef(false);
-    const [splashDone, setSplashDone] = useState(false);
     const ThemedColor = useThemeColor();
     const pathname = usePathname();
     const pathnameRef = useRef(pathname);
@@ -527,10 +526,6 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    const handleAnimationComplete = useCallback(() => {
-        setSplashDone(true);
-    }, []);
-
     // A guest's redirect is one-shot. Left set, it fires again on every re-render
     // of this layout, bouncing guests off the screen they were sent to.
     const guestRedirectPending = !isLoading && !!redirectPath && !!user?.isGuest;
@@ -544,31 +539,16 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         return <Redirect href={redirectPath} />;
     }
 
-    const showContent = !isLoading && !!user;
-
-    // No user and nowhere to go (offline without a cached profile, or mid-logout): hold the splash
-    if (!isLoading && !user && splashDone) {
-        return <EnhancedSplashScreen ready={false} />;
+    // Hold the splash look while auth resolves, or with no user and nowhere to go
+    // (offline without a cached profile, or mid-logout).
+    if (isLoading || !user) {
+        return <SplashHold />;
     }
 
-    // CreateModalProvider is hoisted to app/_layout.tsx so the FAB in the tabs
-    // layout keeps a valid context across auth-driven route transitions, when
-    // this layout briefly renders a Redirect instead of its children.
-    // The splash overlays the content and fades out once auth resolves, so the
-    // tabs mount underneath during the fade.
     return (
-        <View style={{ flex: 1 }}>
-            {showContent && (
-                <OnboardingV2Scope>
-                    <LayoutContent />
-                </OnboardingV2Scope>
-            )}
-            {!splashDone && (
-                <View style={StyleSheet.absoluteFill} pointerEvents={showContent ? "none" : "auto"}>
-                    <EnhancedSplashScreen ready={showContent} onAnimationComplete={handleAnimationComplete} />
-                </View>
-            )}
-        </View>
+        <OnboardingV2Scope>
+            <LayoutContent />
+        </OnboardingV2Scope>
     );
 };
 

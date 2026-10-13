@@ -4,7 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOptionalAuth, getAuthData, getCachedUser, getHasEverSignedIn } from '@/hooks/useAuth';
 import { enterAsNewGuest, routeForGuest, TABS_ROUTE } from '@/utils/guestEntry';
-import EnhancedSplashScreen from '@/components/ui/EnhancedSplashScreen';
+import SplashHold from '@/components/ui/SplashHold';
 import { maybeForceFirstLaunch } from '@/utils/resetFirstLaunch';
 
 /**
@@ -81,5 +81,5 @@ export default function Index() {
         }
     }, [nextRoute]);
 
-    return <EnhancedSplashScreen ready={false} />;
+    return <SplashHold />;
 }
