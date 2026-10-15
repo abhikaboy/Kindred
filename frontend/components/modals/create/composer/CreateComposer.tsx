@@ -248,6 +248,7 @@ export default function CreateComposer({
     // Someday: an undated task, new or existing. Any date or repeat replaces it, since the server rejects the mix
     const [someday, setSomeday] = useState(false);
     const allowSomeday = !isBlueprint;
+    // Editable user state (toggled below), not derivable — reopening resets it to the task at hand
     useEffect(() => {
         if (visible) setSomeday(edit && isSomedayTask(editTask ?? contextTask));
     }, [visible]);

@@ -122,6 +122,42 @@ const MediaSlide = ({
     );
 };
 
+const DualOverlay = ({
+    dual,
+    onDualPress,
+    onDualRemove,
+}: {
+    dual?: string | null;
+    onDualPress?: () => void;
+    onDualRemove?: () => void;
+}) => {
+    if (!dual) return null;
+    return (
+        <>
+            <TouchableOpacity
+                onPress={onDualPress}
+                activeOpacity={onDualPress ? 0.9 : 1}
+                disabled={!onDualPress}
+                style={styles.dualOverlay}
+            >
+                <Image
+                    source={{ uri: dual }}
+                    style={styles.dualImage}
+                    contentFit="cover"
+                />
+            </TouchableOpacity>
+            {onDualRemove && (
+                <TouchableOpacity
+                    onPress={onDualRemove}
+                    style={styles.dualRemoveButton}
+                >
+                    <Ionicons name="close" size={14} color="#fff" />
+                </TouchableOpacity>
+            )}
+        </>
+    );
+};
+
 export type PostCardMediaProps = {
     images: string[];
     media?: MediaItem[];
@@ -214,34 +250,6 @@ const PostCardMedia = ({
 
     if (items.length === 0) return null;
 
-    const renderDualOverlay = () => {
-        if (!dual) return null;
-        return (
-            <>
-                <TouchableOpacity
-                    onPress={onDualPress}
-                    activeOpacity={onDualPress ? 0.9 : 1}
-                    disabled={!onDualPress}
-                    style={styles.dualOverlay}
-                >
-                    <Image
-                        source={{ uri: dual }}
-                        style={styles.dualImage}
-                        contentFit="cover"
-                    />
-                </TouchableOpacity>
-                {onDualRemove && (
-                    <TouchableOpacity
-                        onPress={onDualRemove}
-                        style={styles.dualRemoveButton}
-                    >
-                        <Ionicons name="close" size={14} color="#fff" />
-                    </TouchableOpacity>
-                )}
-            </>
-        );
-    };
-
     return (
         <View
             style={styles.imageContainer}
@@ -256,7 +264,7 @@ const PostCardMedia = ({
                         active={!videoPaused}
                         onLongPress={onImageLongPress ? () => onImageLongPress(0) : undefined}
                     />
-                    {renderDualOverlay()}
+                    <DualOverlay dual={dual} onDualPress={onDualPress} onDualRemove={onDualRemove} />
                 </View>
             ) : (
                 <View style={styles.carouselContainer}>
@@ -286,7 +294,7 @@ const PostCardMedia = ({
                                     active={!videoPaused && index === currentImageIndex}
                                     onLongPress={onImageLongPress ? () => onImageLongPress(index) : undefined}
                                 />
-                                {renderDualOverlay()}
+                                <DualOverlay dual={dual} onDualPress={onDualPress} onDualRemove={onDualRemove} />
                             </View>
                         )}
                     />

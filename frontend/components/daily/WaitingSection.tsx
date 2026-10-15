@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, ScrollView, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import ReanimatedSwipeable, { SwipeDirection } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { router } from "expo-router";
@@ -113,11 +113,10 @@ const WaitingSection = ({ tasks: all }: Props) => {
         const live = all.filter((t) => !t.releasedAt && !isSomeday(t) && !isInPlan(t));
         return { passed: live.filter((t) => isPassedPlan(t)), tasks: live.filter((t) => !isPassedPlan(t)) };
     }, [all]);
-    const [expanded, setExpanded] = useState(passed.length > 0);
-    // A plan whose day went by opens the section so its "still want to?" is seen
-    useEffect(() => {
-        if (passed.length > 0) setExpanded(true);
-    }, [passed.length > 0]);
+    // A plan whose day went by opens the section so its "still want to?" is seen;
+    // once the user toggles, their choice wins
+    const [expandedOverride, setExpandedOverride] = useState<boolean | null>(null);
+    const expanded = expandedOverride ?? passed.length > 0;
     const { ready: hintReady, done: hintDone } = useFirstTouchHint("waiting_swipe_today");
     const Caret = expanded ? CaretUp : CaretDown;
     if (passed.length === 0 && tasks.length === 0) return null;
@@ -125,7 +124,7 @@ const WaitingSection = ({ tasks: all }: Props) => {
     return (
         <View style={styles.section}>
             <TouchableOpacity
-                onPress={() => setExpanded((e) => !e)}
+                onPress={() => setExpandedOverride((o) => !(o ?? passed.length > 0))}
                 style={styles.header}
                 hitSlop={8}
                 accessibilityRole="button"

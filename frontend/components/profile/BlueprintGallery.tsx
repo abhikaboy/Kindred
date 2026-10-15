@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { deletePost, getPostsByBlueprint } from "@/api/post";
@@ -26,6 +26,55 @@ interface PostImage {
     postUserId: string;
 }
 
+// Empty state shown when the blueprint has no image posts yet
+const BlueprintEmptyState = ({ ThemedColor, styles }: { ThemedColor: any; styles: any }) => {
+    const colorScheme = useColorScheme();
+
+    return (
+        <View style={styles.emptyContainer}>
+            <Image
+                source={require("@/assets/images/343.Art-Gallery.png")}
+                style={[
+                    styles.emptyImage,
+                    colorScheme === 'dark' && styles.invertedImage
+                ]}
+                resizeMode="contain"
+            />
+            <ThemedText type="subtitle" style={styles.emptyTitle}>
+                No Posts Yet
+            </ThemedText>
+            <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
+                No Posts with Images Yet
+            </ThemedText>
+        </View>
+    );
+};
+
+// Error state with tap-to-retry
+const BlueprintErrorState = ({
+    error,
+    ThemedColor,
+    styles,
+    onRetry,
+}: {
+    error: string | null;
+    ThemedColor: any;
+    styles: any;
+    onRetry: () => void;
+}) => (
+    <View style={styles.emptyState}>
+        <MaterialIcons name="error-outline" size={32} color={ThemedColor.primary} />
+        <ThemedText type="caption" style={styles.errorText}>
+            {error}
+        </ThemedText>
+        <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
+            <ThemedText type="caption" style={styles.retryText}>
+                Tap to retry
+            </ThemedText>
+        </TouchableOpacity>
+    </View>
+);
+
 export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps) {
     const { user } = useAuth();
     const ThemedColor = useThemeColor();
@@ -42,8 +91,15 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
+    // Set in the effect cleanup so a stale fetch never commits state
+    const fetchCancelledRef = useRef(false);
+
     useEffect(() => {
+        fetchCancelledRef.current = false;
         fetchBlueprintImages();
+        return () => {
+            fetchCancelledRef.current = true;
+        };
     }, [blueprintId]);
 
     const fetchBlueprintImages = async () => {
@@ -52,6 +108,7 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
             setError(null);
 
             const posts = await getPostsByBlueprint(blueprintId);
+            if (fetchCancelledRef.current) return;
 
             const postImageData: PostImage[] = posts
                 .map((post) => ({ post, cover: postCover(post) }))
@@ -71,10 +128,13 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
             setPostImages(postImageData);
         } catch (error) {
             console.error("Error fetching blueprint post images:", error);
+            if (fetchCancelledRef.current) return;
             setError("Failed to load blueprint gallery");
             setPostImages([]);
         } finally {
-            setLoading(false);
+            if (!fetchCancelledRef.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -186,53 +246,23 @@ export default function BlueprintGallery({ blueprintId }: BlueprintGalleryProps)
         );
     }, [deletingPosts]);
 
-    const renderEmptyState = () => {
-        const colorScheme = useColorScheme();
-
-        return (
-            <View style={styles.emptyContainer}>
-                <Image
-                    source={require("@/assets/images/343.Art-Gallery.png")}
-                    style={[
-                        styles.emptyImage,
-                        colorScheme === 'dark' && styles.invertedImage
-                    ]}
-                    resizeMode="contain"
-                />
-                <ThemedText type="subtitle" style={styles.emptyTitle}>
-                    No Posts Yet
-                </ThemedText>
-                <ThemedText type="default" style={[styles.emptyDescription, { color: ThemedColor.caption }]}>
-                    No Posts with Images Yet
-                </ThemedText>
-            </View>
-        );
-    };
-
-    const renderErrorState = () => (
-        <View style={styles.emptyState}>
-            <MaterialIcons name="error-outline" size={32} color={ThemedColor.primary} />
-            <ThemedText type="caption" style={styles.errorText}>
-                {error}
-            </ThemedText>
-            <TouchableOpacity onPress={fetchBlueprintImages} style={styles.retryButton}>
-                <ThemedText type="caption" style={styles.retryText}>
-                    Tap to retry
-                </ThemedText>
-            </TouchableOpacity>
-        </View>
-    );
-
     if (loading) {
         <LoadingScreen message="Getting Blueprints..." />;
     }
 
     if (error) {
-        return renderErrorState();
+        return (
+            <BlueprintErrorState
+                error={error}
+                ThemedColor={ThemedColor}
+                styles={styles}
+                onRetry={fetchBlueprintImages}
+            />
+        );
     }
 
     if (postImages.length === 0) {
-        return renderEmptyState();
+        return <BlueprintEmptyState ThemedColor={ThemedColor} styles={styles} />;
     }
 
     return (

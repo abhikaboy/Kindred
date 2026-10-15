@@ -129,18 +129,10 @@ const PostCard = React.memo(({
     const reactionsStringified = useMemo(() => JSON.stringify(reactions), [reactions]);
     const localReactionsStringified = useMemo(() => JSON.stringify(localReactions), [localReactions]);
 
-    // Memoize size values to prevent unnecessary recalculations
-    const memoizedSize = useMemo(() => size, [size?.width, size?.height, size?.bytes]);
-
-    // Memoize images array to prevent unnecessary recalculations
-    const memoizedImages = useMemo(() => images, [images?.join(',')]);
-
-    // Memoize the first image URL for calculations
-    const firstImageUrl = useMemo(() => memoizedImages?.[0], [memoizedImages]);
+    const firstImageUrl = images?.[0];
 
     // Unified media (videos + images); falls back to images for legacy posts.
-    const memoizedMedia = useMemo(() => media, [media?.map((m) => m.url).join(",")]);
-    const hasMediaContent = (memoizedMedia?.length ?? 0) > 0 || (memoizedImages?.length ?? 0) > 0;
+    const hasMediaContent = (media?.length ?? 0) > 0 || (images?.length ?? 0) > 0;
 
     useEffect(() => {
         // Only update localReactions if the reactions prop has genuinely changed
@@ -162,7 +154,7 @@ const PostCard = React.memo(({
                 setLocalReactions(reactions);
             }
         }
-    }, [reactions]);
+    }, [reactionsStringified]);
 
     useEffect(() => {
         setCurrentComments(comments || []);
@@ -172,9 +164,9 @@ const PostCard = React.memo(({
     useEffect(() => {
         if (hasMediaContent) {
             // Check if we have valid size information
-            if (memoizedSize && memoizedSize.width > 0 && memoizedSize.height > 0) {
+            if (size && size.width > 0 && size.height > 0) {
                 // Use the provided size information to calculate height
-                const aspectRatio = memoizedSize.width / memoizedSize.height;
+                const aspectRatio = size.width / size.height;
                 const calculatedHeight = screenWidth / aspectRatio;
 
                 // Constrain height between 0.5x and 1.5x screen width
@@ -199,7 +191,7 @@ const PostCard = React.memo(({
             setImageHeight(512);
             onHeightChange?.(512);
         }
-    }, [memoizedImages, memoizedMedia, memoizedSize, screenWidth, firstImageUrl, hasMediaContent]);
+    }, [images, media, size?.width, size?.height, size?.bytes, screenWidth, firstImageUrl, hasMediaContent]);
 
     const calculateImageHeight = useCallback((imageUri: string) => {
         if (!imageUri) {
@@ -620,10 +612,10 @@ const PostCard = React.memo(({
                     {hasMediaContent && (
                         <View>
                             <PostCardMedia
-                                images={memoizedImages ?? []}
-                                media={memoizedMedia}
+                                images={images ?? []}
+                                media={media}
                                 dual={dual}
-                                size={memoizedSize}
+                                size={size}
                                 imageHeight={imageHeight}
                                 onImageLongPress={openModal}
                             />
@@ -667,7 +659,7 @@ const PostCard = React.memo(({
                             style={styles.modalContainer}
                             onPress={() => setModalVisible(false)}>
                             <View style={styles.modalContent}>
-                                <RNImage source={{ uri: memoizedImages[modalIndex] }} style={styles.popupImage} />
+                                <RNImage source={{ uri: images[modalIndex] }} style={styles.popupImage} />
                             </View>
                         </TouchableOpacity>
                     </Modal>

@@ -27,6 +27,24 @@ type Props = {
     onDismiss?: () => void;
 };
 
+// Splits the label so the highlight substring renders in the primary color
+function MenuOptionLabel({ option }: { option: BottomMenuOption }) {
+    const ThemedColor = useThemeColor();
+    if (option.labelHighlight && option.label.includes(option.labelHighlight)) {
+        const parts = option.label.split(option.labelHighlight);
+        return (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <ThemedText type="default">{parts[0]}</ThemedText>
+                <ThemedText type="default" style={{ color: ThemedColor.primary }}>
+                    {option.labelHighlight}
+                </ThemedText>
+                {parts[1] && <ThemedText type="default">{parts[1]}</ThemedText>}
+            </View>
+        );
+    }
+    return <ThemedText type="default">{option.label}</ThemedText>;
+}
+
 // Using memo to prevent unnecessary re-renders
 const BottomMenuModal = memo((props: Props) => {
     const ThemedColor = useThemeColor();
@@ -100,23 +118,6 @@ const BottomMenuModal = memo((props: Props) => {
             enablePanDownToClose={true}>
             <BottomSheetView style={styles.contentContainer}>
                 {props.options.map((option, index) => {
-                    // Split label if there's a highlight part
-                    const renderLabel = () => {
-                        if (option.labelHighlight && option.label.includes(option.labelHighlight)) {
-                            const parts = option.label.split(option.labelHighlight);
-                            return (
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <ThemedText type="default">{parts[0]}</ThemedText>
-                                    <ThemedText type="default" style={{ color: ThemedColor.primary }}>
-                                        {option.labelHighlight}
-                                    </ThemedText>
-                                    {parts[1] && <ThemedText type="default">{parts[1]}</ThemedText>}
-                                </View>
-                            );
-                        }
-                        return <ThemedText type="default">{option.label}</ThemedText>;
-                    };
-
                     return (
                         <TouchableOpacity
                             key={index}
@@ -127,7 +128,7 @@ const BottomMenuModal = memo((props: Props) => {
                                 option.callback && option.callback();
                             }}>
                             <Feather name={option.icon} size={24} color={ThemedColor.text} />
-                            {renderLabel()}
+                            <MenuOptionLabel option={option} />
                         </TouchableOpacity>
                     );
                 })}

@@ -1,5 +1,5 @@
 import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform } from "react-native";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import ChecklistToggle from "@/components/inputs/ChecklistToggle";
 import ConditionalView from "@/components/ui/ConditionalView";
@@ -8,10 +8,17 @@ import { updateChecklistAPI } from "@/api/task";
 
 type ChecklistItem = {
     id?: string;
+    // Local-only stable key for items the backend hasn't assigned an id to; never sent to the API or parent.
+    localId?: string;
     content: string;
     completed: boolean;
     order: number;
 };
+
+let localIdSeq = 0;
+const newLocalId = () => `local-${++localIdSeq}`;
+const stripLocalIds = (items: ChecklistItem[]) =>
+    items.map(({ localId: _localId, ...rest }) => rest);
 
 type Props = {
     initialChecklist?: ChecklistItem[];
@@ -28,9 +35,17 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     const ThemedColor = useThemeColor();
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
+    // Keep the latest callback without re-running the notify effect on every parent render
+    const onChecklistChangeRef = useRef(onChecklistChange);
+    useLayoutEffect(() => {
+        onChecklistChangeRef.current = onChecklistChange;
+    });
+
     // Update checklist items when initialChecklist changes (task data loads)
     useEffect(() => {
-        setChecklistItems(initialChecklist);
+        setChecklistItems(
+            initialChecklist.map((item) => (item.id || item.localId ? item : { ...item, localId: newLocalId() }))
+        );
         // Reset user edit flag when new data loads
         setIsUserEdit(false);
     }, [initialChecklist]);
@@ -39,7 +54,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
     const debouncedUpdateChecklist = useDebounce(async (checklist: ChecklistItem[]) => {
         if (autoSave && categoryId && taskId && isUserEdit) {
             try {
-                await updateChecklistAPI(categoryId, taskId, checklist);
+                await updateChecklistAPI(categoryId, taskId, stripLocalIds(checklist));
             } catch (error) {
                 console.error("Failed to update checklist:", error);
             }
@@ -48,13 +63,13 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
 
     // Notify parent component when checklist changes and auto-save if enabled
     useEffect(() => {
-        onChecklistChange?.(checklistItems);
+        onChecklistChangeRef.current?.(stripLocalIds(checklistItems));
 
         // Only auto-save if this was a user-initiated edit
         if (autoSave && isUserEdit) {
             debouncedUpdateChecklist(checklistItems);
         }
-    }, [checklistItems, onChecklistChange, autoSave, isUserEdit, debouncedUpdateChecklist]);
+    }, [checklistItems, autoSave, isUserEdit, debouncedUpdateChecklist]);
 
     // Update refs array when checklist items change
     useEffect(() => {
@@ -67,6 +82,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
         setChecklistItems([
             ...checklistItems.slice(0, insertIndex),
             {
+                localId: newLocalId(),
                 content: "",
                 completed: false,
                 order: insertIndex,
@@ -133,6 +149,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
 
         setIsUserEdit(true);
         const newItem = {
+            localId: newLocalId(),
             content: newItemContent.trim(),
             completed: false,
             order: checklistItems.length,
@@ -147,12 +164,14 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
 
         setIsUserEdit(true);
         const newItem = {
+            localId: newLocalId(),
             content: newItemContent.trim(),
             completed: false,
             order: checklistItems.length,
         };
 
         const emptyItem = {
+            localId: newLocalId(),
             content: "",
             completed: false,
             order: checklistItems.length + 1,
@@ -172,7 +191,7 @@ const Checklist = ({ initialChecklist = [], onChecklistChange, categoryId, taskI
             <View style={{ gap: 8 }}>
                 <ConditionalView condition={checklistItems.length > 0}>
                     {checklistItems.map((item, index) => (
-                        <View key={item.id || index} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <View key={item.id || item.localId} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                             <ChecklistToggle checked={item.completed} onToggle={() => toggleChecklistItem(index)} />
                             <TextInput
                                 ref={(ref) => {

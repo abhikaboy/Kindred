@@ -51,21 +51,25 @@ export default function CalendarSetupBottomSheet({
     }, [visible]);
 
     useEffect(() => {
-        if (visible && connectionId) {
-            const fetchCalendars = async () => {
-                setFetching(true);
-                try {
-                    const { calendars: cal } = await getConnectionCalendars(connectionId);
-                    setCalendars(cal);
-                    setSelectedIds(cal.map((c: any) => c.id || c.ID)); // pre-select all
-                } catch (err) {
-                    console.error("Failed to fetch calendars:", err);
-                } finally {
-                    setFetching(false);
-                }
-            };
-            fetchCalendars();
-        }
+        if (!visible || !connectionId) return;
+        // Stale responses from a closed/reopened sheet must not clobber state
+        let cancelled = false;
+        setFetching(true);
+        getConnectionCalendars(connectionId)
+            .then(({ calendars: cal }) => {
+                if (cancelled) return;
+                setCalendars(cal);
+                setSelectedIds(cal.map((c: any) => c.id || c.ID)); // pre-select all
+            })
+            .catch((err) => {
+                console.error("Failed to fetch calendars:", err);
+            })
+            .finally(() => {
+                if (!cancelled) setFetching(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [visible, connectionId]);
 
     const toggleCalendar = (id: string) => {

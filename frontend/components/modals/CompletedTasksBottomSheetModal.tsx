@@ -18,23 +18,25 @@ export default function CompletedTasksBottomSheetModal({ visible, setVisible, da
     const ThemedColor = useThemeColor();
 
     useEffect(() => {
-        if (visible && date) {
-            fetchTasks();
-        }
-    }, [visible, date]);
-
-    const fetchTasks = async () => {
-        if (!date) return;
+        if (!visible || !date) return;
+        // A stale response from a previous open/date must not clobber state
+        let cancelled = false;
         setLoading(true);
-        try {
-            const fetchedTasks = await activityAPI.getCompletedTasksByDate(date);
-            setTasks(fetchedTasks);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        activityAPI
+            .getCompletedTasksByDate(date)
+            .then((fetchedTasks) => {
+                if (!cancelled) setTasks(fetchedTasks);
+            })
+            .catch((error) => {
+                console.error(error);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [visible, date]);
 
     const renderItem = ({ item }: { item: TaskDocument }) => (
         <View style={[styles.taskItem, { backgroundColor: ThemedColor.lightenedCard, borderColor: ThemedColor.tertiary }]}>
@@ -88,4 +90,3 @@ const styles = StyleSheet.create({
         gap: 4,
     }
 });
-

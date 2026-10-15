@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Task } from "@/api/types";
 import { getReleasedTasksAPI, unreleaseTaskAPI } from "@/api/plan";
 import { useTasks } from "@/contexts/tasksContext";
@@ -36,19 +36,33 @@ export function useReleasedTasks() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    // Skip state writes after unmount or when a newer load supersedes this one.
+    const aliveRef = useRef(true);
+    const requestIdRef = useRef(0);
     const { addToCategory, removeFromCategory } = useTasks();
     const { capture } = useAnalytics();
 
+    useEffect(() => {
+        aliveRef.current = true;
+        return () => {
+            aliveRef.current = false;
+        };
+    }, []);
+
     const load = useCallback(async () => {
+        const requestId = ++requestIdRef.current;
+        const stale = () => !aliveRef.current || requestId !== requestIdRef.current;
         setLoading(true);
         setError(false);
         try {
             const res = await getReleasedTasksAPI();
+            if (stale()) return;
             setTasks(sortReleasedNewestFirst(res as unknown as Task[]));
         } catch {
+            if (stale()) return;
             setError(true);
         } finally {
-            setLoading(false);
+            if (!stale()) setLoading(false);
         }
     }, []);
 

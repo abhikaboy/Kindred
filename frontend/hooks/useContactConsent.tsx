@@ -21,22 +21,25 @@ export function useContactConsent() {
 
     // Load consent state from storage on mount
     useEffect(() => {
-        loadConsentState();
-    }, []);
-
-    const loadConsentState = async () => {
-        try {
-            const stored = await AsyncStorage.getItem(CONTACT_CONSENT_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored) as ContactConsentState;
-                setConsentState(parsed);
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(CONTACT_CONSENT_KEY);
+                if (stored && !cancelled) {
+                    const parsed = JSON.parse(stored) as ContactConsentState;
+                    setConsentState(parsed);
+                }
+            } catch (error) {
+                console.error('Error loading contact consent state:', error);
+            } finally {
+                if (!cancelled) setIsLoading(false);
             }
-        } catch (error) {
-            console.error('Error loading contact consent state:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const grantConsent = useCallback(async () => {
         const newState: ContactConsentState = {

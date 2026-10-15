@@ -105,50 +105,55 @@ const CompletedTasks = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch completed tasks with pagination
-    const fetchCompletedTasks = async (page: number) => {
-        try {
-            setLoading(true);
-            setError(null);
-            console.log(`Fetching completed tasks for page ${page}`);
-            const response = await getCompletedTasksAPI(page, TASKS_PER_PAGE);
-            console.log("API Response:", response);
-
-            // Validate response structure
-            if (!response) {
-                throw new Error("No response received from API");
-            }
-
-            // Ensure tasks is an array
-            const validatedResponse: PaginatedCompletedTasksResponse = {
-                tasks: Array.isArray(response.tasks) ? response.tasks : [],
-                page: response.page || page,
-                limit: response.limit || TASKS_PER_PAGE,
-                total: response.total || 0,
-                totalPages: response.totalPages || 0,
-            };
-
-            console.log("Validated response:", validatedResponse);
-            setPaginationData(validatedResponse);
-        } catch (err) {
-            console.error("Error fetching completed tasks:", err);
-            setError(err instanceof Error ? err.message : "Failed to load completed tasks");
-            // Set empty state on error
-            setPaginationData({
-                tasks: [],
-                page: page,
-                limit: TASKS_PER_PAGE,
-                total: 0,
-                totalPages: 0,
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Fetch tasks when page changes
+    // Fetch tasks when page changes; the cancelled flag stops a stale or
+    // late response (unmount / rapid page flip) from landing in state
     useEffect(() => {
+        let cancelled = false;
+
+        const fetchCompletedTasks = async (page: number) => {
+            try {
+                setLoading(true);
+                setError(null);
+                console.log(`Fetching completed tasks for page ${page}`);
+                const response = await getCompletedTasksAPI(page, TASKS_PER_PAGE);
+                if (cancelled) return;
+                console.log("API Response:", response);
+
+                // Validate response structure
+                if (!response) {
+                    throw new Error("No response received from API");
+                }
+
+                // Ensure tasks is an array
+                const validatedResponse: PaginatedCompletedTasksResponse = {
+                    tasks: Array.isArray(response.tasks) ? response.tasks : [],
+                    page: response.page || page,
+                    limit: response.limit || TASKS_PER_PAGE,
+                    total: response.total || 0,
+                    totalPages: response.totalPages || 0,
+                };
+
+                console.log("Validated response:", validatedResponse);
+                setPaginationData(validatedResponse);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Error fetching completed tasks:", err);
+                setError(err instanceof Error ? err.message : "Failed to load completed tasks");
+                // Set empty state on error
+                setPaginationData({
+                    tasks: [],
+                    page: page,
+                    limit: TASKS_PER_PAGE,
+                    total: 0,
+                    totalPages: 0,
+                });
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
         fetchCompletedTasks(paginationData.page);
+        return () => { cancelled = true; };
     }, [paginationData.page]);
 
     // Group tasks by date

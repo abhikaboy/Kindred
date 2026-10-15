@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions, Alert, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { ThemedView } from '@/components/ThemedView';
@@ -109,7 +109,11 @@ export default function Settings() {
         }
     }, [userSettings]);
 
-    // Load calendar connections
+    // Load calendar connections; the mounted guard stops an unmount
+    // mid-request (or a re-enter race) from setting state on a dead screen
+    const isMountedRef = useRef(true);
+    useEffect(() => () => { isMountedRef.current = false; }, []);
+
     useEffect(() => {
         loadCalendarConnections();
     }, []);
@@ -117,6 +121,7 @@ export default function Settings() {
     const loadCalendarConnections = async () => {
         try {
             const { connections } = await getCalendarConnections();
+            if (!isMountedRef.current) return;
             const completed = (connections || []).filter((c) => c.setup_complete);
             const pending = (connections || []).find((c) => !c.setup_complete);
             setCalendarConnections(completed);

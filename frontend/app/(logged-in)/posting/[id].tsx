@@ -11,6 +11,20 @@ import { showToast } from "@/utils/showToast";
 import { useNavigation } from "expo-router";
 import { feedActivePost } from "@/utils/feedSongPlayback";
 
+// Flatten the user fields PostCard reads into the shape the card expects
+const processPostData = (postData: any) => {
+    const user = postData.user;
+    return {
+        ...postData,
+        user: {
+            _id: user._id,
+            display_name: user.display_name,
+            handle: user.handle,
+            profile_picture: user.profile_picture,
+        },
+    };
+};
+
 export default function PostDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const ThemedColor = useThemeColor();
@@ -37,6 +51,8 @@ export default function PostDetail() {
     };
 
     useEffect(() => {
+        // Ignore a response that resolves after unmount or after the post id changed
+        let cancelled = false;
         const fetchPost = async () => {
             if (!id) {
                 setError("No post ID provided");
@@ -49,26 +65,20 @@ export default function PostDetail() {
 
             try {
                 const postData = await getPostById(id);
-                const user = postData.user;
-
-                const processedPost = {
-                    ...postData,
-                    user: {
-                        _id: user._id,
-                        display_name: user.display_name,
-                        handle: user.handle,
-                        profile_picture: user.profile_picture,
-                    },
-                };
-                setPost(processedPost);
+                if (cancelled) return;
+                setPost(processPostData(postData));
             } catch (error) {
+                if (cancelled) return;
                 setError("Failed to load post");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchPost();
+        return () => {
+            cancelled = true;
+        };
     }, [id]);
 
     const refreshPost = async () => {
@@ -76,18 +86,7 @@ export default function PostDetail() {
 
         try {
             const postData = await getPostById(id);
-            const user = postData.user;
-
-            const processedPost = {
-                ...postData,
-                user: {
-                    _id: user._id,
-                    display_name: user.display_name,
-                    handle: user.handle,
-                    profile_picture: user.profile_picture,
-                },
-            };
-            setPost(processedPost);
+            setPost(processPostData(postData));
         } catch (error) {
             // ignored
         }

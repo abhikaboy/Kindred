@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { View } from "react-native";
 import { syncCalendarEvents } from "@/api/calendar";
@@ -17,28 +17,27 @@ export default function CalendarCallback() {
     const { showAlert } = useAlert();
     const ThemedColor = useThemeColor();
 
-    const [showSetup, setShowSetup] = useState(false);
-    const [linkedConnectionId, setLinkedConnectionId] = useState<string | null>(null);
+    // Derivable from route params (fixed per navigation entry), so no effect needed
+    const linkedConnectionId = action === "linked" ? connectionId ?? null : null;
+    const [showSetup, setShowSetup] = useState(true);
 
+    const alertFiredRef = useRef(false);
     useEffect(() => {
-        if (action === "linked" && connectionId) {
-            setLinkedConnectionId(connectionId);
-            setShowSetup(true);
-        } else if (action === "error") {
-            const errorMessage = message || "Unable to connect your Google Calendar. Please try again.";
-            showAlert({
-                title: "Connection Failed",
-                message: errorMessage,
-                buttons: [
-                    {
-                        text: "OK",
-                        style: "default",
-                        onPress: () => router.replace("/(logged-in)/(tabs)/(task)"),
-                    },
-                ],
-            });
-        }
-    }, [action, connectionId, message]);
+        if (action !== "error" || alertFiredRef.current) return;
+        alertFiredRef.current = true;
+        const errorMessage = message || "Unable to connect your Google Calendar. Please try again.";
+        showAlert({
+            title: "Connection Failed",
+            message: errorMessage,
+            buttons: [
+                {
+                    text: "OK",
+                    style: "default",
+                    onPress: () => router.replace("/(logged-in)/(tabs)/(task)"),
+                },
+            ],
+        });
+    }, [action, message]);
 
     const handleSetupComplete = async () => {
         setShowSetup(false);

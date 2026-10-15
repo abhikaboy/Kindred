@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, Animated } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -64,10 +64,10 @@ const BlueprintCreationLayout = () => {
     const [alertMessage, setAlertMessage] = useState("");
     const [alertButtons, setAlertButtons] = useState<AlertButton[]>([]);
 
-    // Animation values for header collapse
-    const headerHeight = new Animated.Value(1);
-    const titleOpacity = new Animated.Value(1);
-    const progressOpacity = new Animated.Value(1);
+    // Animation values for header collapse (stable across renders so keyboard listeners keep animating them)
+    const headerHeight = useRef(new Animated.Value(1)).current;
+    const titleOpacity = useRef(new Animated.Value(1)).current;
+    const progressOpacity = useRef(new Animated.Value(1)).current;
 
     const router = useRouter();
     const ThemedColor = useThemeColor();

@@ -22,6 +22,44 @@ type Props = {
     flexInfo?: FlexInstanceInfo;
 };
 
+type FrequencyVisualProps = {
+    frequency?: string;
+    daysOfWeek?: number[];
+};
+
+const FrequencyVisual = ({ frequency, daysOfWeek }: FrequencyVisualProps) => {
+    const ThemedColor = useThemeColor();
+    if (frequency !== "weekly" || !daysOfWeek) return null;
+
+    const days = ["S", "M", "T", "W", "T", "F", "S"];
+    return (
+        <View style={styles.weekContainer}>
+            {daysOfWeek.map((active, index) => (
+                <View
+                    key={index}
+                    style={[
+                        styles.dayCircle,
+                        {
+                            backgroundColor: active === 1 ? ThemedColor.primary : "transparent",
+                            borderColor: active === 1 ? ThemedColor.primary : ThemedColor.border,
+                        },
+                    ]}
+                >
+                    <ThemedText
+                        type="caption"
+                        style={{
+                            color: active === 1 ? "#FFFFFF" : ThemedColor.caption,
+                            fontWeight: active === 1 ? "bold" : "normal",
+                        }}
+                    >
+                        {days[index]}
+                    </ThemedText>
+                </View>
+            ))}
+        </View>
+    );
+};
+
 const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextDate, flexInfo }: Props) => {
     const ThemedColor = useThemeColor();
 
@@ -32,39 +70,6 @@ const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextD
             case "monthly": return "month";
             default: return period;
         }
-    };
-
-    const renderFrequencyVisual = () => {
-        if (frequency === "weekly" && recurDetails.daysOfWeek) {
-            const days = ["S", "M", "T", "W", "T", "F", "S"];
-            return (
-                <View style={styles.weekContainer}>
-                    {recurDetails.daysOfWeek.map((active, index) => (
-                        <View
-                            key={index}
-                            style={[
-                                styles.dayCircle,
-                                {
-                                    backgroundColor: active === 1 ? ThemedColor.primary : "transparent",
-                                    borderColor: active === 1 ? ThemedColor.primary : ThemedColor.border,
-                                },
-                            ]}
-                        >
-                            <ThemedText
-                                type="caption"
-                                style={{
-                                    color: active === 1 ? "#FFFFFF" : ThemedColor.caption,
-                                    fontWeight: active === 1 ? "bold" : "normal",
-                                }}
-                            >
-                                {days[index]}
-                            </ThemedText>
-                        </View>
-                    ))}
-                </View>
-            );
-        }
-        return null;
     };
 
     const getFrequencyText = () => {
@@ -153,7 +158,7 @@ const RecurringInfoCard = ({ recurDetails, frequency, recurType, lastDate, nextD
                         {/* Frequency Header */}
                         <View style={styles.section}>
                             <ThemedText type="defaultSemiBold">{getFrequencyText()}</ThemedText>
-                            {renderFrequencyVisual()}
+                            <FrequencyVisual frequency={frequency} daysOfWeek={recurDetails.daysOfWeek} />
                         </View>
 
                         <View style={[styles.divider, { backgroundColor: ThemedColor.border }]} />

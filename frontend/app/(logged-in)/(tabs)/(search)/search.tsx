@@ -196,15 +196,22 @@ const Search = (props: Props) => {
     const insets = useSafeAreaInsets();
 
     // Load blueprints by category
+    const categoryLoadSeqRef = useRef(0);
+    const isUnmountedRef = useRef(false);
+    useEffect(() => () => { isUnmountedRef.current = true; }, []);
     const loadBlueprintsByCategory = useCallback(async () => {
+        // Drop a response that resolves after unmount or after a newer load started
+        const seq = ++categoryLoadSeqRef.current;
         setLoading(true);
         try {
             const data = await getBlueprintsByCategoryFromBackend();
+            if (isUnmountedRef.current || seq !== categoryLoadSeqRef.current) return;
             setCategoryGroups(data);
         } catch (err) {
+            if (isUnmountedRef.current || seq !== categoryLoadSeqRef.current) return;
             setError(err.message);
         } finally {
-            setLoading(false);
+            if (!isUnmountedRef.current && seq === categoryLoadSeqRef.current) setLoading(false);
         }
     }, []);
 

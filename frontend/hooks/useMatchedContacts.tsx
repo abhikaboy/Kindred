@@ -13,25 +13,29 @@ export function useMatchedContacts() {
     const [matchedContacts, setMatchedContacts] = useState<MatchedContact[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load matched contacts from storage on mount
-    useEffect(() => {
-        loadMatchedContacts();
-    }, []);
-
-    const loadMatchedContacts = useCallback(async () => {
+    const loadMatchedContacts = useCallback(async (isCancelled?: () => boolean) => {
         try {
             setIsLoading(true);
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
-            if (stored) {
+            if (stored && !isCancelled?.()) {
                 const parsed = JSON.parse(stored);
                 setMatchedContacts(parsed);
             }
         } catch (error) {
             console.error('Error loading matched contacts:', error);
         } finally {
-            setIsLoading(false);
+            if (!isCancelled?.()) setIsLoading(false);
         }
     }, []);
+
+    // Load matched contacts from storage on mount
+    useEffect(() => {
+        let cancelled = false;
+        loadMatchedContacts(() => cancelled);
+        return () => {
+            cancelled = true;
+        };
+    }, [loadMatchedContacts]);
 
     const saveMatchedContacts = useCallback(async (contacts: MatchedContact[]) => {
         try {
@@ -48,7 +52,7 @@ export function useMatchedContacts() {
             const existingIds = new Set(matchedContacts.map(c => c.user._id));
             const uniqueNew = newContacts.filter(c => !existingIds.has(c.user._id));
             const updated = [...matchedContacts, ...uniqueNew];
-            
+
             await saveMatchedContacts(updated);
         } catch (error) {
             console.error('Error adding matched contacts:', error);
@@ -82,4 +86,3 @@ export function useMatchedContacts() {
         refreshMatchedContacts: loadMatchedContacts,
     };
 }
-

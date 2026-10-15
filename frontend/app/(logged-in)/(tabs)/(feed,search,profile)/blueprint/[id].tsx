@@ -258,13 +258,22 @@ export default function BlueprintDetailScreen() {
     const { ready: blueprintHintReady, done: blueprintHintDone } = useFirstTouchHint("blueprints_intro");
     const [isLoadingBlueprint, setIsLoadingBlueprint] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
-    const [isSubscribed, setIsSubscribed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [currentSubscriberCount, setCurrentSubscriberCount] = useState(0);
+    // Optimistic override so the button stays "Subscribed" right after a successful tap
+    const [optimisticSubscribed, setOptimisticSubscribed] = useState(false);
     const isOwner = user?._id === selectedBlueprint?.owner?._id;
+
+    // Derived from context state during render instead of synced through useEffect
+    const isSubscribed = selectedBlueprint
+        ? optimisticSubscribed || getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || [])
+        : false;
+    const isLoading = selectedBlueprint ? getIsLoading(selectedBlueprint.id) : false;
+    const currentSubscriberCount = selectedBlueprint
+        ? getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount)
+        : 0;
 
     // Fetch blueprint data when ID changes
     useEffect(() => {
+        let cancelled = false;
         const fetchBlueprint = async () => {
             if (!id) {
                 setLoadError("No blueprint ID provided");
@@ -276,25 +285,22 @@ export default function BlueprintDetailScreen() {
                 setIsLoadingBlueprint(true);
                 setLoadError(null);
                 const blueprint = await getBlueprintById(id as string);
+                if (cancelled) return;
                 setSelectedBlueprint(blueprint);
+                setOptimisticSubscribed(false);
             } catch (error) {
+                if (cancelled) return;
                 console.error("Error fetching blueprint:", error);
                 setLoadError("Failed to load blueprint");
             } finally {
-                setIsLoadingBlueprint(false);
+                if (!cancelled) setIsLoadingBlueprint(false);
             }
         };
         fetchBlueprint();
+        return () => {
+            cancelled = true;
+        };
     }, [id]);
-
-    // Update local state when selectedBlueprint changes
-    useEffect(() => {
-        if (selectedBlueprint) {
-            setIsSubscribed(getIsSubscribed(selectedBlueprint.id, selectedBlueprint.subscribers || []));
-            setIsLoading(getIsLoading(selectedBlueprint.id));
-            setCurrentSubscriberCount(getSubscriberCount(selectedBlueprint.id, selectedBlueprint.subscribersCount));
-        }
-    }, [selectedBlueprint, getIsSubscribed, getIsLoading, getSubscriberCount]);
 
     // Show loading state with skeleton
     if (isLoadingBlueprint) {
@@ -316,12 +322,10 @@ export default function BlueprintDetailScreen() {
     }
 
     const onSubscribePress = async () => {
-        setIsLoading(true);
         await handleSubscribe(selectedBlueprint.id, selectedBlueprint.subscribers || []);
         // Subscribing clones categories server-side, so the tree has to be refetched
         fetchWorkspaces(true).catch((error) => console.error("Workspace refresh failed:", error));
-        setIsSubscribed(true);
-        setIsLoading(false);
+        setOptimisticSubscribed(true);
     };
 
     const getImageSource = () => {

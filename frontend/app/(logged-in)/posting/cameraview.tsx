@@ -647,7 +647,7 @@ export default function Posting() {
                                 <FlatList
                                     data={photos}
                                     renderItem={renderPhotoThumbnail}
-                                    keyExtractor={(item, index) => index.toString()}
+                                    keyExtractor={(item) => item}
                                     horizontal
                                     scrollEnabled={false}
                                 />

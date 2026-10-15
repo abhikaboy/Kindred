@@ -24,39 +24,47 @@ export default function CategoryScreen() {
     const [blueprints, setBlueprints] = useState<BlueprintDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [retryToken, setRetryToken] = useState(0);
 
     const categoryName = id;
 
     useEffect(() => {
-        if (categoryName) {
-            fetchCategoryBlueprints();
-        }
-    }, [categoryName]);
+        // Drop results from a superseded category or one that resolved after unmount
+        let cancelled = false;
+        if (!categoryName) return;
 
-    const fetchCategoryBlueprints = async () => {
-        try {
-            setLoading(true);
-            setError(null);
+        const fetchCategoryBlueprints = async () => {
+            try {
+                setLoading(true);
+                setError(null);
 
-            const allCategories = await getBlueprintsByCategoryFromBackend();
-            const categoryData = allCategories.find(
-                (group: BlueprintCategoryGroup) =>
-                    group.category?.toLowerCase() === categoryName?.toLowerCase() ||
-                    (categoryName === "uncategorized" && !group.category)
-            );
+                const allCategories = await getBlueprintsByCategoryFromBackend();
+                if (cancelled) return;
+                const categoryData = allCategories.find(
+                    (group: BlueprintCategoryGroup) =>
+                        group.category?.toLowerCase() === categoryName?.toLowerCase() ||
+                        (categoryName === "uncategorized" && !group.category)
+                );
 
-            if (categoryData) {
-                setBlueprints(categoryData.blueprints);
-            } else {
-                setBlueprints([]);
+                if (categoryData) {
+                    setBlueprints(categoryData.blueprints);
+                } else {
+                    setBlueprints([]);
+                }
+
+                setLoading(false);
+            } catch (err) {
+                if (cancelled) return;
+                setError("Failed to load blueprints");
+                setLoading(false);
             }
+        };
 
-            setLoading(false);
-        } catch (err) {
-            setError("Failed to load blueprints");
-            setLoading(false);
-        }
-    };
+        fetchCategoryBlueprints();
+        return () => {
+            cancelled = true;
+        };
+    }, [categoryName, retryToken]);
 
     const handleBack = () => {
         router.back();
@@ -99,7 +107,7 @@ export default function CategoryScreen() {
 
                 <View style={styles.errorContainer}>
                     <ThemedText style={styles.errorText}>{error}</ThemedText>
-                    <TouchableOpacity onPress={fetchCategoryBlueprints} style={styles.retryButton}>
+                    <TouchableOpacity onPress={() => setRetryToken((t) => t + 1)} style={styles.retryButton}>
                         <ThemedText style={styles.retryText}>Try Again</ThemedText>
                     </TouchableOpacity>
                 </View>
@@ -157,7 +165,7 @@ const useStyles = (ThemedColor: any) =>
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: 16,
-            paddingTop: 60, 
+            paddingTop: 60,
             paddingBottom: 16,
             borderBottomWidth: 1,
             borderBottomColor: ThemedColor.tertiary
@@ -171,7 +179,7 @@ const useStyles = (ThemedColor: any) =>
             fontSize: 20,
         },
         headerSpacer: {
-            width: 40, 
+            width: 40,
         },
         subHeader: {
             paddingHorizontal: 16,

@@ -161,6 +161,11 @@ export default function Feed() {
     const velocityThreshold = 0.3;
     const flatListRef = useRef<any>(null);
     const isInitialMount = useRef(true);
+    // Feed loads bump a sequence counter; results from a superseded load (feed switched
+    // mid-request) or one that landed after unmount are dropped instead of clobbering state.
+    const feedLoadSeqRef = useRef(0);
+    const isUnmountedRef = useRef(false);
+    useEffect(() => () => { isUnmountedRef.current = true; }, []);
     // Tracks whether the tab bar / FAB are currently shown, so we only emit on change.
     const navVisibleRef = useRef(true);
 
@@ -212,6 +217,8 @@ export default function Feed() {
 
     const fetchPosts = useCallback(
         async (feedId?: string, resetPagination = true) => {
+            const seq = ++feedLoadSeqRef.current;
+            const isStale = () => isUnmountedRef.current || seq !== feedLoadSeqRef.current;
             setLoading(true);
             try {
                 const currentFeedId = feedId || currentFeed.id;
@@ -220,6 +227,7 @@ export default function Feed() {
                 if (currentFeedId === "feed") {
                     // Use the new unified feed endpoint
                     const feedResult = await getFeed(20, 0);
+                    if (isStale()) return;
                     setFeedItems(feedResult.items);
                     setPosts([]); // Clear posts state — feed tab uses feedItems exclusively
                     setOffset(feedResult.nextOffset);
@@ -252,20 +260,24 @@ export default function Feed() {
                     throw new Error("API response is not an array");
                 }
 
+                if (isStale()) return;
                 setPosts(result.posts);
                 setFeedItems([]); // Clear feed items for non-feed views
                 setOffset(result.nextOffset);
                 setHasMore(result.hasMore);
                 setLastUpdated(new Date());
             } catch (error) {
+                if (isStale()) return;
                 console.error("Error fetching posts:", error);
                 showToast(`Failed to load ${feedId || currentFeed.name} posts`, "danger");
                 setPosts([]);
                 setFeedItems([]);
                 setHasMore(false);
             } finally {
-                setLoading(false);
-                setInitialLoading(false);
+                if (!isStale()) {
+                    setLoading(false);
+                    setInitialLoading(false);
+                }
             }
         },
         [currentFeed.id, currentFeed.name]

@@ -53,7 +53,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     showTabs = true,
 }) => {
     const ThemedColor = useThemeColor();
-    const styles = useStyles(ThemedColor);
+    // Memoized so the memos below don't rebuild on every render; useThemeColor returns a stable per-theme object
+    const styles = useMemo(() => useStyles(ThemedColor), [ThemedColor]);
     const router = useRouter();
 
     const tabs = ["Blueprints", "Users"];

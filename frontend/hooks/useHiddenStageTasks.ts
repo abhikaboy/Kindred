@@ -51,7 +51,8 @@ export function useHiddenStageTasks() {
     const { user } = useAuth();
     const userId = user?._id ?? null;
     const snapshot = useSyncExternalStore(subscribe, getState, getState);
-    const [, setTick] = useState(0);
+    // Only bumped by the wake-up timer, so `active` keeps a stable reference between wake-ups
+    const [nowTick, setTick] = useState(0);
 
     // Load this user's saved hidden tasks once per user
     useEffect(() => {
@@ -65,21 +66,20 @@ export function useHiddenStageTasks() {
             .catch(() => {});
     }, [userId]);
 
-    const now = Date.now();
     const active = useMemo(
-        () => (snapshot.userId === userId ? pruneExpired(snapshot.map, now) : {}),
-        // `now` is read fresh each render; the timer below re-renders when the next task returns
+        () => (snapshot.userId === userId ? pruneExpired(snapshot.map, Date.now()) : {}),
+        // Date.now() is read at compute time; the wake-up timer bumps `nowTick` to force a recompute
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [snapshot, userId, now]
+        [snapshot, userId, nowTick]
     );
 
-    // Wake up when the soonest hidden task is due back
+    // Wake up when the soonest hidden task is due back; scheduled off the raw map so it survives renders
     useEffect(() => {
-        const at = nextReturnAt(active, Date.now());
+        const at = nextReturnAt(snapshot.map, Date.now());
         if (at === null) return;
         const timer = setTimeout(() => setTick((t) => t + 1), Math.min(at - Date.now() + 500, 2_000_000_000));
         return () => clearTimeout(timer);
-    }, [active]);
+    }, [snapshot, userId]);
 
     const hide = useCallback((id: string) => hideStageTask(id), []);
     const show = useCallback((id: string) => showStageTask(id), []);

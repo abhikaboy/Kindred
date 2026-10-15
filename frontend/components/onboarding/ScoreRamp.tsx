@@ -31,6 +31,9 @@ export default function ScoreRamp({
     const onDoneRef = useRef(onDone);
     onDoneRef.current = onDone;
 
+    // Per-frame setState is intentional: the count is chained into the RN Animated
+    // sequence below (haptics + onDone timing), so a Reanimated migration can't
+    // preserve the settle/flash choreography without reworking all of it.
     useEffect(() => {
         const id = progress.addListener(({ value }) => setShown(Math.round(value * target)));
         return () => progress.removeListener(id);

@@ -57,6 +57,7 @@ const PhoneOnboarding = () => {
     const slideAnimation = useRef(new Animated.Value(30)).current;
     const transitionAnim = useRef(new Animated.Value(0)).current; // 0 = phone, 1 = verify
     const shakeAnimation = useRef(new Animated.Value(0)).current;
+    const hasHandledVerification = useRef(false);
 
     useEffect(() => {
         capture(AnalyticsEvents.ONBOARDING_STEP_VIEWED, {
@@ -92,49 +93,6 @@ const PhoneOnboarding = () => {
             setCanResend(true);
         }
     }, [resendTimer, codeSent]);
-
-    // After OTP verified, check if account exists — login or continue to registration
-    useEffect(() => {
-        if (!isVerified) return;
-
-        showToastable({
-            message: "Phone number verified",
-            status: "success",
-            duration: 2000,
-            renderContent: (props) => <DefaultToast {...props} />,
-        });
-
-        const checkExistingAccount = async () => {
-            try {
-                await loginWithOTP(fullPhoneNumber, otpCode);
-                // Account exists and user is now logged in — go to home
-                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
-                    step_name: OnboardingSteps.PHONE.name,
-                    step_index: OnboardingSteps.PHONE.index,
-                });
-                router.replace("/");
-            } catch (error: any) {
-                if (error.message === "ACCOUNT_NOT_FOUND") {
-                    // New phone — continue registration
-                    capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
-                        step_name: OnboardingSteps.PHONE.name,
-                        step_index: OnboardingSteps.PHONE.index,
-                    });
-                    router.push("/(onboarding)/name");
-                } else {
-                    // Unexpected error — still continue to registration
-                    console.error("Account check failed:", error);
-                    capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
-                        step_name: OnboardingSteps.PHONE.name,
-                        step_index: OnboardingSteps.PHONE.index,
-                    });
-                    router.push("/(onboarding)/name");
-                }
-            }
-        };
-
-        setTimeout(() => checkExistingAccount(), 800);
-    }, [isVerified]);
 
     // Shake on OTP error
     useEffect(() => {
@@ -177,10 +135,53 @@ const PhoneOnboarding = () => {
         }).start();
     };
 
+    // Check if account exists — login or continue to registration
+    const handleVerificationSuccess = async () => {
+        showToastable({
+            message: "Phone number verified",
+            status: "success",
+            duration: 2000,
+            renderContent: (props) => <DefaultToast {...props} />,
+        });
+
+        try {
+            await loginWithOTP(fullPhoneNumber, otpCode);
+            // Account exists and user is now logged in — go to home
+            capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                step_name: OnboardingSteps.PHONE.name,
+                step_index: OnboardingSteps.PHONE.index,
+            });
+            router.replace("/");
+        } catch (error: any) {
+            if (error.message === "ACCOUNT_NOT_FOUND") {
+                // New phone — continue registration
+                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                    step_name: OnboardingSteps.PHONE.name,
+                    step_index: OnboardingSteps.PHONE.index,
+                });
+                router.push("/(onboarding)/name");
+            } else {
+                // Unexpected error — still continue to registration
+                console.error("Account check failed:", error);
+                capture(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                    step_name: OnboardingSteps.PHONE.name,
+                    step_index: OnboardingSteps.PHONE.index,
+                });
+                router.push("/(onboarding)/name");
+            }
+        }
+    };
+
     const handleVerify = async () => {
         if (otpCode.length === 4 && fullPhoneNumber) {
             try {
-                await verifyOTP(fullPhoneNumber, otpCode);
+                const valid = await verifyOTP(fullPhoneNumber, otpCode);
+                if (valid && !hasHandledVerification.current) {
+                    // Toast delay before the login/navigation side effects
+                    hasHandledVerification.current = true;
+                    await new Promise((resolve) => setTimeout(resolve, 800));
+                    handleVerificationSuccess();
+                }
             } catch (error) {
                 console.error("Verification failed:", error);
             }

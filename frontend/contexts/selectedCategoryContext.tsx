@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { useTasksSelector } from "@/contexts/tasksContext";
 
 type SelectedCategoryContextType = {
@@ -19,11 +19,15 @@ const SetCreateCategoryContext = createContext<((option: Option) => void) | null
 export function SelectedCategoryProvider({ children }: { children: React.ReactNode }) {
     const selected = useTasksSelector((s) => s.selected);
     const [selectedCategory, setSelectedCategory] = useState<Option>(EMPTY_CATEGORY);
+    const [lastSelected, setLastSelected] = useState(selected);
 
-    // Keep the same reference when already empty so consumers don't re-render on every swipe
-    useEffect(() => {
+    // Clear the category on workspace switch during render (official React pattern),
+    // so the switch commits once with the category already cleared instead of twice.
+    if (selected !== lastSelected) {
+        setLastSelected(selected);
+        // Keep the same reference when already empty so consumers don't re-render on every swipe
         setSelectedCategory((prev) => (isEmptyCategory(prev) ? prev : EMPTY_CATEGORY));
-    }, [selected]);
+    }
 
     const setCreateCategory = useCallback((option: Option) => {
         if (option.id === "" || option.label === "") return;

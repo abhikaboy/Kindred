@@ -274,12 +274,17 @@ const HomeContent = React.memo(function HomeContent({
         return () => task.cancel();
     }, []);
     const [recentKeys, setRecentKeys] = useState<string[]>(() => (activeKey ? [activeKey] : []));
-    useEffect(() => {
-        if (!activeKey) return;
-        setRecentKeys((prev) =>
-            prev[0] === activeKey ? prev : [activeKey, ...prev.filter((k) => k !== activeKey)].slice(0, 1 + EXTRA_RECENT_PAGES)
-        );
-    }, [activeKey]);
+    // Adjusting the MRU during render (React's derived-state pattern) avoids
+    // the extra effect-driven render pass on every pager page change
+    const [prevActiveKey, setPrevActiveKey] = useState(activeKey);
+    if (prevActiveKey !== activeKey) {
+        setPrevActiveKey(activeKey);
+        if (activeKey) {
+            setRecentKeys((prev) =>
+                prev[0] === activeKey ? prev : [activeKey, ...prev.filter((k) => k !== activeKey)].slice(0, 1 + EXTRA_RECENT_PAGES)
+            );
+        }
+    }
     const mountedKeys = useMemo(() => {
         const keys = new Set(recentKeys);
         if (activeKey) keys.add(activeKey);

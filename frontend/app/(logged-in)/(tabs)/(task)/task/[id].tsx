@@ -334,6 +334,8 @@ export default function Task() {
         setRecurDetails(template?.recurDetails as RecurDetails);
     };
 
+    // Template state only reacts to templateID; refetching on every notes
+    // keystroke (the debounced save updates the context) just churns requests
     useEffect(() => {
         logger.debug("Task data updated", { task });
         if (task?.templateID != null) {
@@ -345,11 +347,15 @@ export default function Task() {
             setRecurDetails(null);
             setTemplate(null);
         }
-        // Update local notes when task data loads
+    }, [task?.templateID]);
+
+    // Notes sync on task identity only, so a background refetch can't
+    // overwrite what the user is typing mid-edit
+    useEffect(() => {
         if (task?.notes !== undefined) {
             setLocalNotes(task.notes);
         }
-    }, [task?.templateID, task?.notes, task?.id]);
+    }, [task?.id]);
 
     // TEMPORARILY DISABLED - Testing if this is causing the issue
     // Load task data when modal opens for editing

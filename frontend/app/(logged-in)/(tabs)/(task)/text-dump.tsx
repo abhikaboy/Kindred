@@ -30,16 +30,18 @@ const TextDump = (props: Props) => {
     const [showCreditsSheet, setShowCreditsSheet] = useState(false);
 
     useEffect(() => {
-        // Fetch credits on mount
+        // Fetch credits on mount; skip the setState if we unmounted first
+        let cancelled = false;
         const fetchCredits = async () => {
             try {
                 const userCredits = await getUserCredits();
-                setCredits(userCredits);
+                if (!cancelled) setCredits(userCredits);
             } catch (error) {
                 console.error("Failed to fetch credits:", error);
             }
         };
         fetchCredits();
+        return () => { cancelled = true; };
     }, []);
 
     const handleGenerateTasks = async () => {

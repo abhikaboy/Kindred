@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { StyleSheet, View, TouchableOpacity, Dimensions } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { ThemedText } from "@/components/ThemedText";
@@ -25,18 +25,24 @@ export default function Friends() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    // Load friends
+    // Load friends; the mounted guard stops a late response (unmount or a
+    // retry racing a prior in-flight call) from writing stale state
+    const isMountedRef = useRef(true);
+    useEffect(() => () => { isMountedRef.current = false; }, []);
+
     const loadFriends = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const friendsData = await getFriendsAPI();
+            if (!isMountedRef.current) return;
             setFriends(friendsData);
         } catch (err) {
+            if (!isMountedRef.current) return;
             setError(err.message);
             console.error("Error loading friends:", err);
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) setLoading(false);
         }
     }, []);
 

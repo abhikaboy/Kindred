@@ -76,9 +76,9 @@ const TagCreator = ({ onTagsChange, placeholder = "Add tags...", initialTags = [
 
             {tags.length > 0 && (
                 <View style={styles.tagsContainer}>
-                    {tags.map((tag, index) => (
+                    {tags.map((tag) => (
                         <TouchableOpacity
-                            key={index}
+                            key={tag}
                             activeOpacity={0.7}
                             onPress={() => removeTag(tag)}
                             style={styles.tag}>
@@ -101,7 +101,7 @@ const createStyles = (ThemedColor: any) =>
             width: "100%",
         },
         header: {
-            flexDirection: "row", 
+            flexDirection: "row",
             justifyContent: "space-between"
         },
         tagsContainer: {

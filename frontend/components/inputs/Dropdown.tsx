@@ -1,5 +1,5 @@
 import { StyleSheet, Text, Touchable, View, DimensionValue } from "react-native";
-import React, { Dispatch, SetStateAction, useEffect } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import { MultipleSelectList, SelectList } from "react-native-dropdown-select-list";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -45,15 +45,6 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
     const reducedMotion = useReducedMotion();
     let ThemedColor = useThemeColor();
 
-    useEffect(() => {
-        expanded.value = expandedState;
-    }, [expandedState]);
-
-    useEffect(() => {
-        if (options.length === 0) return;
-        setSelected(selected);
-    }, []);
-
     let mainBar = useAnimatedStyle(() => {
         return {
             borderBottomLeftRadius: expanded.value ? 0 : 12,
@@ -75,8 +66,6 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
         };
     });
 
-    const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
-    const AnimatedArrow = Animated.createAnimatedComponent(Entypo);
     return (
         <Animated.View
             style={{
@@ -127,10 +116,10 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                         borderBottomRightRadius: 12,
                     }}>
                     {/* Main options */}
-                    {options.map((item, index) => {
+                    {options.map((item) => {
                         return (
                             <AnimatedTouchableOpacity
-                                key={`main-${index}`}
+                                key={`main-${item.id}`}
                                 onPress={() => {
                                     if (item.disabled) return;
                                     setSelected(item);
@@ -170,10 +159,10 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
                         paddingHorizontal: 16,
                     }}>
 
-                    {footerOptions && footerOptions.map((item, index) => {
+                    {footerOptions && footerOptions.map((item) => {
                         return (
                             <AnimatedTouchableOpacity
-                            key={`footer-${index}`}
+                            key={`footer-${item.id}`}
                             onPress={() => {
                                 setSelected(item);
                                 if (item.special) onSpecial();
@@ -201,3 +190,6 @@ const Dropdown = ({ options, footerOptions, selected, setSelected, onSpecial, wi
 export default Dropdown;
 
 const styles = StyleSheet.create({});
+
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedArrow = Animated.createAnimatedComponent(Entypo);

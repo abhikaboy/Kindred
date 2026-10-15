@@ -140,6 +140,9 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
             }));
 
     useEffect(() => {
+        // Set in the cleanup so a stale fetch never commits state
+        let cancelled = false;
+
         const fetchImages = async () => {
             setIsLoading(true);
             setOffset(0);
@@ -167,6 +170,8 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
                     response = await getAllPosts(GALLERY_PAGE_SIZE, 0);
                 }
 
+                if (cancelled) return;
+
                 const postImageData = mapPostsToImages(response.posts, userId);
                 console.log("ProfileGallery: Total post images loaded:", postImageData.length);
                 setPostImages(postImageData);
@@ -174,13 +179,20 @@ const ProfileGalleryComponent = forwardRef<ProfileGalleryHandle, ProfileGalleryP
                 setOffset(response.nextOffset);
             } catch (error) {
                 console.error("Error fetching post images:", error);
+                if (cancelled) return;
                 setPostImages([]);
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         };
 
         fetchImages();
+
+        return () => {
+            cancelled = true;
+        };
     }, [userId, images]);
 
     const loadingMoreRef = useRef(false);

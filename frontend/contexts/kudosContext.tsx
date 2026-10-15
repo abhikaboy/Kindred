@@ -99,6 +99,9 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const [sentLoading, setSentLoading] = useState(false);
     const seenKudosIds = useRef<Set<string>>(new Set());
     const userId = useOptionalAuth()?.user?._id;
+    const userIdRef = useRef(userId);
+    userIdRef.current = userId;
+    const inflightFetch = useRef<Promise<void> | null>(null);
 
     const unreadEncouragementCount = useMemo(
         () => encouragements.filter((e) => !e.read).length,
@@ -112,31 +115,44 @@ export const KudosProvider: React.FC<KudosProviderProps> = ({ children }) => {
     const totalCongratulationCount = congratulations.length;
 
     const fetchKudosData = useCallback(async (options?: { silent?: boolean }) => {
-        try {
-            if (!options?.silent) setLoading(true);
+        // Overlapping callers (sign-in effect, AppState refresh) share one in-flight request
+        if (inflightFetch.current) return inflightFetch.current;
 
-            const [encouragementsData, congratulationsData] = await Promise.all([
-                getEncouragementsAPI().catch(() => []),
-                getCongratulationsAPI().catch(() => []),
-            ]);
+        // A fetch started for one user must never land after a different user signs in
+        const uidAtStart = userIdRef.current;
 
-            const sortedEncouragements = [...encouragementsData].sort(
-                (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
+        const run = (async () => {
+            try {
+                if (!options?.silent) setLoading(true);
 
-            const sortedCongratulations = [...congratulationsData].sort(
-                (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
+                const [encouragementsData, congratulationsData] = await Promise.all([
+                    getEncouragementsAPI().catch(() => []),
+                    getCongratulationsAPI().catch(() => []),
+                ]);
 
-            setEncouragements(sortedEncouragements);
-            setCongratulations(sortedCongratulations);
+                const sortedEncouragements = [...encouragementsData].sort(
+                    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
 
-            [...sortedEncouragements, ...sortedCongratulations].forEach(k => seenKudosIds.current.add(k.id));
-        } catch (error) {
-            logger.error("Error fetching kudos data:", error);
-        } finally {
-            if (!options?.silent) setLoading(false);
-        }
+                const sortedCongratulations = [...congratulationsData].sort(
+                    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
+
+                if (userIdRef.current !== uidAtStart) return;
+
+                setEncouragements(sortedEncouragements);
+                setCongratulations(sortedCongratulations);
+
+                [...sortedEncouragements, ...sortedCongratulations].forEach(k => seenKudosIds.current.add(k.id));
+            } catch (error) {
+                logger.error("Error fetching kudos data:", error);
+            } finally {
+                if (!options?.silent) setLoading(false);
+            }
+        })();
+
+        inflightFetch.current = run.finally(() => { inflightFetch.current = null; });
+        return inflightFetch.current;
     }, []);
 
     const fetchSentKudos = useCallback(async () => {

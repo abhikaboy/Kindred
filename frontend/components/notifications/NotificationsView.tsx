@@ -123,83 +123,91 @@ const NotificationsSkeleton = ({ ThemedColor }: { ThemedColor: any }) => {
         outputRange: [0.3, 0.7],
     });
 
-    const SkeletonItem = () => (
-        <View style={skeletonStyles.itemContainer}>
-            <Animated.View
-                style={[
-                    skeletonStyles.avatar,
-                    {
-                        backgroundColor: ThemedColor.tertiary,
-                        opacity,
-                    },
-                ]}
-            />
-            <View style={skeletonStyles.textContainer}>
-                <Animated.View
-                    style={[
-                        skeletonStyles.nameLine,
-                        {
-                            backgroundColor: ThemedColor.tertiary,
-                            opacity,
-                        },
-                    ]}
-                />
-                <Animated.View
-                    style={[
-                        skeletonStyles.contentLine,
-                        {
-                            backgroundColor: ThemedColor.tertiary,
-                            opacity,
-                        },
-                    ]}
-                />
-                <Animated.View
-                    style={[
-                        skeletonStyles.timeLine,
-                        {
-                            backgroundColor: ThemedColor.tertiary,
-                            opacity,
-                        },
-                    ]}
-                />
-            </View>
-            <Animated.View
-                style={[
-                    skeletonStyles.thumbnail,
-                    {
-                        backgroundColor: ThemedColor.tertiary,
-                        opacity,
-                    },
-                ]}
-            />
-        </View>
-    );
-
-    const SkeletonSection = ({ itemCount }: { itemCount: number }) => (
-        <View style={skeletonStyles.section}>
-            <Animated.View
-                style={[
-                    skeletonStyles.sectionTitle,
-                    {
-                        backgroundColor: ThemedColor.tertiary,
-                        opacity,
-                    },
-                ]}
-            />
-            {Array.from({ length: itemCount }).map((_, index) => (
-                <SkeletonItem key={index} />
-            ))}
-        </View>
-    );
-
     return (
         <View>
-            <SkeletonSection itemCount={3} />
-            <SkeletonSection itemCount={2} />
-            <SkeletonSection itemCount={2} />
+            <SkeletonSection itemCount={3} opacity={opacity} ThemedColor={ThemedColor} />
+            <SkeletonSection itemCount={2} opacity={opacity} ThemedColor={ThemedColor} />
+            <SkeletonSection itemCount={2} opacity={opacity} ThemedColor={ThemedColor} />
         </View>
     );
 };
+
+const SkeletonItem = ({ opacity, ThemedColor }: { opacity: any; ThemedColor: any }) => (
+    <View style={skeletonStyles.itemContainer}>
+        <Animated.View
+            style={[
+                skeletonStyles.avatar,
+                {
+                    backgroundColor: ThemedColor.tertiary,
+                    opacity,
+                },
+            ]}
+        />
+        <View style={skeletonStyles.textContainer}>
+            <Animated.View
+                style={[
+                    skeletonStyles.nameLine,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+            <Animated.View
+                style={[
+                    skeletonStyles.contentLine,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+            <Animated.View
+                style={[
+                    skeletonStyles.timeLine,
+                    {
+                        backgroundColor: ThemedColor.tertiary,
+                        opacity,
+                    },
+                ]}
+            />
+        </View>
+        <Animated.View
+            style={[
+                skeletonStyles.thumbnail,
+                {
+                    backgroundColor: ThemedColor.tertiary,
+                    opacity,
+                },
+            ]}
+        />
+    </View>
+);
+
+const SkeletonSection = ({
+    itemCount,
+    opacity,
+    ThemedColor,
+}: {
+    itemCount: number;
+    opacity: any;
+    ThemedColor: any;
+}) => (
+    <View style={skeletonStyles.section}>
+        <Animated.View
+            style={[
+                skeletonStyles.sectionTitle,
+                {
+                    backgroundColor: ThemedColor.tertiary,
+                    opacity,
+                },
+            ]}
+        />
+        {Array.from({ length: itemCount }).map((_, index) => (
+            <SkeletonItem key={index} opacity={opacity} ThemedColor={ThemedColor} />
+        ))}
+    </View>
+);
 
 // Extract NotificationItem component
 const NotificationItem = ({

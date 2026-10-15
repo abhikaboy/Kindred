@@ -21,6 +21,8 @@ export function useRecentSearch(searchSet: string = "") {
     const safeAsync = useSafeAsync();
 
     useEffect(() => {
+        // Skip writes when the search set changed or the component unmounted mid-load.
+        let cancelled = false;
         const loadRecents = async () => {
             if (searchSet === "") {
                 setRecents([]);
@@ -49,6 +51,8 @@ export function useRecentSearch(searchSet: string = "") {
                 }
             });
 
+            if (cancelled) return;
+
             if (error) {
                 console.error("Error loading recents:", error);
                 setIsLoading(false);
@@ -60,6 +64,9 @@ export function useRecentSearch(searchSet: string = "") {
         };
 
         loadRecents();
+        return () => {
+            cancelled = true;
+        };
     }, [searchSet, safeAsync]);
 
     const appendSearch = async (search: RecentSearchItem | string) => {

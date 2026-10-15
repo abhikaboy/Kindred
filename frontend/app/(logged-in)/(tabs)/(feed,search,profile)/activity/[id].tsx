@@ -108,6 +108,8 @@ const Activity = () => {
     const styles = stylesheet(ThemedColor, insets);
 
     useEffect(() => {
+        // Drop results from a superseded year (rapid arrow taps) or a post-unmount response
+        let cancelled = false;
         const fetchActivityData = async () => {
             if (!userId) {
                 setLoading(false);
@@ -119,26 +121,33 @@ const Activity = () => {
                 setError(null);
 
                 const yearActivities = await activityAPI.getAllUserActivity(userId, year);
+                if (cancelled) return;
                 setActivities(yearActivities);
 
                 // Fetch templates for breakdown feature
                 try {
                     const userTemplates = await getUserTemplatesAPI();
+                    if (cancelled) return;
                     setTemplates(userTemplates);
                 } catch (templateErr) {
                     console.error("Failed to fetch templates:", templateErr);
                     // Don't fail the whole page if templates fail
+                    if (cancelled) return;
                     setTemplates([]);
                 }
             } catch (err) {
+                if (cancelled) return;
                 console.error("Failed to fetch activity data:", err);
                 setError("Failed to load activity data");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchActivityData();
+        return () => {
+            cancelled = true;
+        };
     }, [userId, year]);
 
     const setYearWithinBounds = (year: number) => {

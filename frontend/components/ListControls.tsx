@@ -26,6 +26,37 @@ import {
 // Sort
 // ============================================================
 
+type SortOptionRowProps = {
+    option: SortOption;
+    label: string;
+    IconComponent: React.ComponentType<any>;
+    selected: boolean;
+    direction: SortDirection;
+    onPress: (option: SortOption) => void;
+};
+
+const SortOptionRow = ({ option, label, IconComponent, selected, direction, onPress }: SortOptionRowProps) => {
+    const ThemedColor = useThemeColor();
+    const isSelected = selected;
+    const textColor = isSelected ? ThemedColor.primary : ThemedColor.text;
+    const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
+    const DirectionIcon = direction === "ascending" ? ArrowUp : ArrowDown;
+
+    return (
+        <TouchableOpacity onPress={() => onPress(option)}>
+            <View style={styles.sortOptionRow}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <IconComponent color={iconColor} size={24} weight="regular" />
+                    <ThemedText type="default" style={{ color: textColor, fontSize: 16 }}>
+                        {label}
+                    </ThemedText>
+                </View>
+                {isSelected && <DirectionIcon color={iconColor} size={20} weight="bold" />}
+            </View>
+        </TouchableOpacity>
+    );
+};
+
 type SortContentProps = {
     // AsyncStorage scope: workspace name, or `tag:<value>` for the tag view.
     storageKey: string;
@@ -37,7 +68,6 @@ type SortContentProps = {
 };
 
 export const SortContent = ({ storageKey, onApplySort, onApply }: SortContentProps) => {
-    const ThemedColor = useThemeColor();
     const [selectedSort, setSelectedSort] = useState<SortOption>("task-count");
     const [sortDirection, setSortDirection] = useState<SortDirection>("descending");
 
@@ -87,35 +117,6 @@ export const SortContent = ({ storageKey, onApplySort, onApply }: SortContentPro
         }
     };
 
-    const SortOptionRow = ({
-        option,
-        label,
-        IconComponent,
-    }: {
-        option: SortOption;
-        label: string;
-        IconComponent: React.ComponentType<any>;
-    }) => {
-        const isSelected = selectedSort === option;
-        const textColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-        const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-        const DirectionIcon = sortDirection === "ascending" ? ArrowUp : ArrowDown;
-
-        return (
-            <TouchableOpacity onPress={() => handleSortOptionPress(option)}>
-                <View style={styles.sortOptionRow}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                        <IconComponent color={iconColor} size={24} weight="regular" />
-                        <ThemedText type="default" style={{ color: textColor, fontSize: 16 }}>
-                            {label}
-                        </ThemedText>
-                    </View>
-                    {isSelected && <DirectionIcon color={iconColor} size={20} weight="bold" />}
-                </View>
-            </TouchableOpacity>
-        );
-    };
-
     return (
         <>
             <ThemedText type="subtitle" style={{ marginBottom: 24 }}>
@@ -123,11 +124,11 @@ export const SortContent = ({ storageKey, onApplySort, onApply }: SortContentPro
             </ThemedText>
             <View style={{ flex: 1, gap: 20 }}>
                 <View style={{ gap: 8 }}>
-                    <SortOptionRow option="task-count" label="Task Count" IconComponent={(props) => <Hash {...props} />} />
-                    <SortOptionRow option="alphabetical" label="Alphabetical" IconComponent={(props) => <SortAscending {...props} />} />
-                    <SortOptionRow option="due-date" label="Due Date" IconComponent={(props) => <CalendarCheck {...props} />} />
-                    <SortOptionRow option="start-date" label="Start Date" IconComponent={(props) => <CalendarBlank {...props} />} />
-                    <SortOptionRow option="priority" label="Priority" IconComponent={(props) => <ChartBar {...props} />} />
+                    <SortOptionRow option="task-count" label="Task Count" selected={selectedSort === "task-count"} direction={sortDirection} onPress={handleSortOptionPress} IconComponent={(props) => <Hash {...props} />} />
+                    <SortOptionRow option="alphabetical" label="Alphabetical" selected={selectedSort === "alphabetical"} direction={sortDirection} onPress={handleSortOptionPress} IconComponent={(props) => <SortAscending {...props} />} />
+                    <SortOptionRow option="due-date" label="Due Date" selected={selectedSort === "due-date"} direction={sortDirection} onPress={handleSortOptionPress} IconComponent={(props) => <CalendarCheck {...props} />} />
+                    <SortOptionRow option="start-date" label="Start Date" selected={selectedSort === "start-date"} direction={sortDirection} onPress={handleSortOptionPress} IconComponent={(props) => <CalendarBlank {...props} />} />
+                    <SortOptionRow option="priority" label="Priority" selected={selectedSort === "priority"} direction={sortDirection} onPress={handleSortOptionPress} IconComponent={(props) => <ChartBar {...props} />} />
                 </View>
 
                 <PrimaryButton title="Apply Sort" onPress={handleSort} />
@@ -148,6 +149,42 @@ type FilterState = {
 const EMPTY_FILTERS: FilterState = {
     priorities: { low: false, medium: false, high: false },
     deadlines: { overdue: false, today: false, thisWeek: false, future: false, none: false },
+};
+
+const FilterCard = ({
+    label,
+    isSelected,
+    onPress,
+    IconComponent,
+}: {
+    label: string;
+    isSelected: boolean;
+    onPress: () => void;
+    IconComponent: React.ComponentType<any>;
+}) => {
+    const ThemedColor = useThemeColor();
+    const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
+
+    return (
+        <TouchableOpacity onPress={onPress} style={styles.filterCardWrapper}>
+            <View
+                style={[
+                    styles.filterCard,
+                    {
+                        backgroundColor: ThemedColor.lightenedCard,
+                        borderWidth: isSelected ? 2 : 0,
+                        borderColor: isSelected ? ThemedColor.primary : "transparent",
+                    },
+                ]}>
+                <View style={styles.filterIconContainer}>
+                    <IconComponent color={iconColor} />
+                </View>
+                <ThemedText type="default" style={{ fontSize: 15, textAlign: "center", color: iconColor }}>
+                    {label}
+                </ThemedText>
+            </View>
+        </TouchableOpacity>
+    );
 };
 
 export const FilterContent = ({ storageKey, onApply }: { storageKey: string; onApply: () => void }) => {
@@ -203,41 +240,6 @@ export const FilterContent = ({ storageKey, onApply }: { storageKey: string; onA
         } catch (error) {
             console.error("Error saving filters:", error);
         }
-    };
-
-    const FilterCard = ({
-        label,
-        isSelected,
-        onPress,
-        IconComponent,
-    }: {
-        label: string;
-        isSelected: boolean;
-        onPress: () => void;
-        IconComponent: React.ComponentType<any>;
-    }) => {
-        const iconColor = isSelected ? ThemedColor.primary : ThemedColor.text;
-
-        return (
-            <TouchableOpacity onPress={onPress} style={styles.filterCardWrapper}>
-                <View
-                    style={[
-                        styles.filterCard,
-                        {
-                            backgroundColor: ThemedColor.lightenedCard,
-                            borderWidth: isSelected ? 2 : 0,
-                            borderColor: isSelected ? ThemedColor.primary : "transparent",
-                        },
-                    ]}>
-                    <View style={styles.filterIconContainer}>
-                        <IconComponent color={iconColor} />
-                    </View>
-                    <ThemedText type="default" style={{ fontSize: 15, textAlign: "center", color: iconColor }}>
-                        {label}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
-        );
     };
 
     const hasActiveFilters =

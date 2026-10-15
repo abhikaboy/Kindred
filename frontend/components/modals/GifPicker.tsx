@@ -47,14 +47,32 @@ export default function GifPicker({ onGifSelect }: GifPickerProps) {
 
     // Search GIFs when query changes
     useEffect(() => {
-        if (searchQuery.trim()) {
-            const timeoutId = setTimeout(() => {
-                searchGifs(searchQuery);
-            }, 500);
-            return () => clearTimeout(timeoutId);
-        } else {
+        if (!searchQuery.trim()) {
             setGifs([]);
+            return;
         }
+        let cancelled = false;
+        const timeoutId = setTimeout(async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(
+                    `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
+                        searchQuery
+                    )}&key=${TENOR_API_KEY}&client_key=${TENOR_CLIENT_KEY}&limit=20&contentfilter=low`
+                );
+                const data = await response.json();
+                if (!cancelled) setGifs(data.results || []);
+            } catch (error) {
+                console.error('Error searching GIFs:', error);
+                if (!cancelled) setGifs([]);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }, 500);
+        return () => {
+            cancelled = true;
+            clearTimeout(timeoutId);
+        };
     }, [searchQuery]);
 
     const loadRecentGifs = async () => {
@@ -73,7 +91,7 @@ export default function GifPicker({ onGifSelect }: GifPickerProps) {
         try {
             const gifUrl = gif?.media_formats?.gif?.url || gif?.media_formats?.tinygif?.url;
             const previewUrl = gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
-            
+
             if (!gifUrl || !previewUrl) return;
 
             const newRecentGif: RecentGif = {
@@ -120,24 +138,6 @@ export default function GifPicker({ onGifSelect }: GifPickerProps) {
         }
     };
 
-    const searchGifs = async (query: string) => {
-        setLoading(true);
-        try {
-            const response = await fetch(
-                `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
-                    query
-                )}&key=${TENOR_API_KEY}&client_key=${TENOR_CLIENT_KEY}&limit=20&contentfilter=low`
-            );
-            const data = await response.json();
-            setGifs(data.results || []);
-        } catch (error) {
-            console.error('Error searching GIFs:', error);
-            setGifs([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleGifPress = async (gif: any) => {
         // Get the GIF URL (using the gif format for best quality)
         const gifUrl = gif?.media_formats?.gif?.url || gif?.media_formats?.tinygif?.url;
@@ -156,7 +156,7 @@ export default function GifPicker({ onGifSelect }: GifPickerProps) {
 
     const renderGif = ({ item }: { item: any }) => {
         const previewUrl = item?.media_formats?.tinygif?.url || item?.media_formats?.gif?.url;
-        
+
         return (
             <TouchableOpacity
                 style={styles.gifContainer}
@@ -225,7 +225,7 @@ export default function GifPicker({ onGifSelect }: GifPickerProps) {
                             />
                         </View>
                     )}
-                    
+
                     {!searchQuery.trim() && (
                         <View style={styles.headerContainer}>
                             <ThemedText type="defaultSemiBold" style={styles.headerText}>
@@ -324,4 +324,3 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
-

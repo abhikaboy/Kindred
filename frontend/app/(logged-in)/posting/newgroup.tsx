@@ -21,20 +21,26 @@ export default function NewGroup() {
     const [loadingFriends, setLoadingFriends] = useState(true);
 
     useEffect(() => {
-        loadFriends();
-    }, []);
+        // Don't apply the friend list if the user backed out before it resolved
+        let cancelled = false;
+        const loadFriends = async () => {
+            try {
+                setLoadingFriends(true);
+                const friendsList = await getFriendsAPI();
+                if (cancelled) return;
+                setFriends(friendsList);
+            } catch (error) {
+                console.error("Failed to load friends:", error);
+            } finally {
+                if (!cancelled) setLoadingFriends(false);
+            }
+        };
 
-    const loadFriends = async () => {
-        try {
-            setLoadingFriends(true);
-            const friendsList = await getFriendsAPI();
-            setFriends(friendsList);
-        } catch (error) {
-            console.error("Failed to load friends:", error);
-        } finally {
-            setLoadingFriends(false);
-        }
-    };
+        loadFriends();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleBack = () => {
         router.back();

@@ -32,9 +32,12 @@ export default function PostTaskPickerBottomSheet({ visible, setVisible }: Props
 
     useEffect(() => {
         if (!visible) return;
+        // A stale response from a previous open must not clobber state
+        let cancelled = false;
         setLoading(true);
         getCompletedTasksAPI(1, 20)
             .then((response) => {
+                if (cancelled) return;
                 const enriched = (response.tasks as any[])
                     .filter((task) => !task.posted)
                     .map((task) => ({
@@ -46,9 +49,14 @@ export default function PostTaskPickerBottomSheet({ visible, setVisible }: Props
             })
             .catch((error) => {
                 console.error("Failed to fetch completed tasks:", error);
-                setCompletedTasks([]);
+                if (!cancelled) setCompletedTasks([]);
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [visible, getCategoryName]);
 
     // Currently-active tasks are already loaded client-side (same list the

@@ -114,6 +114,9 @@ const Activity = () => {
     const styles = stylesheet(ThemedColor, insets);
 
     useEffect(() => {
+        // Guard against out-of-order responses / unmounts landing stale data
+        let cancelled = false;
+
         const fetchActivityData = async () => {
             if (!userId) {
                 setLoading(false);
@@ -125,24 +128,27 @@ const Activity = () => {
                 setError(null);
 
                 const yearActivities = await activityAPI.getAllUserActivity(userId, year);
+                if (cancelled) return;
                 setActivities(yearActivities);
 
                 try {
                     const userTemplates = await getUserTemplatesAPI();
+                    if (cancelled) return;
                     setTemplates(userTemplates);
                 } catch (templateErr) {
                     console.error("Failed to fetch templates:", templateErr);
-                    setTemplates([]);
+                    if (!cancelled) setTemplates([]);
                 }
             } catch (err) {
                 console.error("Failed to fetch activity data:", err);
-                setError("Failed to load activity data");
+                if (!cancelled) setError("Failed to load activity data");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchActivityData();
+        return () => { cancelled = true; };
     }, [userId, year]);
 
     const yearTotal = useMemo(() => {
