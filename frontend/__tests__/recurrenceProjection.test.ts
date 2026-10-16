@@ -5,7 +5,7 @@ const base = { id: "t1", templateID: "tpl", recurring: true, recurDetails: { eve
 describe("projectRecurringTasks", () => {
     it("projects a daily task onto every later day in range, keeping time of day", () => {
         const task = { ...base, recurFrequency: "daily", recurType: "OCCURRENCE", startDate: new Date(2026, 8, 28, 9).toISOString() };
-        const out = projectRecurringTasks([task], new Date(2026, 8, 28), new Date(2026, 9, 1));
+        const out = projectRecurringTasks([task], [], new Date(2026, 8, 28), new Date(2026, 9, 1));
         expect(out.map((t) => new Date(t.startDate).getDate())).toEqual([29, 30, 1]);
         expect(new Date(out[0].startDate).getHours()).toBe(9);
         expect(out[0]).toMatchObject({ projected: true, sourceId: "t1" });
@@ -14,7 +14,7 @@ describe("projectRecurringTasks", () => {
     it("follows weekly days of week", () => {
         // Mon + Thu (Sun=0)
         const task = { ...base, recurFrequency: "weekly", recurType: "DEADLINE", recurDetails: { every: 1, daysOfWeek: [0, 1, 0, 0, 1, 0, 0] }, deadline: new Date(2026, 8, 28).toISOString() };
-        const out = projectRecurringTasks([task], new Date(2026, 8, 28), new Date(2026, 9, 6));
+        const out = projectRecurringTasks([task], [], new Date(2026, 8, 28), new Date(2026, 9, 6));
         expect(out.map((t) => new Date(t.deadline).getDate())).toEqual([1, 5]);
     });
 
@@ -22,13 +22,45 @@ describe("projectRecurringTasks", () => {
         const a = { ...base, recurFrequency: "daily", startDate: new Date(2026, 8, 28).toISOString() };
         const b = { ...a, id: "t2", startDate: new Date(2026, 8, 29).toISOString() };
         const flex = { ...a, id: "f", templateID: "x", recurType: "FLEX" };
-        const out = projectRecurringTasks([a, b, flex], new Date(2026, 8, 28), new Date(2026, 8, 30));
+        const out = projectRecurringTasks([a, b, flex], [], new Date(2026, 8, 28), new Date(2026, 8, 30));
         expect(out.map((t) => t.sourceId + new Date(t.startDate).getDate())).toEqual(["t230"]);
     });
 
     it("clamps monthly days to short months", () => {
         const task = { ...base, recurFrequency: "monthly", recurDetails: { every: 1, daysOfMonth: [31] }, startDate: new Date(2026, 0, 31).toISOString() };
-        const out = projectRecurringTasks([task], new Date(2026, 1, 1), new Date(2026, 1, 28));
+        const out = projectRecurringTasks([task], [], new Date(2026, 1, 1), new Date(2026, 1, 28));
         expect(new Date(out[0].startDate).getDate()).toBe(28);
+    });
+
+    it("anchors on nextGenerated when the instance was completed (no live instance)", () => {
+        jest.useFakeTimers().setSystemTime(new Date(2026, 8, 28, 14).getTime());
+        const tpl = {
+            id: "tpl",
+            recurFrequency: "daily",
+            recurType: "OCCURRENCE",
+            recurDetails: { every: 1 },
+            nextGenerated: new Date(2026, 8, 29, 9).toISOString(),
+            startDate: new Date(2026, 8, 28, 9).toISOString(),
+        };
+        const out = projectRecurringTasks([], [tpl], new Date(2026, 8, 28), new Date(2026, 9, 1));
+        expect(out.map((t) => new Date(t.startDate).getDate())).toEqual([29, 30, 1]);
+        expect(new Date(out[0].startDate).getHours()).toBe(9);
+        expect(out[0]).toMatchObject({ projected: true, sourceId: "tpl" });
+        jest.useRealTimers();
+    });
+
+    it("a live instance wins over its template, and the template anchor never lands in the past", () => {
+        jest.useFakeTimers().setSystemTime(new Date(2026, 8, 28, 14).getTime());
+        const tpl = {
+            id: "tpl",
+            recurFrequency: "daily",
+            recurType: "OCCURRENCE",
+            recurDetails: { every: 1 },
+            nextGenerated: new Date(2026, 8, 26, 9).toISOString(),
+        };
+        const live = { ...base, recurFrequency: "daily", recurType: "OCCURRENCE", startDate: new Date(2026, 8, 28, 9).toISOString() };
+        const out = projectRecurringTasks([live], [tpl], new Date(2026, 8, 27), new Date(2026, 8, 30));
+        expect(out.map((t) => new Date(t.startDate).getDate())).toEqual([29, 30]);
+        jest.useRealTimers();
     });
 });

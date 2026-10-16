@@ -7,9 +7,9 @@ export { dayKey, fromDayKey, countTasksByDay } from "@/utils/taskCountsByDay";
 export type { DayDensity } from "@/utils/taskCountsByDay";
 
 export function useTaskCountsByDay(start: Date, end: Date) {
-    const { allTasks } = useTasks();
+    const { allTasks, templates } = useTasks();
     return useMemo(
-        () => countTasksByDay([...allTasks, ...projectRecurringTasks(allTasks, start, end)], start, end),
-        [allTasks, start.getTime(), end.getTime()]
+        () => countTasksByDay([...allTasks, ...projectRecurringTasks(allTasks, templates, start, end)], start, end),
+        [allTasks, templates, start.getTime(), end.getTime()]
     );
 }

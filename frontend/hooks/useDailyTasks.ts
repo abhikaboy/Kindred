@@ -16,7 +16,7 @@ export const isTaskOnDay = (task: { startDate?: string | null; deadline?: string
 };
 
 export const useDailyTasks = (selectedDate: Date) => {
-    const { allTasks } = useTasks();
+    const { allTasks, templates } = useTasks();
 
     // Filter tasks based on selected date
     const tasksForSelectedDate = useMemo(
@@ -26,8 +26,8 @@ export const useDailyTasks = (selectedDate: Date) => {
 
     // Upcoming recurrences that don't exist as tasks yet; display-only
     const projectedForSelectedDate = useMemo(
-        () => projectRecurringTasks(allTasks, selectedDate, selectedDate),
-        [allTasks, selectedDate]
+        () => projectRecurringTasks(allTasks, templates, selectedDate, selectedDate),
+        [allTasks, templates, selectedDate]
     );
 
     // Filter for Calendar View

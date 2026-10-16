@@ -103,14 +103,14 @@ export const AgendaRow = ({ task, date }: { task: any; date?: Date }) => {
 
 const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerDropTarget, hoverKey }: Props) => {
     const ThemedColor = useThemeColor();
-    const { allTasks } = useTasks();
+    const { allTasks, templates } = useTasks();
     const todayKey = dayKey(new Date());
 
     const days = useMemo(() => {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
         // Released tasks never render in the agenda
-        const shown = [...allTasks, ...projectRecurringTasks(allTasks, weekStart, weekEnd)].filter(
+        const shown = [...allTasks, ...projectRecurringTasks(allTasks, templates, weekStart, weekEnd)].filter(
             (t) => !t.releasedAt
         );
         return Array.from({ length: 7 }, (_, i) => {
@@ -121,7 +121,7 @@ const WeekAgenda = ({ weekStart, overdueTasks, onAddTask, onDayLayout, registerD
                 .sort((a, b) => (timeOf(a)?.getTime() ?? Infinity) - (timeOf(b)?.getTime() ?? Infinity));
             return { date, key: dayKey(date), tasks };
         });
-    }, [allTasks, weekStart]);
+    }, [allTasks, templates, weekStart]);
 
     // Overdue is relative to now, so it only belongs on the current week, and only for
     // tasks due before it; anything due earlier this week already shows on its day
