@@ -57,13 +57,18 @@ const shift = (iso: string | undefined, days: number) => {
 /**
  * Display-only copies of upcoming recurrences that fall in [start, end]. Each copy has
  * `projected: true` and `sourceId` pointing at the real task; nothing is persisted.
+ *
+ * Anchors on the latest live instance of each template. When a template has no live
+ * instance (today's was completed — the backend cron only materializes the next one
+ * on its day), anchor on the template's `nextGenerated` instead, or future occurrences
+ * would vanish from the calendar until the cron fires.
  */
-export function projectRecurringTasks(tasks: any[], start: Date, end: Date): any[] {
+export function projectRecurringTasks(tasks: any[], templates: any[], start: Date, end: Date): any[] {
     const rangeStart = startOfDay(start);
     const rangeEnd = startOfDay(end);
 
     // Recur from the latest live instance of each template; skip days one already covers
-    const latest = new Map<string, { task: any; anchor: Date }>();
+    const latest = new Map<string, { task: any; anchor: Date; includeAnchor: boolean }>();
     const taken = new Set<string>();
     for (const task of tasks) {
         if (!task.recurring || task.recurType === "FLEX" || !task.recurFrequency) continue;
@@ -72,15 +77,39 @@ export function projectRecurringTasks(tasks: any[], start: Date, end: Date): any
         const key = task.templateID ?? task.id;
         taken.add(`${key}|${dayKey(anchor)}`);
         const prev = latest.get(key);
-        if (!prev || anchor > prev.anchor) latest.set(key, { task, anchor });
+        if (!prev || anchor > prev.anchor) latest.set(key, { task, anchor, includeAnchor: false });
+    }
+
+    // Instance-less templates: the projected copy's day is nextGenerated itself, shifted
+    // forward past today to mirror the backend's catch-up (it never generates in the past)
+    const today = startOfDay(new Date());
+    for (const tpl of templates ?? []) {
+        const key = tpl?.id;
+        if (!key || latest.has(key)) continue;
+        if (tpl.recurType === "FLEX" || !tpl.recurFrequency || !tpl.nextGenerated) continue;
+        const instance: any = { ...tpl, recurring: true };
+        // The generated instance's dates land on the occurrence day (CreateTaskFromTemplate)
+        if (tpl.recurType === "DEADLINE") instance.deadline = tpl.nextGenerated;
+        else instance.startDate = tpl.nextGenerated;
+        let anchor = startOfDay(new Date(tpl.nextGenerated));
+        while (anchor < today) {
+            const next = nextDay(instance, anchor);
+            if (!next) break;
+            anchor = next;
+        }
+        if (anchor < today) continue;
+        latest.set(key, { task: instance, anchor, includeAnchor: true });
     }
 
     const out: any[] = [];
-    for (const [key, { task, anchor }] of latest) {
+    for (const [key, { task, anchor, includeAnchor }] of latest) {
         let day: Date | null = anchor;
         for (let i = 0; i < MAX_STEPS && day; i++) {
-            day = nextDay(task, day);
-            if (!day || day > rangeEnd) break;
+            if (i > 0 || !includeAnchor) {
+                day = nextDay(task, day);
+                if (!day) break;
+            }
+            if (day > rangeEnd) break;
             if (day < rangeStart || taken.has(`${key}|${dayKey(day)}`)) continue;
             const offset = Math.round((day.getTime() - anchor.getTime()) / 86400000);
             const copy: any = { ...task, id: `${task.id}@${dayKey(day)}`, sourceId: task.id, projected: true };

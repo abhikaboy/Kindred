@@ -53,6 +53,8 @@ export type TasksState = {
     allTasks: Task[];
     windowTasks: Task[];
     recentWorkspaces: string[];
+    /** Recurring templates; the only source of `nextGenerated` once an instance is completed. */
+    templates: any[];
 };
 
 export type TaskActions = {
@@ -357,10 +359,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         allTasks: unnestedTasks,
         windowTasks,
         recentWorkspaces,
+        templates,
     }), [
         workspaces, selected, categories, fetchingWorkspaces, lastSyncedAt, isShowingStaleData,
         showConfetti, task, unnestedTasks, startTodayTasks, dueTodayTasks, pastStartTasks,
-        pastDueTasks, futureTasks, windowTasks, recentWorkspaces,
+        pastDueTasks, futureTasks, windowTasks, recentWorkspaces, templates,
     ]);
 
     const [store] = useState(() => createStore(state));
