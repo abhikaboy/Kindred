@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Check, Play } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { ThemedText } from "@/components/ThemedText";
+import { useCompleteTask, AUTH_HEADER } from "@/hooks/useTaskActions";
+import { useRingUpdate } from "@/components/rings/RingUpdateContext";
+import { showTaskCompleteToast } from "@/components/TaskCompleteToast";
+import { useCreate } from "@/components/create/CreateContext";
+import { fireConfetti } from "@/lib/confetti";
 import { cn } from "@/lib/utils";
 import { TaskMeta, PRIORITY_DOT } from "@/components/task/TaskMeta";
 import { isMediaUrl } from "@/lib/kudos";
@@ -179,6 +185,37 @@ function TaskCardBody({
   onSetAside?: (task: StageTask) => void;
 }) {
   const [showWhy, setShowWhy] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const completeTask = useCompleteTask();
+  const { showRingUpdate } = useRingUpdate();
+  const { openCreatePost } = useCreate();
+
+  // Same ceremony as FocusView's finish, without a timer: the card leaves the
+  // queue on its own once the workspaces query refetches.
+  const complete = (anchor: HTMLElement) => {
+    if (finishing) return;
+    setFinishing(true);
+    completeTask.mutate(
+      {
+        params: { header: AUTH_HEADER, path: { category: task.categoryID, id: task.id } },
+        body: { timeCompleted: new Date().toISOString(), timeTaken: "PT0S" },
+      },
+      {
+        onSuccess: (res) => {
+          fireConfetti(anchor);
+          showRingUpdate(res?.ringDelta);
+          showTaskCompleteToast({
+            streak: res?.currentStreak,
+            onShare: () => openCreatePost({ id: task.id, content: task.content, categoryId: task.categoryID }),
+          });
+        },
+        onError: () => {
+          setFinishing(false);
+          toast.error("Couldn't complete that task. Something went wrong on our end. Give it another try.");
+        },
+      }
+    );
+  };
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -246,6 +283,21 @@ function TaskCardBody({
         )}
       </div>
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          tabIndex={depth === 0 ? 0 : -1}
+          disabled={finishing}
+          onClick={(e) => {
+            e.stopPropagation();
+            complete(e.currentTarget);
+          }}
+          className="flex h-10 items-center gap-2 rounded-full bg-primary/10 px-5 text-primary transition-[transform,opacity] duration-150 hover:bg-primary/15 active:scale-[0.97] disabled:opacity-60"
+        >
+          <Check size={14} weight="bold" />
+          <ThemedText type="defaultSemiBold" className="text-sm text-primary">
+            {finishing ? "Completing" : "Done"}
+          </ThemedText>
+        </button>
         <button
           type="button"
           tabIndex={depth === 0 ? 0 : -1}
