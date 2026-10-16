@@ -74,7 +74,9 @@ export function HomeStage({ onOpenOverview }: { onOpenOverview: () => void }) {
   return (
     <div className="relative flex min-h-[calc(100dvh-5rem)] flex-col">
       <div className="pointer-events-none absolute -inset-x-6 -bottom-12 -top-8">
-        <StageGlow focused={!!focusTask} replayKey={replay} />
+        {/* The wash stays on its standard low pose during focus too — lifting it
+            left the arc floating above the bottom of the timer screen */}
+        <StageGlow replayKey={replay} />
       </div>
 
       {focusTask ? (

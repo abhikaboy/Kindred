@@ -1,19 +1,14 @@
-import { cn } from "@/lib/utils";
-
 // Port of mobile GlowBackground's "wash": an ellipse anchored near the top (cy 10%,
 // rx 110%, ry 70%) whose edge is the tinted arc, plus a halftone band riding that edge.
 // Stops, tints and timings mirror frontend/components/ui/GlowBackground.tsx.
 const ARC = "110% 70% at 50% 10%";
 
-export function StageGlow({ focused, replayKey }: { focused: boolean; replayKey: number }) {
+export function StageGlow({ replayKey }: { replayKey: number }) {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
         key={replayKey}
-        className={cn(
-          "stage-wash-drop absolute inset-0 transition-transform duration-[900ms] ease-[cubic-bezier(0.05,0.7,0.1,1)]",
-          focused && "stage-wash-lifted"
-        )}
+        className="stage-wash-drop absolute inset-0 transition-transform duration-[900ms] ease-[cubic-bezier(0.05,0.7,0.1,1)]"
       >
         <div className="stage-wash-breathe absolute inset-0">
           <div
