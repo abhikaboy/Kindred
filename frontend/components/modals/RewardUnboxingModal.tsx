@@ -377,7 +377,7 @@ export default function RewardUnboxingModal({
                                     />
                                     <RewardIcon size={64} color={current.color} weight="fill" />
                                 </View>
-                                <ThemedText type="titleFraunces">
+                                <ThemedText type="hero">
                                     +{rewardAmount} {winningType.label}
                                 </ThemedText>
                                 <ThemedText type="subtitle" style={[styles.body, { color: current.color }]}>
