@@ -12,7 +12,7 @@ import {
 import Svg, { Circle, G } from "react-native-svg";
 
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
-import { Check, LockSimple, Target, Fire, CalendarCheck } from "phosphor-react-native";
+import { Check, LockSimple, Target, Fire, CalendarCheck, Gift } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useRings } from "@/hooks/useRings";
@@ -579,20 +579,20 @@ export function RingRewardClaim() {
 
     return (
         <>
-            {/* Claim reward button */}
+            {/* Claim reward — same quiet pill as the hidden chip, centered under the stack */}
             {canClaimReward && (
-                <PrimaryButton
-                    title={isClaiming ? "Claiming..." : "Claim Reward"}
+                <TouchableOpacity
                     onPress={handleClaim}
                     disabled={isClaiming}
-                    style={{
-                        shadowColor: ThemedColor.primary,
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 10,
-                        elevation: 6,
-                    }}
-                />
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Claim ring rewards"
+                    style={[styles.claimChip, { backgroundColor: ThemedColor.primary + "14", opacity: isClaiming ? 0.6 : 1 }]}>
+                    <Gift size={14} color={ThemedColor.primary} weight="bold" />
+                    <ThemedText type="smallerDefault" style={{ color: ThemedColor.primary }}>
+                        {isClaiming ? "Claiming..." : "Claim Ring Rewards"}
+                    </ThemedText>
+                </TouchableOpacity>
             )}
 
             {/* Unboxing modal */}
@@ -612,6 +612,15 @@ export function RingRewardClaim() {
 }
 
 const styles = StyleSheet.create({
+    claimChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "center",
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 100,
+    },
     privateRow: {
         flexDirection: "row",
         alignItems: "center",
