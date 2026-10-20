@@ -8,6 +8,9 @@ export type StageTask = Task & { categoryID: string; workspaceName: string; reas
 
 const isToday = (iso?: string | null) => !!iso && new Date(iso).toDateString() === new Date().toDateString();
 const isPast = (iso?: string | null) => !!iso && new Date(iso).getTime() < Date.now();
+// Sooner day sorts first; tasks with no day sort last within their rank.
+const timeOf = (t: { deadline?: string | null; startTime?: string | null }) =>
+    new Date(t.deadline || t.startTime || "9999").getTime();
 
 // Mirrors desktop's stage queue: in progress, overdue, due today, then by priority.
 export function useHomeStageQueue(): StageTask[] {
@@ -31,6 +34,7 @@ export function useHomeStageQueue(): StageTask[] {
             else if (isSomedayTask(task)) [rank, reason] = [5, "Someday"];
             out.push({ ...task, categoryID, workspaceName: task.workspaceName ?? "", reason, rank });
         }
-        return out.sort((a, b) => a.rank - b.rank || (b.priority ?? 0) - (a.priority ?? 0));
+        // Within a rank, soonest day first; priority only breaks ties between tasks with no day.
+        return out.sort((a, b) => a.rank - b.rank || timeOf(a) - timeOf(b) || (b.priority ?? 0) - (a.priority ?? 0));
     }, [unnestedTasks, hidden]);
 }

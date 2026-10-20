@@ -46,7 +46,7 @@ type Props = {
     accessory?: React.ReactNode;
 };
 
-// Focus stage on mobile: a swipeable card stack of everything on your plate (kudos lead).
+// Focus stage on mobile: a swipeable card stack of everything on your plate (kudos trail the tasks).
 export default function HomeFocusStack({ queue, spill, onListedChange, availableHeight, accessory }: Props) {
     const ThemedColor = useThemeColor();
     const isDark = useColorScheme() === "dark";
@@ -60,7 +60,7 @@ export default function HomeFocusStack({ queue, spill, onListedChange, available
     const stackRef = useRef<SwipeCardStackHandle>(null);
 
     const items = useMemo<StageItem[]>(
-        () => [...kudos.map((k): StageItem => ({ kind: "kudos", kudos: k })), ...queue.map((task): StageItem => ({ kind: "task", task }))],
+        () => [...queue.map((task): StageItem => ({ kind: "task", task })), ...kudos.map((k): StageItem => ({ kind: "kudos", kudos: k }))],
         [queue, kudos]
     );
     const n = items.length;
