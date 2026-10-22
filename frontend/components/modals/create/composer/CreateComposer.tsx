@@ -64,7 +64,6 @@ import { useRequest } from "@/hooks/useRequest";
 import { useTasks } from "@/contexts/tasksContext";
 import { useTaskCreation } from "@/contexts/taskCreationContext";
 import { useBlueprints } from "@/contexts/blueprintContext";
-import CustomAlert, { type AlertButton } from "@/components/modals/CustomAlert";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { AnalyticsEvents } from "@/utils/analytics";
 import type { Task } from "@/api/types";
@@ -79,13 +78,14 @@ import CategoryPicker, { categoryColor } from "./CategoryPicker";
 import PropertyChip, { type ChipState } from "./PropertyChip";
 import QuickSet from "./QuickSet";
 import RepeatPanel from "./RepeatPanel";
+import ScopePanel, { type EditScope } from "./ScopePanel";
 import DatePanel from "./DatePanel";
 import TagPanel from "./TagPanel";
 import ReminderPanel from "./ReminderPanel";
 import IntegrationPanel from "./IntegrationPanel";
 import { listCategories, rankCategories, type CategoryOption } from "./categoryOptions";
 
-export type Panel = "start" | "due" | "repeat" | "priority" | "difficulty" | "reminder" | "tag" | "integration";
+export type Panel = "start" | "due" | "repeat" | "priority" | "difficulty" | "reminder" | "tag" | "integration" | "scope";
 
 const FADE = { duration: 220, easing: Easing.out(Easing.cubic) };
 const ROW_TRANSITION = LinearTransition.duration(200).easing(Easing.out(Easing.cubic));
@@ -153,7 +153,6 @@ export default function CreateComposer({
     const { workspaces, selected, addToWorkspace, updateTask, task: contextTask } = useTasks();
     const { blueprintCategories, addBlueprintCategory, addTaskToBlueprintCategory } = useBlueprints();
     const { capture } = useAnalytics();
-    const [alert, setAlert] = useState<{ title: string; message: string; buttons: AlertButton[] } | null>(null);
     const { request } = useRequest();
     const submitNewTask = useSubmitNewTask();
     const { dispatch: dispatchOnboarding } = useOnboardingV2Context();
@@ -314,7 +313,6 @@ export default function CreateComposer({
         setCopySourceTaskId(null);
         // An edit's fields must not prefill the next new task
         if (edit) resetTaskCreation();
-        setAlert(null);
         setVisible(false);
     };
 
@@ -491,6 +489,17 @@ export default function CreateComposer({
 
     const saveEdit = () => {
         if (!taskToEdit) return close();
+        // A recurring edit first asks where it applies, inline on the stage
+        if (taskToEdit.templateID) {
+            setPanel("scope");
+            Keyboard.dismiss();
+            return;
+        }
+        saveEditWithScope("one");
+    };
+
+    const saveEditWithScope = (scope: EditScope) => {
+        if (!taskToEdit) return close();
         // Auto Sort isn't offered here, so no pick means the task's own category
         const targetCategoryId = category?.id || taskToEdit.categoryID;
         const fields = creationRef.current;
@@ -500,31 +509,9 @@ export default function CreateComposer({
                 capture(AnalyticsEvents.TASK_UPDATED, { source: "edit_modal" });
                 syncSomeday(targetCategoryId);
             });
-        if (!taskToEdit.templateID) {
-            persist();
-            return close();
-        }
-        setAlert({
-            title: "Update Recurring Task",
-            message: "Do you want to update only this occurrence or all future tasks?",
-            buttons: [
-                {
-                    text: "Only This Task",
-                    onPress: () => {
-                        persist();
-                        close();
-                    },
-                },
-                {
-                    text: "All Future Tasks",
-                    onPress: () => {
-                        persist().then(() => persistTemplateEdit(fields, taskToEdit));
-                        close();
-                    },
-                },
-                { text: "Cancel", style: "cancel" },
-            ],
-        });
+        if (scope === "all") persist().then(() => persistTemplateEdit(fields, taskToEdit));
+        else persist();
+        close();
     };
 
     const submit = () => {
@@ -950,10 +937,18 @@ export default function CreateComposer({
                 );
             case "reminder":
                 return <ReminderPanel onDone={closePanel} />;
+            case "scope":
+                return (
+                    <ScopePanel
+                        onPick={saveEditWithScope}
+                        onCancel={() => {
+                            setPanel(null);
+                            focusTitle();
+                        }}
+                    />
+                );
             case "tag":
                 return <TagPanel onDone={closePanel} />;
-            case "integration":
-                return <IntegrationPanel onDone={closePanel} />;
             default:
                 return null;
         }
@@ -1200,15 +1195,6 @@ export default function CreateComposer({
                     </View>
                 </Reanimated.View>
             </KeyboardAvoidingView>
-            <CustomAlert
-                visible={alert !== null}
-                setVisible={(v) => {
-                    if (!v) setAlert(null);
-                }}
-                title={alert?.title ?? ""}
-                message={alert?.message}
-                buttons={alert?.buttons}
-            />
         </Modal>
     );
 }
