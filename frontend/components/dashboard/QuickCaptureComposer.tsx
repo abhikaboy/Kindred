@@ -66,7 +66,7 @@ import { AnalyticsEvents } from "@/utils/analytics";
 import { useAuth } from "@/hooks/useAuth";
 import { promptAccountAfterTask } from "@/hooks/useAccountOverlay";
 
-export type Receipt = { content: string; details: string };
+export type Receipt = { content: string; details: string; task?: { id: string; categoryId: string } };
 
 // A task typed and staged with Enter but not created yet. Priority fills in
 // once its own suggest call returns, so it never borrows the previous line's.
@@ -374,6 +374,8 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
                     has_deadline: !!body.deadline,
                     has_checklist: false,
                 });
+                const task = response as any;
+                return task?.id && task?.categoryID ? { id: task.id as string, categoryId: task.categoryID as string } : undefined;
             })
         );
         queryClient.invalidateQueries({ queryKey: ["rings", "today"] });
@@ -386,9 +388,10 @@ export default function QuickCaptureComposer({ visible, startWithVoice = false, 
             onSubmitted?.();
             // Each created task counts toward the guest limit
             created.forEach(() => void promptAccountAfterTask(user));
+            const first = results.find((r) => r.status === "fulfilled") as PromiseFulfilledResult<Receipt["task"]> | undefined;
             receiptRef.current =
                 created.length === 1
-                    ? { content: created[0].content, details: draftDetails(created[0]) }
+                    ? { content: created[0].content, details: draftDetails(created[0]), task: first?.value }
                     : { content: `${created.length} tasks`, details: "sorting into categories" };
         }
         if (failed.length === 0) {

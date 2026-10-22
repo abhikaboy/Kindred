@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Pressable, StyleSheet, TouchableOpacity, useColorScheme } from "react-native";
 import Reanimated, { Easing, LinearTransition } from "react-native-reanimated";
-import { Check, Microphone, Plus } from "phosphor-react-native";
+import { useRouter } from "expo-router";
+import { ArrowRight, Check, Microphone, Plus } from "phosphor-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import QuickCaptureComposer, { type Receipt } from "@/components/dashboard/QuickCaptureComposer";
@@ -32,6 +33,7 @@ export default function QuickCapture({
     const colorScheme = useColorScheme();
     const [open, setOpen] = useState(false);
     const [voice, setVoice] = useState(false);
+    const router = useRouter();
     const [receipt, setReceipt] = useState<Receipt | null>(null);
 
     useEffect(() => {
@@ -82,6 +84,25 @@ export default function QuickCapture({
                     <ThemedText type="caption" numberOfLines={1} style={{ flex: 1 }}>
                         Added “{receipt.content}” · {receipt.details}
                     </ThemedText>
+                    {receipt.task && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                const { id, categoryId } = receipt.task!;
+                                setReceipt(null);
+                                router.push(
+                                    `/(logged-in)/(tabs)/(task)/task/${id}?categoryId=${categoryId}&name=${encodeURIComponent(receipt.content)}`
+                                );
+                            }}
+                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                            style={styles.viewLink}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open ${receipt.content}`}>
+                            <ThemedText type="caption" style={{ color: ThemedColor.primary }}>
+                                View task
+                            </ThemedText>
+                            <ArrowRight size={14} color={ThemedColor.primary} weight="bold" />
+                        </TouchableOpacity>
+                    )}
                 </Reanimated.View>
             )}
 
@@ -124,6 +145,11 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         fontFamily: "OutfitLight",
+    },
+    viewLink: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
     },
     receipt: {
         flexDirection: "row",
