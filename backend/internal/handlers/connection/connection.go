@@ -39,6 +39,11 @@ func (h *Handler) CreateConnectionHuma(ctx context.Context, input *CreateConnect
 		return nil, huma.Error400BadRequest("Invalid authenticated user ID format", err)
 	}
 
+	// A user cannot befriend themselves
+	if requesterID == receiverID {
+		return nil, huma.Error400BadRequest("You cannot send a connection request to yourself")
+	}
+
 	// Create connection request - service will fetch requester details
 	connection, err := h.service.CreateConnectionRequest(requesterID, receiverID)
 	if err != nil {

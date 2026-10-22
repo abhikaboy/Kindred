@@ -283,7 +283,17 @@ func (h *Handler) GetUserCredits(ctx context.Context, input *GetUserCreditsInput
 }
 
 func (h *Handler) GetSuggestedUsers(ctx context.Context, input *GetSuggestedUsersInput) (*GetSuggestedUsersOutput, error) {
-	users, err := h.service.GetSuggestedUsers()
+	userIDStr, err := auth.RequireAuth(ctx)
+	if err != nil {
+		return nil, huma.Error401Unauthorized("Authentication required", err)
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return nil, huma.Error400BadRequest("Invalid user ID format", err)
+	}
+
+	users, err := h.service.GetSuggestedUsers(userID)
 	if err != nil {
 		slog.Error("Failed to get suggested users", "error", err)
 		return nil, huma.Error500InternalServerError("Unable to load suggested users. Please try again.", err)

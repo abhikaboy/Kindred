@@ -576,13 +576,41 @@ func (s *Service) convertConnectionToRelationshipInfo(relationship Connection.Co
 	}
 }
 
-// GetSuggestedUsers returns up to 8 users with the most friends
-func (s *Service) GetSuggestedUsers() ([]types.UserExtendedReference, error) {
+// GetSuggestedUsers returns up to 8 users with the most friends, excluding
+// the caller and anyone who already has a connection (friend, pending, or
+// received request) with them — you should never be suggested to yourself
+// or asked to re-add someone
+func (s *Service) GetSuggestedUsers(userID primitive.ObjectID) ([]types.UserExtendedReference, error) {
 	ctx := context.Background()
 
+	match := excludeGuestsFilter()
+	match["_id"] = bson.M{"$ne": userID}
+
 	pipeline := mongo.Pipeline{
-		// Guests are never suggested
-		bson.D{{Key: "$match", Value: excludeGuestsFilter()}},
+		// Guests are never suggested, and neither is the caller
+		bson.D{{Key: "$match", Value: match}},
+		// Attach any existing connection document between the candidate and
+		// the caller. Accepted connections (friends) are stored here too, so
+		// one lookup covers every RelationshipStatus.
+		bson.D{
+			{Key: "$lookup", Value: bson.D{
+				{Key: "from", Value: "friend-requests"},
+				{Key: "let", Value: bson.D{{Key: "candidateId", Value: "$_id"}}},
+				{Key: "pipeline", Value: mongo.Pipeline{
+					bson.D{{Key: "$match", Value: bson.D{
+						{Key: "users", Value: userID},
+						{Key: "$expr", Value: bson.M{"$in": bson.A{"$$candidateId", "$users"}}},
+					}}},
+				}},
+				{Key: "as", Value: "existingConnection"},
+			}},
+		},
+		// Drop candidates who already have a connection with the caller
+		bson.D{
+			{Key: "$match", Value: bson.D{
+				{Key: "existingConnection", Value: bson.M{"$size": 0}},
+			}},
+		},
 		// Add a field with the size of the friends array
 		bson.D{
 			{Key: "$addFields", Value: bson.D{
